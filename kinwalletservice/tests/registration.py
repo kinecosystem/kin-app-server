@@ -14,7 +14,7 @@ import testing.postgresql
 from flask import Flask
 
 import kinwalletservice
-from kinwalletservice import db, config
+from kinwalletservice import db, config, model
 
 
 
@@ -83,6 +83,10 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
         print(json.loads(resp.data))
 
+        print(model.list_all_users())
+        assert(model.user_exists(userid))
+        assert(not model.user_exists(uuid.uuid4()))
+
         # windows phone. should fail.
         userid = uuid.uuid4()
         resp = self.app.post('/user/register',
@@ -93,6 +97,8 @@ class Tester(unittest.TestCase):
             headers={'x-userid': userid},
             content_type='application/json')
         self.assertEqual(resp.status_code, 400)
+        assert(not model.user_exists(userid))
+
 
 if __name__ == '__main__':
     unittest.main()

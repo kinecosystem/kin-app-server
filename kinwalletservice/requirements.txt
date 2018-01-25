@@ -4,6 +4,7 @@ psycopg2==2.7.3.2
 Flask==0.12.2
 Flask-SQLAlchemy==2.3.2
 SQLAlchemy==1.1.14
+sqlalchemy_utils
 lxml==4.1.1
 Flask-Cors==3.0.3
 grequests==0.3.0
