@@ -5,6 +5,8 @@ from time import mktime
 from datetime import datetime
 import unittest
 from unittest import mock
+import uuid
+
 
 import mockredis
 import redis
@@ -25,10 +27,18 @@ class Tester(unittest.TestCase):
         kinwalletservice.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url()
         kinwalletservice.app.testing = True
         self.app = kinwalletservice.app.test_client()
+        db.drop_all()
+        db.create_all()
 
 
     def tearDown(self):
         self.postgresql.stop()
+
+    def test_health(self):
+        """a simple test for the health endpoint"""
+        resp = self.app.get('health')
+        data = json.loads(resp.data)
+        assert data['status']=='ok'
 
     @mock.patch('redis.StrictRedis', mockredis.mock_redis_client)
     def test_flow(self):

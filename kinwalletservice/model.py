@@ -8,11 +8,19 @@ from kinwalletservice.utils import InvalidUsage
 
 class User(db.Model):
     '''
+    the user model.
     '''
-    user_id = db.Column(db.String(80), unique=True, nullable=True)
+    sid = db.Column(db.Integer, primary_key=False, autoincrement=True)
+    user_id = db.Column(db.String(80), primary_key=True, nullable=False)
+    os_type = db.Column(db.String(10), primary_key=False, nullable=False)
+    device_model = db.Column(db.String(40), primary_key=False, nullable=False)
+    push_token = db.Column(db.String(80), primary_key=False, nullable=True)
+    time_zone = db.Column(db.String(10), primary_key=False, nullable=False)
+    device_id = db.Column(db.String(40), primary_key=False, nullable=False)
+
 
     def __repr__(self):
-        return '<user_id: %s>' % (self.user_id)
+        return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone, self.device_id)
 
 def get_user(user_id):
     user = User.query.filter_by(user_id=user_id).first()
@@ -20,17 +28,21 @@ def get_user(user_id):
         raise InvalidUsage('no such user_id')
     return user
 
-
 def user_exists(user_id):
     user = User.query.filter_by(user_id=user_id).first()
     return True if user else False
 
-
-def create_user(user_id):
+def create_user(user_id, os_type, device_model, push_token, time_zone, device_id):
+    '''create a new user and commit to the database. should only fail if the userid is duplicate'''
     if user_exists(user_id):
-            raise InvalidUsage('refusing to create user. User-id %s already exists' % user_id)
+            raise InvalidUsage('refusing to create user. user_id %s already exists' % user_id)
     user = User()
     user.user_id = user_id
+    user.os_type = os_type
+    user.device_model = device_model
+    user.push_token = push_token
+    user.time_zone = time_zone
+    user.device_id = device_id
     db.session.add(user)
     db.session.commit()
 
