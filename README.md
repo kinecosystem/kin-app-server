@@ -1,5 +1,8 @@
 # kin-wallet-service
-An internal service for the Kin Wallet focused on storing participants kin-related data
+An internal service for the Kin Wallet aimed at:
+    - storing user data
+    - oferring spend and earn opportunities for clients
+    - paying clients for completing questionnaires
 
 ## Prerequisites
 Make sure you have Python 3 >=3.6.4.
@@ -8,7 +11,7 @@ you'll need to get the ansible-galaxy deps with
     ansible-galaxy install -r playbooks/requirements.yml
 
 ## Installation
-run ansible (2.3.1.0) with this command:
+run ansible (2.4.2.0) with this command:
     ansible-playbook playbooks/kin-wallet-service.yml -i <public_ip>,
 
 ## Configuration
@@ -41,11 +44,18 @@ go into python console and:
      if you add/remove/modify the sqlalchemy defs in the code, you'll want to modify any existing 
      prod/stage DB's as well. this needs to happen manually, unless you want to completely re-create the databases.
 
-## API Changelog
-  
 ## External API
  TODO
 
+## Contributions
+we welcome contributions in the form of pull requests. At the moment there's very little code - 
+but at some point we'll have more and your input would be welcome.
+
+## StyleSheet
+We intend to loosly follow pep8 and suggest you do too. We do not intend to obey the limit on line length.
+
+## API Changelog
+  
 
 ## A bunch of debugging tools:
 
