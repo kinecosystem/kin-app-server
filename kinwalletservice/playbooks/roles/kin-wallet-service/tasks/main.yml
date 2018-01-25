@@ -1,0 +1,83 @@
+- name: Run "apt-get update"
+  apt:
+    update_cache: yes
+
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Install supervisor
+  apt:
+    name: supervisor
+    state: present
+
+- name: Install list of packages
+  apt: name={{item}} state=installed
+  with_items:
+       - python-pip3
+       - git
+       - supervisor
+
+- name: Pip upgrade pip
+  pip:
+    name: pip3
+    extra_args: --upgrade
+
+
+- name: pip Install uwsgi
+  pip:
+    name: uwsgi
+
+- name: Clone the kin-award-service repo
+  git:
+    repo=git@github.com:kikinteractive/kin-wallet-server.git
+    dest=/opt/kin-wallet-server
+    accept_hostkey=true
+    force=yes
+
+- name: pip install reqs
+  pip:
+    requirements: /opt/kin-wallet-server-/kinwalletservice/requirements.txt 
+
+- name: create directory for kin-wallet-service
+  file:
+    path: /opt/kin-wallet-service
+    state: directory
+    mode: 0755
+
+- name: Template the config file
+  template:
+    src: templates/kinwalletservice/config.py.jinja2
+    dest: /opt/kin-wallet-service/kinwalletservice/config.py
+    
+- name: install the kin-wallet-service from the local copy. force upgrade to take any changes.
+  pip: 
+    name: /opt/kin-wallet-service
+    state: latest
+
+- name: copy the supervisord config file
+  copy:
+    src: "{{ role_path }}/files/etc/supervisor/conf.d/kinwalletservice.conf"
+    dest: /etc/supervisor/conf.d/kinwalletservice.conf
+    mode: 
+
+- name: update supervisor
+  supervisorctl:
+    name: kinwalletservice
+    state: present
+
+- name: restart supervisor
+  supervisorctl:
+    name: kinwalletservice
+    state: restarted  
+
+- name: template the nginx config file
+  template:
+    src: templates/etc/nginx/sites-enabled/kinwalletservice
+    dest: /etc/nginx/sites-enabled/kinwalletservice
+
+- name: service nginx restart
+  service:
+    name: nginx
+    state: restarted

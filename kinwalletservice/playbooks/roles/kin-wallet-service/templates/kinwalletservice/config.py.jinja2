@@ -1,0 +1,9 @@
+# this is the config file for the kin-wallet-service. 
+# Its a jinja2 file, meant to be processed by Ansible. By default, the debug mode is set to True,
+# and the debug values are hard-coded. Production values must be provided via the playbook.
+
+DEBUG = {{ debug | default('True') }}
+DB_CONNSTR = "{{ db_connstr }}"
+
+REDIS_ENDPOINT = "{{ redis_endpoint }}"
+REDIS_PORT = {{ redis_port }}
