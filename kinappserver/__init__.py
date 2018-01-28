@@ -5,13 +5,13 @@ app = Flask(__name__)
 CORS(app)
 
 from flask_sqlalchemy import SQLAlchemy
-from kinwalletservice import config
+from kinappserver import config
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-import kinwalletservice.views
+import kinappserver.views
 import time
 import redis_lock, redis
 import sys

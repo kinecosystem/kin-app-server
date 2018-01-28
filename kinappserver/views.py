@@ -1,14 +1,14 @@
 '''
-The Kin Wallet Service API is defined here.
+The Kin App Server API is defined here.
 '''
 
 from flask import request, jsonify, abort
 import redis_lock
 import requests
 
-from kinwalletservice import app, config
-from kinwalletservice.utils import InvalidUsage, InternalError
-from kinwalletservice.model import create_user
+from kinappserver import app, config
+from kinappserver.utils import InvalidUsage, InternalError
+from kinappserver.model import create_user
 
 
 def limit_to_local_host():

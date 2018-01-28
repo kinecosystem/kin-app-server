@@ -4,15 +4,15 @@
   roles:
     - franklinkim.environment
     - Datadog.datadog
-    - kin-wallet-service
+    - kin-app-server
 
   vars:
    environment_config:
      ENV: stage
    datadog_api_key: "7d29689e7460c08f21128628adf11afd"
    debug: True
-   nginx_domain: kinwalletservice.rounds.video
-   db_connstr: 'postgresql://kinservice:kinservice@kinawardservicestage.cs2r73zxsuyi.us-east-1.rds.amazonaws.com:5432/kinawardservice'
+   nginx_domain: kin-app-stage.rounds.video
+   db_connstr: 'postgresql://kin_app_stage_username:kin_app_stage_@kin-app-stage.cs2r73zxsuyi.us-east-1.rds.amazonaws.com/kinappd'
    provider_endpoint: 'http://159.89.9.81:8545'
    redis_endpoint: 'kinawardservicesync.pmvjly.0001.use1.cache.amazonaws.com'
    redis_port: 6379

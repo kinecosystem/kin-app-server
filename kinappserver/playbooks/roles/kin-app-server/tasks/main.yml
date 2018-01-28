@@ -1,0 +1,71 @@
+- name: Run "apt-get update"
+  apt:
+    update_cache: yes
+
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Install supervisor
+  apt:
+    name: supervisor
+    state: present
+
+- name: Install list of packages
+  apt: name={{item}} state=installed
+  with_items:
+       - git
+       - supervisor
+       - python3-pip
+
+- name: pip Install uwsgi
+  pip:
+    name: uwsgi
+
+- name: Clone the kin-award-service repo
+  git:
+    repo=https://github.com/kinfoundation/kin-app-server.git
+    dest=/opt/kin-app-server
+    accept_hostkey=true
+    force=yes
+
+- name: pip install reqs
+  pip:
+    requirements: /opt/kin-app-server/kinappserver/requirements.txt 
+
+- name: Template the config file
+  template:
+    src: templates/kinappserver/config.py.jinja2
+    dest: /opt/kin-app-server/kinappserver/config.py
+    
+- name: install the kin-app-server from the local copy. force upgrade to take any changes.
+  pip: 
+    name: /opt/kin-app-server
+    state: latest
+
+- name: copy the supervisord config file
+  copy:
+    src: "{{ role_path }}/files/etc/supervisor/conf.d/kinappserver.conf"
+    dest: /etc/supervisor/conf.d/kinappserver.conf
+    mode: 
+
+- name: update supervisor
+  supervisorctl:
+    name: kinappserver
+    state: present
+
+- name: restart supervisor
+  supervisorctl:
+    name: kinappserver
+    state: restarted  
+
+- name: template the nginx config file
+  template:
+    src: templates/etc/nginx/sites-enabled/kinappserver
+    dest: /etc/nginx/sites-enabled/kinappserver
+
+- name: service nginx restart
+  service:
+    name: nginx
+    state: restarted

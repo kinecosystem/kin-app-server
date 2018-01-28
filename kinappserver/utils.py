@@ -1,7 +1,7 @@
 import base64
 
 from flask import jsonify
-from kinwalletservice import db
+from kinappserver import db
 import boto3
 #from Crypto import Random
 #from Crypto.Cipher import AES

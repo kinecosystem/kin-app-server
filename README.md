@@ -13,8 +13,10 @@ you'll need to get the ansible-galaxy deps with
     ansible-galaxy install -r playbooks/requirements.yml
 
 ## Installation
+this server is intended to be deployed on an ubuntu machine with python3. You'll need to tell Ansible to use the python3 interpreter.
+
 run ansible (2.4.2.0) with this command:
-    ansible-playbook playbooks/kin-wallet-service.yml -i <public_ip>,
+    ansible-playbook playbooks/kin-wallet-service.yml -i <public_ip>, -e 'ansible_python_interpreter=/usr/bin/python3'
 
 ## Configuration
 All configurations reside in the config.py.jinj2 file (in kin-wallet-server/kinwalletservice/playbooks/roles/kin-wallet-service/templates), which is processed by Ansible into a config.py file.

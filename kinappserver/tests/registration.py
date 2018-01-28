@@ -13,8 +13,8 @@ import redis
 import testing.postgresql
 from flask import Flask
 
-import kinwalletservice
-from kinwalletservice import db, config, model
+import kinappserver
+from kinappserver import db, config, model
 
 
 
@@ -24,9 +24,9 @@ class Tester(unittest.TestCase):
     def setUp(self):
         #overwrite the db name, dont interfere with stage db data
         self.postgresql = testing.postgresql.Postgresql()
-        kinwalletservice.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url()
-        kinwalletservice.app.testing = True
-        self.app = kinwalletservice.app.test_client()
+        kinappserver.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url()
+        kinappserver.app.testing = True
+        self.app = kinappserver.app.test_client()
         db.drop_all()
         db.create_all()
 

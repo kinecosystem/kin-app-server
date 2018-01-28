@@ -1,2 +1,2 @@
 test:
-	python3 kinwalletservice/tests/registration.py
+	python3 kinappserver/tests/registration.py

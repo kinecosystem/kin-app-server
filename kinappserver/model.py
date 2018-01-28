@@ -1,11 +1,11 @@
-'''The model for the Kin Wallet Service.'''
+'''The model for the Kin App Server.'''
 from uuid import uuid4
 import datetime
 import redis_lock
 from sqlalchemy_utils import UUIDType
 
-from kinwalletservice import db, config, app
-from kinwalletservice.utils import InvalidUsage
+from kinappserver import db, config, app
+from kinappserver.utils import InvalidUsage
 
 class User(db.Model):
     '''
