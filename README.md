@@ -1,4 +1,6 @@
 # kin-wallet-service
+Note: this repo is at a very early stage of work.
+
 An internal service for the Kin Wallet aimed at:
     - storing user data
     - oferring spend and earn opportunities for clients
