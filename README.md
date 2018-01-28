@@ -1,7 +1,7 @@
-# kin-wallet-service
+# kin-app-server
 Note: this repo is at a very early stage of work.
 
-An internal service for the Kin Wallet aimed at:
+An internal service for the Kin App aimed at:
     - storing user data
     - oferring spend and earn opportunities for clients
     - paying clients for completing questionnaires
@@ -16,16 +16,16 @@ you'll need to get the ansible-galaxy deps with
 this server is intended to be deployed on an ubuntu machine with python3. You'll need to tell Ansible to use the python3 interpreter.
 
 run ansible (2.4.2.0) with this command:
-    ansible-playbook playbooks/kin-wallet-service.yml -i <public_ip>, -e 'ansible_python_interpreter=/usr/bin/python3'
+    ansible-playbook playbooks/kin-app-server.yml -i <public_ip>, -e 'ansible_python_interpreter=/usr/bin/python3'
 
 ## Configuration
-All configurations reside in the config.py.jinj2 file (in kin-wallet-server/kinwalletservice/playbooks/roles/kin-wallet-service/templates), which is processed by Ansible into a config.py file.
+All configurations reside in the config.py.jinj2 file (in kin-app-server/kinappserver/playbooks/roles/kin-app-server/templates), which is processed by Ansible into a config.py file.
 
 By default, the config is set to DEBUG mode, which has some pre-set values. Production/Stage values must be give in the Ansible role.
 
 To test the service, run the unittests.
 
-    python3 kinwalletservice/tester.py
+    python3 kinappserver/tester.py
 
 note that the tester uses a local, temporary postgress db - it does not mess with prod/stage.
 
@@ -36,12 +36,12 @@ At the moment, you can run this service with
     
 You'll probably also need to export the service name, as following:
 
-    export FLASK_APP=kinwalletservice
+    export FLASK_APP=kinappserver
 
 ## Creating the db for the fisrt time:
 go into python console and:
 
-     from kinwalletservice import db
+     from kinappserver import db
 
      db.create_all()
 
