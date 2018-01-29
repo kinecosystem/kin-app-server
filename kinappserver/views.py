@@ -8,7 +8,7 @@ import requests
 
 from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, InternalError
-from kinappserver.model import create_user
+from kinappserver.model import create_user, update_user_token
 
 
 def limit_to_local_host():
@@ -38,11 +38,20 @@ def handle_internal_error(error):
 def get_health():
     return jsonify(status='ok')
 
-def extract_userid(request):
-    user_id = request.headers.get('x-userid', None)
-    if user_id is None:
+@app.route('/user/update-token', methods=['POST'])
+def update_token():
+    ''' update a user's token in the database '''
+    payload = request.get_json(silent=True)
+    try:
+        user_id = payload.get('user_id', None)
+        token = payload.get('token', None)
+        if None in (user_id, token):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
         raise InvalidUsage('bad-request')
-    return user_id
+    update_user_token(user_id, token)
+    return jsonify(status='ok')
+
 
 @app.route('/user/register', methods=['POST'])
 def register():
@@ -50,9 +59,9 @@ def register():
     called once by every client until 200OK is received from the server.
     the payload may contain a optional push token.
     '''
-    user_id = extract_userid(request)
     payload = request.get_json(silent=True)
     try:
+        user_id = payload.get('user_id', None)
         os = payload.get('os', None)
         device_model = payload.get('device_model', None)
         token = payload.get('token', None)

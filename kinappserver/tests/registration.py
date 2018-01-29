@@ -16,9 +16,6 @@ from flask import Flask
 import kinappserver
 from kinappserver import db, config, model
 
-
-
-
 class Tester(unittest.TestCase):
 
     def setUp(self):
@@ -30,7 +27,6 @@ class Tester(unittest.TestCase):
         db.drop_all()
         db.create_all()
 
-
     def tearDown(self):
         self.postgresql.stop()
 
@@ -40,45 +36,53 @@ class Tester(unittest.TestCase):
         # android
         userid = uuid.uuid4()
         resp = self.app.post('/user/register',
-            data=json.dumps({'os': 'android',
+            data=json.dumps({
+                            'user_id': str(userid),
+                            'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
                             'token':'fake_token'}),
-            headers={'x-userid': userid},
+            headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         # ios
         userid = uuid.uuid4()
         resp = self.app.post('/user/register',
-            data=json.dumps({'os': 'ios',
+            data=json.dumps({
+                            'user_id': str(userid),
+                            'os': 'ios',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
                             'token':'fake_token'}),
-            headers={'x-userid': userid},
+            headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         # no push token. should succeed.
         userid = uuid.uuid4()
         resp = self.app.post('/user/register',
-            data=json.dumps({'os': 'ios',
+            data=json.dumps({
+                            'user_id': str(userid),
+                            'os': 'ios',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00'}),
-            headers={'x-userid': userid},
+            headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         # re-use userid - should fail
         resp = self.app.post('/user/register',
-            data=json.dumps({'os': 'ios',
+            data=json.dumps({
+                            'user_id': str(userid),
+                            'os': 'ios',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00'}),
-            headers={'x-userid': userid},
+            headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 400)
         print(json.loads(resp.data))
@@ -90,15 +94,16 @@ class Tester(unittest.TestCase):
         # windows phone. should fail.
         userid = uuid.uuid4()
         resp = self.app.post('/user/register',
-            data=json.dumps({'os': 'win',
+            data=json.dumps({
+                            'user_id': str(userid),
+                            'os': 'win',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00'}),
-            headers={'x-userid': userid},
+            headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 400)
         assert(not model.user_exists(userid))
-
 
 if __name__ == '__main__':
     unittest.main()

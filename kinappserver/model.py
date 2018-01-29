@@ -47,6 +47,14 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     db.session.add(user)
     db.session.commit()
 
+def update_user_token(user_id, push_token):
+    '''updates the user's token with a new one'''
+    user = get_user(user_id)
+    print('user:%s', user)
+    user.push_token = push_token
+    db.session.add(user)
+    db.session.commit()
+
 def list_all_users():
     '''returns a dict of all the whitelisted users and their PAs (if available)'''
     response = {}
