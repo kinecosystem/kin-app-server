@@ -18,6 +18,7 @@ class User(db.Model):
     push_token = db.Column(db.String(80), primary_key=False, nullable=True)
     time_zone = db.Column(db.String(10), primary_key=False, nullable=False)
     device_id = db.Column(db.String(40), primary_key=False, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now())
 
 
     def __repr__(self):
@@ -70,12 +71,12 @@ class UserAppData(db.Model):
     '''
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
     app_ver = db.Column(db.String(40), primary_key=False, nullable=False)
+    update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
 
 
 def set_user_app_data(user_id, app_ver):
     ''''''
     try:
-        print('setting user %s vers %s', user_id, app_ver)
         userAppData = UserAppData()
         userAppData.user_id = user_id
         userAppData.app_ver = app_ver
@@ -83,4 +84,12 @@ def set_user_app_data(user_id, app_ver):
         db.session.commit()
     except Exception as e:
         raise InvalidUsage('cant set user app data')
+
+def list_all_users_app_data():
+    '''returns a dict of all the whitelisted users and their PAs (if available)'''
+    response = {}
+    users = UserAppData.query.order_by(UserAppData.user_id).all()
+    for user in users:
+        response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at}
+    return response
 

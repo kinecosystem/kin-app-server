@@ -71,8 +71,7 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        print(model.list_all_users())
-        assert(model.user_exists(userid))
+        print(model.list_all_users_app_data())
 
 
 if __name__ == '__main__':
