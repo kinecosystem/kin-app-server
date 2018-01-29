@@ -34,7 +34,7 @@ def user_exists(user_id):
     return True if user else False
 
 def create_user(user_id, os_type, device_model, push_token, time_zone, device_id):
-    '''create a new user and commit to the database. should only fail if the userid is duplicate'''
+    '''create a new user and commit to the database. should only fail if the user_id is duplicate'''
     if user_exists(user_id):
             raise InvalidUsage('refusing to create user. user_id %s already exists' % user_id)
     user = User()
@@ -62,3 +62,25 @@ def list_all_users():
     for user in users:
         response[user.user_id] = {'sid': user.sid, 'os': user.os_type, 'push_token': user.push_token, 'timezone': user.time_zone, 'device_id': user.device_id, 'device_model': user.device_model}
     return response
+
+
+class UserAppData(db.Model):
+    '''
+    the user app data model tracks the version of the app installed @ the client
+    '''
+    user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
+    app_ver = db.Column(db.String(40), primary_key=False, nullable=False)
+
+
+def set_user_app_data(user_id, app_ver):
+    ''''''
+    try:
+        print('setting user %s vers %s', user_id, app_ver)
+        userAppData = UserAppData()
+        userAppData.user_id = user_id
+        userAppData.app_ver = app_ver
+        db.session.add(userAppData)
+        db.session.commit()
+    except Exception as e:
+        raise InvalidUsage('cant set user app data')
+

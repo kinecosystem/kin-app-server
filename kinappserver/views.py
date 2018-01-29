@@ -8,7 +8,7 @@ import requests
 
 from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, InternalError
-from kinappserver.model import create_user, update_user_token
+from kinappserver.model import create_user, update_user_token, set_user_app_data
 
 
 def limit_to_local_host():
@@ -36,6 +36,17 @@ def handle_internal_error(error):
 
 @app.route('/health', methods=['GET'])
 def get_health():
+    return jsonify(status='ok')
+
+@app.route('/user/app-launch', methods=['POST'])
+def app_launch():
+    payload = request.get_json(silent=True)
+    try:
+        user_id = payload.get('user_id', None)
+        app_ver = payload.get('app_ver', None)
+    except Exception as e:
+        raise InvalidUsage('bad-request')   
+    set_user_app_data(user_id, app_ver)
     return jsonify(status='ok')
 
 @app.route('/user/update-token', methods=['POST'])
