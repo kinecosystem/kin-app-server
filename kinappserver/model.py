@@ -93,3 +93,32 @@ def list_all_users_app_data():
         response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at}
     return response
 
+class UserQuestAnswers(db.Model):
+    '''
+    the user quest answers
+    '''
+    user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
+    quest_id = db.Column(db.String(40), nullable=False, primary_key=True)
+    answers = db.Column(db.JSON)
+    update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
+
+
+def store_answers(user_id, quest_id, answers):
+    '''store the answers provided by the user'''
+    try:
+        userQuestAnswers = UserQuestAnswers()
+        userQuestAnswers.user_id = user_id
+        userQuestAnswers.quest_id = quest_id
+        userQuestAnswers.answers = answers
+        db.session.add(userQuestAnswers)
+        db.session.commit()
+    except Exception as e:
+        raise InvalidUsage('cant set user quest answers data')
+
+def list_all_users_answers_data():
+    '''returns a dict of all the whitelisted users and their PAs (if available)'''
+    response = {}
+    user_answers = UserQuestAnswers.query.order_by(UserQuestAnswers.user_id).all()
+    for user in user_answers:
+        response[user.user_id] = {'user_id': user.user_id,  'quest_id': user.quest_id, 'answers': user.answers}
+    return response

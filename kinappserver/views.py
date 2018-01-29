@@ -8,7 +8,7 @@ import requests
 
 from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, InternalError
-from kinappserver.model import create_user, update_user_token, set_user_app_data
+from kinappserver.model import create_user, update_user_token, set_user_app_data, store_answers
 
 
 def limit_to_local_host():
@@ -61,6 +61,22 @@ def update_token():
     except Exception as e:
         raise InvalidUsage('bad-request')
     update_user_token(user_id, token)
+    return jsonify(status='ok')
+
+@app.route('/user/quest/answers',methods=['POST'])
+def quest_answers():
+    payload = request.get_json(silent=True)
+    try:
+        user_id = payload.get('user_id', None)
+        quest_id = payload.get('id', None)
+        address = payload.get('address', None)
+        answers = payload.get('answers', None)
+        if None in (user_id, quest_id, address, answers):
+            raise InvalidUsage('bad-request')
+            #TODO more input checks here
+    except Exception as e:
+        raise InvalidUsage('bad-request')
+    store_answers(user_id, quest_id, answers)
     return jsonify(status='ok')
 
 
