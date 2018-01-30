@@ -69,7 +69,9 @@ class Tester(unittest.TestCase):
                             'token':'newtoken'}),
                             headers={},
                             content_type='application/json')
+        print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
+
 
         print(model.list_all_users())
         assert(model.user_exists(userid))
