@@ -5,6 +5,7 @@ The Kin App Server API is defined here.
 from flask import request, jsonify, abort
 import redis_lock
 import requests
+from uuid import UUID
 
 from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, InternalError
@@ -73,7 +74,7 @@ def quest_answers():
         answers = payload.get('answers', None)
         if None in (user_id, quest_id, address, answers):
             raise InvalidUsage('bad-request')
-            #TODO more input checks here
+        #TODO more input checks here
     except Exception as e:
         raise InvalidUsage('bad-request')
     store_answers(user_id, quest_id, answers)
@@ -99,6 +100,7 @@ def register():
             raise InvalidUsage('bad-request')
         if os not in ('ios', 'android'):
             raise InvalidUsage('bad-request')
+        user_id = UUID(user_id) # throws exception on invalid uuid
     except Exception as e:
         raise InvalidUsage('bad-request')
     else:

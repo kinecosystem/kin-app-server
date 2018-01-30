@@ -105,5 +105,18 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
         assert(not model.user_exists(userid))
 
+        # invalid uuid. should fail
+        resp = self.app.post('/user/register',
+            data=json.dumps({
+                            'user_id': str('invaliduuid'),
+                            'os': 'ios',
+                            'device_model': 'samsung8',
+                            'device_id': '234234',
+                            'time_zone': '+05:00'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+        print(json.loads(resp.data))
+
 if __name__ == '__main__':
     unittest.main()
