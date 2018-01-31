@@ -14,9 +14,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # TODO remove this on production
-admin = Admin(app, name='KipApp', template_mode='bootstrap3')
-from kinappserver.model import User
+admin = Admin(app, name='KinApp', template_mode='bootstrap3')
+from kinappserver.model import User, UserAppData, UserQuestAnswers, Questionnaire
 admin.add_view(ModelView(User, db.session))
+admin.add_view(ModelView(UserAppData, db.session))
+admin.add_view(ModelView(UserQuestAnswers, db.session))
+admin.add_view(ModelView(Questionnaire, db.session))
 
 import kinappserver.views
 import time
