@@ -6,6 +6,7 @@ Flask-SQLAlchemy==2.3.2
 SQLAlchemy==1.1.14
 sqlalchemy_utils
 Flask-Cors==3.0.3
+Flask-Admin==1.5.0
 grequests==0.3.0
 requests==2.3.0
 simplejson==3.12.0
