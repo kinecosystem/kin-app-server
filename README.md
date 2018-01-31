@@ -49,7 +49,40 @@ go into python console and:
      prod/stage DB's as well. this needs to happen manually, unless you want to completely re-create the databases.
 
 ## External API
- TODO
+    POST /user/register
+    - register a new user_id (valid UUID RFC 4122) to the system. 
+    optionally pass a push-token.
+
+    input: a json payload with the following fields:
+                        {
+                            'user_id': <UUID, picked by the client>,
+                            'os': 'android/ios',
+                            'device_model': 'samsung8',
+                            'device_id': '<some device id like iemi>',
+                            'time_zone': '+05:00',
+                            'token':'optional push token'}),
+                        }
+    returns 200OK, 'status'='ok' on success
+
+    POST /user/app-launch
+    - update the db with the app's latest activity time and app-version
+
+    input: a json payload with the following fields:
+                        {
+                            'user_id': <UUID, picked by the client>,
+                            'app_ver':'1.0'}),
+                        }
+    returns 200OK, 'status'='ok' on success
+
+    GET /user/quest?user_id=<uuid>
+    - get this user's current questionnaire(s)
+
+    POST /user/quest/answers
+    - post answers for a questionnaire
+
+    POST /user/update-token
+    - post updates to the client's push token
+
 
 ## Contributions
 we welcome contributions in the form of pull requests. At the moment there's very little code - 
