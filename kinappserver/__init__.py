@@ -15,11 +15,11 @@ db = SQLAlchemy(app)
 
 # TODO remove this on production
 admin = Admin(app, name='KinApp', template_mode='bootstrap3')
-from kinappserver.model import User, UserAppData, UserQuestAnswers, Questionnaire
+from kinappserver.model import User, UserAppData, UserTaskResults, Task
 admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(UserAppData, db.session))
-admin.add_view(ModelView(UserQuestAnswers, db.session))
-admin.add_view(ModelView(Questionnaire, db.session))
+admin.add_view(ModelView(UserTaskResults, db.session))
+admin.add_view(ModelView(Task, db.session))
 
 import kinappserver.views
 import time

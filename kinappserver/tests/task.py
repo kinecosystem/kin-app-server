@@ -36,21 +36,22 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_questionnaire_answers(self):
-        """test storting questionnaires"""
-        quest = { 'title': 'do you know horses?',
+    def test_task_storing(self):
+        """test storting and getting tasks"""
+        task = { 'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
+                  'type': 'questionnaire',
                   'kin_reward': 2000,
                   'min_to_complete': 2,
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'author': 
                     {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
-                  'questions': [
+                  'items': [
                     {
                      'id':'435', 
                      'text':'what animal is this?',
                      'type': 'textimage',
-                         'answers':[
+                         'results':[
                                 {'id':'235',
                                  'text': 'a horse!', 
                                  'image_url': 'cdn.helllo.com/horse.jpg'},
@@ -62,15 +63,15 @@ class Tester(unittest.TestCase):
             }
 
 
-        resp = self.app.post('/quest/add',
+        resp = self.app.post('/task/add',
                             data=json.dumps({
                             'id': 0,
-                            'quest': quest}),
+                            'task': task}),
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        print(model.list_all_questionnaires_data())
+        print(model.list_all_task_data())
 
         # register a user
         userid = uuid.uuid4()
@@ -86,8 +87,8 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # get the user's questionnaire
-        resp = self.app.get('/user/quest?user_id=%s' % userid)
+        # get the user's current tasks
+        resp = self.app.get('/user/tasks?user_id=%s' % userid)
         data = json.loads(resp.data)
         print(data)
         self.assertEqual(resp.status_code, 200)

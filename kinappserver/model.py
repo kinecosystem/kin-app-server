@@ -50,7 +50,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
 
     user_app_data = UserAppData()
     user_app_data.user_id = user_id
-    user_app_data.answered_quests = []
+    user_app_data.completed_tasks = []
     db.session.add(user_app_data)
     db.session.commit()
 
@@ -78,7 +78,7 @@ class UserAppData(db.Model):
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
     app_ver = db.Column(db.String(40), primary_key=False, nullable=True)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
-    answered_quests = db.Column(db.JSON)
+    completed_tasks = db.Column(db.JSON)
 
 def update_user_app_version(user_id, app_ver):
     ''''''
@@ -96,7 +96,7 @@ def list_all_users_app_data():
     response = {}
     users = UserAppData.query.order_by(UserAppData.user_id).all()
     for user in users:
-        response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at, 'answered_quests': user.answered_quests}
+        response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at, 'completed_tasks': user.completed_tasks}
     return response
 
 def get_user_app_data(user_id):
@@ -105,96 +105,99 @@ def get_user_app_data(user_id):
         raise InvalidUsage('no such user_id')
     return user_app_data
 
-class UserQuestAnswers(db.Model):
+class UserTaskResults(db.Model):
     '''
-    the user quest answers
+    the user task results
     '''
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
-    quest_id = db.Column(db.String(40), nullable=False, primary_key=True)
-    answers = db.Column(db.JSON)
+    task_id = db.Column(db.String(40), nullable=False, primary_key=True)
+    results = db.Column(db.JSON)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
 
 
-def store_answers(user_id, quest_id, answers):
-    '''store the answers provided by the user'''
+def store_task_results(user_id, task_id, results):
+    '''store the results provided by the user'''
     try:
-        userQuestAnswers = UserQuestAnswers()
-        userQuestAnswers.user_id = user_id
-        userQuestAnswers.quest_id = quest_id
-        userQuestAnswers.answers = answers
-        db.session.add(userQuestAnswers)
+        userTaskResults = UserTaskResults()
+        userTaskResults.user_id = user_id
+        userTaskResults.task_id = task_id
+        userTaskResults.results = results
+        db.session.add(userTaskResults)
         db.session.commit()
     except Exception as e:
-        raise InvalidUsage('cant set user quest answers data')
+        print(e)
+        raise InvalidUsage('cant set user task results data')
 
-def list_all_users_answers_data():
-    '''returns a dict of all the user-quest-data'''
+def list_all_users_results_data():
+    '''returns a dict of all the user-results-data'''
     response = {}
-    user_answers = UserQuestAnswers.query.order_by(UserQuestAnswers.user_id).all()
-    for user in user_answers:
-        response[user.user_id] = {'user_id': user.user_id,  'quest_id': user.quest_id, 'answers': user.answers}
+    user_results = UserTaskResults.query.order_by(UserTaskResults.user_id).all()
+    for user in user_results:
+        response[user.user_id] = {'user_id': user.user_id,  'task_id': user.task_id, 'results': user.results}
     return response
 
-class Questionnaire(db.Model):
-    '''the Questionnaire class represent a single questionnaire'''
-    quest_id = db.Column(db.String(40), nullable=False, primary_key=True)
+class Task(db.Model):
+    '''the Task class represent a single task'''
+    task_id = db.Column(db.String(40), nullable=False, primary_key=True)
+    task_type = db.Column(db.String(40), nullable=False, primary_key=True)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
     desc = db.Column(db.String(80), nullable=False, primary_key=False)
     kin_reward = db.Column(db.Integer(), nullable=False, primary_key=False)
     min_to_complete = db.Column(db.Integer(), nullable=False, primary_key=False)
     author_data = db.Column(db.JSON)
     tags = db.Column(db.JSON)
-    questions = db.Column(db.JSON)
+    items = db.Column(db.JSON)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
 
 
     def __repr__(self):
-        return '<quest_id: %s, title: %s, desc: %s, kin_reward: %s, min_to_complete: %s>' % (self.quest_id, self.title, self.desc, self.kin_reward, self.min_to_complete)
+        return '<task_id: %s, task_type: %s, title: %s, desc: %s, kin_reward: %s, min_to_complete: %s>' % (self.task_id, self.task_type, self.title, self.desc, self.kin_reward, self.min_to_complete)
 
-def list_all_questionnaires_data():
-    '''returns a dict of all the questionnaires'''
+def list_all_task_data():
+    '''returns a dict of all the tasks'''
     response = {}
-    quests = Questionnaire.query.order_by(Questionnaire.quest_id).all()
-    for quest in quests:
-        response[quest.quest_id] = {'quest_id': quest.quest_id,  'title': quest.title}
+    tasks = Task.query.order_by(Task.task_id).all()
+    for task in tasks:
+        response[task.task_id] = {'task_id': task.task_id, 'task_type': task.task_type, 'title': task.title}
     return response
 
-def get_quest_by_id(quest_id):
-    '''return a json representing the questionnaire'''
-    quest = Questionnaire.query.filter_by(quest_id=quest_id).first()
-    if quest is None:
+def get_task_by_id(task_id):
+    '''return a json representing the task'''
+    task = Task.query.filter_by(task_id=task_id).first()
+    if task is None:
         return None
     # build the json object:
-    quest_json = {}
-    quest_json['id'] = quest_id
-    quest_json['title'] = quest.title
-    quest_json['desc'] = quest.desc
-    quest_json['kin_reward'] = quest.kin_reward
-    quest_json['min_to_complete'] = quest.min_to_complete
-    quest_json['author'] = quest.author_data
-    quest_json['tags'] = quest.tags
-    quest_json['questions'] = quest.questions
-    return quest_json
+    task_json = {}
+    task_json['id'] = task_id
+    task_json['title'] = task.title
+    task_json['desc'] = task.desc
+    task_json['kin_reward'] = task.kin_reward
+    task_json['min_to_complete'] = task.min_to_complete
+    task_json['author'] = task.author_data
+    task_json['tags'] = task.tags
+    task_json['items'] = task.items
+    return task_json
 
-def add_questionnare(quest_id, quest_json):
+def add_task(task_id, task_json):
     try:
-        quest = Questionnaire()
-        quest.quest_id = quest_id
-        quest.title = quest_json['title']
-        quest.desc = quest_json['desc']
-        quest.kin_reward = int(quest_json['kin_reward'])
-        quest.min_to_complete = int(quest_json['min_to_complete'])
-        quest.author_data = quest_json['author']
-        quest.tags = quest_json['tags']
-        quest.questions = quest_json['questions']
-        print(quest)
-        db.session.add(quest)
+        task = Task()
+        task.task_id = task_id
+        task.task_type = task_json['type']
+        task.title = task_json['title']
+        task.desc = task_json['desc']
+        task.kin_reward = int(task_json['kin_reward'])
+        task.min_to_complete = int(task_json['min_to_complete'])
+        task.author_data = task_json['author']
+        task.tags = task_json['tags']
+        task.items = task_json['items']
+        print(task)
+        db.session.add(task)
         db.session.commit()
     except Exception as e:
-        print('cant add questionnaire to db with id %s' % quest_id)
+        print('cant add task to db with id %s' % task_id)
 
-def get_quest_ids_for_user(user_id):
-    '''get the list of current questionnaire_ids for this user'''
+def get_task_ids_for_user(user_id):
+    '''get the list of current task_ids for this user'''
     user_app_data = get_user_app_data(user_id)
-    if len(user_app_data.answered_quests) == 0:
+    if len(user_app_data.completed_tasks) == 0:
         return ['0']

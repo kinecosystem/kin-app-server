@@ -9,7 +9,7 @@ from uuid import UUID
 
 from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, InternalError
-from kinappserver.model import create_user, update_user_token, update_user_app_version, store_answers, add_questionnare, get_quest_ids_for_user, get_quest_by_id
+from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id
 
 
 def limit_to_local_host():
@@ -66,43 +66,43 @@ def update_token():
     update_user_token(user_id, token)
     return jsonify(status='ok')
 
-@app.route('/user/quest/answers',methods=['POST'])
+@app.route('/user/task/results',methods=['POST'])
 def quest_answers():
     payload = request.get_json(silent=True)
     try:
         user_id = payload.get('user_id', None)
-        quest_id = payload.get('id', None)
+        task_id = payload.get('id', None)
         address = payload.get('address', None)
-        answers = payload.get('answers', None)
-        if None in (user_id, quest_id, address, answers):
+        results = payload.get('results', None)
+        if None in (user_id, task_id, address, results):
             raise InvalidUsage('bad-request')
         #TODO more input checks here
     except Exception as e:
         raise InvalidUsage('bad-request')
-    store_answers(user_id, quest_id, answers)
+    store_task_results(user_id, task_id, results)
     return jsonify(status='ok')
 
-@app.route('/quest/add',methods=['POST'])
-def add_quest():
+@app.route('/task/add',methods=['POST'])
+def add_task_api():
     limit_to_local_host()
     payload = request.get_json(silent=True)
     try:
-        quest_id = payload.get('id', None)
-        quest = payload.get('quest', None)
+        task_id = payload.get('id', None)
+        quest = payload.get('task', None)
     except Exception as e:
         raise InvalidUsage('bad-request')
-    add_questionnare(quest_id, quest)
+    add_task(task_id, quest)
     return jsonify(status='ok')
 
-@app.route('/user/quest',methods=['GET'])
+@app.route('/user/tasks',methods=['GET'])
 def get_next_quest():
     '''return the current questionnaire for the user with the given id'''
     user_id = request.args.get('user_id', None)
-    quests = []
-    for qid in get_quest_ids_for_user(user_id):
-        quests.append(get_quest_by_id(qid))
-    print(quests)
-    return jsonify(quests=quests)
+    tasks = []
+    for tid in get_task_ids_for_user(user_id):
+        tasks.append(get_task_by_id(tid))
+    print(tasks)
+    return jsonify(tasks=tasks)
 
 
 @app.route('/user/register', methods=['POST'])

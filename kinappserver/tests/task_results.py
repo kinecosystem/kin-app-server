@@ -36,8 +36,8 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_questionnaire_answers(self):
-        """test storting questionnaire answers"""
+    def test_task_results(self):
+        """test storting task reults"""
         userid = uuid.uuid4()
 
         # register an android with a token
@@ -53,19 +53,21 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # update the token
-        resp = self.app.post('/user/quest/answers',
+        # send task results
+        resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'user_id': str(userid),
                             'id':'1',
                             'address':'my_address',
-                            'answers':{'2234':'werw','5345':'345345'}
+                            'results':{'2234':'werw','5345':'345345'}
                             }),
                             headers={},
                             content_type='application/json')
+        print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
-        print(model.list_all_users_answers_data())
+
+        print(model.list_all_users_results_data())
 
 if __name__ == '__main__':
     unittest.main()
