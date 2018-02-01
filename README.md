@@ -2,9 +2,16 @@
 Note: this repo is at a very early stage of work.
 
 An internal service for the Kin App aimed at:
-    - storing user data
+    - storing user data (userid, push-token, device-id etc)
     - oferring spend and earn opportunities for clients
-    - paying clients for completing questionnaires
+    - paying clients for completing tasks
+
+## General Design
+At the moment we design for simplicity: this is a straight-forward flask webapp backed
+by a Postgress SQL server in AWS. In the future we may split the logic to frontend/backend (with a message queue) but at the moment everything is synchronous.
+
+- We intend to monitor with datadog/pagerduty
+- We intend to add events in the server (currently there are none) for BI
 
 ## Prerequisites
 Make sure you have Python 3 >=3.6.4.
@@ -74,11 +81,21 @@ go into python console and:
                         }
     returns 200OK, 'status'='ok' on success
 
-    GET /user/quest?user_id=<uuid>
-    - get this user's current questionnaire(s)
+    GET /user/task?user_id=<uuid>
+    - get this user's current task(s)
+    for example: 
 
-    POST /user/quest/answers
-    - post answers for a questionnaire
+    POST /user/task/results
+    - post answers for a task
+
+    input:
+                        {
+                            'user_id': str(userid),
+                            'id':'1',
+                            'address':'address to send reward to',
+                            'results':[{'qid':'the question id',
+                                        'aid':'the answer id'},...]
+                        }
 
     POST /user/update-token
     - post updates to the client's push token
