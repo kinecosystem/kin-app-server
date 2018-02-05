@@ -122,7 +122,7 @@ def register():
         #TODO more input check on the values
         if None in (user_id, os, device_model, time_zone, device_id): # token is optional
             raise InvalidUsage('bad-request')
-        if os not in ('ios', 'android'):
+        if os not in ('iOS', 'android'):
             raise InvalidUsage('bad-request')
         user_id = UUID(user_id) # throws exception on invalid uuid
     except Exception as e:
