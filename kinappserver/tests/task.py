@@ -88,7 +88,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # get the user's current tasks
-        resp = self.app.get('/user/tasks?user_id=%s' % userid)
+        resp = self.app.get('/user/tasks?user-id=%s' % userid)
         data = json.loads(resp.data)
         print(data)
         self.assertEqual(resp.status_code, 200)

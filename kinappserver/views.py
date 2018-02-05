@@ -97,7 +97,7 @@ def add_task_api():
 @app.route('/user/tasks',methods=['GET'])
 def get_next_quest():
     '''return the current questionnaire for the user with the given id'''
-    user_id = request.args.get('user_id', None)
+    user_id = request.args.get('user-id', None)
     tasks = []
     for tid in get_task_ids_for_user(user_id):
         tasks.append(get_task_by_id(tid))
