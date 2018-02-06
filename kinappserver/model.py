@@ -2,10 +2,12 @@
 from uuid import uuid4
 import datetime
 import redis_lock
-from sqlalchemy_utils import UUIDType
+from sqlalchemy_utils import UUIDType, ArrowType
+import arrow
 
 from kinappserver import db, config, app
 from kinappserver.utils import InvalidUsage
+
 
 class User(db.Model):
     '''
@@ -147,11 +149,12 @@ class Task(db.Model):
     author_data = db.Column(db.JSON)
     tags = db.Column(db.JSON)
     items = db.Column(db.JSON)
+    start_date = db.Column(ArrowType)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
 
 
     def __repr__(self):
-        return '<task_id: %s, task_type: %s, title: %s, desc: %s, kin_reward: %s, min_to_complete: %s>' % (self.task_id, self.task_type, self.title, self.desc, self.kin_reward, self.min_to_complete)
+        return '<task_id: %s, task_type: %s, title: %s, desc: %s, kin_reward: %s, min_to_complete: %s, start_date>' % (self.task_id, self.task_type, self.title, self.desc, self.kin_reward, self.min_to_complete, self.start_data)
 
 def list_all_task_data():
     '''returns a dict of all the tasks'''
@@ -176,6 +179,7 @@ def get_task_by_id(task_id):
     task_json['author'] = task.author_data
     task_json['tags'] = task.tags
     task_json['items'] = task.items
+    task_json['start_date'] = task.start_date.timestamp
     return task_json
 
 def add_task(task_id, task_json):
@@ -190,10 +194,13 @@ def add_task(task_id, task_json):
         task.author_data = task_json['author']
         task.tags = task_json['tags']
         task.items = task_json['items']
-        print(task)
+        print(task_json['start_date'])
+        task.start_date = arrow.get(task_json['start_date'])
+        print("the task: %s" % task.start_date)
         db.session.add(task)
         db.session.commit()
     except Exception as e:
+        print(e)
         print('cant add task to db with id %s' % task_id)
 
 def get_task_ids_for_user(user_id):

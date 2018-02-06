@@ -52,7 +52,7 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str(userid),
-                            'os': 'ios',
+                            'os': 'iOS',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
@@ -66,7 +66,7 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str(userid),
-                            'os': 'ios',
+                            'os': 'iOS',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00'}),
@@ -78,7 +78,7 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str(userid),
-                            'os': 'ios',
+                            'os': 'iOS',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00'}),
@@ -109,7 +109,7 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str('invaliduuid'),
-                            'os': 'ios',
+                            'os': 'iOS',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00'}),

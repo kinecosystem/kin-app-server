@@ -7,7 +7,6 @@ import unittest
 from unittest import mock
 import uuid
 
-
 import mockredis
 import redis
 import testing.postgresql
@@ -43,6 +42,7 @@ class Tester(unittest.TestCase):
                   'type': 'questionnaire',
                   'kin_reward': 2000,
                   'min_to_complete': 2,
+                  'start_date': '2013-05-11T21:23:58.970460+00:00',
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'author': 
                     {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
