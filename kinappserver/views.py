@@ -35,15 +35,23 @@ def handle_internal_error(error):
     response.status_code = error.status_code
     return response
 
+def extract_header(request):
+    try:
+        return request.headers.get('X-USERID')
+    except Exception as e:
+        print('cant extract user_id from header')
+        raise InvalidUsage('bad header')
+
 @app.route('/health', methods=['GET'])
 def get_health():
     return jsonify(status='ok')
 
 @app.route('/user/app-launch', methods=['POST'])
 def app_launch():
+    
     payload = request.get_json(silent=True)
     try:
-        user_id = payload.get('user_id', None)
+        user_id = extract_header(request)
         app_ver = payload.get('app_ver', None)
     except Exception as e:
         raise InvalidUsage('bad-request')   
@@ -55,8 +63,7 @@ def update_token():
     ''' update a user's token in the database '''
     payload = request.get_json(silent=True)
     try:
-        print('at update_token')
-        user_id = payload.get('user_id', None)
+        user_id = extract_header(request)
         token = payload.get('token', None)
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
@@ -70,7 +77,7 @@ def update_token():
 def quest_answers():
     payload = request.get_json(silent=True)
     try:
-        user_id = payload.get('user_id', None)
+        user_id = extract_header(request)
         task_id = payload.get('id', None)
         address = payload.get('address', None)
         results = payload.get('results', None)
@@ -113,7 +120,7 @@ def register():
     '''
     payload = request.get_json(silent=True)
     try:
-        user_id = payload.get('user_id', None)
+        user_id = extract_header(request)
         os = payload.get('os', None)
         device_model = payload.get('device_model', None)
         token = payload.get('token', None)

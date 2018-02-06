@@ -15,6 +15,7 @@ from flask import Flask
 import kinappserver
 from kinappserver import db, config, model
 
+USER_ID_HEADER = "X-USERID"
 
 class Tester(unittest.TestCase):
 
@@ -77,13 +78,12 @@ class Tester(unittest.TestCase):
         userid = uuid.uuid4()
         resp = self.app.post('/user/register',
             data=json.dumps({
-                            'user_id': str(userid),
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
                             'token':'fake_token'}),
-            headers={},
+            headers={USER_ID_HEADER: str(userid)},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 

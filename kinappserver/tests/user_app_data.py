@@ -16,6 +16,7 @@ from flask import Flask
 import kinappserver
 from kinappserver import db, config, model
 
+USER_ID_HEADER = "X-USERID"
 
 class Tester(unittest.TestCase):
 
@@ -36,38 +37,35 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_update_token(self):
+    def test_update_user_data(self):
         """test update token scenarios"""
         userid = uuid.uuid4()
 
         # call app-launch prior to registration. should fail
         resp = self.app.post('/user/app-launch',
                             data=json.dumps({
-                            'user_id': str(userid),
                             'app_ver':'1.0'}),
-                            headers={},
+                            headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 400)
 
         # register an android with a token
         resp = self.app.post('/user/register',
                             data=json.dumps({
-                            'user_id': str(userid),
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
                             'token':'fake_token'}),
-                            headers={},
+                            headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         # call app-launch
         resp = self.app.post('/user/app-launch',
                             data=json.dumps({
-                            'user_id': str(userid),
                             'app_ver':'1.0'}),
-                            headers={},
+                            headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
