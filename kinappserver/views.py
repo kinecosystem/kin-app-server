@@ -44,7 +44,7 @@ def extract_header(request):
 
 @app.route('/health', methods=['GET'])
 def get_health():
-    return jsonify(status='ok')
+    return ''
 
 @app.route('/user/app-launch', methods=['POST'])
 def app_launch():
