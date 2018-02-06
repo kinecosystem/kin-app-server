@@ -36,6 +36,30 @@ class Tester(unittest.TestCase):
         """test registration scenarios"""
 
         # android
+        userid = str(uuid.uuid4())
+        resp = self.app.post('/user/register',
+            data=json.dumps({
+                            'user_id': str(userid),
+                            'os': 'android',
+                            'device_model': 'samsung8',
+                            'device_id': '234234',
+                            'time_zone': '+05:00',
+                            'token':'fake_token'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        users = model.list_all_users()
+        assert(users[userid]['onboarded'] == False)
+        assert(users[userid]['os'] == 'android')
+        assert(users[userid]['device_model'] == 'samsung8')
+        assert(users[userid]['device_id'] == '234234')
+        assert(users[userid]['time_zone'] == '+05:00')
+        assert(users[userid]['push_token'] == 'fake_token')
+        assert(users[userid]['sid'] == 1)
+
+
+        # reuse device-id but not userid, should succeed
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str(uuid.uuid4()),

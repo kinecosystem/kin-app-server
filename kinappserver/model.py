@@ -19,12 +19,13 @@ class User(db.Model):
     device_model = db.Column(db.String(40), primary_key=False, nullable=False)
     push_token = db.Column(db.String(80), primary_key=False, nullable=True)
     time_zone = db.Column(db.String(10), primary_key=False, nullable=False)
-    device_id = db.Column(db.String(40), primary_key=False, nullable=False)
+    device_id = db.Column(db.String(40), primary_key=False, nullable=True)
     created_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now())
+    onboarded = db.Column(db.Boolean, unique=False, default=False)
 
 
     def __repr__(self):
-        return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone, self.device_id)
+        return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s, onboarded: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone, self.device_id, self.onboarded)
 
 def get_user(user_id):
     user = User.query.filter_by(user_id=user_id).first()
@@ -69,7 +70,7 @@ def list_all_users():
     response = {}
     users = User.query.order_by(User.user_id).all()
     for user in users:
-        response[user.user_id] = {'sid': user.sid, 'os': user.os_type, 'push_token': user.push_token, 'timezone': user.time_zone, 'device_id': user.device_id, 'device_model': user.device_model}
+        response[str(user.user_id)] = {'sid': user.sid, 'os': user.os_type, 'push_token': user.push_token, 'time_zone': user.time_zone, 'device_id': user.device_id, 'device_model': user.device_model, 'onboarded': user.onboarded}
     return response
 
 

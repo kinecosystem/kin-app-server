@@ -127,7 +127,7 @@ def register():
         time_zone = payload.get('time_zone', None)
         device_id = payload.get('device_id', None)
         #TODO more input check on the values
-        if None in (user_id, os, device_model, time_zone, device_id): # token is optional
+        if None in (user_id, os, device_model, time_zone): # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
         if os not in ('iOS', 'android'):
             raise InvalidUsage('bad-request')
