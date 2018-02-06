@@ -120,7 +120,7 @@ def register():
     '''
     payload = request.get_json(silent=True)
     try:
-        user_id = extract_header(request)
+        user_id = payload.get('user_id', None)
         os = payload.get('os', None)
         device_model = payload.get('device_model', None)
         token = payload.get('token', None)

@@ -43,12 +43,13 @@ class Tester(unittest.TestCase):
         # register an android with a token
         resp = self.app.post('/user/register',
                             data=json.dumps({
+                            'user_id': str(userid),
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
                             'token':'fake_token'}),
-                            headers={USER_ID_HEADER: str(userid)},
+                            headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
