@@ -8,8 +8,8 @@ import requests
 from uuid import UUID
 
 from kinappserver import app, config
-from kinappserver.utils import InvalidUsage, InternalError
-from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id
+from kinappserver.utils import InvalidUsage, InternalError, create_account
+from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, has_account
 
 
 def limit_to_local_host():
@@ -111,6 +111,38 @@ def get_next_quest():
     print(tasks)
     return jsonify(tasks=tasks)
 
+@app.route('/user/onboard', methods=['POST'])
+def onboard_user():
+    # input sanity
+    try:
+        user_id = extract_header(request)
+        public_address = request.get_json(silent=True).get('public_address', None)
+        if None in (public_address, user_id):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        raise InvalidUsage('bad-request')
+
+    # ensure the user exists but does not have an account:
+    account_already_created = has_account(user_id)
+    if has_account == True:
+        raise InvalidUsage('user already has an account')
+    elif has_account is None:
+        raise InvalidUsage('no such user exists')
+    else:
+        # create an account, provided none is already being created
+        lock = redis_lock.Lock(app.redis, "address:" + public_address)
+        if lock.acquire(blocking=False):
+            try:
+                create_account(public_address)
+            except:
+                raise InternalError('unable to create account')
+            finally:
+                lock.release()
+        else:
+            raise InvalidUsage('already creating account for user_id: %s and address: %s' % (user_id, public_address))
+
+        return jsonify(status='ok')
+
 
 @app.route('/user/register', methods=['POST'])
 def register():
@@ -126,8 +158,9 @@ def register():
         token = payload.get('token', None)
         time_zone = payload.get('time_zone', None)
         device_id = payload.get('device_id', None)
+        app_ver = payload.get('app_ver', None)
         #TODO more input check on the values
-        if None in (user_id, os, device_model, time_zone): # token is optional, device-id is required but may be None
+        if None in (user_id, os, device_model, time_zone, app_ver): # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
         if os not in ('iOS', 'android'):
             raise InvalidUsage('bad-request')
@@ -136,7 +169,7 @@ def register():
         raise InvalidUsage('bad-request')
     else:
         try:
-            create_user(user_id, os, device_model, token, time_zone, device_id)
+            create_user(user_id, os, device_model, token, time_zone, device_id, app_ver)
         except InvalidUsage as e:
             raise InvalidUsage('duplicate-userid')
         else:

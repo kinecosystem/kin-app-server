@@ -6,6 +6,8 @@ import boto3
 #from Crypto import Random
 #from Crypto.Cipher import AES
 
+from kinappserver import config
+
 class InvalidUsage(Exception):
     status_code = 400
 
@@ -35,6 +37,21 @@ class InternalError(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
+
+def create_account(public_address):
+    '''creates an account in the stellar network for the given public address.
+       This function calls the onboarding service which may take a few seconds
+       to return. Return True on success, False otherwise.
+    '''
+    try:
+        url = config.ONBOARDING_SERVICE_BASE_URL + '/create_account'
+        request.post(url,json={'public_address': public_address}, timeout=config.STELLAR_TIMEOUT_SEC).raise_for_status()
+    except Exception as e:
+        print('failed to create account (%s). exception: %s', public_address, e)
+        return False
+    else:
+        return True
+
 '''
 def get_private_key(config):
     # return the private key or None. If a private key was given in the config, return that.

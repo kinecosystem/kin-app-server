@@ -3,6 +3,8 @@ from flask_cors import CORS
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
+import redis
+
 app = Flask(__name__)
 CORS(app)
 
@@ -31,9 +33,14 @@ app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT
 
 # sanity for configuration
 if not config.DEBUG:
+	# redis
+	app.redis.setex('temp-key','temp-value',time=1)
+	
 	# onboarding service:
 	if not config.ONBOARDING_SERVICE_BASE_URL:
 		raise Exception('no ONBOARDING_SERVICE_BASE_URL configured. aborting')
 	response = requests.get(config.ONBOARDING_SERVICE_BASE_URL + '/status')
 	if (json.loads(response.data)['status']) != 'healthy':
 		raise Exception('onboarding service is not healthy. aborting')
+
+

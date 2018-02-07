@@ -37,7 +37,14 @@ def user_exists(user_id):
     user = User.query.filter_by(user_id=user_id).first()
     return True if user else False
 
-def create_user(user_id, os_type, device_model, push_token, time_zone, device_id):
+def has_account(user_id):
+    '''returns wheather the user has an account or None if there's no such user.'''
+    try:
+        return User.query.filter_by(user_id=user_id).first().onboarded
+    except Exception as e:
+        return None
+
+def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver):
     '''create a new user and commit to the database. should only fail if the user_id is duplicate'''
     if user_exists(user_id):
             raise InvalidUsage('refusing to create user. user_id %s already exists' % user_id)
@@ -54,13 +61,13 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user_app_data = UserAppData()
     user_app_data.user_id = user_id
     user_app_data.completed_tasks = []
+    user_app_data.app_ver = app_ver
     db.session.add(user_app_data)
     db.session.commit()
 
 def update_user_token(user_id, push_token):
     '''updates the user's token with a new one'''
     user = get_user(user_id)
-    print('user:%s', user)
     user.push_token = push_token
     db.session.add(user)
     db.session.commit()
@@ -79,7 +86,7 @@ class UserAppData(db.Model):
     the user app data model tracks the version of the app installed @ the client
     '''
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
-    app_ver = db.Column(db.String(40), primary_key=False, nullable=True)
+    app_ver = db.Column(db.String(40), primary_key=False, nullable=False)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
     completed_tasks = db.Column(db.JSON)
 
