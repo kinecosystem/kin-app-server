@@ -48,7 +48,8 @@ class Tester(unittest.TestCase):
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
-                            'token':'fake_token'}),
+                            'token':'fake_token',
+                            'app_ver': '1.0'}),
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
