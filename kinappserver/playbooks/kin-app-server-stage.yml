@@ -16,3 +16,4 @@
    provider_endpoint: 'http://159.89.9.81:8545'
    redis_endpoint: 'kinawardservicesync.pmvjly.0001.use1.cache.amazonaws.com'
    redis_port: 6379
+   onboarding_service_base_url: 'ip-10-0-1-54.ec2.internal'
