@@ -119,7 +119,7 @@ class UserTaskResults(db.Model):
     '''
     the user task results
     '''
-    user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
+    user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
     task_id = db.Column(db.String(40), nullable=False, primary_key=True)
     results = db.Column(db.JSON)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
