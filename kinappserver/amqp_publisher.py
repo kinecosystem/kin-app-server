@@ -22,7 +22,6 @@ from datetime import datetime
 from amqpstorm import Connection
 
 CHANNEL_POOL_SIZE = 10
-DEFAULT_GCM_TTL = 15
 WAIT_BLOCKED = 1
 _channels_manager = None
 
@@ -60,7 +59,7 @@ def send_apns(routing_key, payload, tokens):
     internal_send_apns(routing_key, payload, tokens, False)
 
 
-def send_gcm(routing_key, payload, tokens, dry_run, ttl=DEFAULT_GCM_TTL):
+def send_gcm(routing_key, payload, tokens, dry_run, ttl):
     """Send a gcm message to the given tokens with the given payload, ttl"""
     global ESHU_CONFIG
     for token in tokens:
@@ -217,15 +216,15 @@ class ChannelsManager():
 
 if __name__ == '__main__':
     eshu ={
-        'USER': 'eshu',
-        'PASSWORD': 'ayRogmenbagmijIcDoghFefs4quaquoc',
-        'ADDRESS': 'rabbitmq-eshu.rounds.com',
-        'VIRTUAL_HOST': 'eshu',
+        'USER': 'admin',
+        'PASSWORD': 'admin',
+        'ADDRESS': '10.0.1.20',
+        'VIRTUAL_HOST': 'kinapp',
         'QUEUE_NAME': 'eshu-queue',
         'EXCHANGE_NAME': 'eshu-exchange',
         'RELIABLE': True,
         'HEARTBEAT': 30,
-        'APP_ID': 'rounds'}
+        'APP_ID': 'kinapp'}
 
     gcm_payload = {"rguid": "task:1:1:engagement",
                "rounds_notification": {"notification_view_data": {
@@ -242,5 +241,5 @@ if __name__ == '__main__':
                        "visibility": "PUBLIC"}}}}
 
     init_config(eshu['ADDRESS'], eshu['QUEUE_NAME'], eshu['EXCHANGE_NAME'], eshu['VIRTUAL_HOST'], eshu['USER'], eshu['PASSWORD'], eshu['HEARTBEAT'], eshu['APP_ID'])
-    for i in range(0,9):
+    for i in range(0,1):
         send_gcm('eshu-key', gcm_payload, ['eRl3aOnvwt0:APA91bGF7CQOZB9lqNJnei0syRlpJrlOekDoS30F8bEooWWLsUkdPRUq6prZatgSfXDPXVLqaGeXNqApZgN4XKzLtXhQsq9EFSVNPoRH27Agux-S5D2EkIDNPa7-7EDGjLKymuPOT0O4'], False, ttl=DEFAULT_GCM_TTL)

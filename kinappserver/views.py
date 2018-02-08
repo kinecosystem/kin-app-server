@@ -6,9 +6,10 @@ from flask import request, jsonify, abort
 import redis_lock
 import requests
 from uuid import UUID
+import json
 
 from kinappserver import app, config
-from kinappserver.utils import InvalidUsage, InternalError, create_account
+from kinappserver.utils import InvalidUsage, InternalError, create_account, send_gcm
 from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded
 
 
@@ -45,6 +46,22 @@ def extract_header(request):
 @app.route('/health', methods=['GET'])
 def get_health():
     return ''
+
+
+@app.route('/send-gcm', methods=['POST'])
+def send_gcm_push():
+    payload = request.get_json(silent=True)
+    try:
+        push_payload = payload.get('push_payload', None)
+        push_token = payload.get('push_token', None)
+        if None in (push_token, push_payload):
+           raise InvalidUsage('bad-request') 
+    except Exception as e:
+        print("exception: %s" % e)
+        raise InvalidUsage('bad-request') 
+    send_gcm(push_token, push_payload)
+    return jsonify(status='ok')
+
 
 @app.route('/user/app-launch', methods=['POST'])
 def app_launch():

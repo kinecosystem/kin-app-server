@@ -1,7 +1,7 @@
 import base64
 
 from flask import jsonify
-from kinappserver import db
+from kinappserver import db, amqp_publisher
 import boto3
 import requests
 #from Crypto import Random
@@ -38,6 +38,11 @@ class InternalError(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
+
+def send_gcm(token, payload):
+    payload_dict = {}
+    payload_dict['message'] = payload
+    amqp_publisher.send_gcm("eshu-key", payload_dict, [token], False, 60)
 
 def create_account(public_address):
     '''creates an account in the stellar network for the given public address.
