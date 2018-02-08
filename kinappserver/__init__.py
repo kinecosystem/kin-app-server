@@ -32,8 +32,8 @@ from threading import Lock
 import requests
 
 app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0)
-amqp_publisher.init_config("10.0.1.20", "eshu-quque", "eshu-exchange", "kinapp", "admin", "admin", 60, "kinapp")
-amqp_publisher.send_gcm("eshu-key", {"message":"hello"}, ["my_token"], False, ttl=60)
+amqp_publisher.init_config(config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE, config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD, config.ESHU_HEARTBEAT, config.ESHU_APPID)
+#amqp_publisher.send_gcm("eshu-key", {"message":"hello"}, ["my_token"], False, ttl=60)
 
 app.amqp_publisher = amqp_publisher
 

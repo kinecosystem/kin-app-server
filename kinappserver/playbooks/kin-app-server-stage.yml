@@ -17,3 +17,10 @@
    redis_endpoint: 'kin-app-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
    redis_port: 6379
    onboarding_service_base_url: 'ip-10-0-1-54.ec2.internal:8080'
+   eshu_username: admin
+   eshu_password: admin
+   eshu_exchange: eshu-exchange
+   eshu_queue: eshu-queue
+   eshu_virtual_host: kinapp
+   eshu_appid: kinapp
+   eshu_rabbit_address: 10.0.1.20
