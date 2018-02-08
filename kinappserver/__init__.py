@@ -34,7 +34,7 @@ app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT
 # sanity for configuration
 if not config.DEBUG:
 	# redis
-	app.redis.setex('temp-key','temp-value',time=1)
+	app.redis.setex('temp-key', 1, 'temp-value')
 	
 	# onboarding service:
 	if not config.ONBOARDING_SERVICE_BASE_URL:
