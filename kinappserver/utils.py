@@ -3,6 +3,7 @@ import base64
 from flask import jsonify
 from kinappserver import db
 import boto3
+import requests
 #from Crypto import Random
 #from Crypto.Cipher import AES
 
@@ -43,9 +44,13 @@ def create_account(public_address):
        This function calls the onboarding service which may take a few seconds
        to return. Return True on success, False otherwise.
     '''
+    #TODO find a way to mock this in tests
+    if config.DEBUG:
+        return True
+
     try:
-        url = config.ONBOARDING_SERVICE_BASE_URL + '/create_account'
-        request.post(url,json={'public_address': public_address}, timeout=config.STELLAR_TIMEOUT_SEC).raise_for_status()
+        url = 'http://' + config.ONBOARDING_SERVICE_BASE_URL + '/create_account'
+        requests.post(url,json={'public_address': public_address}, timeout=config.STELLAR_TIMEOUT_SEC).raise_for_status()
     except Exception as e:
         print('failed to create account (%s). exception: %s', public_address, e)
         return False

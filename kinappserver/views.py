@@ -9,7 +9,7 @@ from uuid import UUID
 
 from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, InternalError, create_account
-from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, has_account
+from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded
 
 
 def limit_to_local_host():
@@ -123,19 +123,20 @@ def onboard_user():
         raise InvalidUsage('bad-request')
 
     # ensure the user exists but does not have an account:
-    account_already_created = has_account(user_id)
-    if has_account == True:
+    onboarded = is_onboarded(user_id)
+    if onboarded == True:
         raise InvalidUsage('user already has an account')
-    elif has_account is None:
+    elif onboarded is None:
         raise InvalidUsage('no such user exists')
     else:
         # create an account, provided none is already being created
         lock = redis_lock.Lock(app.redis, "address:" + public_address)
         if lock.acquire(blocking=False):
             try:
-                create_account(public_address)
-            except:
-                raise InternalError('unable to create account')
+                if create_account(public_address):
+                    set_onboarded(user_id, True)
+                else:
+                    raise InternalError('unable to create account')
             finally:
                 lock.release()
         else:

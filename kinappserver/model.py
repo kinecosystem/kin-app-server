@@ -37,12 +37,19 @@ def user_exists(user_id):
     user = User.query.filter_by(user_id=user_id).first()
     return True if user else False
 
-def has_account(user_id):
+def is_onboarded(user_id):
     '''returns wheather the user has an account or None if there's no such user.'''
     try:
         return User.query.filter_by(user_id=user_id).first().onboarded
     except Exception as e:
         return None
+
+def set_onboarded(user_id, onboarded):
+    '''set the onbarded field of the user in the db'''
+    user = get_user(user_id)
+    user.onboarded = onboarded
+    db.session.add(user)
+    db.session.commit()
 
 def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver):
     '''create a new user and commit to the database. should only fail if the user_id is duplicate'''
