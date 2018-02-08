@@ -15,3 +15,4 @@ redis==2.10.6
 boto3==1.4.4
 arrow==0.12.1
 stellar-base==0.1.7.3
+mock==2.0.0
