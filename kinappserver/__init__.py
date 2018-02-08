@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
+from kinappserver import amqp_publisher
 import redis
 
 app = Flask(__name__)
@@ -31,6 +32,10 @@ from threading import Lock
 import requests
 
 app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0)
+amqp_publisher.init_config("10.0.1.20", "eshu-quque", "eshu-exchange", "kinapp", "admin", "admin", 60, "kinapp")
+amqp_publisher.send_gcm("eshu-key", {"message":"hello"}, ["my_token"], False, ttl=60)
+
+app.amqp_publisher = amqp_publisher
 
 # sanity for configuration
 if not config.DEBUG:
