@@ -28,6 +28,7 @@ import time
 import redis_lock, redis
 import sys
 from threading import Lock
+import requests
 
 app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0)
 
