@@ -3,14 +3,22 @@ from flask_cors import CORS
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
-from kinappserver import amqp_publisher
 import redis
+from kin import sdk as stellar_sdk
+
+from kinappserver import amqp_publisher
+
 
 app = Flask(__name__)
 CORS(app)
 
 from flask_sqlalchemy import SQLAlchemy
 from kinappserver import config
+
+app.kin_sdk = stellar_sdk.SDK(base_seed=config.STELLAR_BASE_SEED,
+                              horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
+                              network=config.STELLAR_NETWORK,
+                              channel_seeds=config.STELLAR_CHANNEL_SEEDS)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

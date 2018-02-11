@@ -1,0 +1,21 @@
+- name: Clone the kin-app-service repo
+  git:
+    repo=https://github.com/kinfoundation/kin-app-server.git
+    dest=/opt/kin-app-server
+    accept_hostkey=true
+    force=yes
+
+- name: Template the config file
+  template:
+    src: templates/kinappserver/config.py.jinja2
+    dest: /opt/kin-app-server/kinappserver/config.py
+    
+- name: install the kin-app-server from the local copy. force upgrade to take any changes.
+  pip: 
+    name: /opt/kin-app-server
+    state: latest
+
+- name: restart supervisor
+  supervisorctl:
+    name: kinappserver
+    state: restarted

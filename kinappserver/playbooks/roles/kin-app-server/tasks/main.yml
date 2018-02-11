@@ -23,7 +23,23 @@
   pip:
     name: uwsgi
 
-- name: Clone the kin-award-service repo
+- name: Clone the kin-sdk-stellar-python repo
+  git:
+    repo=https://github.com/kinfoundation/kin-sdk-stellar-python.git
+    dest=/opt/kin-sdk-stellar-python
+    accept_hostkey=true
+    force=yes
+
+- name: pip install reqs for the kin-sdk-stellar-python
+  pip:
+    requirements: /opt/kin-sdk-stellar-python/requirements.txt 
+
+- name: install the kin-sdk-stellar-python from the local copy. force upgrade to take any changes.
+  pip: 
+    name: /opt/kin-sdk-stellar-python
+    state: latest
+
+- name: Clone the kin-app-server repo
   git:
     repo=https://github.com/kinfoundation/kin-app-server.git
     dest=/opt/kin-app-server

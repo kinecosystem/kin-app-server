@@ -65,7 +65,7 @@ def send_gcm(routing_key, payload, tokens, dry_run, ttl):
     for token in tokens:
         message = dumps({'app_id': ESHU_CONFIG['APP_ID'],
                          'data': {
-                             'gcm': {'registration_ids': [token],
+                             'gcm': {'to': token,
                                     'dry_run': dry_run,
                                     'time_to_live': ttl,
                                     'data': payload

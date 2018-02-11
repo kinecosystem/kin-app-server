@@ -2,9 +2,7 @@
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
   roles:
-    - franklinkim.environment
-    - Datadog.datadog
-    - kin-app-server
+    - kin-app-server-bin
 
   vars:
    environment_config:
