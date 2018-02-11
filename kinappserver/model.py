@@ -17,7 +17,7 @@ class User(db.Model):
     user_id = db.Column(UUIDType(binary=False), primary_key=True, nullable=False)
     os_type = db.Column(db.String(10), primary_key=False, nullable=False)
     device_model = db.Column(db.String(40), primary_key=False, nullable=False)
-    push_token = db.Column(db.String(150), primary_key=False, nullable=True)
+    push_token = db.Column(db.String(200), primary_key=False, nullable=True)
     time_zone = db.Column(db.String(10), primary_key=False, nullable=False)
     device_id = db.Column(db.String(40), primary_key=False, nullable=True)
     created_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now())
