@@ -9,7 +9,8 @@ from uuid import UUID
 import json
 
 from kinappserver import app, config
-from kinappserver.utils import InvalidUsage, InternalError, create_account, send_gcm
+from kinappserver.stellar import create_account
+from kinappserver.utils import InvalidUsage, InternalError, send_gcm
 from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded
 
 
@@ -150,10 +151,13 @@ def onboard_user():
         lock = redis_lock.Lock(app.redis, "address:" + public_address)
         if lock.acquire(blocking=False):
             try:
-                if create_account(public_address):
-                    set_onboarded(user_id, True)
-                else:
-                    raise InternalError('unable to create account')
+                tx_id = create_account(public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE)
+                set_onboarded(user_id, True)
+            except Exception as e:
+                print('exception trying to create account:%s' % e)
+                raise InternalError('unable to create account')
+            else:
+                print('created account %s with txid %s' % (public_address, tx_id))
             finally:
                 lock.release()
         else:

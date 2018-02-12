@@ -48,11 +48,3 @@ if not config.DEBUG:
 	# redis
 	app.redis.setex('temp-key', 1, 'temp-value')
 	
-	# onboarding service:
-	if not config.ONBOARDING_SERVICE_BASE_URL:
-		raise Exception('no ONBOARDING_SERVICE_BASE_URL configured. aborting')
-	response = requests.get(config.ONBOARDING_SERVICE_BASE_URL + '/status')
-	if (json.loads(response.data)['status']) != 'healthy':
-		raise Exception('onboarding service is not healthy. aborting')
-
-

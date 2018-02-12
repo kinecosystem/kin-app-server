@@ -44,24 +44,6 @@ def send_gcm(token, payload):
     payload_dict['message'] = payload
     amqp_publisher.send_gcm("eshu-key", payload_dict, [token], False, 60)
 
-def create_account(public_address):
-    '''creates an account in the stellar network for the given public address.
-       This function calls the onboarding service which may take a few seconds
-       to return. Return True on success, False otherwise.
-    '''
-    #TODO find a way to mock this in tests
-    if config.DEBUG:
-        return True
-
-    try:
-        url = 'http://' + config.ONBOARDING_SERVICE_BASE_URL + '/create_account'
-        requests.post(url,json={'public_address': public_address}, timeout=config.STELLAR_TIMEOUT_SEC).raise_for_status()
-    except Exception as e:
-        print('failed to create account (%s). exception: %s', public_address, e)
-        return False
-    else:
-        return True
-
 '''
 def get_private_key(config):
     # return the private key or None. If a private key was given in the config, return that.

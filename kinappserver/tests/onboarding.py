@@ -18,6 +18,7 @@ import kinappserver
 from kinappserver import db, config, model, utils
 
 from stellar_base.keypair import Keypair
+from stellar_base.address import Address
 
 USER_ID_HEADER = "X-USERID"
 
@@ -69,6 +70,13 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
+
+
+        
+        address = Address(address=kp.address().decode())
+        address.get() # get the updated information
+        for balance in address.balances:
+            print('balance:%s' % balance)
 
 if __name__ == '__main__':
     unittest.main()
