@@ -1,0 +1,29 @@
+- name: Create /opt/eshu
+  file: path=/opt/eshu state=directory
+
+- name: Copy supervisor eshu-backend configuration
+  copy:
+    src=supervisor/conf.d/eshu-backend.conf
+    dest=/etc/supervisor/conf.d/eshu-backend.conf
+  notify:
+    - Reread supervisor
+    - Update supervisor
+
+#- name: Copy certificates
+#  copy:
+#    src=cert/{{ item.providers.all.apns.certFile }}
+#    dest=/opt/eshu
+#  with_items: "{{ apps }}"
+#  when: item.providers.all.apns is defined
+
+- name: Template eshu-backend configuration
+  template:
+    src=config/config.yml.j2
+    dest=/opt/eshu/config.yml
+
+- name: Download eshu-backend
+  get_url:
+    url=https://s3.amazonaws.com/kinapp-deployment-binaries/eshu/eshu-backend-{{git_rev}}
+    dest=/opt/eshu/eshu-backend
+    force=yes
+    mode=0770

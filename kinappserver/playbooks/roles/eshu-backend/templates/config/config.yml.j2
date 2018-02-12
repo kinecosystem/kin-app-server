@@ -1,0 +1,22 @@
+---
+logLevel: {{ log_level }}
+
+metrics:
+  endpoint: localhost:8125
+  captureInterval: 10s
+  tags:
+    - "service:eshu-backend"
+
+events:
+  backoff:
+    factor: 2
+    jitter: true
+    min: 100ms
+    max: 10s
+  harpy:
+    endpoint: http://events.rounds.video/v2/backend
+    interval: 5s
+    batchSize: 1000
+
+apps:
+    {{ apps | to_nice_yaml | indent(4, false) }}
