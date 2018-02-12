@@ -45,7 +45,8 @@ class Tester(unittest.TestCase):
     def test_onboard(self):
         """test onboarding scenarios"""
 
-        # android
+        #TODO ensure there's enough money in the test account to begin with
+
         userid = str(uuid.uuid4())
         resp = self.app.post('/user/register',
             data=json.dumps({
@@ -71,12 +72,22 @@ class Tester(unittest.TestCase):
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
-
-        
+        # ensure that the account was created
         address = Address(address=kp.address().decode())
         address.get() # get the updated information
-        for balance in address.balances:
-            print('balance:%s' % balance)
+        assert(address.balances[0]['asset_type'] == 'native' and 
+            int(float(address.balances[0]['balance'])) == 2) #TODO read 2 from config
+
+        # try onboarding again with the same user - should fail
+        resp = self.app.post('/user/onboard',
+            data=json.dumps({
+                            'public_address': kp.address().decode()}),
+            headers={USER_ID_HEADER: str(userid)},
+            content_type='application/json')
+        print(json.loads(resp.data))
+        self.assertEqual(resp.status_code, 400)
+
+
 
 if __name__ == '__main__':
     unittest.main()
