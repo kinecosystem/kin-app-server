@@ -217,12 +217,17 @@ def add_task(task_id, task_json):
     except Exception as e:
         print(e)
         print('cant add task to db with id %s' % task_id)
+        return False
+    else:
+        return True
 
 def get_task_ids_for_user(user_id):
     '''get the list of current task_ids for this user'''
     user_app_data = get_user_app_data(user_id)
     if len(user_app_data.completed_tasks) == 0:
         return ['0']
+    else:
+        return [len(user_app_data.completed_tasks)]
 
 def get_reward_for_task(task_id):
     '''return the amount of kin reward associated with this task'''

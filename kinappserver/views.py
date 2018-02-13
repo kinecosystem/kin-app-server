@@ -161,15 +161,18 @@ def add_task_api():
     payload = request.get_json(silent=True)
     try:
         task_id = payload.get('id', None)
-        quest = payload.get('task', None)
+        task = payload.get('task', None)
     except Exception as e:
+        print('exception: %s' % e)
         raise InvalidUsage('bad-request')
-    add_task(task_id, quest)
-    return jsonify(status='ok')
+    if add_task(task_id, task):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to add task')
 
 @app.route('/user/tasks',methods=['GET'])
-def get_next_quest():
-    '''return the current questionnaire for the user with the given id'''
+def get_next_task():
+    '''return the current task for the user with the given id'''
     user_id = request.args.get('user-id', None)
     tasks = []
     for tid in get_task_ids_for_user(user_id):
