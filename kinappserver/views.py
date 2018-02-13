@@ -11,7 +11,7 @@ import json
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded
+from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, reward_address_for_task
 
 
 def limit_to_local_host():
@@ -132,7 +132,8 @@ def quest_answers():
     store_task_results(user_id, task_id, results)
     try:
         tx_hash, amount = reward_address_for_task(address, task_id) # blocks until payment is complete
-    except:
+    except Exception as e:
+        print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
     else:
         create_tx(tx_hash, user_id, amount, 'task_id: %s' % task_id)

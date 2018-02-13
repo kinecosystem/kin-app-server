@@ -271,7 +271,7 @@ def reward_address_for_task(public_address, task_id):
         raise InternalError('cant find reward for taskid %s' % task_id)
     try:
         tx_hash = send_kin(address, amount, 'kin-app-taskid:%s' % task_id)
-    except:
-        print('caught exception sending %s kins to %s' % (amount, public_address))
+    except Exception as e:
+        print('caught exception sending %s kins to %s:' % (amount, public_address, e))
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
     return tx_hash, amount

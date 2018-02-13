@@ -38,6 +38,43 @@ class Tester(unittest.TestCase):
 
     def test_task_results(self):
         """test storting task reults"""
+
+        # add a task
+        task = { 'title': 'do you know horses?',
+          'desc': 'horses_4_dummies',
+          'type': 'questionnaire',
+          'kin_reward': 1,
+          'min_to_complete': 2,
+          'start_date': '2013-05-11T21:23:58.970460+00:00',
+          'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
+          'author': 
+            {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
+          'items': [
+            {
+             'id':'435', 
+             'text':'what animal is this?',
+             'type': 'textimage',
+                 'results':[
+                        {'id':'235',
+                         'text': 'a horse!', 
+                         'image_url': 'cdn.helllo.com/horse.jpg'},
+                            {'id':'2465436',
+                         'text': 'a cat!', 
+                         'image_url': 'cdn.helllo.com/kitty.jpg'},
+                         ],
+            }]
+        }
+
+
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'id': 1,
+                            'task': task}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)    
+
+
         userid = uuid.uuid4()
 
         # register an android with a token
@@ -63,7 +100,7 @@ class Tester(unittest.TestCase):
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
-        print(json.loads(resp.data))
+        print('task_results: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
 
