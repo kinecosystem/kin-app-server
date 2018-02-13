@@ -91,11 +91,13 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        #model.send_push_tx_completed(str(userid), "fake_tx_hash", 0, 1)
+
         # send task results
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id':'1',
-                            'address':'my_address',
+                            'address':'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
                             'results':{'2234':'werw','5345':'345345'}
                             }),
                             headers={USER_ID_HEADER: str(userid)},

@@ -9,6 +9,8 @@ import requests
 
 from kinappserver import config
 
+GCM_TTL = 60*60
+
 class InvalidUsage(Exception):
     status_code = 400
 
@@ -42,7 +44,12 @@ class InternalError(Exception):
 def send_gcm(token, payload):
     payload_dict = {}
     payload_dict['message'] = payload
-    amqp_publisher.send_gcm("eshu-key", payload_dict, [token], False, 60)
+    amqp_publisher.send_gcm("eshu-key", payload_dict, [token], False, GCM_TTL)
+
+
+def send_apns(token, payload):
+    #TODO 
+    pass
 
 '''
 def get_private_key(config):

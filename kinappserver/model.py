@@ -5,8 +5,8 @@ import redis_lock
 from sqlalchemy_utils import UUIDType, ArrowType
 import arrow
 
-from kinappserver import db, config, app
-from kinappserver.utils import InvalidUsage, InternalError
+from kinappserver import db, config, app, stellar
+from kinappserver.utils import InvalidUsage, InternalError, send_apns, send_gcm
 
 
 class User(db.Model):
@@ -270,8 +270,31 @@ def reward_address_for_task(public_address, task_id):
     if not amount:
         raise InternalError('cant find reward for taskid %s' % task_id)
     try:
-        tx_hash = send_kin(address, amount, 'kin-app-taskid:%s' % task_id)
+        tx_hash = stellar.send_kin(public_address, amount, 'kin-app-taskid:%s' % task_id)
     except Exception as e:
-        print('caught exception sending %s kins to %s:' % (amount, public_address, e))
+        print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
     return tx_hash, amount
+
+def get_user_push_data(user_id):
+    '''returns the os_type and the token for the given user_id'''
+    response = {}
+    user = User.query.filter_by(user_id=user_id).first()
+    if not user:
+        return None, None
+    else:
+        return user.os_type, user.push_token
+
+def send_push_tx_completed(user_id, tx_hash, amount, task_id):
+    '''send a message indicating that the tx has been successfully completed'''
+    os_type, token = get_user_push_data(user_id)
+    if token is None:
+        print('cant push to user %s: no push token' % user_id)
+        return False
+    if os_type == 'iOS': #TODO move to consts
+        payload = {} #TODO finalize this
+        send_apns(token, payload)
+    else:
+        payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
+        send_gcm(token, payload)
+    return True

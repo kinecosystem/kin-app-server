@@ -11,7 +11,7 @@ import json
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, reward_address_for_task
+from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, reward_address_for_task, send_push_tx_completed
 
 
 def limit_to_local_host():
@@ -87,6 +87,21 @@ def send_gcm_push():
     send_gcm(push_token, push_payload)
     return jsonify(status='ok')
 
+@app.route('/send-tx-completed', methods=['POST'])
+def send_gcm_push_tx_completed():
+    '''temp endpoint for testing the tx-completed push'''
+    payload = request.get_json(silent=True)
+    try:
+        user_id = extract_header(request)
+        push_token = payload.get('push_token', None)
+        if None in (push_token, push_payload):
+           raise InvalidUsage('bad-request') 
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request') 
+    send_push_tx_completed(user_id, 'tx_hash', 'amount', 'task_id')
+    return jsonify(status='ok')
+
 
 @app.route('/user/app-launch', methods=['POST'])
 def app_launch():
@@ -136,6 +151,7 @@ def quest_answers():
         print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
     else:
+        send_push_tx_completed(user_id, tx_hash, amount, task_id)
         create_tx(tx_hash, user_id, amount, 'task_id: %s' % task_id)
     return jsonify(status='ok')
 
