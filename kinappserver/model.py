@@ -6,7 +6,7 @@ from sqlalchemy_utils import UUIDType, ArrowType
 import arrow
 
 from kinappserver import db, config, app
-from kinappserver.utils import InvalidUsage
+from kinappserver.utils import InvalidUsage, InternalError
 
 
 class User(db.Model):
@@ -223,3 +223,55 @@ def get_task_ids_for_user(user_id):
     user_app_data = get_user_app_data(user_id)
     if len(user_app_data.completed_tasks) == 0:
         return ['0']
+
+def get_reward_for_task(task_id):
+    '''return the amount of kin reward associated with this task'''
+    task = Task.query.filter_by(task_id=task_id).first()
+    if not task:
+        raise InternalError('no such task_id')
+    return task.kin_reward
+
+class Transaction(db.Model):
+    '''
+    kin transactions
+    '''
+    user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
+    tx_hash = db.Column(db.String(40), nullable=False, primary_key=True)
+    amount = db.Column(db.Integer(), nullable=False, primary_key=False)
+    update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
+
+    def __repr__(self):
+        return '<tx_hash: %s, user_id: %s, amount: %s, desc: %s, update_at: %s>' % (self.tx_hash, self.user_id, self.amount, self.update_at)
+
+def list_all_transactions():
+    '''returns a dict of all the tasks'''
+    response = {}
+    txs = Transaction.query.order_by(Transaction.update_at).all()
+    for tx in txs:
+        response[tx.tx_hash] = {'tx_hash': tx.tx_hash, 'user_id': tx.user_id, 'amount': tx.amount, 'update_at': tx.update_at}
+    return response
+
+def create_tx(tx_hash, user_id, amount):
+    try:
+        tx = Transaction()
+        tx.tx_hash = tx_hash
+        tx.user_id = user_id
+        tx.amount = amount
+        db.session.add(tx)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        print('cant add tx to db with id %s' % tx_hash)
+
+def reward_address_for_task(public_address, task_id):
+    '''transfer the correct amount of kins for the task to the given address'''
+    # get reward amount
+    amount = get_reward_for_task(task_id)
+    if not amount:
+        raise InternalError('cant find reward for taskid %s' % task_id)
+    try:
+        tx_hash = send_kin(address, amount, 'kin-app-taskid:%s' % task_id)
+    except:
+        print('caught exception sending %s kins to %s' % (amount, public_address))
+        raise InternalError('failed sending %s kins to %s' % (amount, public_address))
+    return tx_hash, amount

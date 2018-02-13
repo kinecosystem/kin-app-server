@@ -9,7 +9,7 @@ from uuid import UUID
 import json
 
 from kinappserver import app, config
-from kinappserver.stellar import create_account
+from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
 from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded
 
@@ -49,8 +49,32 @@ def get_health():
     return ''
 
 
+@app.route('/send-kin', methods=['POST'])
+def send_kin_to_user():
+    '''temp endpoint for testing sending kin TODO remove'''
+    payload = request.get_json(silent=True)
+    try:
+        public_address = payload.get('public_address', None)
+        amount = payload.get('amount', None)
+        if None in (public_address, amount):
+           raise InvalidUsage('bad-request') 
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+
+    #establish trust
+    from stellar_base.asset import Asset
+    my_asset = Asset('KIN', 'GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V')
+    tx_hash = app.kin_sdk.trust_asset(my_asset, limit=2)
+    print('trust tx hash: %s' % tx_hash)
+
+    tx_hash = send_kin(public_address, amount, 'test')
+    print('transfer tx hash: %s' % tx_hash)
+    return jsonify(status='ok')
+
 @app.route('/send-gcm', methods=['POST'])
 def send_gcm_push():
+    '''temp endpoint for testing gcm TODO remove'''
     payload = request.get_json(silent=True)
     try:
         push_payload = payload.get('push_payload', None)
@@ -58,7 +82,7 @@ def send_gcm_push():
         if None in (push_token, push_payload):
            raise InvalidUsage('bad-request') 
     except Exception as e:
-        print("exception: %s" % e)
+        print('exception: %s' % e)
         raise InvalidUsage('bad-request') 
     send_gcm(push_token, push_payload)
     return jsonify(status='ok')
@@ -104,7 +128,14 @@ def quest_answers():
         #TODO more input checks here
     except Exception as e:
         raise InvalidUsage('bad-request')
+    # store the results and pay the user
     store_task_results(user_id, task_id, results)
+    try:
+        tx_hash, amount = reward_address_for_task(address, task_id) # blocks until payment is complete
+    except:
+        print('failed to reward task %s at address %s' % (task_id, address))
+    else:
+        create_tx(tx_hash, user_id, amount, 'task_id: %s' % task_id)
     return jsonify(status='ok')
 
 @app.route('/task/add',methods=['POST'])
@@ -148,7 +179,7 @@ def onboard_user():
         raise InvalidUsage('no such user exists')
     else:
         # create an account, provided none is already being created
-        lock = redis_lock.Lock(app.redis, "address:" + public_address)
+        lock = redis_lock.Lock(app.redis, 'address:' + public_address)
         if lock.acquire(blocking=False):
             try:
                 tx_id = create_account(public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE)

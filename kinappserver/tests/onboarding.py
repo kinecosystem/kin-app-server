@@ -87,6 +87,16 @@ class Tester(unittest.TestCase):
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 400)
 
+        # try sending kin to that public address
+        resp = self.app.post('/send-kin',
+            data=json.dumps({
+                            'public_address': kp.address().decode(),
+                            'amount': 1}),
+            headers={USER_ID_HEADER: str(userid)},
+            content_type='application/json')
+        print(json.loads(resp.data))
+        self.assertEqual(resp.status_code, 200)
+
 
 
 if __name__ == '__main__':
