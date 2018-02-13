@@ -157,7 +157,7 @@ def quest_answers():
 
 @app.route('/task/add',methods=['POST'])
 def add_task_api():
-    limit_to_local_host()
+    #limit_to_local_host()
     payload = request.get_json(silent=True)
     try:
         task_id = payload.get('id', None)
