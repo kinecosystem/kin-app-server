@@ -188,6 +188,7 @@ def get_task_by_id(task_id):
     task_json = {}
     task_json['id'] = task_id
     task_json['title'] = task.title
+    task_json['type'] = task.task_type
     task_json['desc'] = task.desc
     task_json['kin_reward'] = task.kin_reward
     task_json['min_to_complete'] = task.min_to_complete
