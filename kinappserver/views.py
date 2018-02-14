@@ -199,6 +199,7 @@ def onboard_user():
         lock = redis_lock.Lock(app.redis, 'address:' + public_address)
         if lock.acquire(blocking=False):
             try:
+                print('creating account with address %s and amount %s' % (public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE))
                 tx_id = create_account(public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE)
                 set_onboarded(user_id, True)
             except Exception as e:
