@@ -273,6 +273,7 @@ def reward_address_for_task(public_address, task_id):
     # get reward amount
     amount = get_reward_for_task(task_id)
     if not amount:
+        print('could not figure reward amount for task_id: %s' % task_id)
         raise InternalError('cant find reward for taskid %s' % task_id)
     try:
         tx_hash = stellar.send_kin(public_address, amount, 'kin-app-taskid:%s' % task_id)
