@@ -25,7 +25,7 @@
    eshu_appid: kinapp
    eshu_rabbit_address: 10.0.1.20
    stellar_timeout_sec: 10
-   stellar_initial_account_balance: 2
+   stellar_initial_account_balance: 10
    stellar_base_seed: SDF4GB4YFZHIZPDAJBNGZZPAY2I6MGU55JOOWVBYT56AYC5W2FPYSBAQ
    stellar_network: TESTNET
    stellar_kin_issuer_address: GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V
