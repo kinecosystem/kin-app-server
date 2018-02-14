@@ -42,7 +42,9 @@ class InternalError(Exception):
         return rv
 
 def send_gcm(token, payload):
-    amqp_publisher.send_gcm("eshu-key", payload, [token], False, GCM_TTL)
+    payload_dict = {}
+    payload_dict['message'] = payload
+    amqp_publisher.send_gcm("eshu-key", payload_dict, [token], False, GCM_TTL)
 
 
 def send_apns(token, payload):
