@@ -38,7 +38,8 @@ class Tester(unittest.TestCase):
 
     def test_task_storing(self):
         """test storting and getting tasks"""
-        task = { 'title': 'do you know horses?',
+        task = {  'task_id': 0,
+                  'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'questionnaire',
                   'kin_reward': 2000,
@@ -66,7 +67,6 @@ class Tester(unittest.TestCase):
 
         resp = self.app.post('/task/add',
                             data=json.dumps({
-                            'id': 0,
                             'task': task}),
                             headers={},
                             content_type='application/json')

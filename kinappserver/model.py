@@ -197,10 +197,10 @@ def get_task_by_id(task_id):
     task_json['start_date'] = task.start_date.timestamp
     return task_json
 
-def add_task(task_id, task_json):
+def add_task(task_json):
     try:
         task = Task()
-        task.task_id = task_id
+        task.task_id = task_json['task_id']
         task.task_type = task_json['type']
         task.title = task_json['title']
         task.desc = task_json['desc']
@@ -216,7 +216,7 @@ def add_task(task_id, task_json):
         db.session.commit()
     except Exception as e:
         print(e)
-        print('cant add task to db with id %s' % task_id)
+        print('cant add task to db with id %s' % task_json['task_id'])
         return False
     else:
         return True
@@ -278,7 +278,7 @@ def reward_address_for_task(public_address, task_id):
     try:
         print('calling send_kin: %s, %s' % (public_address, amount))
         tx_hash = stellar.send_kin(public_address, amount, 'kin-app')#-taskid:%s' % task_id)
-        print tx_hash
+        print('tx_has: %s' % tx_hash)
         print('after calling send_kin')
     except Exception as e:
         print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))

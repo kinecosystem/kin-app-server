@@ -158,12 +158,11 @@ def add_task_api():
     #limit_to_local_host()
     payload = request.get_json(silent=True)
     try:
-        task_id = payload.get('id', None)
         task = payload.get('task', None)
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
-    if add_task(task_id, task):
+    if add_task(task):
         return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add task')
