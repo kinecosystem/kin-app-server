@@ -89,17 +89,15 @@ def send_gcm_push():
 
 @app.route('/send-tx-completed', methods=['POST'])
 def send_gcm_push_tx_completed():
+    #TODO remove this function
     '''temp endpoint for testing the tx-completed push'''
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
-        push_token = payload.get('push_token', None)
-        if None in (push_token, push_payload):
-           raise InvalidUsage('bad-request') 
     except Exception as e:
-        print('exception: %s' % e)
+        print('exception in send_gcm_push_tx_completed: %s' % e)
         raise InvalidUsage('bad-request') 
-    send_push_tx_completed(user_id, 'tx_hash', 'amount', 'task_id')
+    send_push_tx_completed(user_id, 'tx_hash', 2, 'task_id')
     return jsonify(status='ok')
 
 
