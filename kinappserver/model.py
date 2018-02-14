@@ -276,7 +276,10 @@ def reward_address_for_task(public_address, task_id):
         print('could not figure reward amount for task_id: %s' % task_id)
         raise InternalError('cant find reward for taskid %s' % task_id)
     try:
-        tx_hash = stellar.send_kin(public_address, amount, 'kin-app-taskid:%s' % task_id)
+        print('calling send_kin: %s, %s' % (public_address, amount))
+        tx_hash = stellar.send_kin(public_address, amount, 'kin-app')#-taskid:%s' % task_id)
+        print tx_hash
+        print('after calling send_kin')
     except Exception as e:
         print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
