@@ -11,7 +11,7 @@ import json
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, reward_address_for_task, send_push_tx_completed
+from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, reward_address_for_task, send_push_tx_completed, create_tx
 
 
 def limit_to_local_host():
@@ -136,6 +136,7 @@ def quest_answers():
         task_id = payload.get('id', None)
         address = payload.get('address', None)
         results = payload.get('results', None)
+        send_push = payload.get('send_push', True)
         if None in (user_id, task_id, address, results):
             raise InvalidUsage('bad-request')
         #TODO more input checks here
@@ -149,8 +150,10 @@ def quest_answers():
         print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
     else:
-        send_push_tx_completed(user_id, tx_hash, amount, task_id)
-        create_tx(tx_hash, user_id, amount, 'task_id: %s' % task_id)
+        if send_push:
+            print('sending push after tx')
+            send_push_tx_completed(user_id, tx_hash, amount, task_id)
+        create_tx(tx_hash, user_id, amount) # TODO Add memeo?
     return jsonify(status='ok')
 
 @app.route('/task/add',methods=['POST'])

@@ -145,6 +145,17 @@ def store_task_results(user_id, task_id, results):
         print(e)
         raise InvalidUsage('cant set user task results data')
 
+    try:
+        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
+        if user_app_data is None:
+            raise('cant retrieve user app data for user:%s' % user_id)
+        user_app_data.completed_tasks.append(task_id)
+        db.session.add(user_app_data)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('cant set user completed task')
+
 def list_all_users_results_data():
     '''returns a dict of all the user-results-data'''
     response = {}
@@ -242,7 +253,7 @@ class Transaction(db.Model):
     kin transactions
     '''
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
-    tx_hash = db.Column(db.String(40), nullable=False, primary_key=True)
+    tx_hash = db.Column(db.String(80), nullable=False, primary_key=True)
     amount = db.Column(db.Integer(), nullable=False, primary_key=False)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
 

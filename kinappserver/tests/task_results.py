@@ -99,7 +99,8 @@ class Tester(unittest.TestCase):
                             data=json.dumps({
                             'id':'1',
                             'address':'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
-                            'results':{'2234':'werw','5345':'345345'}
+                            'results':{'2234':'werw','5345':'345345'},
+                            'send_push': False
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
