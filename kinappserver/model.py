@@ -253,7 +253,7 @@ class Transaction(db.Model):
     kin transactions
     '''
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
-    tx_hash = db.Column(db.String(80), nullable=False, primary_key=True)
+    tx_hash = db.Column(db.String(100), nullable=False, primary_key=True)
     amount = db.Column(db.Integer(), nullable=False, primary_key=False)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
 
@@ -273,14 +273,19 @@ def create_tx(tx_hash, user_id, amount):
         tx = Transaction()
         tx.tx_hash = tx_hash
         tx.user_id = user_id
-        tx.amount = amount
+        tx.amount = int(amount)
         db.session.add(tx)
         db.session.commit()
     except Exception as e:
         print(e)
         print('cant add tx to db with id %s' % tx_hash)
 
-def reward_address_for_task(public_address, task_id):
+def reward_store_and_push(public_address, task_id, send_push, user_id):
+    from threading import Thread
+    thread = Thread(target = reward_address_for_task_internal, args = (public_address, task_id, send_push, user_id))
+    thread.start()
+
+def reward_address_for_task_internal(public_address, task_id, send_push, user_id):
     '''transfer the correct amount of kins for the task to the given address'''
     # get reward amount
     amount = get_reward_for_task(task_id)
@@ -295,7 +300,10 @@ def reward_address_for_task(public_address, task_id):
     except Exception as e:
         print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
-    return tx_hash, amount
+    finally: #TODO dont do this if we fail with the tx
+        if send_push:
+            send_push_tx_completed(user_id, tx_hash, amount, task_id)
+        create_tx(tx_hash, user_id, amount) # TODO Add memeo?
 
 def get_user_push_data(user_id):
     '''returns the os_type and the token for the given user_id'''
