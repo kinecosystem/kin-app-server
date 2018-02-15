@@ -119,8 +119,9 @@ def send_gcm_push_tx_completed():
 
 @app.route('/user/app-launch', methods=['POST'])
 def app_launch():
-    
+    '''called whenever the app is launched'''
     payload = request.get_json(silent=True)
+    app_ver, user_id = None, None
     try:
         print('payload in app-launch: %s' % payload)
         user_id = extract_header(request)

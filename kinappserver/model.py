@@ -98,7 +98,7 @@ class UserAppData(db.Model):
     completed_tasks = db.Column(db.JSON)
 
 def update_user_app_version(user_id, app_ver):
-    ''''''
+    '''update the user app version'''
     try:
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
         userAppData.app_ver = app_ver
