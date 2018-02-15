@@ -106,7 +106,7 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('task_results: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
-        sleep(5) # give the thread enough time to complete before the db connection is shutdown
+        sleep(8) # give the thread enough time to complete before the db connection is shutdown
 
         print(model.list_all_users_results_data())
 

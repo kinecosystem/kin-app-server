@@ -88,6 +88,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
 
         # try sending kin to that public address
+        ''' NEED TO ESTABLISH TRUST FIRST
         resp = self.app.post('/send-kin',
             data=json.dumps({
                             'public_address': kp.address().decode(),
@@ -96,6 +97,7 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
+        '''
 
 
 

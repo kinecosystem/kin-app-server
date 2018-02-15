@@ -11,7 +11,7 @@ import json
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, reward_store_and_push
+from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, reward_store_and_push, update_task_time
 
 
 def limit_to_local_host():
@@ -48,6 +48,22 @@ def extract_header(request):
 def get_health():
     return ''
 
+
+@app.route('/update-task-time', methods=['POST'])
+def update_task_time_endpoint():
+    '''temp endpoint for setting a task time'''
+    payload = request.get_json(silent=True)
+    try:
+        task_id = str(payload.get('task_id', None))
+        time_string = str(payload.get('time_string', None))
+        if None in (task_id, time_string):
+           raise InvalidUsage('bad-request') 
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+
+    update_task_time(task_id, time_string)
+    return jsonify(status='ok')
 
 @app.route('/send-kin', methods=['POST'])
 def send_kin_to_user():

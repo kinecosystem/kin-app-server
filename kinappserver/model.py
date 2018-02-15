@@ -233,6 +233,14 @@ def add_task(task_json):
     else:
         return True
 
+def update_task_time(task_id, time_string):
+    task = Task.query.filter_by(task_id=task_id).first()
+    if not task:
+        raise InternalError('no such task_id')
+    task.start_date = time_string
+    db.session.add(task)
+    db.session.commit()
+
 def get_task_ids_for_user(user_id):
     '''get the list of current task_ids for this user'''
     user_app_data = get_user_app_data(user_id)
