@@ -12,7 +12,7 @@ import mockredis
 import redis
 import testing.postgresql
 from flask import Flask
-
+from time import sleep
 import kinappserver
 from kinappserver import db, config, model
 
@@ -40,8 +40,35 @@ class Tester(unittest.TestCase):
         """test storting task reults"""
 
         # add a task
-        task = {
-          'task_id': 1, 
+        task0 = {
+          'task_id': '0', 
+          'title': 'do you know horses?',
+          'desc': 'horses_4_dummies',
+          'type': 'questionnaire',
+          'kin_reward': 1,
+          'min_to_complete': 2,
+          'start_date': '2013-05-11T21:23:58.970460+00:00',
+          'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
+          'author': 
+            {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
+          'items': [
+            {
+             'id':'435', 
+             'text':'what animal is this?',
+             'type': 'textimage',
+                 'results':[
+                        {'id':'235',
+                         'text': 'a horse!', 
+                         'image_url': 'cdn.helllo.com/horse.jpg'},
+                            {'id':'2465436',
+                         'text': 'a cat!', 
+                         'image_url': 'cdn.helllo.com/kitty.jpg'},
+                         ],
+            }]
+        }
+
+        task1 = {
+          'task_id': '1', 
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
@@ -70,7 +97,14 @@ class Tester(unittest.TestCase):
 
         resp = self.app.post('/task/add',
                             data=json.dumps({
-                            'task': task}),
+                            'task': task0}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)  
+
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task1}),
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)    
@@ -92,9 +126,42 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        #model.send_push_tx_completed(str(userid), "fake_tx_hash", 0, 1)
+        sleep(1)
+
+        # get the user's current tasks
+        resp = self.app.get('/user/tasks?user-id=%s' % userid)
+        data = json.loads(resp.data)
+        print('data: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+        print(data['tasks'][0]['id'])
+        self.assertEqual(data['tasks'][0]['id'],'0')
+
 
         # send task results
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id':'0',
+                            'address':'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'results':{'2234':'werw','5345':'345345'},
+                            'send_push': False
+                            }),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
+        print('task_results: %s' % json.loads(resp.data))
+        self.assertEqual(resp.status_code, 200)
+        sleep(8) # give the thread enough time to complete before the db connection is shutdown
+
+        #print(model.list_all_users_results_data())
+
+        # get the user's current tasks
+        resp = self.app.get('/user/tasks?user-id=%s' % userid)
+        data = json.loads(resp.data)
+        print('data: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+        print(data['tasks'][0]['id'])
+        self.assertEqual(data['tasks'][0]['id'],'1')
+
+                # send task results
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id':'1',
@@ -108,7 +175,6 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         sleep(8) # give the thread enough time to complete before the db connection is shutdown
 
-        print(model.list_all_users_results_data())
 
 if __name__ == '__main__':
     unittest.main()

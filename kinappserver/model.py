@@ -68,7 +68,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
 
     user_app_data = UserAppData()
     user_app_data.user_id = user_id
-    user_app_data.completed_tasks = []
+    user_app_data.completed_tasks = '[]'
     user_app_data.app_ver = app_ver
     db.session.add(user_app_data)
     db.session.commit()
@@ -146,7 +146,7 @@ def store_task_results(user_id, task_id, results):
         if user_app_data is None:
             raise('cant retrieve user app data for user:%s' % user_id)
         print("before: %s" % user_app_data.completed_tasks)
-        completed_tasks = user_app_data.completed_tasks
+        completed_tasks = json.loads(user_app_data.completed_tasks)
         completed_tasks.append(task_id)
         user_app_data.completed_tasks = json.dumps(completed_tasks) 
         print("after: %s" % user_app_data.completed_tasks)
@@ -247,7 +247,8 @@ def get_task_ids_for_user(user_id):
     if len(user_app_data.completed_tasks) == 0:
         return ['0']
     else:
-        return [len(user_app_data.completed_tasks)]
+        print('len completed_task: %s' % [str(len(json.loads(user_app_data.completed_tasks)))])
+        return [str(len(json.loads(user_app_data.completed_tasks)))]
 
 def get_reward_for_task(task_id):
     '''return the amount of kin reward associated with this task'''
