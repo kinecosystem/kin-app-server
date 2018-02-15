@@ -4,6 +4,7 @@ import datetime
 import redis_lock
 from sqlalchemy_utils import UUIDType, ArrowType
 import arrow
+import json
 
 from kinappserver import db, config, app, stellar
 from kinappserver.utils import InvalidUsage, InternalError, send_apns, send_gcm
@@ -140,21 +141,20 @@ def store_task_results(user_id, task_id, results):
         userTaskResults.task_id = task_id
         userTaskResults.results = results
         db.session.add(userTaskResults)
-        db.session.commit()
-    except Exception as e:
-        print(e)
-        raise InvalidUsage('cant set user task results data')
 
-    try:
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
         if user_app_data is None:
             raise('cant retrieve user app data for user:%s' % user_id)
-        user_app_data.completed_tasks.append(task_id)
+        print("before: %s" % user_app_data.completed_tasks)
+        completed_tasks = user_app_data.completed_tasks
+        completed_tasks.append(task_id)
+        user_app_data.completed_tasks = json.dumps(completed_tasks) 
+        print("after: %s" % user_app_data.completed_tasks)
         db.session.add(user_app_data)
         db.session.commit()
     except Exception as e:
         print(e)
-        raise InvalidUsage('cant set user completed task')
+        raise InvalidUsage('cant store_task_results')
 
 def list_all_users_results_data():
     '''returns a dict of all the user-results-data'''
