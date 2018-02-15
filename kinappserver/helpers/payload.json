@@ -1,12 +1,12 @@
 {
-  "id": 3,
   "task": {
-    "title": "do you know horses?",
+    "task_id": "4",
+    "title": "do you know snakes?",
     "desc": "horses_4_dummies",
     "type": "questionnaire",
     "kin_reward": 1,
     "min_to_complete": 2,
-    "start_date": "2013-05-11T21:23:58.970460+00:00",
+    "start_date": "2018-02-15T08:10:58.970460+00:00",
     "tags": [
       "music",
       "crypto",
@@ -16,7 +16,7 @@
     ],
     "author": {
       "name": "om-nom-nom-food",
-      "image_url": "http://inter.webs/horsie.jpg"
+      "image_url": "http://inter.webs/snake.jpg"
     },
     "items": [
       {
@@ -26,7 +26,7 @@
         "results": [
           {
             "id": "235",
-            "text": "a horse!",
+            "text": "a snake!",
             "image_url": "cdn.helllo.com/horse.jpg"
           },
           {
