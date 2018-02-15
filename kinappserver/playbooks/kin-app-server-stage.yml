@@ -11,7 +11,7 @@
      ENV: stage
    datadog_api_key: "7d29689e7460c08f21128628adf11afd"
    debug: True
-   nginx_domain: ec2-54-173-252-68.compute-1.amazonaws.com #kin-app-stage.rounds.video
+   nginx_domain: ec2-54-210-163-107.compute-1.amazonaws.com #kin-app-stage.rounds.video
    db_connstr: 'postgresql://kinappstageuser:password@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage'
    provider_endpoint: 'http://159.89.9.81:8545'
    redis_endpoint: 'kin-app-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
