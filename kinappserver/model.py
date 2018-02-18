@@ -24,9 +24,9 @@ class User(db.Model):
     created_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now())
     onboarded = db.Column(db.Boolean, unique=False, default=False)
 
-
     def __repr__(self):
         return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s, onboarded: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone, self.device_id, self.onboarded)
+
 
 def get_user(user_id):
     user = User.query.filter_by(user_id=user_id).first()
@@ -34,9 +34,11 @@ def get_user(user_id):
         raise InvalidUsage('no such user_id')
     return user
 
+
 def user_exists(user_id):
     user = User.query.filter_by(user_id=user_id).first()
     return True if user else False
+
 
 def is_onboarded(user_id):
     '''returns wheather the user has an account or None if there's no such user.'''
@@ -45,12 +47,14 @@ def is_onboarded(user_id):
     except Exception as e:
         return None
 
+
 def set_onboarded(user_id, onboarded):
     '''set the onbarded field of the user in the db'''
     user = get_user(user_id)
     user.onboarded = onboarded
     db.session.add(user)
     db.session.commit()
+
 
 def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver):
     '''create a new user and commit to the database. should only fail if the user_id is duplicate'''
@@ -73,12 +77,14 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     db.session.add(user_app_data)
     db.session.commit()
 
+
 def update_user_token(user_id, push_token):
     '''updates the user's token with a new one'''
     user = get_user(user_id)
     user.push_token = push_token
     db.session.add(user)
     db.session.commit()
+
 
 def list_all_users():
     '''returns a dict of all the whitelisted users and their PAs (if available)'''
@@ -98,6 +104,7 @@ class UserAppData(db.Model):
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
     completed_tasks = db.Column(db.JSON)
 
+
 def update_user_app_version(user_id, app_ver):
     '''update the user app version'''
     try:
@@ -109,6 +116,7 @@ def update_user_app_version(user_id, app_ver):
         print(e)
         raise InvalidUsage('cant set user app data')
 
+
 def list_all_users_app_data():
     '''returns a dict of all the user-app-data'''
     response = {}
@@ -117,11 +125,13 @@ def list_all_users_app_data():
         response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at, 'completed_tasks': user.completed_tasks}
     return response
 
+
 def get_user_app_data(user_id):
     user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
     if not user_app_data:
         raise InvalidUsage('no such user_id')
     return user_app_data
+
 
 class UserTaskResults(db.Model):
     '''
@@ -148,13 +158,14 @@ def store_task_results(user_id, task_id, results):
         print("before: %s" % user_app_data.completed_tasks)
         completed_tasks = json.loads(user_app_data.completed_tasks)
         completed_tasks.append(task_id)
-        user_app_data.completed_tasks = json.dumps(completed_tasks) 
+        user_app_data.completed_tasks = json.dumps(completed_tasks)
         print("after: %s" % user_app_data.completed_tasks)
         db.session.add(user_app_data)
         db.session.commit()
     except Exception as e:
         print(e)
         raise InvalidUsage('cant store_task_results')
+
 
 def list_all_users_results_data():
     '''returns a dict of all the user-results-data'''
@@ -163,6 +174,7 @@ def list_all_users_results_data():
     for user in user_results:
         response[user.user_id] = {'user_id': user.user_id,  'task_id': user.task_id, 'results': user.results}
     return response
+
 
 class Task(db.Model):
     '''the Task class represent a single task'''
@@ -178,9 +190,9 @@ class Task(db.Model):
     start_date = db.Column(ArrowType)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
 
-
     def __repr__(self):
         return '<task_id: %s, task_type: %s, title: %s, desc: %s, kin_reward: %s, min_to_complete: %s, start_date>' % (self.task_id, self.task_type, self.title, self.desc, self.kin_reward, self.min_to_complete, self.start_data)
+
 
 def list_all_task_data():
     '''returns a dict of all the tasks'''
@@ -189,6 +201,7 @@ def list_all_task_data():
     for task in tasks:
         response[task.task_id] = {'task_id': task.task_id, 'task_type': task.task_type, 'title': task.title}
     return response
+
 
 def get_task_by_id(task_id):
     '''return a json representing the task'''
@@ -208,6 +221,7 @@ def get_task_by_id(task_id):
     task_json['items'] = task.items
     task_json['start_date'] = task.start_date.timestamp
     return task_json
+
 
 def add_task(task_json):
     try:
@@ -233,6 +247,7 @@ def add_task(task_json):
     else:
         return True
 
+
 def update_task_time(task_id, time_string):
     task = Task.query.filter_by(task_id=task_id).first()
     if not task:
@@ -240,6 +255,7 @@ def update_task_time(task_id, time_string):
     task.start_date = time_string
     db.session.add(task)
     db.session.commit()
+
 
 def get_task_ids_for_user(user_id):
     '''get the list of current task_ids for this user'''
@@ -250,12 +266,14 @@ def get_task_ids_for_user(user_id):
         print('len completed_task: %s' % [str(len(json.loads(user_app_data.completed_tasks)))])
         return [str(len(json.loads(user_app_data.completed_tasks)))]
 
+
 def get_reward_for_task(task_id):
     '''return the amount of kin reward associated with this task'''
     task = Task.query.filter_by(task_id=task_id).first()
     if not task:
         raise InternalError('no such task_id')
     return task.kin_reward
+
 
 class Transaction(db.Model):
     '''
@@ -269,6 +287,7 @@ class Transaction(db.Model):
     def __repr__(self):
         return '<tx_hash: %s, user_id: %s, amount: %s, desc: %s, update_at: %s>' % (self.tx_hash, self.user_id, self.amount, self.update_at)
 
+
 def list_all_transactions():
     '''returns a dict of all the tasks'''
     response = {}
@@ -276,6 +295,7 @@ def list_all_transactions():
     for tx in txs:
         response[tx.tx_hash] = {'tx_hash': tx.tx_hash, 'user_id': tx.user_id, 'amount': tx.amount, 'update_at': tx.update_at}
     return response
+
 
 def create_tx(tx_hash, user_id, amount):
     try:
@@ -289,10 +309,12 @@ def create_tx(tx_hash, user_id, amount):
         print(e)
         print('cant add tx to db with id %s' % tx_hash)
 
+
 def reward_store_and_push(public_address, task_id, send_push, user_id):
     from threading import Thread
-    thread = Thread(target = reward_address_for_task_internal, args = (public_address, task_id, send_push, user_id))
+    thread = Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id))
     thread.start()
+
 
 def reward_address_for_task_internal(public_address, task_id, send_push, user_id):
     '''transfer the correct amount of kins for the task to the given address'''
@@ -314,6 +336,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
         create_tx(tx_hash, user_id, amount) # TODO Add memeo?
 
+
 def get_user_push_data(user_id):
     '''returns the os_type and the token for the given user_id'''
     response = {}
@@ -322,6 +345,7 @@ def get_user_push_data(user_id):
         return None, None
     else:
         return user.os_type, user.push_token
+
 
 def send_push_tx_completed(user_id, tx_hash, amount, task_id):
     '''send a message indicating that the tx has been successfully completed'''

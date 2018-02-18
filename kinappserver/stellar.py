@@ -1,5 +1,6 @@
 from kinappserver import app, config
 
+
 def create_account(public_address, initial_xlm_amount):
     '''create an account for the given public address'''
     print('creating account with balance:%s' % initial_xlm_amount)

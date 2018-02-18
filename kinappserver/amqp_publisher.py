@@ -241,5 +241,5 @@ if __name__ == '__main__':
                        "visibility": "PUBLIC"}}}}
 
     init_config(eshu['ADDRESS'], eshu['QUEUE_NAME'], eshu['EXCHANGE_NAME'], eshu['VIRTUAL_HOST'], eshu['USER'], eshu['PASSWORD'], eshu['HEARTBEAT'], eshu['APP_ID'])
-    for i in range(0,1):
+    for i in range(0, 1):
         send_gcm('eshu-key', gcm_payload, ['eRl3aOnvwt0:APA91bGF7CQOZB9lqNJnei0syRlpJrlOekDoS30F8bEooWWLsUkdPRUq6prZatgSfXDPXVLqaGeXNqApZgN4XKzLtXhQsq9EFSVNPoRH27Agux-S5D2EkIDNPa7-7EDGjLKymuPOT0O4'], False, ttl=DEFAULT_GCM_TTL)

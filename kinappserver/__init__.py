@@ -35,7 +35,8 @@ admin.add_view(ModelView(Transaction, db.session))
 
 import kinappserver.views
 import time
-import redis_lock, redis
+import redis_lock
+import redis
 import sys
 from threading import Lock
 import requests
@@ -46,6 +47,5 @@ app.amqp_publisher = amqp_publisher
 
 # sanity for configuration
 if not config.DEBUG:
-	# redis
-	app.redis.setex('temp-key', 1, 'temp-value')
-	
+    # redis
+    app.redis.setex('temp-key', 1, 'temp-value')

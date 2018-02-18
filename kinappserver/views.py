@@ -37,12 +37,14 @@ def handle_internal_error(error):
     response.status_code = error.status_code
     return response
 
+
 def extract_header(request):
     try:
         return request.headers.get('X-USERID')
     except Exception as e:
         print('cant extract user_id from header')
         raise InvalidUsage('bad header')
+
 
 @app.route('/health', methods=['GET'])
 def get_health():
@@ -57,13 +59,14 @@ def update_task_time_endpoint():
         task_id = str(payload.get('task_id', None))
         time_string = str(payload.get('time_string', None))
         if None in (task_id, time_string):
-           raise InvalidUsage('bad-request') 
+            raise InvalidUsage('bad-request')
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
 
     update_task_time(task_id, time_string)
     return jsonify(status='ok')
+
 
 @app.route('/send-kin', methods=['POST'])
 def send_kin_to_user():
@@ -73,7 +76,7 @@ def send_kin_to_user():
         public_address = payload.get('public_address', None)
         amount = payload.get('amount', None)
         if None in (public_address, amount):
-           raise InvalidUsage('bad-request') 
+            raise InvalidUsage('bad-request')
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
@@ -88,6 +91,7 @@ def send_kin_to_user():
     print('transfer tx hash: %s' % tx_hash)
     return jsonify(status='ok')
 
+
 @app.route('/send-gcm', methods=['POST'])
 def send_gcm_push():
     '''temp endpoint for testing gcm TODO remove'''
@@ -96,12 +100,13 @@ def send_gcm_push():
         push_payload = payload.get('push_payload', None)
         push_token = payload.get('push_token', None)
         if None in (push_token, push_payload):
-           raise InvalidUsage('bad-request') 
+            raise InvalidUsage('bad-request')
     except Exception as e:
         print('exception: %s' % e)
-        raise InvalidUsage('bad-request') 
+        raise InvalidUsage('bad-request')
     send_gcm(push_token, push_payload)
     return jsonify(status='ok')
+
 
 @app.route('/send-tx-completed', methods=['POST'])
 def send_gcm_push_tx_completed():
@@ -112,7 +117,7 @@ def send_gcm_push_tx_completed():
         user_id = extract_header(request)
     except Exception as e:
         print('exception in send_gcm_push_tx_completed: %s' % e)
-        raise InvalidUsage('bad-request') 
+        raise InvalidUsage('bad-request')
     send_push_tx_completed(user_id, 'tx_hash', 2, 'task_id')
     return jsonify(status='ok')
 
@@ -127,9 +132,10 @@ def app_launch():
         user_id = extract_header(request)
         app_ver = payload.get('app_ver', None)
     except Exception as e:
-        raise InvalidUsage('bad-request')   
+        raise InvalidUsage('bad-request')
     update_user_app_version(user_id, app_ver)
     return jsonify(status='ok')
+
 
 @app.route('/user/update-token', methods=['POST'])
 def update_token():
@@ -146,7 +152,8 @@ def update_token():
     update_user_token(user_id, token)
     return jsonify(status='ok')
 
-@app.route('/user/task/results',methods=['POST'])
+
+@app.route('/user/task/results', methods=['POST'])
 def quest_answers():
     payload = request.get_json(silent=True)
     try:
@@ -170,7 +177,8 @@ def quest_answers():
 
     return jsonify(status='ok')
 
-@app.route('/task/add',methods=['POST'])
+
+@app.route('/task/add', methods=['POST'])
 def add_task_api():
     #limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -184,7 +192,8 @@ def add_task_api():
     else:
         raise InvalidUsage('failed to add task')
 
-@app.route('/user/tasks',methods=['GET'])
+
+@app.route('/user/tasks', methods=['GET'])
 def get_next_task():
     '''return the current task for the user with the given id'''
     user_id = request.args.get('user-id', None)
@@ -193,6 +202,7 @@ def get_next_task():
         tasks.append(get_task_by_id(tid))
     print(tasks)
     return jsonify(tasks=tasks)
+
 
 @app.route('/user/onboard', methods=['POST'])
 def onboard_user():
@@ -207,7 +217,7 @@ def onboard_user():
 
     # ensure the user exists but does not have an account:
     onboarded = is_onboarded(user_id)
-    if onboarded == True:
+    if onboarded is True:
         raise InvalidUsage('user already has an account')
     elif onboarded is None:
         raise InvalidUsage('no such user exists')
@@ -234,7 +244,7 @@ def onboard_user():
 
 @app.route('/user/register', methods=['POST'])
 def register():
-    ''' register a user to the system. 
+    ''' register a user to the system.
     called once by every client until 200OK is received from the server.
     the payload may contain a optional push token.
     '''
@@ -261,5 +271,5 @@ def register():
         except InvalidUsage as e:
             raise InvalidUsage('duplicate-userid')
         else:
-            print('created user with user_id %s' % (user_id) )
+            print('created user with user_id %s' % (user_id))
             return jsonify(status='ok')
