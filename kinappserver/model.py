@@ -146,20 +146,20 @@ class UserTaskResults(db.Model):
 def store_task_results(user_id, task_id, results):
     '''store the results provided by the user'''
     try:
+        # store the results
         userTaskResults = UserTaskResults()
         userTaskResults.user_id = user_id
         userTaskResults.task_id = task_id
         userTaskResults.results = results
         db.session.add(userTaskResults)
 
+        # write down the completed task-id
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
         if user_app_data is None:
             raise('cant retrieve user app data for user:%s' % user_id)
-        print("before: %s" % user_app_data.completed_tasks)
         completed_tasks = json.loads(user_app_data.completed_tasks)
         completed_tasks.append(task_id)
         user_app_data.completed_tasks = json.dumps(completed_tasks)
-        print("after: %s" % user_app_data.completed_tasks)
         db.session.add(user_app_data)
         db.session.commit()
     except Exception as e:
@@ -249,6 +249,7 @@ def add_task(task_json):
 
 
 def update_task_time(task_id, time_string):
+    '''debug function used to update existing tasks's time in the db'''
     task = Task.query.filter_by(task_id=task_id).first()
     if not task:
         raise InternalError('no such task_id')
@@ -258,12 +259,17 @@ def update_task_time(task_id, time_string):
 
 
 def get_task_ids_for_user(user_id):
-    '''get the list of current task_ids for this user'''
+    '''get the list of current task_ids for this user.
+       the current policy is to hand the user the n+1 task, 
+       which happens to be the len(completed tasks):
+       len(0) == 1
+       len(0,1) == 2
+       len(0,1,2) == 3 etc
+    '''
     user_app_data = get_user_app_data(user_id)
     if len(user_app_data.completed_tasks) == 0:
         return ['0']
     else:
-        print('len completed_task: %s' % [str(len(json.loads(user_app_data.completed_tasks)))])
         return [str(len(json.loads(user_app_data.completed_tasks)))]
 
 
@@ -311,6 +317,7 @@ def create_tx(tx_hash, user_id, amount):
 
 
 def reward_store_and_push(public_address, task_id, send_push, user_id):
+    '''create a thread to perform this function in the background'''
     from threading import Thread
     thread = Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id))
     thread.start()
@@ -318,16 +325,15 @@ def reward_store_and_push(public_address, task_id, send_push, user_id):
 
 def reward_address_for_task_internal(public_address, task_id, send_push, user_id):
     '''transfer the correct amount of kins for the task to the given address'''
-    # get reward amount
+    # get reward amount from db
     amount = get_reward_for_task(task_id)
     if not amount:
         print('could not figure reward amount for task_id: %s' % task_id)
         raise InternalError('cant find reward for taskid %s' % task_id)
     try:
+        # send the moneys
         print('calling send_kin: %s, %s' % (public_address, amount))
         tx_hash = stellar.send_kin(public_address, amount, 'kin-app')#-taskid:%s' % task_id)
-        print('tx_has: %s' % tx_hash)
-        print('after calling send_kin')
     except Exception as e:
         print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
