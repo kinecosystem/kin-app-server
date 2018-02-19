@@ -14,7 +14,7 @@ import testing.postgresql
 from flask import Flask
 
 import kinappserver
-from kinappserver import db, config, model
+from kinappserver import db, config, models
 
 USER_ID_HEADER = "X-USERID"
 
@@ -73,9 +73,9 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-        print(model.list_all_users())
-        assert(model.user_exists(userid))
-        assert(not model.user_exists(uuid.uuid4()))
+        print(models.list_all_users())
+        assert(models.user_exists(userid))
+        assert(not models.user_exists(uuid.uuid4()))
 
 if __name__ == '__main__':
     unittest.main()

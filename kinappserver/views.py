@@ -11,7 +11,7 @@ import json
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.model import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, reward_store_and_push, update_task_time
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task
 
 
 def limit_to_local_host():
@@ -273,3 +273,30 @@ def register():
         else:
             print('created user with user_id %s' % (user_id))
             return jsonify(status='ok')
+
+
+def reward_store_and_push(public_address, task_id, send_push, user_id):
+    '''create a thread to perform this function in the background'''
+    from threading import Thread
+    thread = Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id))
+    thread.start()
+
+
+def reward_address_for_task_internal(public_address, task_id, send_push, user_id):
+    '''transfer the correct amount of kins for the task to the given address'''
+    # get reward amount from db
+    amount = get_reward_for_task(task_id)
+    if not amount:
+        print('could not figure reward amount for task_id: %s' % task_id)
+        raise InternalError('cant find reward for taskid %s' % task_id)
+    try:
+        # send the moneys
+        print('calling send_kin: %s, %s' % (public_address, amount))
+        tx_hash = send_kin(public_address, amount, 'kin-app')#-taskid:%s' % task_id)
+    except Exception as e:
+        print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
+        raise InternalError('failed sending %s kins to %s' % (amount, public_address))
+    finally: #TODO dont do this if we fail with the tx
+        if send_push:
+            send_push_tx_completed(user_id, tx_hash, amount, task_id)
+        create_tx(tx_hash, user_id, amount) # TODO Add memeo?

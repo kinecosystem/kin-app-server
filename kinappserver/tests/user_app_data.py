@@ -14,7 +14,7 @@ import testing.postgresql
 from flask import Flask
 
 import kinappserver
-from kinappserver import db, config, model
+from kinappserver import db, config, models
 
 USER_ID_HEADER = "X-USERID"
 
@@ -72,7 +72,7 @@ class Tester(unittest.TestCase):
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
-        print(model.list_all_users_app_data())
+        print(models.list_all_users_app_data())
 
 
 if __name__ == '__main__':

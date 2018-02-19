@@ -15,7 +15,7 @@ import testing.postgresql
 from flask import Flask
 
 import kinappserver
-from kinappserver import db, config, model, utils
+from kinappserver import db, config, models, utils
 
 from stellar_base.keypair import Keypair
 from stellar_base.address import Address
