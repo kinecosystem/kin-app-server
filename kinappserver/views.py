@@ -11,7 +11,7 @@ import json
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer
 
 
 def limit_to_local_host():
@@ -180,7 +180,8 @@ def quest_answers():
 
 @app.route('/task/add', methods=['POST'])
 def add_task_api():
-    #limit_to_local_host()
+    if not config.DEBUG:
+        limit_to_local_host()
     payload = request.get_json(silent=True)
     try:
         task = payload.get('task', None)
@@ -300,3 +301,34 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
         if send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
         create_tx(tx_hash, user_id, amount) # TODO Add memeo?
+
+
+@app.route('/offer/add', methods=['POST'])
+def add_offer_api():
+    '''endpoint used to populate the server with offers'''
+    if not config.DEBUG:
+        limit_to_local_host()
+    payload = request.get_json(silent=True)
+    try:
+        task = payload.get('offer', None)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if add_offer(task):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to add task')
+
+
+@app.route('/user/offers', methods=['GET'])
+def get_offers():
+    '''return the list of offers for this user'''
+     try:
+        user_id = request.args.get('user-id', None)
+        if user_id is None:
+            raise InvalidUsage('no user_id')
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    return jsonify(tasks=get_offers_for_user(user_id))
+
