@@ -14,7 +14,7 @@ import testing.postgresql
 from flask import Flask
 
 import kinappserver
-from kinappserver import db, config, model
+from kinappserver import db, config, models
 
 USER_ID_HEADER = "X-USERID"
 
@@ -50,7 +50,7 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        users = model.list_all_users()
+        users = models.list_all_users()
         assert(users[userid]['onboarded'] == False)
         assert(users[userid]['os'] == 'android')
         assert(users[userid]['device_model'] == 'samsung8')
@@ -116,9 +116,9 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
         print(json.loads(resp.data))
 
-        print(model.list_all_users())
-        assert(model.user_exists(userid))
-        assert(not model.user_exists(uuid.uuid4()))
+        print(models.list_all_users())
+        assert(models.user_exists(userid))
+        assert(not models.user_exists(uuid.uuid4()))
 
         # windows phone. should fail.
         userid = uuid.uuid4()
@@ -133,7 +133,7 @@ class Tester(unittest.TestCase):
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 400)
-        assert(not model.user_exists(userid))
+        assert(not models.user_exists(userid))
 
         # invalid uuid. should fail
         resp = self.app.post('/user/register',

@@ -14,7 +14,7 @@ import testing.postgresql
 from flask import Flask
 from time import sleep
 import kinappserver
-from kinappserver import db, config, model
+from kinappserver import db, config, models
 
 USER_ID_HEADER = "X-USERID"
 class Tester(unittest.TestCase):
