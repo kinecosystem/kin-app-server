@@ -338,6 +338,22 @@ def set_active_api():
         raise InvalidUsage('failed to set offer status')
 
 
+@app.route('/offer/book', methods=['POST'])
+def book_offer_api():
+    '''books an offer by a user'''
+    payload = request.get_json(silent=True)
+    try:
+        offer_id = payload.get('id', None)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    order_id = book_order(offer_id)
+    if order_id:
+        return jsonify(status='ok', order_id=order_id)
+    else:
+        raise InvalidUsage('failed to book offer')
+
+
 @app.route('/user/offers', methods=['GET'])
 def get_offers_api():
     '''return the list of offers for this user'''

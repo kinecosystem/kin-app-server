@@ -5,7 +5,7 @@ from time import mktime
 from datetime import datetime
 import unittest
 from unittest import mock
-import uuid
+from uuid import uuid4
 
 import mockredis
 import redis
@@ -90,7 +90,7 @@ class Tester(unittest.TestCase):
         print(models.list_all_offer_data())
 
         # register a user
-        userid = uuid.uuid4()
+        userid = uuid4()
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str(userid),

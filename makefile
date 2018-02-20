@@ -2,6 +2,7 @@ install:
 	sudo pip3 install . --upgrade
 
 test:
+	python3 kinappserver/tests/order.py
 	python3 kinappserver/tests/offer.py
 	python3 kinappserver/tests/onboarding.py
 	python3 kinappserver/tests/task.py
