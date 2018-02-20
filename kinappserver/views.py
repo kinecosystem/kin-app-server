@@ -11,7 +11,7 @@ import json
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active
 
 
 def limit_to_local_host():
@@ -180,7 +180,8 @@ def quest_answers():
 
 @app.route('/task/add', methods=['POST'])
 def add_task_api():
-    #limit_to_local_host()
+    if not config.DEBUG:
+        limit_to_local_host()
     payload = request.get_json(silent=True)
     try:
         task = payload.get('task', None)
@@ -243,7 +244,7 @@ def onboard_user():
 
 
 @app.route('/user/register', methods=['POST'])
-def register():
+def register_api():
     ''' register a user to the system.
     called once by every client until 200OK is received from the server.
     the payload may contain a optional push token.
@@ -300,3 +301,53 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
         if send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
         create_tx(tx_hash, user_id, amount) # TODO Add memeo?
+
+
+@app.route('/offer/add', methods=['POST'])
+def add_offer_api():
+    '''endpoint used to populate the server with offers'''
+    if not config.DEBUG:
+        limit_to_local_host()
+    payload = request.get_json(silent=True)
+    try:
+        offer = payload.get('offer', None)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if add_offer(offer):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to add offer')
+
+
+@app.route('/offer/set_active', methods=['POST'])
+def set_active_api():
+    '''endpoint used to populate the server with offers'''
+    if not config.DEBUG:
+        limit_to_local_host()
+    payload = request.get_json(silent=True)
+    try:
+        offer_id = payload.get('offer_id', None)
+        is_active = payload.get('is_active', None)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if set_offer_active(offer_id, is_active):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to set offer status')
+
+
+@app.route('/user/offers', methods=['GET'])
+def get_offers_api():
+    '''return the list of offers for this user'''
+    try:
+        user_id = request.args.get('user-id', None)
+        if user_id is None:
+            raise InvalidUsage('no user_id')
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+        print('offers %s' % get_offers_for_user(user_id))
+    return jsonify(offers=get_offers_for_user(user_id))
+
