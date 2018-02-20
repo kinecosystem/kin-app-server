@@ -300,7 +300,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
     finally: #TODO dont do this if we fail with the tx
         if send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
-        create_tx(tx_hash, user_id, amount) # TODO Add memeo?
+        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id':task_id}) # TODO Add memeo?
 
 
 @app.route('/offer/add', methods=['POST'])
