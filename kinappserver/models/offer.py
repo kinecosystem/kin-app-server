@@ -9,17 +9,19 @@ from kinappserver.utils import InvalidUsage, InternalError
 class Offer(db.Model):
     '''the Offer class represent a single offer'''
     offer_id = db.Column(db.String(40), nullable=False, primary_key=True)
-    offer_type = db.Column(db.String(40), nullable=False, primary_key=True)
-    offer_domain = db.Column(db.String(40), nullable=False, primary_key=True)
+    offer_type = db.Column(db.String(40), nullable=False, primary_key=False)
+    offer_domain = db.Column(db.String(40), nullable=False, primary_key=False)
+    is_active = db.Column(db.Boolean, unique=False, default=False)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
     desc = db.Column(db.String(80), nullable=False, primary_key=False)
     image_url = db.Column(db.String(80), nullable=False, primary_key=False)
     kin_cost = db.Column(db.Integer(), nullable=False, primary_key=False)
     address = db.Column(db.String(80), nullable=False, primary_key=False)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
+    provider_data = db.Column(db.JSON)
 
     def __repr__(self):
-        return '<offer_id: %s, offer_type: %s, title: %s, desc: %s, kin_cost: %s>' % (self.offer_id, self.offer_type, self.title, self.desc, self.kin_cost)
+        return '<offer_id: %s, offer_type: %s, title: %s, desc: %s, kin_cost: %s, is_active: %s>' % (self.offer_id, self.offer_type, self.title, self.desc, self.kin_cost, self.is_active)
 
 
 def list_all_offer_data():
@@ -30,15 +32,12 @@ def list_all_offer_data():
         response[offer.offer_id] = {'offer_id': offer.offer_id, 'offer_type': offer.offer_type, 'title': offer.title}
     return response
 
-
-def get_offer_by_id(offer_id):
-    '''return a json representing the offer'''
-    offer = offer.query.filter_by(offer_id=offer_id).first()
-    if offer is None:
-        return None
+def offer_to_json(offer):
+    if not offer:
+        return {}
     # build the json object:
     offer_json = {}
-    offer_json['id'] = offer_id
+    offer_json['id'] = offer.offer_id
     offer_json['type'] = offer.offer_type
     offer_json['domain'] = offer.offer_domain
     offer_json['title'] = offer.title
@@ -50,10 +49,22 @@ def get_offer_by_id(offer_id):
     return offer_json
 
 
+def set_offer_active(offer_id, is_active):
+    '''enable/disable offer by offer_id'''
+    offer = Offer.query.filter_by(offer_id=offer_id).first()
+    if not offer:
+        raise InvalidUsage('no such offer_id')
+
+    offer.is_active = is_active
+    db.session.add(offer)
+    db.session.commit()
+    return True
+
+
 def add_offer(offer_json):
     try:
         offer = Offer()
-        offer.offer_id = offer_json['offer_id']
+        offer.offer_id = str(offer_json['offer_id'])
         offer.offer_type = offer_json['type']
         offer.offer_domain = offer_json['domain']
         offer.title = offer_json['title']
@@ -76,5 +87,15 @@ def get_cost_for_offer(offer_id):
     '''return the kin cost associated with this offer'''
     offer = Offer.query.filter_by(offer_id=offer_id).first()
     if not offer:
-        raise InternalError('no such offer_id')
+        raise InvalidUsage('no such offer_id')
     return offer.kin_cost
+
+
+def get_offers_for_user(user_id):
+    '''return the list of active offers for this user'''
+    # at the moment, return all active offers to all users
+    offers = Offer.query.filter_by(is_active=True).all()
+    offers_json_array = []
+    for offer in offers:
+         offers_json_array.append(offer_to_json(offer))
+    return offers_json_array
