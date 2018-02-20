@@ -6,6 +6,7 @@ from datetime import datetime
 import unittest
 from unittest import mock
 from uuid import uuid4
+from time import sleep
 
 import mockredis
 import redis
@@ -14,6 +15,7 @@ from flask import Flask
 
 import kinappserver
 from kinappserver import db, config, models
+
 
 USER_ID_HEADER = "X-USERID"
 
@@ -84,34 +86,87 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # create the first order
-        order_id1 = models.create_order(userid, offerid)
-        self.assertNotEqual(order_id1, None)
-        print(order_id1)
+        resp = self.app.post('/offer/book',
+                    data=json.dumps({
+                    'id': offerid}),
+                    headers={USER_ID_HEADER: str(userid)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(data['status'],'ok')
+        self.assertNotEqual(data['order_id'], None)
+        orderid1 = data['order_id']
+        print('order_id: %s' % orderid1)
 
-        # create the second order
-        order_id2 = models.create_order(userid, offerid)
-        self.assertNotEqual(order_id2, None)
-        print(order_id2)
+        # create another order for the same offer
+        resp = self.app.post('/offer/book',
+                    data=json.dumps({
+                    'id': offerid}),
+                    headers={USER_ID_HEADER: str(userid)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(data['status'],'ok')
+        self.assertNotEqual(data['order_id'], None)
+        orderid2 = data['order_id']
+        print('order_id: %s' % orderid2)
+
 
         # should fail as there are already 2 active orders
-        order_id3 = models.create_order(userid, offerid)
-        self.assertEqual(order_id3, None)
+        resp = self.app.post('/offer/book',
+                    data=json.dumps({
+                    'id': offerid}),
+                    headers={USER_ID_HEADER: str(userid)},
+                    content_type='application/json')
+        self.assertNotEqual(resp.status_code, 200)
 
         # delete one active order
-        res = models.delete_order(order_id2)
+        res = models.delete_order(orderid2)
 
         # try to delete it again, should fail
         try:
-            models.delete_order(order_id2)
+            models.delete_order(orderid2)
         except Exception as e:
             pass
         else:
             self.fail('did not catch expected exception')
 
         # should succeed now
-        order_id3 = models.create_order(userid, offerid)
-        self.assertNotEqual(order_id3, None)
+        resp = self.app.post('/offer/book',
+                    data=json.dumps({
+                    'id': offerid}),
+                    headers={USER_ID_HEADER: str(userid)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['status'],'ok')
+        self.assertNotEqual(data['order_id'], None)
 
+
+        # should fail as there are already 2 active orders
+        resp = self.app.post('/offer/book',
+                    data=json.dumps({
+                    'id': offerid}),
+                    headers={USER_ID_HEADER: str(userid)},
+                    content_type='application/json')
+        self.assertNotEqual(resp.status_code, 200)
+
+        # wait for the order to expire
+        print('sleeping 7 secs')
+        sleep(7) # TODO read from config
+        print('done! now trying to book')
+
+        
+            
+
+        # should succeed now
+        resp = self.app.post('/offer/book',
+                    data=json.dumps({
+                    'id': offerid}),
+                    headers={USER_ID_HEADER: str(userid)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['status'],'ok')
+        self.assertNotEqual(data['order_id'], None)
 
 
 if __name__ == '__main__':

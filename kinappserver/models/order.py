@@ -20,13 +20,15 @@ class Order(db.Model):
 def create_order(user_id, offer_id):
     '''creates a new order'''
 
-    # dont let users create too many orders
+    # dont let users create too many simultaneous orders
     if len(get_orders_for_user(user_id)) >= config.MAX_SIMULTANEOUS_ORDERS_PER_USER:
         return None
 
+    order_id = uuid4()
+
     try:
         order = Order()
-        order.order_id = uuid4()
+        order.order_id = order_id
         order.user_id = user_id
         order.offer_id = offer_id
         db.session.add(order)
@@ -35,7 +37,7 @@ def create_order(user_id, offer_id):
         print('failed to create a new order with id %s' % order_id)
         raise InternalError('failed to create a new order')
     else:
-        return str(order.order_id)
+        return str(order_id)
 
 def list_all_order_data():
     '''returns a dict of all the orders'''
@@ -55,6 +57,7 @@ def delete_order(order_id):
             raise InternalError('deleted %s orders while trying to delete order-id:%s' % (deleted_count, order_id))
     except Exception as e:
         raise InternalError('failed to delete an order with id %s' % order_id)
+
 
 def get_orders_for_user(user_id):
     '''return the list of active orders for this user'''

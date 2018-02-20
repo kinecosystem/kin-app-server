@@ -11,7 +11,7 @@ import json
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order
 
 
 def limit_to_local_host():
@@ -343,11 +343,13 @@ def book_offer_api():
     '''books an offer by a user'''
     payload = request.get_json(silent=True)
     try:
+        user_id = extract_header(request)
         offer_id = payload.get('id', None)
+        if None in (user_id, offer_id):
+            raise InvalidUsage('invalid payload')
     except Exception as e:
-        print('exception: %s' % e)
         raise InvalidUsage('bad-request')
-    order_id = book_order(offer_id)
+    order_id = create_order(user_id, offer_id)
     if order_id:
         return jsonify(status='ok', order_id=order_id)
     else:
