@@ -1,3 +1,6 @@
+install-sdk:
+	sudo pip3 install kin --upgrade
+
 install:
 	sudo pip3 install . --upgrade
 

@@ -5,13 +5,13 @@ The Kin App Server API is defined here.
 from flask import request, jsonify, abort
 import redis_lock
 import requests
-from uuid import UUID
+from uuid import UUID, uuid4
 import json
 
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order
 
 
 def limit_to_local_host():
@@ -170,12 +170,12 @@ def quest_answers():
     # store the results and pay the user
     store_task_results(user_id, task_id, results)
     try:
-        reward_store_and_push(address, task_id, send_push, user_id)
+        memo = reward_store_and_push(address, task_id, send_push, user_id)
     except Exception as e:
         print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
 
-    return jsonify(status='ok')
+    return jsonify(status='ok', memo=str(memo))
 
 
 @app.route('/task/add', methods=['POST'])
@@ -279,11 +279,13 @@ def register_api():
 def reward_store_and_push(public_address, task_id, send_push, user_id):
     '''create a thread to perform this function in the background'''
     from threading import Thread
-    thread = Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id))
+    memo = str(uuid4())
+    thread = Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo))
     thread.start()
+    return memo
 
 
-def reward_address_for_task_internal(public_address, task_id, send_push, user_id):
+def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo):
     '''transfer the correct amount of kins for the task to the given address'''
     # get reward amount from db
     amount = get_reward_for_task(task_id)
@@ -293,14 +295,14 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
     try:
         # send the moneys
         print('calling send_kin: %s, %s' % (public_address, amount))
-        tx_hash = send_kin(public_address, amount, 'kin-app')#-taskid:%s' % task_id)
+        tx_hash = send_kin(public_address, amount, memo)
     except Exception as e:
         print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
     finally: #TODO dont do this if we fail with the tx
         if send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
-        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id':task_id}) # TODO Add memeo?
+        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id':task_id, 'memo': memo}) # TODO Add memeo?
 
 
 @app.route('/offer/add', methods=['POST'])
@@ -368,4 +370,22 @@ def get_offers_api():
         raise InvalidUsage('bad-request')
         print('offers %s' % get_offers_for_user(user_id))
     return jsonify(offers=get_offers_for_user(user_id))
+
+
+@app.route('/offers/purchased', methods=['POST'])
+def purchase_api():
+    '''return the list of offers for this user'''
+    try:
+        user_id = extract_header(request)
+        order_id = payload.get('order-id', None)
+        tx_hash =  payload.get('tx-hash', None)
+        if None in (user_id, order_id, tx_hash):
+            raise InvalidUsage('no user_id')
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    # TODO lock on order_id?
+    return jsonify('status=ok', goods=process_order(user_id, order_id, tx_hash))
+    
+
 

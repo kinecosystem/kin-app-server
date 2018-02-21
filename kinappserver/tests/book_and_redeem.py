@@ -47,8 +47,8 @@ class Tester(unittest.TestCase):
                   'title': 'offer_title',
                   'desc': 'offer_desc',
                   'image_url': 'image_url',
-                  'price': 800,
-                  'address': 'the address',
+                  'price': 2,
+                  'address': 'GCORIYYEQP3ANHFT6XHMBY7VB3RH53WB5KZZHGCEXYRWCEJQZUXPGWQM',
                   'provider': 
                     {'name': 'om-nom-nom-food', 'logo_url': 'http://inter.webs/horsie.jpg'},
                 }
@@ -98,71 +98,11 @@ class Tester(unittest.TestCase):
         orderid1 = data['order_id']
         print('order_id: %s' % orderid1)
 
-        # create another order for the same offer
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        self.assertEqual(data['status'],'ok')
-        self.assertNotEqual(data['order_id'], None)
-        orderid2 = data['order_id']
-        print('order_id: %s' % orderid2)
 
-
-        # should fail as there are already 2 active orders
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
-                    content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
-
-        # delete one active order
-        res = models.delete_order(orderid2)
-
-        # try to delete it again, should fail
-        try:
-            models.delete_order(orderid2)
-        except Exception as e:
-            pass
-        else:
-            self.fail('did not catch expected exception')
-
-        # should succeed now
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['status'],'ok')
-        self.assertNotEqual(data['order_id'], None)
-
-        # should fail as there are already 2 active orders
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
-                    content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
-
-        # wait for the order to expire
-        print('sleeping 7 secs')
-        sleep(7) # TODO read from config
-        print('done! now trying to book')
-
-        # should succeed now
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['status'],'ok')
-        self.assertNotEqual(data['order_id'], None)
+        # send the moneys with the order id
+        from stellar import send_kin
+        send_kin(public_address, amount, memo=orderid1)
+       
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
 import redis
-from kin import sdk as stellar_sdk
+from kin import SDK
 
 from kinappserver import amqp_publisher
 
@@ -15,7 +15,7 @@ CORS(app)
 from flask_sqlalchemy import SQLAlchemy
 from kinappserver import config
 
-app.kin_sdk = stellar_sdk.SDK(base_seed=config.STELLAR_BASE_SEED,
+app.kin_sdk = SDK(base_seed=config.STELLAR_BASE_SEED,
                               horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                               network=config.STELLAR_NETWORK,
                               channel_seeds=config.STELLAR_CHANNEL_SEEDS)

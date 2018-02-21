@@ -83,12 +83,14 @@ def add_offer(offer_json):
         return True
 
 
-def get_cost_for_offer(offer_id):
-    '''return the kin cost associated with this offer'''
+def get_cost_and_address(offer_id):
+    '''return the kin cost and address associated with this offer'''
     offer = Offer.query.filter_by(offer_id=offer_id).first()
     if not offer:
         raise InvalidUsage('no such offer_id')
-    return offer.kin_cost
+    if not offer.is_active:
+        raise InvalidUsage('offer is not active')
+    return offer.kin_cost, offer.address
 
 
 def get_offers_for_user(user_id):
