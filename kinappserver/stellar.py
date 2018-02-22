@@ -30,7 +30,6 @@ def verify_tx(tx_hash, expected_kin_cost, expected_dst_address, expected_memo):
     #print(int(tx_data.operations[0]['amount']))
 
     op = tx_data.operations[0]
-    print(tx_data)
 
     # verify type
     if op['type'] != 'payment':

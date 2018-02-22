@@ -53,7 +53,7 @@ class Tester(unittest.TestCase):
                     {'name': 'om-nom-nom-food', 'logo_url': 'http://inter.webs/horsie.jpg'},
                 }
 
-        stellar.verify_tx('41b176ac2e458361c676ad5678435886a50534aba166313c0e1805d790dbb1dd', 1, '1','1')
+       
 
 
         resp = self.app.post('/offer/add',
@@ -102,8 +102,23 @@ class Tester(unittest.TestCase):
 
 
         # send the moneys with the order id
-        from stellar import send_kin
-        send_kin(public_address, amount, memo=orderid1)
+        tx_hash = send_kin(address['address', offer['price'], memo=orderid1)
+        print('tx_hash: %s' % tx_hash)
+
+        print('sleeping 2 seconds...')
+        sleep(2)
+
+        # create the first order
+        resp = self.app.post('/offer/redeem',
+                    data=json.dumps({
+                    'order_id': offerid, 
+                    'tx_hash': tx_hash}),
+                    headers={USER_ID_HEADER: str(userid)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        print(data)
+
        
 
 

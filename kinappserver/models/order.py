@@ -92,16 +92,16 @@ def process_order(user_id, order_id, tx_hash):
 
     # check the tx-hash: verify the memo, address and cost
     from stellar import verify_tx
-    if not (verify_tx(tx_hash, order.kin_amount, order.dst_address, order.order_id)):
-        print('cant verify tx-hash (%s) with expected_cost %s, expected_address %s, and expected_memo %s' % (tx_hash, order.kin_amount, order.dst_address, order.order_id))
+    if not (verify_tx(tx_hash, order.kin_amount, order.address, order.order_id)):
+        print('cant verify tx-hash (%s) with expected_cost %s, expected_address %s, and expected_memo %s' % (tx_hash, order.kin_amount, order.address, order.order_id))
         return False, None
 
     # docuemnt the tx in the db
     from .transaction import create_tx
-    create_tx(tx_hash, user_id, order.dst_address, True, order.kin_amount, {'offer_id':order.offer_id})
+    create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id':order.offer_id})
 
     # get the goods
-    goods = [{type:'code', 'code': 'abcdefg'}]
+    goods = {type:'code', 'code': 'abcdefg'}
 
     # delete the order
     try:
