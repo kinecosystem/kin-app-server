@@ -279,7 +279,7 @@ def register_api():
 def reward_store_and_push(public_address, task_id, send_push, user_id):
     '''create a thread to perform this function in the background'''
     from threading import Thread
-    memo = str(uuid4())
+    memo = str(uuid4())[:28]
     thread = Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo))
     thread.start()
     return memo
