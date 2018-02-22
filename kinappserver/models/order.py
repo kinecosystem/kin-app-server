@@ -88,10 +88,9 @@ def get_orders_for_user(user_id):
     #TODO cleanup old, un-used orders
 
 def get_order_by_order_id(order_id):
+    '''returns the order object from the db, if it exists and is active'''
     if order_id is None:
         return None
-
-    print('order_id:%s' % order_id)
 
     order = Order.query.filter_by(order_id=order_id).first()
     if not order:
@@ -122,9 +121,11 @@ def process_order(user_id, tx_hash):
 
     # ensure the tx matches the order
     if tx_data['to_address'] != order.address:
+        print(tx_data['to_address'])
+        print(order.address)
         print('tx address does not match offer address')
         return False, None
-    if tx_data['amount'] != order.kin_amount:
+    if int(tx_data['amount']) != order.kin_amount:
         print('tx amount does not match offer amount')
         return False, None
 
@@ -137,8 +138,8 @@ def process_order(user_id, tx_hash):
 
     # delete the order
     try:
-        delete_order(order_id)
+        delete_order(order.order_id)
     except Exception as e:
-        print('failed to delete order %s' % order_id)
+        print('failed to delete order %s' % order.order_id)
 
     return True, goods

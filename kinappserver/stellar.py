@@ -47,6 +47,6 @@ def extract_tx_payment_data(tx_hash):
     # assemble the result dict
     data = {}
     data['memo'] = tx_data.get('memo', None)
-    data['amount'] = tx_data.get('amount', None)
-    data['to_address'] = tx_data.get('to_address', None)
+    data['amount'] = op.get('amount', None)
+    data['to_address'] = op.get('to_address', None)
     return True, data

@@ -384,8 +384,8 @@ def purchase_api():
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
-    # TODO lock on order_id?
-    goods=process_order(user_id, tx_hash)
+    # TODO lock on tx-hash?
+    goods = process_order(user_id, tx_hash)
     return jsonify(status='ok', goods=goods)
     
 
