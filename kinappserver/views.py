@@ -372,21 +372,20 @@ def get_offers_api():
     return jsonify(offers=get_offers_for_user(user_id))
 
 
-@app.route('/offers/purchased', methods=['POST'])
+@app.route('/offer/redeem', methods=['POST'])
 def purchase_api():
     '''return the list of offers for this user'''
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
-        order_id = payload.get('order_id', None)
         tx_hash =  payload.get('tx_hash', None)
-        if None in (user_id, order_id, tx_hash):
-            raise InvalidUsage('no user_id')
+        if None in (user_id, tx_hash):
+            raise InvalidUsage('invalid param')
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
     # TODO lock on order_id?
-    goods=process_order(user_id, order_id, tx_hash)
+    goods=process_order(user_id, tx_hash)
     return jsonify(status='ok', goods=goods)
     
 

@@ -1,15 +1,16 @@
-from uuid import uuid4
+from uuid import uuid4, UUID
 import datetime
 import json
 import arrow
 
-from kinappserver import db, config, app
+from kinappserver import db, config, app, stellar
 from kinappserver.utils import InvalidUsage, InternalError
 from sqlalchemy_utils import UUIDType, ArrowType
 
+
 class Order(db.Model):
     '''the Order class represent a single offer'''
-    order_id = db.Column(UUIDType(binary=False), primary_key=True, nullable=False)
+    order_id = db.Column(db.String(28), primary_key=True, nullable=False)
     offer_id = db.Column('offer_id', db.String(40) , db.ForeignKey("offer.offer_id"), primary_key=False, nullable=False)
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     kin_amount = db.Column(db.Integer(), nullable=False, primary_key=False)
@@ -33,7 +34,7 @@ def create_order(user_id, offer_id):
         return None
 
 
-    order_id = uuid4()
+    order_id = str(uuid4())[:28] #max you can fit inside a stellar memo
 
     try:
         order = Order()
@@ -71,34 +72,65 @@ def delete_order(order_id):
 
 
 def get_orders_for_user(user_id):
-    '''return the list of active orders for this user'''
+    '''return a dict of active orders for this user
+    
+       returns a dict with the order-id as its key and the order object as value
+    '''
     orders = Order.query.filter_by(user_id=user_id).all()
     active_orders = {}
     now = arrow.utcnow()
     for order in orders:
         # filter out old orders
         if (now - order.created_at).total_seconds() <= config.ORDER_EXPIRATION_SECS:
-            active_orders[order.order_id] = order
+            active_orders[str(order.order_id)] = order
     return active_orders
 
     #TODO cleanup old, un-used orders
 
-def process_order(user_id, order_id, tx_hash):
-    '''release the goods to the user, now that they've been payed for'''
-    # is there such an (active) order?
-    order = get_orders_for_user(user_id).get(order_id, None)
-    if order is None:
+def get_order_by_order_id(order_id):
+    if order_id is None:
+        return None
+
+    print('order_id:%s' % order_id)
+
+    order = Order.query.filter_by(order_id=order_id).first()
+    if not order:
+        print('no order with id: %s' % order_id)
+        return None
+
+    # ensure the order isn't stale
+    if (arrow.utcnow() - order.created_at).total_seconds() > config.ORDER_EXPIRATION_SECS:
+        print('order %s expired' % order_id)
+        return None
+
+    return order
+        
+
+def process_order(user_id, tx_hash):
+    '''release the goods to the user, provided that they've been payed for'''
+    # extract the tx_data from the blockchain
+    res, tx_data = stellar.extract_tx_payment_data(tx_hash)
+    if not res:
+        print('unexpected tx_data for hash: %s' % tx_hash)
         return False, None
 
-    # check the tx-hash: verify the memo, address and cost
-    from stellar import verify_tx
-    if not (verify_tx(tx_hash, order.kin_amount, order.address, order.order_id)):
-        print('cant verify tx-hash (%s) with expected_cost %s, expected_address %s, and expected_memo %s' % (tx_hash, order.kin_amount, order.address, order.order_id))
+    # get the order from the db using the memo in the tx
+    order = get_order_by_order_id(tx_data['memo'])
+    if not order:
+        print('cant match tx order_id to any active orders')
         return False, None
 
-    # docuemnt the tx in the db
+    # ensure the tx matches the order
+    if tx_data['to_address'] != order.address:
+        print('tx address does not match offer address')
+        return False, None
+    if tx_data['amount'] != order.kin_amount:
+        print('tx amount does not match offer amount')
+        return False, None
+
+    # tx matched! docuemnt the tx in the db
     from .transaction import create_tx
-    create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id':order.offer_id})
+    create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id':str(order.offer_id)})
 
     # get the goods
     goods = {type:'code', 'code': 'abcdefg'}

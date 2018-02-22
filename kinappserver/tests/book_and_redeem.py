@@ -102,7 +102,8 @@ class Tester(unittest.TestCase):
 
 
         # send the moneys with the order id
-        tx_hash = send_kin(address['address', offer['price'], memo=orderid1)
+        print('setting memo of %s' % orderid1)
+        tx_hash = stellar.send_kin(offer['address'], offer['price'], orderid1)
         print('tx_hash: %s' % tx_hash)
 
         print('sleeping 2 seconds...')
@@ -111,7 +112,6 @@ class Tester(unittest.TestCase):
         # create the first order
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
-                    'order_id': offerid, 
                     'tx_hash': tx_hash}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')

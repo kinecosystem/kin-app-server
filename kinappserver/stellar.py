@@ -15,41 +15,38 @@ def send_kin(public_address, amount, memo=None):
     kin_asset = Asset('KIN', config.STELLAR_KIN_ISSUER_ADDRESS)
     return app.kin_sdk._send_asset(kin_asset, public_address, amount, memo)
 
-
-def verify_tx(tx_hash, expected_kin_cost, expected_dst_address, expected_memo):
-    '''ensures that the given tx_hash meets the expectations'''
-    if None in (tx_hash, expected_memo, expected_dst_address, expected_kin_cost):
+def extract_tx_payment_data(tx_hash):
+    '''ensures that the given tx_hash is a valid payment tx, 
+       and return a dict with the memo, amount and to_address'''
+    if tx_hash is None:
         raise InvalidUsage('invlid params')
 
     tx_data = app.kin_sdk.get_transaction_data(tx_hash)
     if len(tx_data.operations) != 1:
         print('too many ops')
-        return False
+        return False, {}
 
-    #import simplejson as json
-    #print(int(tx_data.operations[0]['amount']))
-
+    # get the first (and only) op:
     op = tx_data.operations[0]
 
-    # verify type
+    # verify op type
     if op['type'] != 'payment':
         print('unexpected type: %s' % op['type'])
-        return False
+        return False, {}
 
+    # verify asset params
     if op['asset_code'] != 'KIN' and op['asset_issuer'] != config.STELLAR_KIN_ISSUER_ADDRESS and op['asset_type'] != 'credit_alphanum4':
-        print('unexpected asset/issuer/asset_type')
-        return False
+        print('unexpected asset-code/issuer/asset_type')
+        return False, {}
 
-    if tx_data['memo'] != expected_memo and tx_data['memo_type'] != 'text':
-        print('unexpected memo')
-        return False
-    
-    if int(op['amount']) != expected_kin_cost:
-        print('unexpected amount')
-        return False
+    # verify memo type
+    if tx_data['memo_type'] != 'text':
+        print('unexpected memo type')
+        return False, {}
 
-    if op['to_address'] != expected_dst_address:
-        print('unexpected dst address')
-        return False
-    
-    return True
+    # assemble the result dict
+    data = {}
+    data['memo'] = tx_data.get('memo', None)
+    data['amount'] = tx_data.get('amount', None)
+    data['to_address'] = tx_data.get('to_address', None)
+    return True, data
