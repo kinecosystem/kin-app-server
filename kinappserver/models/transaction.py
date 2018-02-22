@@ -14,7 +14,7 @@ class Transaction(db.Model):
     '''
     kin transactions
     '''
-    user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
+    user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     tx_hash = db.Column(db.String(100), nullable=False, primary_key=True)
     amount = db.Column(db.Integer(), nullable=False, primary_key=False)
     incoming_tx = db.Column(db.Boolean, unique=False, default=False) # are the moneys coming or going

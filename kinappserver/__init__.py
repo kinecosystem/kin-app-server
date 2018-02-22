@@ -24,14 +24,34 @@ app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+
 # TODO remove this on production
 admin = Admin(app, name='KinApp', template_mode='bootstrap3')
 from kinappserver.models import User, UserAppData, UserTaskResults, Task, Transaction
-admin.add_view(ModelView(User, db.session))
-admin.add_view(ModelView(UserAppData, db.session))
-admin.add_view(ModelView(UserTaskResults, db.session))
-admin.add_view(ModelView(Task, db.session))
-admin.add_view(ModelView(Transaction, db.session))
+from flask_admin.contrib import sqla
+
+class UserAdmin(sqla.ModelView):
+    column_display_pk = True
+
+class UserAppDataAdmin(sqla.ModelView):
+    column_display_pk = True
+
+class UserTaskResultsAdmin(sqla.ModelView):
+    form_columns = ['user_id', 'task_id']
+    column_display_pk = True
+
+class TaskAdmin(sqla.ModelView):
+    column_display_pk = True
+
+class TransactionAdmin(sqla.ModelView):
+    column_display_pk = True
+    form_columns = ['tx_hash']
+
+admin.add_view(UserAdmin(User, db.session))
+admin.add_view(UserAppDataAdmin(UserAppData, db.session))
+admin.add_view(UserTaskResultsAdmin(UserTaskResults, db.session))
+admin.add_view(TaskAdmin(Task, db.session))
+admin.add_view(TransactionAdmin(Transaction, db.session))
 
 import kinappserver.views
 import time

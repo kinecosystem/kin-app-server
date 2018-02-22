@@ -17,10 +17,40 @@ def send_kin(public_address, amount, memo=None):
 
 
 def verify_tx(tx_hash, expected_kin_cost, expected_dst_address, expected_memo):
-	'''ensures that the given tx_hash meets the expectations'''
-	if None in (tx_hash, expected_memo, expected_dst_address, expected_kin_cost):
-		raise InvalidUsage('invlid params')
+    '''ensures that the given tx_hash meets the expectations'''
+    if None in (tx_hash, expected_memo, expected_dst_address, expected_kin_cost):
+        raise InvalidUsage('invlid params')
 
-	#TODO fill in the logic
+    tx_data = app.kin_sdk.get_transaction_data(tx_hash)
+    if len(tx_data.operations) != 1:
+        print('too many ops')
+        return False
 
-	return True
+    #import simplejson as json
+    #print(int(tx_data.operations[0]['amount']))
+
+    op = tx_data.operations[0]
+    print(tx_data)
+
+    # verify type
+    if op['type'] != 'payment':
+        print('unexpected type: %s' % op['type'])
+        return False
+
+    if op['asset_code'] != 'KIN' and op['asset_issuer'] != config.STELLAR_KIN_ISSUER_ADDRESS and op['asset_type'] != 'credit_alphanum4':
+        print('unexpected asset/issuer/asset_type')
+        return False
+
+    if tx_data['memo'] != expected_memo and tx_data['memo_type'] != 'text':
+        print('unexpected memo')
+        return False
+    
+    if int(op['amount']) != expected_kin_cost:
+        print('unexpected amount')
+        return False
+
+    if op['to_address'] != expected_dst_address:
+        print('unexpected dst address')
+        return False
+    
+    return True

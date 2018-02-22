@@ -14,7 +14,7 @@ import testing.postgresql
 from flask import Flask
 
 import kinappserver
-from kinappserver import db, config, models
+from kinappserver import db, config, models, stellar
 
 
 USER_ID_HEADER = "X-USERID"
@@ -52,6 +52,8 @@ class Tester(unittest.TestCase):
                   'provider': 
                     {'name': 'om-nom-nom-food', 'logo_url': 'http://inter.webs/horsie.jpg'},
                 }
+
+        stellar.verify_tx('41b176ac2e458361c676ad5678435886a50534aba166313c0e1805d790dbb1dd', 1, '1','1')
 
 
         resp = self.app.post('/offer/add',
