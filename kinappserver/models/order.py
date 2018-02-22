@@ -33,7 +33,6 @@ def create_order(user_id, offer_id):
     if None in (kin_amount, address):
         return None
 
-
     order_id = str(uuid4())[:28] #max you can fit inside a stellar memo
 
     try:

@@ -168,6 +168,7 @@ def quest_answers():
     except Exception as e:
         raise InvalidUsage('bad-request')
     # store the results and pay the user
+    print('storing task results for task_id %s' % task_id)
     store_task_results(user_id, task_id, results)
     try:
         memo = reward_store_and_push(address, task_id, send_push, user_id)
