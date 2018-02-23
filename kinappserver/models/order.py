@@ -10,7 +10,7 @@ from sqlalchemy_utils import UUIDType, ArrowType
 
 class Order(db.Model):
     '''the Order class represent a single offer'''
-    order_id = db.Column(db.String(28), primary_key=True, nullable=False)
+    order_id = db.Column(db.String(config.ORDER_ID_LENGTH), primary_key=True, nullable=False)
     offer_id = db.Column('offer_id', db.String(40) , db.ForeignKey("offer.offer_id"), primary_key=False, nullable=False)
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     kin_amount = db.Column(db.Integer(), nullable=False, primary_key=False)
@@ -33,7 +33,7 @@ def create_order(user_id, offer_id):
     if None in (kin_amount, address):
         return None
 
-    order_id = str(uuid4())[:28] #max you can fit inside a stellar memo
+    order_id = str(uuid4())[:config.ORDER_ID_LENGTH] #max you can fit inside a stellar memo
 
     try:
         order = Order()

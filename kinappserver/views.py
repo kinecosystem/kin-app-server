@@ -155,6 +155,7 @@ def update_token():
 
 @app.route('/user/task/results', methods=['POST'])
 def quest_answers():
+    '''receive the results for a tasks and pay the user for them'''
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
@@ -167,8 +168,6 @@ def quest_answers():
         #TODO more input checks here
     except Exception as e:
         raise InvalidUsage('bad-request')
-    # store the results and pay the user
-    print('storing task results for task_id %s' % task_id)
     store_task_results(user_id, task_id, results)
     try:
         memo = reward_store_and_push(address, task_id, send_push, user_id)
@@ -280,7 +279,7 @@ def register_api():
 def reward_store_and_push(public_address, task_id, send_push, user_id):
     '''create a thread to perform this function in the background'''
     from threading import Thread
-    memo = str(uuid4())[:28]
+    memo = str(uuid4())[:config.ORDER_ID_LENGTH]
     thread = Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo))
     thread.start()
     return memo
