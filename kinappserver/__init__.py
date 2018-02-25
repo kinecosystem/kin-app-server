@@ -22,6 +22,7 @@ app.kin_sdk = SDK(base_seed=config.STELLAR_BASE_SEED,
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 db = SQLAlchemy(app)
 
 
