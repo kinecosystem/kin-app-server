@@ -374,7 +374,7 @@ def get_offers_api():
 
 @app.route('/offer/redeem', methods=['POST'])
 def purchase_api():
-    '''return the list of offers for this user'''
+    '''process the given tx_hash and return the payed-for goods'''
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
