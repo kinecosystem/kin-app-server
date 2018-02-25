@@ -1,12 +1,11 @@
 '''
 The Kin App Server API is defined here.
 '''
+from threading import Thread
+from uuid import UUID, uuid4
 
 from flask import request, jsonify, abort
 import redis_lock
-import requests
-from uuid import UUID, uuid4
-import json
 
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
@@ -39,6 +38,7 @@ def handle_internal_error(error):
 
 
 def extract_header(request):
+    '''extracts the user_id from the request header'''
     try:
         return request.headers.get('X-USERID')
     except Exception as e:
@@ -48,12 +48,13 @@ def extract_header(request):
 
 @app.route('/health', methods=['GET'])
 def get_health():
-    return ''
+    '''health endpoint'''
+    return jsonify(status='ok')
 
 
 @app.route('/update-task-time', methods=['POST'])
 def update_task_time_endpoint():
-    '''temp endpoint for setting a task time'''
+    '''temp endpoint for setting a task time TODO DELETE ME'''
     payload = request.get_json(silent=True)
     try:
         task_id = str(payload.get('task_id', None))
@@ -70,7 +71,7 @@ def update_task_time_endpoint():
 
 @app.route('/send-kin', methods=['POST'])
 def send_kin_to_user():
-    '''temp endpoint for testing sending kin TODO remove'''
+    '''temp endpoint for testing sending kin TODO DELETE ME'''
     payload = request.get_json(silent=True)
     try:
         public_address = payload.get('public_address', None)
@@ -94,7 +95,7 @@ def send_kin_to_user():
 
 @app.route('/send-gcm', methods=['POST'])
 def send_gcm_push():
-    '''temp endpoint for testing gcm TODO remove'''
+    '''temp endpoint for testing gcm TODO DELETE ME'''
     payload = request.get_json(silent=True)
     try:
         push_payload = payload.get('push_payload', None)
@@ -110,9 +111,8 @@ def send_gcm_push():
 
 @app.route('/send-tx-completed', methods=['POST'])
 def send_gcm_push_tx_completed():
-    #TODO remove this function
+    #TODO DELETE ME
     '''temp endpoint for testing the tx-completed push'''
-    payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
     except Exception as e:
@@ -139,7 +139,7 @@ def app_launch():
 
 @app.route('/user/update-token', methods=['POST'])
 def update_token():
-    ''' update a user's token in the database '''
+    '''updates a user's token in the database '''
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
@@ -170,7 +170,8 @@ def quest_answers():
         raise InvalidUsage('bad-request')
     store_task_results(user_id, task_id, results)
     try:
-        memo = reward_store_and_push(address, task_id, send_push, user_id)
+        memo = str(uuid4())[:config.ORDER_ID_LENGTH] # generate a memo string and send it to the client
+        reward_store_and_push(address, task_id, send_push, user_id, memo)
     except Exception as e:
         print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
@@ -180,6 +181,7 @@ def quest_answers():
 
 @app.route('/task/add', methods=['POST'])
 def add_task_api():
+    '''used to add tasks to the db'''
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -196,7 +198,7 @@ def add_task_api():
 
 @app.route('/user/tasks', methods=['GET'])
 def get_next_task():
-    '''return the current task for the user with the given id'''
+    '''returns the current task for the user with the given id'''
     user_id = request.args.get('user-id', None)
     tasks = []
     for tid in get_task_ids_for_user(user_id):
@@ -207,6 +209,7 @@ def get_next_task():
 
 @app.route('/user/onboard', methods=['POST'])
 def onboard_user():
+    '''creates a wallet for the user and deposits some xlms there'''
     # input sanity
     try:
         user_id = extract_header(request)
@@ -224,7 +227,7 @@ def onboard_user():
         raise InvalidUsage('no such user exists')
     else:
         # create an account, provided none is already being created
-        lock = redis_lock.Lock(app.redis, 'address:' + public_address)
+        lock = redis_lock.Lock(app.redis, 'address:%s' % public_address)
         if lock.acquire(blocking=False):
             try:
                 print('creating account with address %s and amount %s' % (public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE))
@@ -245,12 +248,13 @@ def onboard_user():
 
 @app.route('/user/register', methods=['POST'])
 def register_api():
-    ''' register a user to the system.
+    ''' register a user to the system
     called once by every client until 200OK is received from the server.
     the payload may contain a optional push token.
     '''
     payload = request.get_json(silent=True)
     try:
+        # add redis lock here?
         user_id = payload.get('user_id', None)
         os = payload.get('os', None)
         device_model = payload.get('device_model', None)
@@ -276,17 +280,17 @@ def register_api():
             return jsonify(status='ok')
 
 
-def reward_store_and_push(public_address, task_id, send_push, user_id):
+def reward_store_and_push(public_address, task_id, send_push, user_id, memo):
     '''create a thread to perform this function in the background'''
-    from threading import Thread
-    memo = str(uuid4())[:config.ORDER_ID_LENGTH]
-    thread = Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo))
-    thread.start()
-    return memo
+    Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo)).start()
 
 
 def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo):
-    '''transfer the correct amount of kins for the task to the given address'''
+    '''transfer the correct amount of kins for the task to the given address
+    
+       this function runs in the background and sends a push message to the client to
+       indicate that the money was indeed transferred.
+    '''
     # get reward amount from db
     amount = get_reward_for_task(task_id)
     if not amount:
@@ -302,7 +306,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
     finally: #TODO dont do this if we fail with the tx
         if send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
-        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id':task_id, 'memo': memo}) # TODO Add memeo?
+        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo}) # TODO Add memeo?
 
 
 @app.route('/offer/add', methods=['POST'])
@@ -324,7 +328,7 @@ def add_offer_api():
 
 @app.route('/offer/set_active', methods=['POST'])
 def set_active_api():
-    '''endpoint used to populate the server with offers'''
+    '''enables/disables an offer'''
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -360,7 +364,7 @@ def book_offer_api():
 
 @app.route('/user/offers', methods=['GET'])
 def get_offers_api():
-    '''return the list of offers for this user'''
+    '''return the list of availble offers for this user'''
     try:
         user_id = request.args.get('user-id', None)
         if user_id is None:
@@ -384,9 +388,14 @@ def purchase_api():
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
-    # TODO lock on tx-hash?
-    goods = process_order(user_id, tx_hash)
-    return jsonify(status='ok', goods=goods)
-    
 
-
+    try:
+        # process the tx_hash, provided its not already being processed by another server
+        lock = redis_lock.Lock(app.redis, 'redeem:%s' % tx_hash)
+        if lock.acquire(blocking=False):
+            goods = process_order(user_id, tx_hash)
+            return jsonify(status='ok', goods=goods)
+        else:
+            return jsonify(status='error', reason='already processing tx_hash')
+    finally:
+            lock.release()

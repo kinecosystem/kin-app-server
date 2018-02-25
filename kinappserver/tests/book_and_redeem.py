@@ -1,29 +1,22 @@
-import base64
 import simplejson as json
-from json import dumps as json_stringify
-from time import mktime
-from datetime import datetime
-import unittest
-from unittest import mock
 from uuid import uuid4
 from time import sleep
-
-import mockredis
-import redis
 import testing.postgresql
-from flask import Flask
 
+import unittest
 import kinappserver
-from kinappserver import db, config, models, stellar
+from kinappserver import db, stellar
 
 
 USER_ID_HEADER = "X-USERID"
 
 class Tester(unittest.TestCase):
+    '''tests the entire spend-scenario: creating an order and then redeeming it'''
 
     @classmethod
     def setUpClass(cls):
         pass
+
 
     def setUp(self):
         #overwrite the db name, dont interfere with stage db data
@@ -38,24 +31,23 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_orders(self):
+
+    def test_book_and_redeem(self):
         """test creating oders"""
         offerid = '0'
-        offer = { 'offer_id': offerid,
-                  'type': 'gift-card',
-                  'domain': 'music',
-                  'title': 'offer_title',
-                  'desc': 'offer_desc',
-                  'image_url': 'image_url',
-                  'price': 2,
-                  'address': 'GCORIYYEQP3ANHFT6XHMBY7VB3RH53WB5KZZHGCEXYRWCEJQZUXPGWQM',
-                  'provider': 
+        offer = {'offer_id': offerid,
+                 'type': 'gift-card',
+                 'domain': 'music',
+                 'title': 'offer_title',
+                 'desc': 'offer_desc',
+                 'image_url': 'image_url',
+                 'price': 2,
+                 'address': 'GCORIYYEQP3ANHFT6XHMBY7VB3RH53WB5KZZHGCEXYRWCEJQZUXPGWQM',
+                 'provider': 
                     {'name': 'om-nom-nom-food', 'logo_url': 'http://inter.webs/horsie.jpg'},
                 }
 
-       
-
-
+        # add an offer
         resp = self.app.post('/offer/add',
                             data=json.dumps({
                             'offer': offer}),
@@ -95,21 +87,21 @@ class Tester(unittest.TestCase):
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
-        self.assertEqual(data['status'],'ok')
+        self.assertEqual(data['status'], 'ok')
         self.assertNotEqual(data['order_id'], None)
         orderid1 = data['order_id']
         print('order_id: %s' % orderid1)
 
-
-        # send the moneys with the order id
+        # pay for the order - also put the memo inside the tx memo
         print('setting memo of %s' % orderid1)
         tx_hash = stellar.send_kin(offer['address'], offer['price'], orderid1)
         print('tx_hash: %s' % tx_hash)
 
+        # give it some time to boil
         print('sleeping 2 seconds...')
         sleep(2)
 
-        # create the first order
+        # redeem the goods
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
                     'tx_hash': tx_hash}),
@@ -118,9 +110,6 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print(data)
-
-       
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,5 @@
 from kinappserver import app, config
-from kinappserver.utils import InvalidUsage, InternalError
+from kinappserver.utils import InvalidUsage
 
 
 def create_account(public_address, initial_xlm_amount):
@@ -15,8 +15,9 @@ def send_kin(public_address, amount, memo=None):
     kin_asset = Asset('KIN', config.STELLAR_KIN_ISSUER_ADDRESS)
     return app.kin_sdk._send_asset(kin_asset, public_address, amount, memo)
 
+
 def extract_tx_payment_data(tx_hash):
-    '''ensures that the given tx_hash is a valid payment tx, 
+    '''ensures that the given tx_hash is a valid payment tx,
        and return a dict with the memo, amount and to_address'''
     if tx_hash is None:
         raise InvalidUsage('invlid params')

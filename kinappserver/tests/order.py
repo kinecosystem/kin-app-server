@@ -1,20 +1,13 @@
-import base64
+
 import simplejson as json
-from json import dumps as json_stringify
-from time import mktime
-from datetime import datetime
 import unittest
-from unittest import mock
 from uuid import uuid4
 from time import sleep
 
-import mockredis
-import redis
 import testing.postgresql
-from flask import Flask
 
 import kinappserver
-from kinappserver import db, config, models
+from kinappserver import db, models
 
 
 USER_ID_HEADER = "X-USERID"
@@ -111,7 +104,6 @@ class Tester(unittest.TestCase):
         orderid2 = data['order_id']
         print('order_id: %s' % orderid2)
 
-
         # should fail as there are already 2 active orders
         resp = self.app.post('/offer/book',
                     data=json.dumps({
@@ -150,9 +142,9 @@ class Tester(unittest.TestCase):
         self.assertNotEqual(resp.status_code, 200)
 
         # wait for the order to expire
-        print('sleeping 7 secs')
-        sleep(7) # TODO read from config
-        print('done! now trying to book')
+        print('sleeping 16 secs')
+        sleep(16) # TODO read from config
+        print('done! now trying to book a new order')
 
         # should succeed now
         resp = self.app.post('/offer/book',
@@ -160,6 +152,7 @@ class Tester(unittest.TestCase):
                     'id': offerid}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
+        print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['status'],'ok')
         self.assertNotEqual(data['order_id'], None)

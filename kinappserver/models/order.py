@@ -1,17 +1,21 @@
-from uuid import uuid4, UUID
-import datetime
-import json
+from uuid import uuid4
 import arrow
 
-from kinappserver import db, config, app, stellar
-from kinappserver.utils import InvalidUsage, InternalError
+from kinappserver import db, config, stellar
+from kinappserver.utils import InternalError
 from sqlalchemy_utils import UUIDType, ArrowType
 
+from .offer import get_cost_and_address
+from .transaction import create_tx
 
 class Order(db.Model):
-    '''the Order class represent a single offer'''
+    '''the Order class represent a single order. 
+
+       orders are generated when a client wishes to buy an offer.
+       orders are time-limited and expire after a while.
+    '''
     order_id = db.Column(db.String(config.ORDER_ID_LENGTH), primary_key=True, nullable=False)
-    offer_id = db.Column('offer_id', db.String(40) , db.ForeignKey("offer.offer_id"), primary_key=False, nullable=False)
+    offer_id = db.Column('offer_id', db.String(40), db.ForeignKey("offer.offer_id"), primary_key=False, nullable=False)
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     kin_amount = db.Column(db.Integer(), nullable=False, primary_key=False)
     address = db.Column(db.String(80), nullable=False, primary_key=False)
@@ -19,6 +23,7 @@ class Order(db.Model):
 
     def __repr__(self):
         return '<order_id: %s, offer_id: %s, user_id: %s, kin_amount: %s, created_at: %s>' % (self.order_id, self.offer_id, self.user_id, self.kin_amount, self.created_at)
+
 
 def create_order(user_id, offer_id):
     '''creates a new order'''
@@ -28,7 +33,6 @@ def create_order(user_id, offer_id):
         return None
 
     # get offer cost
-    from .offer import get_cost_and_address
     kin_amount, address = get_cost_and_address(offer_id)
     if None in (kin_amount, address):
         return None
@@ -49,6 +53,7 @@ def create_order(user_id, offer_id):
         raise InternalError('failed to create a new order')
     else:
         return str(order_id)
+
 
 def list_all_order_data():
     '''returns a dict of all the orders'''
@@ -72,19 +77,20 @@ def delete_order(order_id):
 
 def get_orders_for_user(user_id):
     '''return a dict of active orders for this user
-    
+
        returns a dict with the order-id as its key and the order object as value
     '''
     orders = Order.query.filter_by(user_id=user_id).all()
     active_orders = {}
     now = arrow.utcnow()
     for order in orders:
-        # filter out old orders
+        # filter out expired orders
         if (now - order.created_at).total_seconds() <= config.ORDER_EXPIRATION_SECS:
             active_orders[str(order.order_id)] = order
     return active_orders
 
     #TODO cleanup old, un-used orders
+
 
 def get_order_by_order_id(order_id):
     '''returns the order object from the db, if it exists and is active'''
@@ -102,7 +108,7 @@ def get_order_by_order_id(order_id):
         return None
 
     return order
-        
+
 
 def process_order(user_id, tx_hash):
     '''release the goods to the user, provided that they've been payed for'''
@@ -120,20 +126,17 @@ def process_order(user_id, tx_hash):
 
     # ensure the tx matches the order
     if tx_data['to_address'] != order.address:
-        print(tx_data['to_address'])
-        print(order.address)
         print('tx address does not match offer address')
         return False, None
     if int(tx_data['amount']) != order.kin_amount:
         print('tx amount does not match offer amount')
         return False, None
 
-    # tx matched! docuemnt the tx in the db
-    from .transaction import create_tx
-    create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id':str(order.offer_id)})
+    # tx matched! docuemnt the tx in the db with a tx object
+    create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id': str(order.offer_id)})
 
     # get the goods
-    goods = {type:'code', 'code': 'abcdefg'}
+    goods = {type: 'code', 'code': 'abcdefg'}
 
     # delete the order
     try:
