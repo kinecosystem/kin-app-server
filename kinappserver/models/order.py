@@ -19,7 +19,7 @@ class Order(db.Model):
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     kin_amount = db.Column(db.Integer(), nullable=False, primary_key=False)
     address = db.Column(db.String(80), nullable=False, primary_key=False)
-    created_at = db.Column(ArrowType, default=arrow.utcnow())
+    created_at = db.Column(ArrowType)
 
     def __repr__(self):
         return '<order_id: %s, offer_id: %s, user_id: %s, kin_amount: %s, created_at: %s>' % (self.order_id, self.offer_id, self.user_id, self.kin_amount, self.created_at)
@@ -46,6 +46,7 @@ def create_order(user_id, offer_id):
         order.offer_id = offer_id
         order.kin_amount = kin_amount
         order.address = address
+        order.created_at = arrow.utcnow()
         db.session.add(order)
         db.session.commit()
     except Exception as e:
@@ -106,7 +107,6 @@ def get_order_by_order_id(order_id):
     if (arrow.utcnow() - order.created_at).total_seconds() > config.ORDER_EXPIRATION_SECS:
         print('order %s expired' % order_id)
         return None
-
     return order
 
 

@@ -393,7 +393,9 @@ def purchase_api():
         # process the tx_hash, provided its not already being processed by another server
         lock = redis_lock.Lock(app.redis, 'redeem:%s' % tx_hash)
         if lock.acquire(blocking=False):
-            goods = process_order(user_id, tx_hash)
+            success, goods = process_order(user_id, tx_hash)
+            if not success:
+                raise InvalidUsage('cant redeem with tx_hash:%s' % tx_hash)
             return jsonify(status='ok', goods=goods)
         else:
             return jsonify(status='error', reason='already processing tx_hash')
