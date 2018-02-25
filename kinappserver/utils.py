@@ -1,7 +1,7 @@
 import base64
 
 from flask import jsonify
-from kinappserver import db, amqp_publisher
+from kinappserver import db, amqp_publisher, config
 import boto3
 import requests
 #from Crypto import Random
@@ -9,7 +9,7 @@ import requests
 
 from kinappserver import config
 
-GCM_TTL = 60*60
+
 
 class InvalidUsage(Exception):
     status_code = 400
@@ -44,7 +44,7 @@ class InternalError(Exception):
 def send_gcm(token, payload):
     payload_dict = {}
     payload_dict['message'] = payload
-    amqp_publisher.send_gcm("eshu-key", payload_dict, [token], False, GCM_TTL)
+    amqp_publisher.send_gcm("eshu-key", payload_dict, [token], False, config.GCM_TTL_SECS)
 
 
 def send_apns(token, payload):
