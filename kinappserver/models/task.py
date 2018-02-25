@@ -1,12 +1,10 @@
-from uuid import uuid4
-import datetime
-import redis_lock
+
 from sqlalchemy_utils import UUIDType, ArrowType
 import arrow
 import json
 
-from kinappserver import db, config, app, stellar
-from kinappserver.utils import InvalidUsage, InternalError, send_apns, send_gcm
+from kinappserver import db
+from kinappserver.utils import InvalidUsage, InternalError
 
 
 class UserTaskResults(db.Model):

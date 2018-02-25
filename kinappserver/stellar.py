@@ -1,6 +1,7 @@
 from kinappserver import app, config
 from kinappserver.utils import InvalidUsage
 
+ASSET_NAME = 'KIN'
 
 def create_account(public_address, initial_xlm_amount):
     '''create an account for the given public address'''
@@ -12,7 +13,7 @@ def send_kin(public_address, amount, memo=None):
     '''send kins to an address'''
     print('sending kin to address: %s' % public_address) #TODO REMOVE
     from stellar_base.asset import Asset
-    kin_asset = Asset('KIN', config.STELLAR_KIN_ISSUER_ADDRESS)
+    kin_asset = Asset(ASSET_NAME, config.STELLAR_KIN_ISSUER_ADDRESS)
     return app.kin_sdk._send_asset(kin_asset, public_address, amount, memo)
 
 
@@ -36,7 +37,7 @@ def extract_tx_payment_data(tx_hash):
         return False, {}
 
     # verify asset params
-    if op['asset_code'] != 'KIN' and op['asset_issuer'] != config.STELLAR_KIN_ISSUER_ADDRESS and op['asset_type'] != 'credit_alphanum4':
+    if op['asset_code'] != ASSET_NAME and op['asset_issuer'] != config.STELLAR_KIN_ISSUER_ADDRESS and op['asset_type'] != 'credit_alphanum4':
         print('unexpected asset-code/issuer/asset_type')
         return False, {}
 

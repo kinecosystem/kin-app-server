@@ -1,9 +1,5 @@
-from uuid import uuid4
-import datetime
-import json
-
-from kinappserver import db, config, app, stellar
-from kinappserver.utils import InvalidUsage, InternalError
+from kinappserver import db
+from kinappserver.utils import InvalidUsage
 
 
 class Offer(db.Model):
@@ -33,6 +29,7 @@ def list_all_offer_data():
     return response
 
 def offer_to_json(offer):
+    '''converts the given offer object to a json-representation'''
     if not offer:
         return {}
     # build the json object:
@@ -62,6 +59,7 @@ def set_offer_active(offer_id, is_active):
 
 
 def add_offer(offer_json):
+    '''adds an offer to the db'''
     try:
         offer = Offer()
         offer.offer_id = str(offer_json['offer_id'])

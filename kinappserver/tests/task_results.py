@@ -1,20 +1,13 @@
-import base64
-import simplejson as json
-from json import dumps as json_stringify
-from time import mktime, sleep
-from datetime import datetime
+from time import sleep
 import unittest
-from unittest import mock
 import uuid
 
-
-import mockredis
-import redis
+import simplejson as json
 import testing.postgresql
-from flask import Flask
-from time import sleep
+
 import kinappserver
-from kinappserver import db, config, models
+from kinappserver import db
+
 
 USER_ID_HEADER = "X-USERID"
 class Tester(unittest.TestCase):
@@ -48,19 +41,19 @@ class Tester(unittest.TestCase):
           'kin_reward': 1,
           'min_to_complete': 2,
           'start_date': '2013-05-11T21:23:58.970460+00:00',
-          'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
+          'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
           'author': 
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
           'items': [
             {
-             'id':'435', 
-             'text':'what animal is this?',
+             'id': '435', 
+             'text': 'what animal is this?',
              'type': 'textimage',
-                 'results':[
-                        {'id':'235',
+                 'results': [
+                        {'id': '235',
                          'text': 'a horse!', 
                          'image_url': 'cdn.helllo.com/horse.jpg'},
-                            {'id':'2465436',
+                            {'id': '2465436',
                          'text': 'a cat!', 
                          'image_url': 'cdn.helllo.com/kitty.jpg'},
                          ],
@@ -80,14 +73,14 @@ class Tester(unittest.TestCase):
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
           'items': [
             {
-             'id':'435', 
-             'text':'what animal is this?',
+             'id': '435', 
+             'text': 'what animal is this?',
              'type': 'textimage',
-                 'results':[
-                        {'id':'235',
+                 'results': [
+                        {'id': '235',
                          'text': 'a horse!', 
                          'image_url': 'cdn.helllo.com/horse.jpg'},
-                            {'id':'2465436',
+                            {'id': '2465436',
                          'text': 'a cat!', 
                          'image_url': 'cdn.helllo.com/kitty.jpg'},
                          ],
@@ -120,7 +113,7 @@ class Tester(unittest.TestCase):
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
-                            'token':'fake_token',
+                            'token': 'fake_token',
                             'app_ver': '1.0'}),
                             headers={},
                             content_type='application/json')
@@ -134,15 +127,15 @@ class Tester(unittest.TestCase):
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
         print(data['tasks'][0]['id'])
-        self.assertEqual(data['tasks'][0]['id'],'0')
+        self.assertEqual(data['tasks'][0]['id'], '0')
 
 
         # send task results
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
-                            'id':'0',
-                            'address':'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
-                            'results':{'2234':'werw','5345':'345345'},
+                            'id': '0',
+                            'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'results': {'2234': 'werw', '5345': '345345'},
                             'send_push': False
                             }),
                             headers={USER_ID_HEADER: str(userid)},
@@ -159,14 +152,14 @@ class Tester(unittest.TestCase):
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
         print(data['tasks'][0]['id'])
-        self.assertEqual(data['tasks'][0]['id'],'1')
+        self.assertEqual(data['tasks'][0]['id'], '1')
 
                 # send task results
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
-                            'id':'1',
-                            'address':'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
-                            'results':{'2234':'werw','5345':'345345'},
+                            'id': '1',
+                            'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'results': {'2234': 'werw', '5345': '345345'},
                             'send_push': False
                             }),
                             headers={USER_ID_HEADER: str(userid)},

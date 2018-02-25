@@ -86,7 +86,7 @@ class Tester(unittest.TestCase):
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
-        self.assertEqual(data['status'],'ok')
+        self.assertEqual(data['status'], 'ok')
         self.assertNotEqual(data['order_id'], None)
         orderid1 = data['order_id']
         print('order_id: %s' % orderid1)
@@ -99,7 +99,7 @@ class Tester(unittest.TestCase):
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
-        self.assertEqual(data['status'],'ok')
+        self.assertEqual(data['status'], 'ok')
         self.assertNotEqual(data['order_id'], None)
         orderid2 = data['order_id']
         print('order_id: %s' % orderid2)
@@ -130,7 +130,7 @@ class Tester(unittest.TestCase):
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['status'],'ok')
+        self.assertEqual(data['status'], 'ok')
         self.assertNotEqual(data['order_id'], None)
 
         # should fail as there are already 2 active orders
@@ -154,7 +154,7 @@ class Tester(unittest.TestCase):
                     content_type='application/json')
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['status'],'ok')
+        self.assertEqual(data['status'], 'ok')
         self.assertNotEqual(data['order_id'], None)
 
 

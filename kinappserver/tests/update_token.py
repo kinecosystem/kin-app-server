@@ -16,6 +16,7 @@ from flask import Flask
 import kinappserver
 from kinappserver import db, config, models
 
+
 USER_ID_HEADER = "X-USERID"
 
 class Tester(unittest.TestCase):
@@ -44,7 +45,7 @@ class Tester(unittest.TestCase):
         # attempt to update a yet-unregistered user
         resp = self.app.post('/user/update-token',
                             data=json.dumps({
-                            'token':'sometoken'}),
+                            'token': 'sometoken'}),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 400)
@@ -57,7 +58,7 @@ class Tester(unittest.TestCase):
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
-                            'token':'fake_token',
+                            'token': 'fake_token',
                             'app_ver': '1.0'}),
                             headers={},
                             content_type='application/json')
@@ -66,7 +67,7 @@ class Tester(unittest.TestCase):
         # update the token
         resp = self.app.post('/user/update-token',
                             data=json.dumps({
-                            'token':'newtoken'}),
+                            'token': 'newtoken'}),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print(json.loads(resp.data))

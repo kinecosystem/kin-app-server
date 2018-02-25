@@ -215,7 +215,7 @@ class ChannelsManager():
 
 
 if __name__ == '__main__':
-    eshu ={
+    eshu = {
         'USER': 'admin',
         'PASSWORD': 'admin',
         'ADDRESS': '10.0.1.20',

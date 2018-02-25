@@ -1,20 +1,12 @@
-import base64
 import simplejson as json
-from json import dumps as json_stringify
-from time import mktime
-from datetime import datetime
 import unittest
-from unittest import mock
 import uuid
 
-
-import mockredis
-import redis
 import testing.postgresql
-from flask import Flask
 
 import kinappserver
-from kinappserver import db, config, models
+from kinappserver import db, models
+
 
 USER_ID_HEADER = "X-USERID"
 
@@ -44,7 +36,7 @@ class Tester(unittest.TestCase):
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
-                            'token':'fake_token',
+                            'token': 'fake_token',
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')
@@ -68,7 +60,7 @@ class Tester(unittest.TestCase):
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
-                            'token':'fake_token',
+                            'token': 'fake_token',
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')
@@ -82,7 +74,7 @@ class Tester(unittest.TestCase):
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '+05:00',
-                            'token':'fake_token',
+                            'token': 'fake_token',
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')

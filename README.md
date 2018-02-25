@@ -32,7 +32,7 @@ By default, the config is set to DEBUG mode, which has some pre-set values. Prod
 
 To test the service, run the unittests.
 
-    python3 kinappserver/tester.py
+    make install; make test
 
 note that the tester uses a local, temporary postgress db - it does not mess with prod/stage.
 

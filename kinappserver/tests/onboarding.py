@@ -1,24 +1,14 @@
-import base64
-import simplejson as json
-from json import dumps as json_stringify
-from time import mktime
-from datetime import datetime
+import json
 import unittest
-from unittest import mock
 import uuid
-from mock import patch
-import mock
 
-import mockredis
-import redis
 import testing.postgresql
-from flask import Flask
-
-import kinappserver
-from kinappserver import db, config, models, utils
-
 from stellar_base.keypair import Keypair
 from stellar_base.address import Address
+
+import kinappserver
+from kinappserver import db
+
 
 USER_ID_HEADER = "X-USERID"
 

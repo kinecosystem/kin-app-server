@@ -1,19 +1,13 @@
-import base64
-import simplejson as json
-from json import dumps as json_stringify
-from time import mktime
-from datetime import datetime
 import unittest
-from unittest import mock
 import uuid
 
-import mockredis
-import redis
+import simplejson as json
 import testing.postgresql
-from flask import Flask
+
 
 import kinappserver
-from kinappserver import db, config, models
+from kinappserver import db, models
+
 
 USER_ID_HEADER = "X-USERID"
 
@@ -50,14 +44,14 @@ class Tester(unittest.TestCase):
                     {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
                   'items': [
                     {
-                     'id':'435', 
-                     'text':'what animal is this?',
+                     'id': '435', 
+                     'text': 'what animal is this?',
                      'type': 'textimage',
-                         'results':[
-                                {'id':'235',
+                         'results': [
+                                {'id': '235',
                                  'text': 'a horse!', 
                                  'image_url': 'cdn.helllo.com/horse.jpg'},
-                                    {'id':'2465436',
+                                    {'id': '2465436',
                                  'text': 'a cat!', 
                                  'image_url': 'cdn.helllo.com/kitty.jpg'},
                                  ],

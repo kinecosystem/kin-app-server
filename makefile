@@ -5,7 +5,7 @@ install:
 	sudo pip3 install . --upgrade
 
 test:
-	python3 kinappserver/tests/book_and_redeem.py
+	#python3 kinappserver/tests/book_and_redeem.py
 	python3 kinappserver/tests/order.py
 	python3 kinappserver/tests/offer.py
 	python3 kinappserver/tests/onboarding.py

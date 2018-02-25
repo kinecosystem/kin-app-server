@@ -1,13 +1,7 @@
 '''The model for the Kin App Server.'''
-from uuid import uuid4
-import datetime
-import redis_lock
-from sqlalchemy_utils import UUIDType, ArrowType
-import arrow
-import json
+from sqlalchemy_utils import UUIDType
 
-from kinappserver import db, config, app, stellar
-from kinappserver.utils import InvalidUsage, InternalError, send_apns, send_gcm
+from kinappserver import db
 
 
 class Transaction(db.Model):
@@ -47,6 +41,4 @@ def create_tx(tx_hash, user_id, remote_address, incoming_tx, amount, tx_info):
         db.session.add(tx)
         db.session.commit()
     except Exception as e:
-        print(e)
         print('cant add tx to db with id %s' % tx_hash)
-
