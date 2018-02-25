@@ -113,7 +113,7 @@ class Tester(unittest.TestCase):
         self.assertNotEqual(resp.status_code, 200)
 
         # delete one active order
-        res = models.delete_order(orderid2)
+        models.delete_order(orderid2)
 
         # try to delete it again, should fail
         try:

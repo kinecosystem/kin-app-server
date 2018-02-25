@@ -25,7 +25,7 @@ def list_all_transactions():
     response = {}
     txs = Transaction.query.order_by(Transaction.update_at).all()
     for tx in txs:
-        response[tx.tx_hash] = {'tx_hash': tx.tx_hash, 'user_id': tx.user_id, 'remote_address': tx.remote_address, 'incoming_tx': tx.incoming_tx, 'amount': tx.amount, tx_info: tx.tx_info, 'update_at': tx.update_at}
+        response[tx.tx_hash] = {'tx_hash': tx.tx_hash, 'user_id': tx.user_id, 'remote_address': tx.remote_address, 'incoming_tx': tx.incoming_tx, 'amount': tx.amount, 'tx_info': tx.tx_info, 'update_at': tx.update_at}
     return response
 
 

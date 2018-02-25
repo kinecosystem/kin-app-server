@@ -10,6 +10,8 @@ from kinappserver import db
 
 
 USER_ID_HEADER = "X-USERID"
+
+
 class Tester(unittest.TestCase):
 
     @classmethod
@@ -46,15 +48,15 @@ class Tester(unittest.TestCase):
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
           'items': [
             {
-             'id': '435', 
+             'id': '435',
              'text': 'what animal is this?',
              'type': 'textimage',
                  'results': [
                         {'id': '235',
-                         'text': 'a horse!', 
+                         'text': 'a horse!',
                          'image_url': 'cdn.helllo.com/horse.jpg'},
                             {'id': '2465436',
-                         'text': 'a cat!', 
+                         'text': 'a cat!',
                          'image_url': 'cdn.helllo.com/kitty.jpg'},
                          ],
             }]
@@ -73,15 +75,15 @@ class Tester(unittest.TestCase):
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
           'items': [
             {
-             'id': '435', 
+             'id': '435',
              'text': 'what animal is this?',
              'type': 'textimage',
                  'results': [
                         {'id': '235',
-                         'text': 'a horse!', 
+                         'text': 'a horse!',
                          'image_url': 'cdn.helllo.com/horse.jpg'},
                             {'id': '2465436',
-                         'text': 'a cat!', 
+                         'text': 'a cat!',
                          'image_url': 'cdn.helllo.com/kitty.jpg'},
                          ],
             }]
@@ -93,14 +95,14 @@ class Tester(unittest.TestCase):
                             'task': task0}),
                             headers={},
                             content_type='application/json')
-        self.assertEqual(resp.status_code, 200)  
+        self.assertEqual(resp.status_code, 200)
 
         resp = self.app.post('/task/add',
                             data=json.dumps({
                             'task': task1}),
                             headers={},
                             content_type='application/json')
-        self.assertEqual(resp.status_code, 200)    
+        self.assertEqual(resp.status_code, 200)
 
 
         userid = uuid.uuid4()

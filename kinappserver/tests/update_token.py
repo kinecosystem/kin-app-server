@@ -1,20 +1,11 @@
-import base64
-import simplejson as json
-from json import dumps as json_stringify
-from time import mktime
-from datetime import datetime
 import unittest
-from unittest import mock
 import uuid
 
-
-import mockredis
-import redis
 import testing.postgresql
-from flask import Flask
+import simplejson as json
 
 import kinappserver
-from kinappserver import db, config, models
+from kinappserver import db, models
 
 
 USER_ID_HEADER = "X-USERID"

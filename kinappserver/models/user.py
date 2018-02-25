@@ -90,6 +90,7 @@ def list_all_users():
         response[str(user.user_id)] = {'sid': user.sid, 'os': user.os_type, 'push_token': user.push_token, 'time_zone': user.time_zone, 'device_id': user.device_id, 'device_model': user.device_model, 'onboarded': user.onboarded}
     return response
 
+
 class UserAppData(db.Model):
     '''
     the user app data model tracks the version of the app installed @ the client
@@ -127,6 +128,7 @@ def get_user_app_data(user_id):
         raise InvalidUsage('no such user_id')
     return user_app_data
 
+
 def get_task_ids_for_user(user_id):
     '''get the list of current task_ids for this user.
        the current policy is to hand the user the n+1 task, 
@@ -141,9 +143,9 @@ def get_task_ids_for_user(user_id):
     else:
         return [str(len(json.loads(user_app_data.completed_tasks)))]
 
+
 def get_user_push_data(user_id):
     '''returns the os_type and the token for the given user_id'''
-    response = {}
     user = User.query.filter_by(user_id=user_id).first()
     if not user:
         return None, None
