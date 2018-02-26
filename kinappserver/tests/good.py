@@ -54,19 +54,33 @@ class Tester(unittest.TestCase):
         # enable offer 0 
         resp = self.app.post('/offer/set_active',
                             data=json.dumps({
-                            'offer_id': '0',
+                            'offer_id': offer['offer_id'],
                             'is_active': True}),
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        # no goods at this point
+        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
+        self.assertEqual(models.count_available_goods(offer['offer_id']), 0)
 
-        # add a few instances of goods
+        # add an instance of goods
         resp = self.app.post('/good/add',
                     data=json.dumps({
-                    'offer_id': '0',
+                    'offer_id': offer['offer_id'],
                     'good_type': 'code',
                     'value': 'abcd'}),
+                    headers={},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(models.count_available_goods(offer['offer_id']), 1)
+
+        # and another instance
+        resp = self.app.post('/good/add',
+                    data=json.dumps({
+                    'offer_id': offer['offer_id'],
+                    'good_type': 'code',
+                    'value': 'edfg'}),
                     headers={},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -80,6 +94,61 @@ class Tester(unittest.TestCase):
                     headers={},
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
+
+        # create a user
+        userid = uuid4()
+        resp = self.app.post('/user/register',
+            data=json.dumps({
+                            'user_id': str(userid),
+                            'os': 'android',
+                            'device_model': 'samsung8',
+                            'device_id': '234234',
+                            'time_zone': '+05:00',
+                            'token': 'fake_token',
+                            'app_ver': '1.0'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # create the first order
+        resp = self.app.post('/offer/book',
+                    data=json.dumps({
+                    'id': offer['offer_id']}),
+                    headers={USER_ID_HEADER: str(userid)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(data['status'], 'ok')
+        self.assertNotEqual(data['order_id'], None)
+        order_id1 = data['order_id']
+        print('order_id: %s created for offer_id: %s' % (order_id1, offer['offer_id']))
+
+        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
+        self.assertEqual(models.count_available_goods(offer['offer_id']), 2)
+        print('allocating good...')
+        self.assertEqual(models.allocate_good(offer['offer_id'], order_id1), True)
+        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
+        self.assertEqual(models.count_available_goods(offer['offer_id']), 1)
+        print('releasing good..')
+        self.assertEqual(models.release_good(order_id1), True)
+        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
+        self.assertEqual(models.count_available_goods(offer['offer_id']), 2)
+        print('done!')
+
+        # test allocation, release of goods
+        print('recreate good - should succeed')
+        self.assertEqual(models.allocate_good(offer['offer_id'], order_id1), True)
+        print('create another good on the same order id - should fail')
+        self.assertEqual(models.allocate_good(offer['offer_id'], order_id1), False)
+
+        self.assertEqual(len(models.list_all_goods().keys()), 2)
+
+        print('release the first good - should succeed')
+        self.assertEqual(models.release_good(order_id1), True)
+        print('release it again - should fail')
+        self.assertEqual(models.release_good(order_id1), False)
+
+        self.assertEqual(len(models.list_all_goods().keys()), 2)
 
 if __name__ == '__main__':
     unittest.main()

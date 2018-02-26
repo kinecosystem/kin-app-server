@@ -24,6 +24,13 @@ class Order(db.Model):
     def __repr__(self):
         return '<order_id: %s, offer_id: %s, user_id: %s, kin_amount: %s, created_at: %s>' % (self.order_id, self.offer_id, self.user_id, self.kin_amount, self.created_at)
 
+def has_expired(order_id):
+    '''determines whether an order has expired. this feteches from db.'''
+    now = arrow.utcnow()
+    order = Order.query.filter_by(order_id=order_id).one()
+    if (now - order.created_at).total_seconds() <= config.ORDER_EXPIRATION_SECS:
+        return False
+    return True
 
 def create_order(user_id, offer_id):
     '''creates a new order'''
