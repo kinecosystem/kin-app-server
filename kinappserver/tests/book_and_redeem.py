@@ -33,7 +33,7 @@ class Tester(unittest.TestCase):
 
 
     def test_book_and_redeem(self):
-        """test creating oders"""
+        """test creating orders"""
         offerid = '0'
         offer = {'offer_id': offerid,
                  'type': 'gift-card',
@@ -92,7 +92,7 @@ class Tester(unittest.TestCase):
         orderid1 = data['order_id']
         print('order_id: %s' % orderid1)
 
-        # pay for the order but give a differet address - also put the memo inside the tx memo
+        # pay for the order but give a differet address - should fail
         print('setting memo of %s' % orderid1)
         tx_hash_wrong_address = stellar.send_kin('GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V', offer['price'], orderid1)
         print('tx_hash: %s' % tx_hash_wrong_address)
@@ -101,8 +101,7 @@ class Tester(unittest.TestCase):
         print('sleeping 2 seconds...')
         sleep(2)
 
-
-        #try to redeem the goods with an invalid tx_hash
+        # try to redeem the goods with the tx_hash - should fail
         print('trying to redeem with the wrong address...')
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
@@ -113,6 +112,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print(data)
 
+        # delete the order
         models.delete_order(orderid1)
 
         # re-create the first order
@@ -137,7 +137,7 @@ class Tester(unittest.TestCase):
         print('sleeping 2 seconds...')
         sleep(2)
 
-        #try to redeem the goods with an invalid tx_hash
+        # try to redeem the goods - shuld fail
         print('trying to redeem with underpayed tx...')
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
@@ -148,6 +148,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print(data)
         
+        # delete teh order
         models.delete_order(orderid1)
 
         # re-create the first order
@@ -163,7 +164,7 @@ class Tester(unittest.TestCase):
         orderid1 = data['order_id']
         print('order_id: %s' % orderid1)
 
-        # pay for the order - but use a different orderid
+        # pay for the order - but use an invalid orderid
         print('setting memo of %s' % orderid1)
         tx_hash_other_orderid = stellar.send_kin(offer['address'], offer['price'], "other_order_id")
         print('tx_hash: %s' % tx_hash_other_orderid)
@@ -172,7 +173,7 @@ class Tester(unittest.TestCase):
         print('sleeping 2 seconds...')
         sleep(2)
 
-        #try to redeem the goods with an invalid tx_hash
+        # try to redeem the goods - should fail
         print('trying to redeem with unknown order_id...')
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
@@ -183,6 +184,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print(data)
 
+        # delete the order
         models.delete_order(orderid1)
 
         # re-create the first order
@@ -198,7 +200,7 @@ class Tester(unittest.TestCase):
         orderid1 = data['order_id']
         print('order_id: %s' % orderid1)
 
-        # pay for the order - also put the memo inside the tx memo
+        # pay for the order
         print('setting memo of %s' % orderid1)
         tx_hash = stellar.send_kin(offer['address'], offer['price'], orderid1)
         print('tx_hash: %s' % tx_hash)
@@ -207,7 +209,7 @@ class Tester(unittest.TestCase):
         print('sleeping 2 seconds...')
         sleep(2)
 
-        #try to redeem the goods with an invalid tx_hash
+        #try to redeem the goods - should work
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
                     'tx_hash': tx_hash}),

@@ -10,7 +10,7 @@ import redis_lock
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good
 
 
 def limit_to_local_host():
@@ -401,3 +401,23 @@ def purchase_api():
             return jsonify(status='error', reason='already processing tx_hash')
     finally:
             lock.release()
+
+@app.route('/good/add', methods=['POST'])
+def add_good_api():
+    '''endpoint used to populate the server with goods'''
+    if not config.DEBUG:
+        limit_to_local_host()
+    payload = request.get_json(silent=True)
+    try:
+        offer_id = payload.get('offer_id', None)
+        good_type = payload.get('good_type', None)
+        value = payload.get('value', None)
+        if None in (offer_id, good_type, value):
+            raise InvalidUsage('invalid params')
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if create_good(offer_id, good_type, value):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to add good')

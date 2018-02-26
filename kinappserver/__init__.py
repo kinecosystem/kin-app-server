@@ -28,7 +28,7 @@ db = SQLAlchemy(app)
 
 # TODO remove this on production
 admin = Admin(app, name='KinApp', template_mode='bootstrap3')
-from kinappserver.models import User, UserAppData, UserTaskResults, Task, Transaction
+from kinappserver.models import User, UserAppData, UserTaskResults, Task, Transaction, Good
 from flask_admin.contrib import sqla
 
 class UserAdmin(sqla.ModelView):
@@ -48,11 +48,16 @@ class TransactionAdmin(sqla.ModelView):
     column_display_pk = True
     form_columns = ['tx_hash']
 
+class GoodAdmin(sqla.ModelView):
+    column_display_pk = True
+    form_columns = ['sid']
+
 admin.add_view(UserAdmin(User, db.session))
 admin.add_view(UserAppDataAdmin(UserAppData, db.session))
 admin.add_view(UserTaskResultsAdmin(UserTaskResults, db.session))
 admin.add_view(TaskAdmin(Task, db.session))
 admin.add_view(TransactionAdmin(Transaction, db.session))
+admin.add_view(GoodAdmin(Good, db.session))
 
 import kinappserver.views
 import time
