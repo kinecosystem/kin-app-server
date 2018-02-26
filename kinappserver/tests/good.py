@@ -42,6 +42,10 @@ class Tester(unittest.TestCase):
                     {'name': 'om-nom-nom-food', 'logo_url': 'http://inter.webs/horsie.jpg'},
                 }
 
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        print(json.loads(resp.data))
+        self.assertEqual(json.loads(resp.data)['inventory'], {})
 
         resp = self.app.post('/offer/add',
                             data=json.dumps({
@@ -83,6 +87,11 @@ class Tester(unittest.TestCase):
                     headers={},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        print(json.loads(resp.data))
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 2, 'unallocated': 2}})
 
         # add a few instances of goods: should fail as no such offer exists
         resp = self.app.post('/good/add',

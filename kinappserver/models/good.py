@@ -5,7 +5,7 @@ from kinappserver import db, config, stellar
 from kinappserver.utils import InternalError
 from sqlalchemy_utils import UUIDType, ArrowType
 
-from .offer import get_cost_and_address
+from .offer import Offer, get_cost_and_address
 from .transaction import create_tx
 from .order import Order
 
@@ -55,6 +55,17 @@ def list_all_goods():
         response[good.sid] = {'sid': good.sid, 'offer_id': good.offer_id, 'order_id': good.order_id, 'type': good.good_type, 'created_at': good.created_at, 'tx_hash': good.tx_hash}
     return response
 
+def list_inventory():
+    '''for each offer_id, generate a dict with the number of total goods and unallocated ones'''
+    res = {}
+    offers = Offer.query.order_by(Offer.offer_id).all()
+    for offer in offers:
+        res[offer.offer_id] = {'total': count_total_goods(offer.offer_id), 'unallocated': count_available_goods(offer.offer_id)}
+    return res
+
+def count_total_goods(offer_id):
+    results = db.engine.execute("select count(sid) from good where good.offer_id=\'%s\';" % str(offer_id))
+    return(results.fetchone()[0])    
 
 def count_available_goods(offer_id):
     '''return the number of available goods for the given offer_id'''
