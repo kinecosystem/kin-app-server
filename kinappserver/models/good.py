@@ -63,28 +63,33 @@ def count_available_goods(offer_id):
 
 
 def allocate_good(offer_id, order_id):
-    '''find and allocate a good to an order. returns True on success'''
+    '''find and allocate a good to an order. 
+       returns the good sid on success or None if no goods are available'''
 
     #TODO ensure the order hasn't expired?
 
     try:
+        # lock the line until the commit is complete
         good = db.session.query(Good).filter(Good.offer_id==offer_id).filter(Good.order_id==None).with_for_update().first()
+        if not good:
+            return None
         good.order_id = order_id
         db.session.add(good)
         db.session.commit()
         db.session.flush()
     except Exception as e:
-        print('failed to allocate good with order_id: %s' % order_id)
-        print(e)
         db.session.rollback()
-        return False
+        print('failed to allocate good with order_id: %s. exception: %s' % (order_id,e))
+        raise InternalError('cant allocate good for order_id: %s' % order_id)
     else:
-        return True
+        return good.sid
+        
 
 
 def release_good(order_id):
     '''release a previously allocated good back to the pool. returns True on success'''
     try:
+        # lock the line until the commit is compelete
         good = db.session.query(Good).filter(Good.order_id==order_id).with_for_update().one()
         good.order_id = None
         db.session.add(good)
