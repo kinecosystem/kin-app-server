@@ -379,6 +379,9 @@ def get_offers_api():
 @app.route('/offer/redeem', methods=['POST'])
 def purchase_api():
     '''process the given tx_hash and return the payed-for goods'''
+
+    #TODO: at some point we should try to listen in on incoming tx_hashes
+    # for our account(s). this should hasten the process of reedeming offers.
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
@@ -435,5 +438,4 @@ def release_unclaimed_api():
     '''endpoint used to populate the server with goods'''
     if not config.DEBUG:
         limit_to_local_host()
-    release_unclaimed_goods()
-    return jsonify(status='ok')
+    return jsonify(status='ok', released=release_unclaimed_goods())

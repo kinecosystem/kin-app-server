@@ -7,7 +7,6 @@ from sqlalchemy_utils import UUIDType, ArrowType
 
 from .offer import Offer, get_cost_and_address
 from .transaction import create_tx
-#from .order import Order
 
 class Good(db.Model):
     '''the Good class represent a single goods (as in, the singular of Goods). 
@@ -28,7 +27,7 @@ class Good(db.Model):
     updated_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
-        return '<sid: %s, offer_id: %s, order_id: %s, type: %s, promised: %s, tx_hash: %s, created_at: %s, updated_at: %s>' % (self.sid, self.offer_id, self.order_id, self.good_type, self.promised, self.tx_hash, self.created_at, self.updated_at)
+        return '<sid: %s, offer_id: %s, order_id: %s, type: %s, tx_hash: %s, created_at: %s, updated_at: %s>' % (self.sid, self.offer_id, self.order_id, self.good_type, self.tx_hash, self.created_at, self.updated_at)
 
 
 def create_good(offer_id, good_type, value):
@@ -145,9 +144,14 @@ def release_unclaimed_goods():
        this should be called by cron every minute or so
     '''
     print('releasing unclaimed goods...')
-    goods = db.session.query(Good).filter(Good.tx_hash is None).filter(Good.order_id is not None).all()
+    released = 0
+    #from sqlalchemy import and_
+    goods = db.session.query(Good).filter(Good.tx_hash==None).filter(Good.order_id!=None).all()
     for good in goods:
+        from .order import has_expired # dont move me to prevet cyclical deps
         if has_expired(good.order_id):
             release_good(good.order_id)
+            released = released + 1
 
-    print('releasing unclaimed goods...done')
+    print('released %s goods' % released)
+    return released

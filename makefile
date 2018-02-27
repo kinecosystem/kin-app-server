@@ -5,6 +5,7 @@ install:
 	sudo pip3 install . --upgrade
 
 test:
+	python3 kinappserver/tests/book_and_dont_redeem.py
 	python3 kinappserver/tests/book_and_redeem.py
 	python3 kinappserver/tests/good_overallocation.py
 	python3 kinappserver/tests/good.py
