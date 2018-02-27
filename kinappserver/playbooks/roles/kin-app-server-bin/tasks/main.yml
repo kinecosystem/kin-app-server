@@ -19,8 +19,3 @@
   supervisorctl:
     name: kinappserver
     state: restarted
-
-- cron:
-    name: "release unclaimed goods every minute"
-    job: "/opt/kin-app-server/kinappserver/cron/release_unclaimed_goods.sh"
-  run_once: true
