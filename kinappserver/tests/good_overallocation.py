@@ -60,8 +60,10 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # no goods at this point
-        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
-        self.assertEqual(models.count_available_goods(offer['offer_id']), 0)
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        print(json.loads(resp.data))
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 0, 'unallocated': 0}})
 
         # add an instance of goods
         resp = self.app.post('/good/add',
@@ -72,8 +74,12 @@ class Tester(unittest.TestCase):
                     headers={},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(models.count_available_goods(offer['offer_id']), 1)
 
+        # verify the instance was added
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        print(json.loads(resp.data))
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 1, 'unallocated': 1}})
 
         # create a user
         userid = uuid4()
@@ -90,7 +96,7 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # create an order
+        # create an order and allocate a good instance
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offer['offer_id']}),
@@ -103,28 +109,18 @@ class Tester(unittest.TestCase):
         order_id1 = data['order_id']
         print('order_id: %s created for offer_id: %s' % (order_id1, offer['offer_id']))
 
-        # create another order
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        print(json.loads(resp.data))
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 1, 'unallocated': 0}})
+
+        # create another order - this should fail as there's no instance of good available
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offer['offer_id']}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        self.assertEqual(data['status'], 'ok')
-        self.assertNotEqual(data['order_id'], None)
-        order_id2 = data['order_id']
-        print('order_id: %s created for offer_id: %s' % (order_id2, offer['offer_id']))
-
-        # over allocate by attempting to fullfil both orders
-        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
-        self.assertEqual(models.count_available_goods(offer['offer_id']), 1)
-        print('allocating good for order1...')
-        self.assertNotEqual(models.allocate_good(offer['offer_id'], order_id1), None)
-        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
-        self.assertEqual(models.count_available_goods(offer['offer_id']), 0)
-        print('attempt to allocate good for order2 - should fails as there is only a single good')
-        self.assertEqual(models.allocate_good(offer['offer_id'], order_id2), None)
+        self.assertNotEqual(resp.status_code, 200)
 
         print('done!')
 

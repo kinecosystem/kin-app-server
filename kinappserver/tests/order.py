@@ -78,7 +78,47 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # create the first order
+        # add an instance of goods
+        resp = self.app.post('/good/add',
+                    data=json.dumps({
+                    'offer_id': offerid,
+                    'good_type': 'code',
+                    'value': 'abcd'}),
+                    headers={},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # add an instance of goods (1)
+        resp = self.app.post('/good/add',
+                    data=json.dumps({
+                    'offer_id': offerid,
+                    'good_type': 'code',
+                    'value': 'abcd'}),
+                    headers={},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # add an instance of goods (2)
+        resp = self.app.post('/good/add',
+                    data=json.dumps({
+                    'offer_id': offerid,
+                    'good_type': 'code',
+                    'value': 'abcd'}),
+                    headers={},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # add an instance of goods (3)
+        resp = self.app.post('/good/add',
+                    data=json.dumps({
+                    'offer_id': offerid,
+                    'good_type': 'code',
+                    'value': 'abcd'}),
+                    headers={},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # create the first order (books item 1)
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offerid}),
@@ -91,7 +131,7 @@ class Tester(unittest.TestCase):
         orderid1 = data['order_id']
         print('order_id: %s' % orderid1)
 
-        # create another order for the same offer
+        # create another order for the same offer (books item 2)
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offerid}),
@@ -103,35 +143,6 @@ class Tester(unittest.TestCase):
         self.assertNotEqual(data['order_id'], None)
         orderid2 = data['order_id']
         print('order_id: %s' % orderid2)
-
-        # should fail as there are already 2 active orders
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
-                    content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
-
-        # delete one active order
-        models.delete_order(orderid2)
-
-        # try to delete it again, should fail
-        try:
-            models.delete_order(orderid2)
-        except Exception as e:
-            pass
-        else:
-            self.fail('did not catch expected exception')
-
-        # should succeed now
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['status'], 'ok')
-        self.assertNotEqual(data['order_id'], None)
 
         # should fail as there are already 2 active orders
         resp = self.app.post('/offer/book',

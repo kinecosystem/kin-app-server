@@ -64,8 +64,10 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # no goods at this point
-        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
-        self.assertEqual(models.count_available_goods(offer['offer_id']), 0)
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 0, 'unallocated': 0}})
+
 
         # add an instance of goods
         resp = self.app.post('/good/add',
@@ -76,7 +78,12 @@ class Tester(unittest.TestCase):
                     headers={},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(models.count_available_goods(offer['offer_id']), 1)
+
+        # one good instance at this point
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 1, 'unallocated': 1}})
+
 
         # and another instance
         resp = self.app.post('/good/add',
@@ -90,10 +97,10 @@ class Tester(unittest.TestCase):
 
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
-        print(json.loads(resp.data))
         self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 2, 'unallocated': 2}})
 
-        # add a few instances of goods: should fail as no such offer exists
+        # attempt to add another instance of good: should fail as no such offer exists
+        print('trying to create a good for an unknown offer_id...')
         resp = self.app.post('/good/add',
                     data=json.dumps({
                     'offer_id': '1',
@@ -102,6 +109,7 @@ class Tester(unittest.TestCase):
                     headers={},
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
+        print('...done')
 
         # create a user
         userid = uuid4()
@@ -118,7 +126,7 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # create an order
+        # create an order and allocate a good
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offer['offer_id']}),
@@ -131,37 +139,10 @@ class Tester(unittest.TestCase):
         order_id1 = data['order_id']
         print('order_id: %s created for offer_id: %s' % (order_id1, offer['offer_id']))
 
-        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
-        self.assertEqual(models.count_available_goods(offer['offer_id']), 2)
-        print('allocating good...')
-        self.assertNotEqual(models.allocate_good(offer['offer_id'], order_id1), None)
-        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
-        self.assertEqual(models.count_available_goods(offer['offer_id']), 1)
-        print('releasing good..')
-        self.assertEqual(models.release_good(order_id1), True)
-        print('available goods for offer: %s' % models.count_available_goods(offer['offer_id']))
-        self.assertEqual(models.count_available_goods(offer['offer_id']), 2)
-        print('done!')
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 2, 'unallocated': 1}})
 
-        # test re-allocation with the same order_id, and release of goods
-        print('recreate good - should succeed')
-        self.assertNotEqual(models.allocate_good(offer['offer_id'], order_id1), None)
-        print('create another good on the same order id - should fail with exception')
-        try:
-            models.allocate_good(offer['offer_id'], order_id1)
-        except Exception as e:
-            pass
-        else:
-            self.fail('did not catch expected exception')
-
-        self.assertEqual(len(models.list_all_goods().keys()), 2)
-
-        print('release the first good - should succeed')
-        self.assertEqual(models.release_good(order_id1), True)
-        print('release it again - should fail')
-        self.assertEqual(models.release_good(order_id1), False)
-
-        self.assertEqual(len(models.list_all_goods().keys()), 2)
 
 if __name__ == '__main__':
     unittest.main()

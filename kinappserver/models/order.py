@@ -7,6 +7,7 @@ from sqlalchemy_utils import UUIDType, ArrowType
 
 from .offer import get_cost_and_address
 from .transaction import create_tx
+from .good import allocate_good, finalize_good
 
 class Order(db.Model):
     '''the Order class represent a single order. 
@@ -33,7 +34,7 @@ def has_expired(order_id):
     return True
 
 def create_order(user_id, offer_id):
-    '''creates a new order'''
+    '''creates a new order and allocate the goods for it'''
 
     # dont let users create too many simultaneous orders
     if len(get_orders_for_user(user_id)) >= config.MAX_SIMULTANEOUS_ORDERS_PER_USER:
@@ -42,9 +43,17 @@ def create_order(user_id, offer_id):
     # get offer cost
     kin_amount, address = get_cost_and_address(offer_id)
     if None in (kin_amount, address):
+        # should never happen
         return None
 
+    # make up an order_id
     order_id = str(uuid4())[:config.ORDER_ID_LENGTH] #max you can fit inside a stellar memo
+
+    # attempt to allocate a good for this order
+    if not allocate_good(offer_id, order_id):
+        # no good available to allocate. bummer
+        print('out of goods for offer_id: %s' % offer_id)
+        return None
 
     try:
         order = Order()
@@ -120,6 +129,7 @@ def get_order_by_order_id(order_id):
 def process_order(user_id, tx_hash):
     '''release the goods to the user, provided that they've been payed for'''
     # extract the tx_data from the blockchain
+    goods  = []
     res, tx_data = stellar.extract_tx_payment_data(tx_hash)
     if not res:
         print('unexpected tx_data for hash: %s' % tx_hash)
@@ -142,8 +152,12 @@ def process_order(user_id, tx_hash):
     # tx matched! docuemnt the tx in the db with a tx object
     create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id': str(order.offer_id)})
 
-    # get the goods
-    goods = {type: 'code', 'code': 'abcdefg'}
+    # get the allocated goods
+    res, good = finalize_good(order.order_id, tx_hash)
+    if res:
+        goods.append(good)
+    else:
+        print('failed to finalize the good for tx_hash: %s' % tx_hash)
 
     # delete the order
     try:

@@ -7,7 +7,7 @@ from sqlalchemy_utils import UUIDType, ArrowType
 
 from .offer import Offer, get_cost_and_address
 from .transaction import create_tx
-from .order import Order
+#from .order import Order
 
 class Good(db.Model):
     '''the Good class represent a single goods (as in, the singular of Goods). 
@@ -17,7 +17,10 @@ class Good(db.Model):
     '''
     sid = db.Column(db.Integer(), db.Sequence('sid', start=1, increment=1), primary_key=True)
     offer_id = db.Column('offer_id', db.String(40), db.ForeignKey("offer.offer_id"), primary_key=False, nullable=False, unique=False)
-    order_id = db.Column('order_id', db.String(config.ORDER_ID_LENGTH), db.ForeignKey("order.order_id"), primary_key=False, nullable=True, unique=True)
+    #order_id = db.Column('order_id', db.String(config.ORDER_ID_LENGTH), db.ForeignKey("order.order_id"), primary_key=False, nullable=True, unique=True)
+    # TODO the order_id should be a foreign key, but that implies that orders are created BEFORE the good is allocated. this
+    # needs to be improved somehow.
+    order_id = db.Column(db.String(40), primary_key=False, nullable=True, unique=True)
     value = db.Column(db.JSON(), nullable=False)
     good_type = db.Column(db.String(40), primary_key=False, nullable=False)
     tx_hash = db.Column('tx_hash', db.String(100), db.ForeignKey("transaction.tx_hash"), primary_key=False, nullable=True)
@@ -94,6 +97,29 @@ def allocate_good(offer_id, order_id):
         raise InternalError('cant allocate good for order_id: %s' % order_id)
     else:
         return good.sid
+
+def finalize_good(order_id, tx_hash):
+    '''mark this good as used-up. return True on success'''
+    good_res = {}
+    try:
+        # lock the line until the commit is complete
+        good = db.session.query(Good).filter(Good.order_id==order_id).with_for_update().one()
+        if not good:
+            # should never happen
+            raise InternalError('cant finalize good: good with order_id: %s not found' % order_id)
+        else:
+            good_res['type'] = good.good_type
+            good_res['value'] = good.value
+            good.tx_hash = tx_hash
+            db.session.add(good)
+            db.session.commit()
+            db.session.flush()
+    except Exception as e:
+        db.session.rollback()
+        print('failed to finalize good with order_id: %s. exception: %s' % (order_id,e))
+        raise InternalError('cant finalize good for order_id: %s' % order_id)
+    else:
+        return True, good_res
         
 
 

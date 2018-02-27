@@ -64,11 +64,72 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # register a user
-        userid = uuid4()
+        # create a good instance for the offer (1)
+        resp = self.app.post('/good/add',
+            data=json.dumps({
+            'offer_id': offerid,
+            'good_type': 'code',
+            'value': 'abcd'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # create a good instance for the offer (2)
+        resp = self.app.post('/good/add',
+            data=json.dumps({
+            'offer_id': offerid,
+            'good_type': 'code',
+            'value': 'abcd'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+ 
+
+        # create a good instance for the offer (3)
+        resp = self.app.post('/good/add',
+            data=json.dumps({
+            'offer_id': offerid,
+            'good_type': 'code',
+            'value': 'abcd'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # create a good instance for the offer (4)
+        resp = self.app.post('/good/add',
+            data=json.dumps({
+            'offer_id': offerid,
+            'good_type': 'code',
+            'value': 'abcd'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # 4 goods at this point
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 4, 'unallocated': 4}})
+
+
+        # register a couple of users
+        userid1 = uuid4()
         resp = self.app.post('/user/register',
             data=json.dumps({
-                            'user_id': str(userid),
+                            'user_id': str(userid1),
+                            'os': 'android',
+                            'device_model': 'samsung8',
+                            'device_id': '234234',
+                            'time_zone': '+05:00',
+                            'token': 'fake_token',
+                            'app_ver': '1.0'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        userid2 = uuid4()
+        resp = self.app.post('/user/register',
+            data=json.dumps({
+                            'user_id': str(userid2),
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
@@ -83,7 +144,7 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
+                    headers={USER_ID_HEADER: str(userid1)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
@@ -106,20 +167,17 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
                     'tx_hash': tx_hash_wrong_address}),
-                    headers={USER_ID_HEADER: str(userid)},
+                    headers={USER_ID_HEADER: str(userid1)},
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print(data)
 
-        # delete the order
-        models.delete_order(orderid1)
-
         # re-create the first order
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
+                    headers={USER_ID_HEADER: str(userid1)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
@@ -142,20 +200,17 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
                     'tx_hash': tx_hash_pay_less}),
-                    headers={USER_ID_HEADER: str(userid)},
+                    headers={USER_ID_HEADER: str(userid1)},
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print(data)
-        
-        # delete teh order
-        models.delete_order(orderid1)
 
-        # re-create the first order
+        # re-create the order (use userid2 now)
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
+                    headers={USER_ID_HEADER: str(userid2)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
@@ -178,20 +233,17 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
                     'tx_hash': tx_hash_other_orderid}),
-                    headers={USER_ID_HEADER: str(userid)},
+                    headers={USER_ID_HEADER: str(userid2)},
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print(data)
 
-        # delete the order
-        models.delete_order(orderid1)
-
-        # re-create the first order
+        # re-create the order
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid)},
+                    headers={USER_ID_HEADER: str(userid2)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
@@ -213,11 +265,16 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
                     'tx_hash': tx_hash}),
-                    headers={USER_ID_HEADER: str(userid)},
+                    headers={USER_ID_HEADER: str(userid2)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print(data)
+
+        # no goods at this point
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 4, 'unallocated': 0}})
 
 
 if __name__ == '__main__':
