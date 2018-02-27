@@ -10,7 +10,7 @@ import redis_lock
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods
 
 
 def limit_to_local_host():
@@ -428,3 +428,12 @@ def inventory_api():
     if not config.DEBUG:
         limit_to_local_host()
     return jsonify(status='ok', inventory=list_inventory())
+
+
+@app.route('/good/release_unclaimed', methods=['GET'])
+def release_unclaimed_api():
+    '''endpoint used to populate the server with goods'''
+    if not config.DEBUG:
+        limit_to_local_host()
+    release_unclaimed_goods()
+    return jsonify(status='ok')
