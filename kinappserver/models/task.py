@@ -101,7 +101,7 @@ def get_task_by_id(task_id):
 def add_task(task_json):
     try:
         task = Task()
-        task.task_id = task_json['task_id']
+        task.task_id = task_json['id']
         task.task_type = task_json['type']
         task.title = task_json['title']
         task.desc = task_json['desc']
@@ -117,7 +117,7 @@ def add_task(task_json):
         db.session.commit()
     except Exception as e:
         print(e)
-        print('cant add task to db with id %s' % task_json['task_id'])
+        print('cant add task to db with id %s' % task_json['id'])
         return False
     else:
         return True

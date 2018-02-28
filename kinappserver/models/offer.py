@@ -25,7 +25,7 @@ def list_all_offer_data():
     response = {}
     offers = Offer.query.order_by(Offer.offer_id).all()
     for offer in offers:
-        response[offer.offer_id] = {'offer_id': offer.offer_id, 'offer_type': offer.offer_type, 'title': offer.title}
+        response[offer.offer_id] = {'id': offer.offer_id, 'offer_type': offer.offer_type, 'title': offer.title}
     return response
 
 def offer_to_json(offer):
@@ -62,7 +62,7 @@ def add_offer(offer_json):
     '''adds an offer to the db'''
     try:
         offer = Offer()
-        offer.offer_id = str(offer_json['offer_id'])
+        offer.offer_id = str(offer_json['id'])
         offer.offer_type = offer_json['type']
         offer.offer_domain = offer_json['domain']
         offer.title = offer_json['title']
@@ -75,7 +75,7 @@ def add_offer(offer_json):
         db.session.commit()
     except Exception as e:
         print(e)
-        print('cant add offer to db with id %s' % offer_json['offer_id'])
+        print('cant add offer to db with id %s' % offer_json['id'])
         return False
     else:
         return True

@@ -333,7 +333,7 @@ def set_active_api():
         limit_to_local_host()
     payload = request.get_json(silent=True)
     try:
-        offer_id = payload.get('offer_id', None)
+        offer_id = payload.get('id', None)
         is_active = payload.get('is_active', None)
     except Exception as e:
         print('exception: %s' % e)

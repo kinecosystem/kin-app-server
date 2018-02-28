@@ -34,7 +34,7 @@ class Tester(unittest.TestCase):
     def test_orders(self):
         """test creating oders"""
         offerid = '0'
-        offer = { 'offer_id': offerid,
+        offer = { 'id': offerid,
                   'type': 'gift-card',
                   'domain': 'music',
                   'title': 'offer_title',
@@ -57,7 +57,7 @@ class Tester(unittest.TestCase):
         # enable the offer
         resp = self.app.post('/offer/set_active',
                             data=json.dumps({
-                            'offer_id': offerid,
+                            'id': offerid,
                             'is_active': True}),
                             headers={},
                             content_type='application/json')

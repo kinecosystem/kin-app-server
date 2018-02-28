@@ -30,7 +30,7 @@ class Tester(unittest.TestCase):
 
     def test_create_good(self):
         """test good creation and allocation/release"""
-        offer = { 'offer_id': '0',
+        offer = { 'id': '0',
                   'type': 'gift-card',
                   'domain': 'music',
                   'title': 'offer_title',
@@ -57,7 +57,7 @@ class Tester(unittest.TestCase):
         # enable offer 0 
         resp = self.app.post('/offer/set_active',
                             data=json.dumps({
-                            'offer_id': offer['offer_id'],
+                            'id': offer['id'],
                             'is_active': True}),
                             headers={},
                             content_type='application/json')
@@ -66,13 +66,13 @@ class Tester(unittest.TestCase):
         # no goods at this point
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 0, 'unallocated': 0}})
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 0, 'unallocated': 0}})
 
 
         # add an instance of goods
         resp = self.app.post('/good/add',
                     data=json.dumps({
-                    'offer_id': offer['offer_id'],
+                    'offer_id': offer['id'],
                     'good_type': 'code',
                     'value': 'abcd'}),
                     headers={},
@@ -82,13 +82,13 @@ class Tester(unittest.TestCase):
         # one good instance at this point
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 1, 'unallocated': 1}})
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 1, 'unallocated': 1}})
 
 
         # and another instance
         resp = self.app.post('/good/add',
                     data=json.dumps({
-                    'offer_id': offer['offer_id'],
+                    'offer_id': offer['id'],
                     'good_type': 'code',
                     'value': 'edfg'}),
                     headers={},
@@ -97,7 +97,7 @@ class Tester(unittest.TestCase):
 
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 2, 'unallocated': 2}})
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 2, 'unallocated': 2}})
 
         # attempt to add another instance of good: should fail as no such offer exists
         print('trying to create a good for an unknown offer_id...')
@@ -129,7 +129,7 @@ class Tester(unittest.TestCase):
         # create an order and allocate a good
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offer['offer_id']}),
+                    'id': offer['id']}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -137,11 +137,11 @@ class Tester(unittest.TestCase):
         self.assertEqual(data['status'], 'ok')
         self.assertNotEqual(data['order_id'], None)
         order_id1 = data['order_id']
-        print('order_id: %s created for offer_id: %s' % (order_id1, offer['offer_id']))
+        print('order_id: %s created for offer_id: %s' % (order_id1, offer['id']))
 
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 2, 'unallocated': 1}})
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 2, 'unallocated': 1}})
 
 
 if __name__ == '__main__':

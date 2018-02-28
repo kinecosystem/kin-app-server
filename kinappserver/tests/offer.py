@@ -30,7 +30,7 @@ class Tester(unittest.TestCase):
 
     def test_offer_storing(self):
         """test storting and getting offers"""
-        offer = { 'offer_id': '0',
+        offer = { 'id': '0',
                   'type': 'gift-card',
                   'domain': 'music',
                   'title': 'offer_title',
@@ -58,7 +58,7 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
 
-        offer['offer_id'] = '1'
+        offer['id'] = '1'
         offer['price'] = 100
         # try to add a new offer - should succeed
         resp = self.app.post('/offer/add',
@@ -69,7 +69,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-        offer['offer_id'] = '2'
+        offer['id'] = '2'
         offer['price'] = 50
         # try to add a new offer - should succeed
         resp = self.app.post('/offer/add',
@@ -105,7 +105,7 @@ class Tester(unittest.TestCase):
         # no such offer - should fail
         resp = self.app.post('/offer/set_active',
                 data=json.dumps({
-                'offer_id': 'no-such-offer-id',
+                'id': 'no-such-offer-id',
                 'is_active': True}),
                 headers={},
                 content_type='application/json')
@@ -114,7 +114,7 @@ class Tester(unittest.TestCase):
         # enable offer 0 
         resp = self.app.post('/offer/set_active',
                             data=json.dumps({
-                            'offer_id': '0',
+                            'id': '0',
                             'is_active': True}),
                             headers={},
                             content_type='application/json')
@@ -130,7 +130,7 @@ class Tester(unittest.TestCase):
         # disable offer 0
         resp = self.app.post('/offer/set_active',
                     data=json.dumps({
-                    'offer_id': '0',
+                    'id': '0',
                     'is_active': False}),
                     headers={},
                     content_type='application/json')
@@ -146,7 +146,7 @@ class Tester(unittest.TestCase):
         # enable offer 1 and 2
         resp = self.app.post('/offer/set_active',
                     data=json.dumps({
-                    'offer_id': '1',
+                    'id': '1',
                     'is_active': True}),
                     headers={},
                     content_type='application/json')
@@ -154,7 +154,7 @@ class Tester(unittest.TestCase):
 
         resp = self.app.post('/offer/set_active',
                     data=json.dumps({
-                    'offer_id': '0',
+                    'id': '0',
                     'is_active': True}),
                     headers={},
                     content_type='application/json')
@@ -169,7 +169,7 @@ class Tester(unittest.TestCase):
 
         resp = self.app.post('/offer/set_active',
             data=json.dumps({
-            'offer_id': '2',
+            'id': '2',
             'is_active': True}),
             headers={},
             content_type='application/json')

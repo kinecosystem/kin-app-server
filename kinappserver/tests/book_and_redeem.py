@@ -35,7 +35,7 @@ class Tester(unittest.TestCase):
     def test_book_and_redeem(self):
         """test creating orders"""
         offerid = '0'
-        offer = {'offer_id': offerid,
+        offer = {'id': offerid,
                  'type': 'gift-card',
                  'domain': 'music',
                  'title': 'offer_title',
@@ -58,7 +58,7 @@ class Tester(unittest.TestCase):
         # enable the offer
         resp = self.app.post('/offer/set_active',
                             data=json.dumps({
-                            'offer_id': offerid,
+                            'id': offerid,
                             'is_active': True}),
                             headers={},
                             content_type='application/json')
@@ -108,7 +108,7 @@ class Tester(unittest.TestCase):
         # 4 goods at this point
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 4, 'unallocated': 4}})
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 4, 'unallocated': 4}})
 
 
         # register a couple of users
@@ -274,7 +274,7 @@ class Tester(unittest.TestCase):
         # no goods at this point
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['inventory'], {offer['offer_id']: {'total': 4, 'unallocated': 0}})
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 4, 'unallocated': 0}})
 
 
 if __name__ == '__main__':
