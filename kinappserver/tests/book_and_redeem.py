@@ -158,10 +158,6 @@ class Tester(unittest.TestCase):
         tx_hash_wrong_address = stellar.send_kin('GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V', offer['price'], orderid1)
         print('tx_hash: %s' % tx_hash_wrong_address)
 
-        # give it some time to boil
-        print('sleeping 2 seconds...')
-        sleep(2)
-
         # try to redeem the goods with the tx_hash - should fail
         print('trying to redeem with the wrong address...')
         resp = self.app.post('/offer/redeem',
@@ -190,10 +186,6 @@ class Tester(unittest.TestCase):
         print('setting memo of %s' % orderid1)
         tx_hash_pay_less = stellar.send_kin(offer['address'], offer['price'] - 1, orderid1)
         print('tx_hash: %s' % tx_hash_pay_less)
-
-        # give it some time to boil
-        print('sleeping 2 seconds...')
-        sleep(2)
 
         # try to redeem the goods - shuld fail
         print('trying to redeem with underpayed tx...')
@@ -224,10 +216,6 @@ class Tester(unittest.TestCase):
         tx_hash_other_orderid = stellar.send_kin(offer['address'], offer['price'], "other_order_id")
         print('tx_hash: %s' % tx_hash_other_orderid)
 
-        # give it some time to boil
-        print('sleeping 2 seconds...')
-        sleep(2)
-
         # try to redeem the goods - should fail
         print('trying to redeem with unknown order_id...')
         resp = self.app.post('/offer/redeem',
@@ -257,9 +245,6 @@ class Tester(unittest.TestCase):
         tx_hash = stellar.send_kin(offer['address'], offer['price'], orderid1)
         print('tx_hash: %s' % tx_hash)
 
-        # give it some time to boil
-        print('sleeping 2 seconds...')
-        sleep(2)
 
         #try to redeem the goods - should work
         resp = self.app.post('/offer/redeem',

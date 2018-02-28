@@ -132,7 +132,7 @@ def process_order(user_id, tx_hash):
     goods  = []
     res, tx_data = stellar.extract_tx_payment_data(tx_hash)
     if not res:
-        print('unexpected tx_data for hash: %s' % tx_hash)
+        print('could not extract tx_data for tx_hash: %s' % tx_hash)
         return False, None
 
     # get the order from the db using the memo in the tx

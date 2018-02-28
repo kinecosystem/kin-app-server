@@ -1,5 +1,7 @@
 from kinappserver import app, config
 from kinappserver.utils import InvalidUsage
+from time import sleep
+import kin
 
 ASSET_NAME = 'KIN'
 
@@ -23,7 +25,28 @@ def extract_tx_payment_data(tx_hash):
     if tx_hash is None:
         raise InvalidUsage('invlid params')
 
-    tx_data = app.kin_sdk.get_transaction_data(tx_hash)
+    # get the tx_hash data. this might take a second, 
+    # so retry while 'Resource Missing' is recevied
+    count = 0
+    tx_data = None
+    while (count < 5):
+        try:
+            tx_data = app.kin_sdk.get_transaction_data(tx_hash)
+        except kin.exceptions.SdkHorizonError as e:
+            if e != 'Resource Missing':
+                # some unknown exception. abort
+                break
+            else:
+                count = count + 1
+                sleep(1)
+        else:
+            break
+
+
+    if tx_data is None:
+        print('could not get tx_data for tx_hash: %s' % tx_hash)
+        return False, {}
+
     if len(tx_data.operations) != 1:
         print('too many ops')
         return False, {}

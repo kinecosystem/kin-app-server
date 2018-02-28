@@ -32,8 +32,8 @@ class Tester(unittest.TestCase):
         self.postgresql.stop()
 
 
-    def test_book_and_redeem(self):
-        """test creating orders"""
+    def test_book_and_dont_redeem(self):
+        """test creating orders but not redeeming them"""
         offerid = '0'
         offer = {'id': offerid,
                  'type': 'gift-card',
