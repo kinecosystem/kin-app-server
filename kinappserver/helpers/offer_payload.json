@@ -1,0 +1,12 @@
+  { 
+  "id": "0",
+  "type": "gift-card",
+  "domain": "music",
+  "title": "offer_title",
+  "desc": "offer_desc",
+  "image_url": "https://s3.amazonaws.com/kinapp-static/brand_img/dunkin.png",
+  "price": 800,
+  "address": "GC3VEVNMPOIFIQOKUYFROWR6LWQQM57OQSWLLD6TGDIPOA5S6UXQWHVL",
+  "provider": 
+    {"name": "om-nom-nom-food", "logo_url": "https://s3.amazonaws.com/kinapp-static/brand_img/dunkin.png"},
+  }

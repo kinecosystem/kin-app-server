@@ -1,1 +1,1 @@
-curl -H "Content-Type: application/json" -X POST -d @payload.json http://ec2-54-210-163-107.compute-1.amazonaws.com/task/add
+curl -H "Content-Type: application/json" -X POST -d @task_payload.json http://ec2-54-210-163-107.compute-1.amazonaws.com/task/add
