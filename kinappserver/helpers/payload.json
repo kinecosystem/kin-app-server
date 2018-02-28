@@ -4,7 +4,7 @@
     "title": "do you know task number 0?",
     "desc": "horses_4_dummies",
     "type": "questionnaire",
-    "kin_reward": 250,
+    "price": 250,
     "min_to_complete": 2,
     "start_date": "2018-02-15T08:10:58.970460+00:00",
     "tags": [
@@ -14,7 +14,7 @@
       "kardashians",
       "horses"
     ],
-    "author": {
+    "provider": {
       "name": "om-nom-nom-food",
       "image_url": "https://s3.amazonaws.com/kinapp-static/brand_img/dunkin.png"
     },

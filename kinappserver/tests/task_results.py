@@ -40,11 +40,11 @@ class Tester(unittest.TestCase):
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
-          'kin_reward': 1,
+          'price': 1,
           'min_to_complete': 2,
           'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
-          'author': 
+          'provider': 
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
           'items': [
             {
@@ -67,11 +67,11 @@ class Tester(unittest.TestCase):
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
-          'kin_reward': 1,
+          'price': 1,
           'min_to_complete': 2,
           'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
-          'author': 
+          'provider': 
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
           'items': [
             {

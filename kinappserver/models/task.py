@@ -57,16 +57,16 @@ class Task(db.Model):
     task_type = db.Column(db.String(40), nullable=False, primary_key=True)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
     desc = db.Column(db.String(80), nullable=False, primary_key=False)
-    kin_reward = db.Column(db.Integer(), nullable=False, primary_key=False)
+    price = db.Column(db.Integer(), nullable=False, primary_key=False)
     min_to_complete = db.Column(db.Integer(), nullable=False, primary_key=False)
-    author_data = db.Column(db.JSON)
+    provider_data = db.Column(db.JSON)
     tags = db.Column(db.JSON)
     items = db.Column(db.JSON)
     start_date = db.Column(ArrowType)
     update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
-        return '<task_id: %s, task_type: %s, title: %s, desc: %s, kin_reward: %s, min_to_complete: %s, start_date>' % (self.task_id, self.task_type, self.title, self.desc, self.kin_reward, self.min_to_complete, self.start_data)
+        return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, min_to_complete: %s, start_date>' % (self.task_id, self.task_type, self.title, self.desc, self.price, self.min_to_complete, self.start_data)
 
 
 def list_all_task_data():
@@ -89,9 +89,9 @@ def get_task_by_id(task_id):
     task_json['title'] = task.title
     task_json['type'] = task.task_type
     task_json['desc'] = task.desc
-    task_json['kin_reward'] = task.kin_reward
+    task_json['price'] = task.price
     task_json['min_to_complete'] = task.min_to_complete
-    task_json['author'] = task.author_data
+    task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
     task_json['items'] = task.items
     task_json['start_date'] = task.start_date.timestamp
@@ -105,9 +105,9 @@ def add_task(task_json):
         task.task_type = task_json['type']
         task.title = task_json['title']
         task.desc = task_json['desc']
-        task.kin_reward = int(task_json['kin_reward'])
+        task.price = int(task_json['price'])
         task.min_to_complete = int(task_json['min_to_complete'])
-        task.author_data = task_json['author']
+        task.provider_data = task_json['provider']
         task.tags = task_json['tags']
         task.items = task_json['items']
         print(task_json['start_date'])
@@ -138,4 +138,4 @@ def get_reward_for_task(task_id):
     task = Task.query.filter_by(task_id=task_id).first()
     if not task:
         raise InternalError('no such task_id')
-    return task.kin_reward
+    return task.price
