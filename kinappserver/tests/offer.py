@@ -97,7 +97,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # get the user's current offers - should be empty as no offers are enabled
-        resp = self.app.get('/user/offers?user-id=%s' % userid)
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['offers'], [])
@@ -122,7 +123,8 @@ class Tester(unittest.TestCase):
 
 
         # get the user's current offers - should have one offer
-        resp = self.app.get('/user/offers?user-id=%s' % userid)
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(data['offers']), 1)
@@ -137,11 +139,11 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # get the user's current offers - should have one offers again
-        resp = self.app.get('/user/offers?user-id=%s' % userid)
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['offers'], [])
-
         
         # enable offer 1 and 2
         resp = self.app.post('/offer/set_active',
@@ -161,7 +163,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # get the user's current offers - should have 2 offers
-        resp = self.app.get('/user/offers?user-id=%s' % userid)
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
 
@@ -176,7 +179,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # get the user's current offers - should have 3 offers - check that the price is ascending
-        resp = self.app.get('/user/offers?user-id=%s' % userid)
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
 

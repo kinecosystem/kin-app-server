@@ -32,7 +32,7 @@ class Tester(unittest.TestCase):
 
     def test_task_storing(self):
         """test storting and getting tasks"""
-        task = {  'task_id': 0,
+        task = {  'id': 0,
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'questionnaire',
@@ -84,7 +84,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # get the user's current tasks
-        resp = self.app.get('/user/tasks?user-id=%s' % userid)
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
         data = json.loads(resp.data)
         print(data)
         self.assertEqual(resp.status_code, 200)

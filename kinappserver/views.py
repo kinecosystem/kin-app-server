@@ -366,7 +366,7 @@ def book_offer_api():
 def get_offers_api():
     '''return the list of availble offers for this user'''
     try:
-        user_id = request.args.get('user-id', None)
+        user_id = extract_header(request)
         if user_id is None:
             raise InvalidUsage('no user_id')
     except Exception as e:

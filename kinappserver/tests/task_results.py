@@ -124,7 +124,8 @@ class Tester(unittest.TestCase):
         sleep(1)
 
         # get the user's current tasks
-        resp = self.app.get('/user/tasks?user-id=%s' % userid)
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks',headers=headers)
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
@@ -149,7 +150,8 @@ class Tester(unittest.TestCase):
         #print(model.list_all_users_results_data())
 
         # get the user's current tasks
-        resp = self.app.get('/user/tasks?user-id=%s' % userid)
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
