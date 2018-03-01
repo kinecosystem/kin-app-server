@@ -8,5 +8,5 @@
   "price": 800,
   "address": "GC3VEVNMPOIFIQOKUYFROWR6LWQQM57OQSWLLD6TGDIPOA5S6UXQWHVL",
   "provider": 
-    {"name": "om-nom-nom-food", "logo_url": "https://s3.amazonaws.com/kinapp-static/brand_img/dunkin.png"},
+    {"name": "om-nom-nom-food", "image_url": "https://s3.amazonaws.com/kinapp-static/brand_img/dunkin.png"},
   }}

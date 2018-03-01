@@ -43,7 +43,7 @@ class Tester(unittest.TestCase):
                   'price': 800,
                   'address': 'the address',
                   'provider': 
-                    {'name': 'om-nom-nom-food', 'logo_url': 'http://inter.webs/horsie.jpg'},
+                    {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
                 }
 
 
