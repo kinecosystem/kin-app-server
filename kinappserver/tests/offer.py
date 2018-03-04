@@ -79,7 +79,47 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        offer['id'] = '3'
+        offer['price'] = 50
+        # try to add a new offer - should succeed
+        resp = self.app.post('/offer/add',
+                            data=json.dumps({
+                            'offer': offer}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         print(models.list_all_offer_data())
+
+        # create a good instance for the offer (0)
+        resp = self.app.post('/good/add',
+            data=json.dumps({
+            'offer_id': '0',
+            'good_type': 'code',
+            'value': 'abcd'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # create a good instance for the offer (1)
+        resp = self.app.post('/good/add',
+            data=json.dumps({
+            'offer_id': '1',
+            'good_type': 'code',
+            'value': 'abcd'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # create a good instance for the offer (2)
+        resp = self.app.post('/good/add',
+            data=json.dumps({
+            'offer_id': '2',
+            'good_type': 'code',
+            'value': 'abcd'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
         # register a user
         userid = uuid4()
@@ -95,6 +135,11 @@ class Tester(unittest.TestCase):
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.get('/good/inventory')
+        self.assertEqual(resp.status_code, 200)
+        print(json.loads(resp.data)['inventory'])
+
 
         # get the user's current offers - should be empty as no offers are enabled
         headers = {USER_ID_HEADER: userid}
@@ -189,6 +234,24 @@ class Tester(unittest.TestCase):
         self.assertEqual((data['offers'][0]['price']), 50)
         self.assertEqual((data['offers'][1]['price']), 100)
         self.assertEqual((data['offers'][2]['price']), 800)
+
+        resp = self.app.post('/offer/set_active',
+            data=json.dumps({
+            'id': '3',
+            'is_active': True}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # get the user's current offers - should have 2 offers
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/offers', headers=headers)
+        data = json.loads(resp.data)
+        print(data)
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertEqual(len(data['offers']), 3)
+
 
 
 

@@ -155,3 +155,7 @@ def release_unclaimed_goods():
 
     print('released %s goods' % released)
     return released
+
+def goods_avilable(offer_id):
+    '''returns true if the given offer_id has avilable goods'''
+    return (db.session.query(Good).filter(Good.offer_id==offer_id).filter(Good.order_id==None).count()>0)

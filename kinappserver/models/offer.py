@@ -94,8 +94,19 @@ def get_cost_and_address(offer_id):
 def get_offers_for_user(user_id):
     '''return the list of active offers for this user'''
     # at the moment, return all active offers to all users
+
     offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
-    offers_json_array = []
+
+    # filter out offers with no goods
+    redeemable_offers = []
+    from .good import goods_avilable
     for offer in offers:
+        if goods_avilable(offer.offer_id):
+            redeemable_offers.append(offer)
+        else:
+            print('filtering out unredeemable offer-id: %s' % offer.offer_id)
+
+    offers_json_array = []
+    for offer in redeemable_offers:
          offers_json_array.append(offer_to_json(offer))
     return offers_json_array
