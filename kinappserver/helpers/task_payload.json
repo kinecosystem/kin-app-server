@@ -1,6 +1,6 @@
 {
   "task": {
-    "task_id": "0",
+    "id": "0",
     "title": "do you know task number 0?",
     "desc": "horses_4_dummies",
     "type": "questionnaire",
