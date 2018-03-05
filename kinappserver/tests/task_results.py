@@ -114,7 +114,7 @@ class Tester(unittest.TestCase):
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'token': 'fake_token',
                             'app_ver': '1.0'}),
                             headers={},
@@ -125,7 +125,7 @@ class Tester(unittest.TestCase):
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
-        resp = self.app.get('/user/tasks',headers=headers)
+        resp = self.app.get('/user/tasks', headers=headers)
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
@@ -143,7 +143,7 @@ class Tester(unittest.TestCase):
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
-        print('task_results: %s' % json.loads(resp.data))
+        print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
         sleep(8) # give the thread enough time to complete before the db connection is shutdown
 
@@ -168,7 +168,7 @@ class Tester(unittest.TestCase):
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
-        print('task_results: %s' % json.loads(resp.data))
+        print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
         sleep(8) # give the thread enough time to complete before the db connection is shutdown
 

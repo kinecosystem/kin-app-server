@@ -24,7 +24,7 @@ class Good(db.Model):
     good_type = db.Column(db.String(40), primary_key=False, nullable=False)
     tx_hash = db.Column('tx_hash', db.String(100), db.ForeignKey("transaction.tx_hash"), primary_key=False, nullable=True)
     created_at = db.Column(ArrowType)
-    updated_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
         return '<sid: %s, offer_id: %s, order_id: %s, type: %s, tx_hash: %s, created_at: %s, updated_at: %s>' % (self.sid, self.offer_id, self.order_id, self.good_type, self.tx_hash, self.created_at, self.updated_at)

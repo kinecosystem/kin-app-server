@@ -9,11 +9,11 @@ class Offer(db.Model):
     offer_domain = db.Column(db.String(40), nullable=False, primary_key=False)
     is_active = db.Column(db.Boolean, unique=False, default=False)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
-    desc = db.Column(db.String(80), nullable=False, primary_key=False)
+    desc = db.Column(db.String(500), nullable=False, primary_key=False)
     image_url = db.Column(db.String(80), nullable=False, primary_key=False)
     kin_cost = db.Column(db.Integer(), nullable=False, primary_key=False)
     address = db.Column(db.String(80), nullable=False, primary_key=False)
-    update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
+    update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     provider_data = db.Column(db.JSON)
 
     def __repr__(self):
@@ -93,10 +93,8 @@ def get_cost_and_address(offer_id):
 
 def get_offers_for_user(user_id):
     '''return the list of active offers for this user'''
-    # at the moment, return all active offers to all users
-
     offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
-
+    
     # filter out offers with no goods
     redeemable_offers = []
     from .good import goods_avilable

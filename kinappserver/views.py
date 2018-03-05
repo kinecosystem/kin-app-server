@@ -10,7 +10,7 @@ import redis_lock
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_task_ids_for_user, get_task_by_id, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods
 
 
 def limit_to_local_host():
@@ -200,9 +200,7 @@ def add_task_api():
 def get_next_task():
     '''returns the current task for the user with the given id'''
     user_id = extract_header(request)
-    tasks = []
-    for tid in get_task_ids_for_user(user_id):
-        tasks.append(get_task_by_id(tid))
+    tasks = get_tasks_for_user(user_id)
     print(tasks)
     return jsonify(tasks=tasks)
 
@@ -232,7 +230,10 @@ def onboard_user():
             try:
                 print('creating account with address %s and amount %s' % (public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE))
                 tx_id = create_account(public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE)
-                set_onboarded(user_id, True)
+                if(tx_id):
+                    set_onboarded(user_id, True)
+                else:
+                    raise InternalError('failed to create account at %s' % public_address)
             except Exception as e:
                 print('exception trying to create account:%s' % e)
                 raise InternalError('unable to create account')

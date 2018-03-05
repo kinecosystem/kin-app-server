@@ -9,6 +9,15 @@ import requests
 
 from kinappserver import config
 
+def seconds_to_utc_midnight():
+    '''returs the (integer) number of seconds to the next midnight at utc'''
+    from datetime import datetime, timedelta, timezone
+
+    tomorrow = datetime.date(datetime.today() + timedelta(days=1))
+    # convert date objevt to datetime. hack from https://stackoverflow.com/a/27760382/1277048
+    tomorrow_dt = datetime.strptime(tomorrow.strftime('%Y%m%d'), '%Y%m%d')
+    # calc hours until tomorrow
+    return(int((tomorrow_dt - datetime.utcnow()).total_seconds()))
 
 
 class InvalidUsage(Exception):

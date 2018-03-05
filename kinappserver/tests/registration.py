@@ -35,7 +35,7 @@ class Tester(unittest.TestCase):
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'token': 'fake_token',
                             'app_ver': '1.0'}),
             headers={},
@@ -47,7 +47,7 @@ class Tester(unittest.TestCase):
         assert(users[userid]['os'] == 'android')
         assert(users[userid]['device_model'] == 'samsung8')
         assert(users[userid]['device_id'] == '234234')
-        assert(users[userid]['time_zone'] == '+05:00')
+        assert(users[userid]['time_zone'] == '05:00')
         assert(users[userid]['push_token'] == 'fake_token')
         assert(users[userid]['sid'] == 1)
 
@@ -59,7 +59,7 @@ class Tester(unittest.TestCase):
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'token': 'fake_token',
                             'app_ver': '1.0'}),
             headers={},
@@ -73,7 +73,7 @@ class Tester(unittest.TestCase):
                             'os': 'iOS',
                             'device_model': 'samsung8',
                             'device_id': '234234',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'token': 'fake_token',
                             'app_ver': '1.0'}),
             headers={},
@@ -88,7 +88,7 @@ class Tester(unittest.TestCase):
                             'os': 'iOS',
                             'device_model': 'samsung8',
                             'device_id': '234234',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')
@@ -101,7 +101,7 @@ class Tester(unittest.TestCase):
                             'os': 'iOS',
                             'device_model': 'samsung8',
                             'device_id': '234234',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')
@@ -120,7 +120,7 @@ class Tester(unittest.TestCase):
                             'os': 'win',
                             'device_model': 'samsung8',
                             'device_id': '234234',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')
@@ -134,7 +134,7 @@ class Tester(unittest.TestCase):
                             'os': 'iOS',
                             'device_model': 'samsung8',
                             'device_id': '234234',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')

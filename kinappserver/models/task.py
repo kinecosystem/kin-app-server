@@ -3,8 +3,8 @@ from sqlalchemy_utils import UUIDType, ArrowType
 import arrow
 import json
 
-from kinappserver import db
-from kinappserver.utils import InvalidUsage, InternalError
+from kinappserver import db, config
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_utc_midnight
 
 
 class UserTaskResults(db.Model):
@@ -14,7 +14,7 @@ class UserTaskResults(db.Model):
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
     task_id = db.Column(db.String(40), nullable=False, primary_key=True)
     results = db.Column(db.JSON)
-    update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
+    update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
 
 def store_task_results(user_id, task_id, results):
@@ -42,6 +42,11 @@ def store_task_results(user_id, task_id, results):
         raise InvalidUsage('cant store_task_results')
 
 
+def get_user_task_results(user_id):
+    '''get the user's task results'''
+    return UserTaskResults.query.order_by(UserTaskResults.update_at).all()
+
+
 def list_all_users_results_data():
     '''returns a dict of all the user-results-data'''
     response = {}
@@ -63,7 +68,7 @@ class Task(db.Model):
     tags = db.Column(db.JSON)
     items = db.Column(db.JSON)
     start_date = db.Column(ArrowType)
-    update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
+    update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
         return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, min_to_complete: %s, start_date>' % (self.task_id, self.task_type, self.title, self.desc, self.price, self.min_to_complete, self.start_data)
@@ -78,11 +83,71 @@ def list_all_task_data():
     return response
 
 
-def get_task_by_id(task_id):
-    '''return a json representing the task'''
+def get_tasks_for_user(user_id):
+    '''return an array of the current tasks for this user
+
+       if the policy is 'no-cooldown', always return the next avilable task with the time
+       set to the user's local 'now'
+
+       if the policy is 'default', always return the next availble task but take into account
+       the last time this user submitted task-results, and apply cooldown if nessecary 
+    '''
+
+    from .user import get_user_app_data
+    from .task import get_user_task_results
+
+    user_app_data = get_user_app_data(user_id)
+    # no cooldown policy: just return the time-zone adjusted next task
+    if config.TASK_ALLOCATION_POLICY=='no-cooldown':
+        if len(user_app_data.completed_tasks) == 0:
+            return [get_task_by_id('0')]
+        else:
+            return [get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))))]
+    else:
+        # with cooldown policy: 
+        
+        task_results = get_user_task_results(user_id)
+        if not task_results:
+            return [get_task_by_id('0')]
+
+        if should_apply_cooldown(task_results):
+            shift_seconds = calculate_cooldown(user_id)
+        return [get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), shift_seconds)]
+
+
+def calculate_cooldown(user_id):
+    '''calculate the time shift (in seconds) needed for cooldown, for this user'''
+    from .user import get_user_tz
+    user_tz = get_user_tz(user_id)
+    seconds_to_midnight = seconds_to_utc_midnight()
+    print('seconds to next utc midnight: %s, tz-shift in seconds: %s' % (seconds_to_midnight, -(60*60 * int(user_tz))))
+    cooldown = (seconds_to_midnight - (60*60 * int(user_tz)))
+    print('total cooldown, in seconds: %s' % cooldown)
+    return cooldown
+
+
+def should_apply_cooldown(ordered_task_results):
+    '''return True if cooldown is needed.
+    
+       cooldown is defined as time since the last time task results were submitted.
+    '''
+    if not ordered_task_results:
+        # no result, so no cooldown
+        return False
+    else:
+        if (arrow.utcnow() - arrow.get(ordered_task_results[0].update_at)).total_seconds() < 24*60*60:
+            print('cooldown needed. last submission: %s, total seconds ago: %s' % (ordered_task_results[0].update_at, (arrow.utcnow() - arrow.get(ordered_task_results[0].update_at)).total_seconds()))
+            return True
+        return False
+
+
+def get_task_by_id(task_id, shift_seconds=0):
+    '''return the json representation of the task or None if no such task exists'''
+
     task = Task.query.filter_by(task_id=task_id).first()
     if task is None:
         return None
+
     # build the json object:
     task_json = {}
     task_json['id'] = task_id
@@ -94,7 +159,7 @@ def get_task_by_id(task_id):
     task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
     task_json['items'] = task.items
-    task_json['start_date'] = task.start_date.timestamp
+    task_json['start_date'] = arrow.utcnow().shift(seconds=shift_seconds).timestamp
     return task_json
 
 

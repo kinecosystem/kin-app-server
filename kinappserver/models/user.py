@@ -1,8 +1,9 @@
 '''The User model'''
 from sqlalchemy_utils import UUIDType
 import json
+from arrow import utcnow
 
-from kinappserver import db
+from kinappserver import db, config
 from kinappserver.utils import InvalidUsage, send_apns, send_gcm
 
 
@@ -15,9 +16,9 @@ class User(db.Model):
     os_type = db.Column(db.String(10), primary_key=False, nullable=False)
     device_model = db.Column(db.String(40), primary_key=False, nullable=False)
     push_token = db.Column(db.String(200), primary_key=False, nullable=True)
-    time_zone = db.Column(db.String(10), primary_key=False, nullable=False)
+    time_zone = db.Column(db.Integer(), primary_key=False, nullable=False)
     device_id = db.Column(db.String(40), primary_key=False, nullable=True)
-    created_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now())
+    created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
     onboarded = db.Column(db.Boolean, unique=False, default=False)
 
     def __repr__(self):
@@ -52,8 +53,13 @@ def set_onboarded(user_id, onboarded):
     db.session.commit()
 
 
+
+
 def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver):
     '''create a new user and commit to the database. should only fail if the user_id is duplicate'''
+    def parse_timezone(tz):
+        '''convert -02:00 to -2 etc'''
+        return int(tz[:(tz.find(':'))])
     if user_exists(user_id):
             raise InvalidUsage('refusing to create user. user_id %s already exists' % user_id)
     user = User()
@@ -61,7 +67,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user.os_type = os_type
     user.device_model = device_model
     user.push_token = push_token
-    user.time_zone = time_zone
+    user.time_zone = parse_timezone(time_zone)
     user.device_id = device_id
     db.session.add(user)
     db.session.commit()
@@ -97,7 +103,7 @@ class UserAppData(db.Model):
     '''
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
     app_ver = db.Column(db.String(40), primary_key=False, nullable=False)
-    update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
+    update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     completed_tasks = db.Column(db.JSON)
 
 
@@ -129,19 +135,10 @@ def get_user_app_data(user_id):
     return user_app_data
 
 
-def get_task_ids_for_user(user_id):
-    '''get the list of current task_ids for this user.
-       the current policy is to hand the user the n+1 task, 
-       which happens to be the len(completed tasks):
-       len(0) == 1
-       len(0,1) == 2
-       len(0,1,2) == 3 etc
-    '''
-    user_app_data = get_user_app_data(user_id)
-    if len(user_app_data.completed_tasks) == 0:
-        return ['0']
-    else:
-        return [str(len(json.loads(user_app_data.completed_tasks)))]
+def get_user_tz(user_id):
+    '''return the user timezone'''
+    return User.query.filter_by(user_id=user_id).one().time_zone
+
 
 
 def get_user_push_data(user_id):

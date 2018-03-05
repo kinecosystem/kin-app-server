@@ -76,7 +76,7 @@ class Tester(unittest.TestCase):
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'token': 'fake_token',
                             'app_ver': '1.0'}),
             headers={},
@@ -89,6 +89,8 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print(data)
         self.assertEqual(resp.status_code, 200)
+
+        self.assertEqual(models.get_user_task_results(userid), [])
 
 
 

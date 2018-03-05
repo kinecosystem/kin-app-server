@@ -14,7 +14,7 @@ class Transaction(db.Model):
     incoming_tx = db.Column(db.Boolean, unique=False, default=False) # are the moneys coming or going
     remote_address = db.Column(db.String(100), nullable=False, primary_key=False)
     tx_info = db.Column(db.JSON)
-    update_at = db.Column(db.DateTime(timezone=False), server_default=db.func.now(), onupdate=db.func.now())
+    update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
         return '<tx_hash: %s, user_id: %s, amount: %s, remote_address: %s, incoming_tx: %s, tx_info: %s,  update_at: %s>' % (self.tx_hash, self.user_id, self.amount, self.remote_address, self.incoming_tx, self.tx_info, self.update_at)

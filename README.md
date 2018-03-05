@@ -66,7 +66,7 @@ go into python console and:
                             'os': 'android/ios',
                             'device_model': 'samsung8',
                             'device_id': '<some device id like iemi>',
-                            'time_zone': '+05:00',
+                            'time_zone': '05:00',
                             'token':'optional push token'}),
                         }
     returns 200OK, 'status'='ok' on success
