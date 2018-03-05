@@ -32,6 +32,7 @@ class Tester(unittest.TestCase):
         """test storting and getting offers"""
         offer = { 'id': '0',
                   'type': 'gift-card',
+                  'type_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
                   'domain': 'music',
                   'title': 'offer_title',
                   'desc': 'offer_desc',

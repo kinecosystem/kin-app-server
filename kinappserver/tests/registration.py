@@ -47,7 +47,7 @@ class Tester(unittest.TestCase):
         assert(users[userid]['os'] == 'android')
         assert(users[userid]['device_model'] == 'samsung8')
         assert(users[userid]['device_id'] == '234234')
-        assert(users[userid]['time_zone'] == '05:00')
+        assert(users[userid]['time_zone'] == int('5'))
         assert(users[userid]['push_token'] == 'fake_token')
         assert(users[userid]['sid'] == 1)
 

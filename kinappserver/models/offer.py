@@ -6,11 +6,12 @@ class Offer(db.Model):
     '''the Offer class represent a single offer'''
     offer_id = db.Column(db.String(40), nullable=False, primary_key=True)
     offer_type = db.Column(db.String(40), nullable=False, primary_key=False)
+    offer_type_image_url = db.Column(db.String(100), nullable=False, primary_key=False)
     offer_domain = db.Column(db.String(40), nullable=False, primary_key=False)
     is_active = db.Column(db.Boolean, unique=False, default=False)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
     desc = db.Column(db.String(500), nullable=False, primary_key=False)
-    image_url = db.Column(db.String(80), nullable=False, primary_key=False)
+    image_url = db.Column(db.String(100), nullable=False, primary_key=False)
     kin_cost = db.Column(db.Integer(), nullable=False, primary_key=False)
     address = db.Column(db.String(80), nullable=False, primary_key=False)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
@@ -36,6 +37,7 @@ def offer_to_json(offer):
     offer_json = {}
     offer_json['id'] = offer.offer_id
     offer_json['type'] = offer.offer_type
+    offer_json['type_image_url'] = offer.offer_type_image_url
     offer_json['domain'] = offer.offer_domain
     offer_json['title'] = offer.title
     offer_json['desc'] = offer.desc
@@ -64,6 +66,7 @@ def add_offer(offer_json):
         offer = Offer()
         offer.offer_id = str(offer_json['id'])
         offer.offer_type = offer_json['type']
+        offer.offer_type_image_url = offer_json['type_image_url']
         offer.offer_domain = offer_json['domain']
         offer.title = offer_json['title']
         offer.desc = offer_json['desc']

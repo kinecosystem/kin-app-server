@@ -36,6 +36,7 @@ class Tester(unittest.TestCase):
         offerid = '0'
         offer = { 'id': offerid,
                   'type': 'gift-card',
+                  'type_image_url': "https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png",
                   'domain': 'music',
                   'title': 'offer_title',
                   'desc': 'offer_desc',
