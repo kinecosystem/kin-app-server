@@ -27,12 +27,12 @@
           {
             "id": "235",
             "text": "a snake!",
-            "image_url": "cdn.helllo.com/horse.jpg"
+            "image_url": "https://s3.amazonaws.com/kinapp-static/tasks/0/q1.png"
           },
           {
             "id": "2465436",
             "text": "a cat!",
-            "image_url": "cdn.helllo.com/kitty.jpg"
+            "image_url": "https://s3.amazonaws.com/kinapp-static/tasks/0/q2.png"
           }
         ]
       }
