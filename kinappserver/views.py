@@ -273,7 +273,7 @@ def register_api():
         raise InvalidUsage('bad-request')
     else:
         try:
-            add_offer(user_id, os, device_model, token, time_zone, device_id, app_ver)
+            create_user(user_id, os, device_model, token, time_zone, device_id, app_ver)
         except InvalidUsage as e:
             raise InvalidUsage('duplicate-userid')
         else:
