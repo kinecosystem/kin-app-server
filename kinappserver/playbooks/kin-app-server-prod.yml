@@ -8,12 +8,12 @@
 
   vars:
    environment_config:
-     ENV: stage
+     ENV: prod
    datadog_api_key: "7d29689e7460c08f21128628adf11afd"
    debug: True
-   nginx_domain: ec2-54-210-163-107.compute-1.amazonaws.com #kin-app-stage.rounds.video
-   db_connstr: 'postgresql://kinappstageuser:password@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage'
-   redis_endpoint: 'kin-app-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
+   nginx_domain: prod.kinitapp.com
+   db_connstr: 'postgresql://kinappstageuser:password@kinappprod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappprod'
+   redis_endpoint: 'kin-app-server-prod.qugi0x.ng.0001.use1.cache.amazonaws.com'
    redis_port: 6379
    eshu_username: admin
    eshu_password: admin

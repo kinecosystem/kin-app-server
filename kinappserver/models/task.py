@@ -165,6 +165,11 @@ def get_task_by_id(task_id, shift_seconds=0):
 
 def add_task(task_json):
     try:
+        # sanity for task data
+        for item in task_json['items']:
+            if item['type'] not in ['textimage', 'text']:
+                raise InvalidUsage('cant add task with invalid item-type')
+
         task = Task()
         task.task_id = task_json['id']
         task.task_type = task_json['type']
