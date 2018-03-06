@@ -1,5 +1,6 @@
-  { "offer": { 
-  "id": "0",
+{ 
+  "offer": { 
+  "id": "8",
   "type": "gift-card",
   "type_image_url": "https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png",
   "domain": "music",
@@ -10,4 +11,6 @@
   "address": "GC3VEVNMPOIFIQOKUYFROWR6LWQQM57OQSWLLD6TGDIPOA5S6UXQWHVL",
   "provider": 
     {"name": "om-nom-nom-food", "image_url": "https://s3.amazonaws.com/kinapp-static/brand_img/dunkin.png"}
-  }}
+  },
+  "set_active": true
+}

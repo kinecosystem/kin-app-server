@@ -273,7 +273,7 @@ def register_api():
         raise InvalidUsage('bad-request')
     else:
         try:
-            create_user(user_id, os, device_model, token, time_zone, device_id, app_ver)
+            add_offer(user_id, os, device_model, token, time_zone, device_id, app_ver)
         except InvalidUsage as e:
             raise InvalidUsage('duplicate-userid')
         else:
@@ -318,10 +318,11 @@ def add_offer_api():
     payload = request.get_json(silent=True)
     try:
         offer = payload.get('offer', None)
+        set_active = payload.get('set_active', False) # optional
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
-    if add_offer(offer):
+    if add_offer(offer, set_active):
         return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add offer')

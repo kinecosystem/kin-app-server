@@ -60,7 +60,7 @@ def set_offer_active(offer_id, is_active):
     return True
 
 
-def add_offer(offer_json):
+def add_offer(offer_json, set_active=False):
     '''adds an offer to the db'''
     try:
         offer = Offer()
@@ -81,6 +81,8 @@ def add_offer(offer_json):
         print('cant add offer to db with id %s' % offer_json['id'])
         return False
     else:
+        if set_active:
+            set_offer_active(str(offer_json['id']), True)
         return True
 
 
