@@ -15,10 +15,10 @@ CORS(app)
 from flask_sqlalchemy import SQLAlchemy
 from kinappserver import config
 
-app.kin_sdk = SDK(base_seed=config.STELLAR_BASE_SEED,
+app.kin_sdk = SDK(secret_key=config.STELLAR_BASE_SEED,
                               horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                               network=config.STELLAR_NETWORK,
-                              channel_seeds=config.STELLAR_CHANNEL_SEEDS)
+                              channel_secret_keys=config.STELLAR_CHANNEL_SEEDS)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
