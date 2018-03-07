@@ -110,6 +110,7 @@ def get_tasks_for_user(user_id):
         if not task_results:
             return [get_task_by_id('0')]
 
+        shift_seconds = 0
         if should_apply_cooldown(task_results):
             shift_seconds = calculate_cooldown(user_id)
         return [get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), shift_seconds)]
