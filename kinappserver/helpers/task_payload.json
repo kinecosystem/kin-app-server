@@ -1,16 +1,16 @@
 {
   "task": {
-    "task_id": "0",
+    "id": "0",
     "title": "Welcome to Kin!",
     "desc": "Complete this Welcome activity and earn your first KINs!",
     "type": "questionnaire",
-    "kin_reward": 5000,
+    "price": 5000,
     "min_to_complete": 2,
     "start_date": "2018-02-15T08:10:58.970460+00:00",
     "tags": [
       "Finance"
     ],
-    "author": {
+    "provider": {
       "name": "Kinit Team",
       "image_url": "https://s3.amazonaws.com/kinapp-static/brand_img/kin_logo.png"
     },

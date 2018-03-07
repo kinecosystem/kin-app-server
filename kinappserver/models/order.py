@@ -37,7 +37,7 @@ def create_order(user_id, offer_id):
     '''creates a new order and allocate the goods for it'''
 
     # dont let users create too many simultaneous orders
-    if len(get_orders_for_user(user_id)) >= config.MAX_SIMULTANEOUS_ORDERS_PER_USER:
+    if len(get_orders_for_user(user_id)) >= int(config.MAX_SIMULTANEOUS_ORDERS_PER_USER):
         return None
 
     # get offer cost
