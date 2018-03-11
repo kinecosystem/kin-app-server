@@ -31,7 +31,7 @@ def extract_tx_payment_data(tx_hash):
     # so retry while 'Resource Missing' is recevied
     count = 0
     tx_data = None
-    while (count < 5):
+    while (count < config.STELLAR_TIMEOUT_SEC):
         try:
             tx_data = app.kin_sdk.get_transaction_data(tx_hash)
 
@@ -43,7 +43,7 @@ def extract_tx_payment_data(tx_hash):
 
 
     if tx_data is None:
-        print('could not get tx_data for tx_hash: %s' % tx_hash)
+        print('could not get tx_data for tx_hash: %s. waited %s seconds' % (tx_hash, count))
         return False, {}
 
     if len(tx_data.operations) != 1:
