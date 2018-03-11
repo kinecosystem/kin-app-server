@@ -60,14 +60,18 @@ class GoodAdmin(sqla.ModelView):
     column_display_pk = True
     form_columns = ['sid']
 
-admin.add_view(UserAdmin(User, db.session))
-admin.add_view(UserAppDataAdmin(UserAppData, db.session))
-admin.add_view(UserTaskResultsAdmin(UserTaskResults, db.session))
-admin.add_view(TaskAdmin(Task, db.session))
-admin.add_view(TransactionAdmin(Transaction, db.session))
-admin.add_view(OfferAdmin(Offer, db.session))
-admin.add_view(OrderAdmin(Order, db.session))
-admin.add_view(GoodAdmin(Good, db.session))
+if config.DEBUG:
+    print('enabling admin UI...')
+    admin.add_view(UserAdmin(User, db.session))
+    admin.add_view(UserAppDataAdmin(UserAppData, db.session))
+    admin.add_view(UserTaskResultsAdmin(UserTaskResults, db.session))
+    admin.add_view(TaskAdmin(Task, db.session))
+    admin.add_view(TransactionAdmin(Transaction, db.session))
+    admin.add_view(OfferAdmin(Offer, db.session))
+    admin.add_view(OrderAdmin(Order, db.session))
+    admin.add_view(GoodAdmin(Good, db.session))
+else:
+    print('NOT enabling admin UI')
 
 import kinappserver.views
 import time

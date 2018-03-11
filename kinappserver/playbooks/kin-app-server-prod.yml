@@ -11,7 +11,7 @@
    environment_config:
      ENV: prod
    datadog_api_key: "7d29689e7460c08f21128628adf11afd"
-   debug: True
+   debug: False
    nginx_domain: prod.kinitapp.com
    db_connstr: 'postgresql://kinappprod:password@kinappprod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappprod'
    redis_endpoint: 'kin-app-server-prod.qugi0x.ng.0001.use1.cache.amazonaws.com'
