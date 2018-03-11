@@ -34,13 +34,10 @@ def extract_tx_payment_data(tx_hash):
     while (count < 5):
         try:
             tx_data = app.kin_sdk.get_transaction_data(tx_hash)
-        except kin.exceptions.SdkHorizonError as e:
-            if e != 'Resource Missing':
-                # some unknown exception. abort
-                break
-            else:
-                count = count + 1
-                sleep(1)
+
+        except kin.ResourceNotFoundError as e:
+            count = count + 1
+            sleep(1)
         else:
             break
 

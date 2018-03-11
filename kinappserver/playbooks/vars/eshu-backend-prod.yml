@@ -1,0 +1,49 @@
+apps:
+
+    - id: kinapp
+      numConsumers: 2
+      amqpURI: amqp://admin:admin@eshu-rabbit-prod.kinitapp.com:5672/kinapp
+
+      queue:
+        exchangeName: eshu-exchange
+        exchangeType: direct
+        queueName: eshu-queue
+        bindingKey: eshu-key
+        queueArgs:
+          x-dead-letter-exchange: eshu-exchange.dead
+          x-max-priority: 2
+
+      dispatcher:
+        checkAppName: false
+
+      feedback:
+        numProducers: 1
+        cacheSize: 100
+        queue:
+          exchangeName: eshu-feedback-exchange
+          exchangeType: direct
+          bindingKey: eshu-feedback-key
+          reliable: true
+
+      providers:
+        enabled:
+          - gcm
+        all:
+          gcm:
+            senderId: "1047515902881"
+            apiKey: AIzaSyCiTcK_-CMcrsw-Xl3NXTUZdoTBpSjsvCo
+            sandbox: false
+            dryRun: false
+            requestReceipts: false
+            monitorConnection: true
+            sendTimeout: 20
+            debug: true
+            circuitBreaker:
+              tripFailures: 10
+          apns:
+            certFile: certs/PushServicesProductionHTTP2.p12
+            password:
+            sandbox: false
+            topic: com.rounds.RoundsForiPhone
+            circuitBreaker:
+              tripFailures: 10

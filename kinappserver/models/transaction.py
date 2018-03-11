@@ -1,4 +1,6 @@
 '''The model for the Kin App Server.'''
+import datetime
+
 from sqlalchemy_utils import UUIDType
 
 from kinappserver import db
@@ -42,3 +44,9 @@ def create_tx(tx_hash, user_id, remote_address, incoming_tx, amount, tx_info):
         db.session.commit()
     except Exception as e:
         print('cant add tx to db with id %s' % tx_hash)
+
+
+def count_transactions_by_minutes_ago(minutes_ago=1):
+    """return the number of failed txs since minutes_ago"""
+    time_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes = minutes_ago)
+    return len(Transaction.query.filter(Transaction.update_at>=time_minutes_ago).all())

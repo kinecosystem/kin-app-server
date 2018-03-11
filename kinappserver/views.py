@@ -10,7 +10,7 @@ import redis_lock
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago
 
 
 def limit_to_local_host():
@@ -441,3 +441,15 @@ def release_unclaimed_api():
     if not config.DEBUG:
         limit_to_local_host()
     return jsonify(status='ok', released=release_unclaimed_goods())
+
+@app.route('/metrics/count_txs', methods=['GET'])
+def count_txs():
+    '''return stats about transactions in the system'''
+    limit_to_local_host()
+    minutes_ago = request.args.get('minutes_ago', None)
+    if (not minutes_ago):
+        raise InvalidUsage('no minutes_ago provided')
+
+    return jsonify(
+        count=count_transactions_by_minutes_ago(int(minutes_ago))
+        )
