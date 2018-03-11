@@ -7,6 +7,7 @@
     - kin-app-server
 
   vars:
+   deployment_env: prod
    environment_config:
      ENV: prod
    datadog_api_key: "7d29689e7460c08f21128628adf11afd"

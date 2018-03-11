@@ -442,6 +442,7 @@ def release_unclaimed_api():
         limit_to_local_host()
     return jsonify(status='ok', released=release_unclaimed_goods())
 
+
 @app.route('/metrics/count_txs', methods=['GET'])
 def count_txs():
     '''return stats about transactions in the system'''
