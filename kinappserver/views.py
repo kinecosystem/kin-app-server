@@ -5,11 +5,12 @@ from threading import Thread
 from uuid import UUID, uuid4
 
 from flask import request, jsonify, abort
+from flask_api import status
 import redis_lock
 
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
-from kinappserver.utils import InvalidUsage, InternalError, send_gcm
+from kinappserver.utils import InvalidUsage, InternalError, send_gcm, errors_to_string
 from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago
 
 
@@ -357,11 +358,11 @@ def book_offer_api():
             raise InvalidUsage('invalid payload')
     except Exception as e:
         raise InvalidUsage('bad-request')
-    order_id = create_order(user_id, offer_id)
+    order_id, error_code = create_order(user_id, offer_id)
     if order_id:
         return jsonify(status='ok', order_id=order_id)
     else:
-        raise InvalidUsage('failed to book offer')
+        return jsonify(status='error', reason=errors_to_string(error_code)), status.HTTP_400_BAD_REQUEST
 
 
 @app.route('/user/offers', methods=['GET'])

@@ -9,6 +9,20 @@ import requests
 
 from kinappserver import config
 
+ERROR_ORDERS_COOLDOWN = -1
+ERROR_NO_GOODS = -2
+
+
+def errors_to_string(errorcode):
+    '''translate error codes to human-readable reasons'''
+    if errorcode == ERROR_ORDERS_COOLDOWN:
+        return 'orders-cooldown'
+    elif errorcode == ERROR_NO_GOODS:
+        return 'no-goods'
+    else:
+        print('should never happen')
+        return 'unknown-error'
+
 def seconds_to_utc_midnight():
     '''returs the (integer) number of seconds to the next midnight at utc'''
     from datetime import datetime, timedelta, timezone

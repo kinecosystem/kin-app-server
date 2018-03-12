@@ -2,6 +2,7 @@ setuptools==37.0.0
 datadog
 psycopg2==2.7.3.2
 Flask==0.12.2
+Flask-API==1.0
 Flask-SQLAlchemy==2.3.2
 SQLAlchemy==1.1.14
 sqlalchemy_utils

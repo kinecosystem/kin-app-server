@@ -1,7 +1,7 @@
 from uuid import uuid4
 import arrow
 
-from kinappserver import db, config, stellar
+from kinappserver import db, config, stellar, utils
 from kinappserver.utils import InternalError
 from sqlalchemy_utils import UUIDType, ArrowType
 
@@ -38,13 +38,14 @@ def create_order(user_id, offer_id):
 
     # dont let users create too many simultaneous orders
     if len(get_orders_for_user(user_id)) >= int(config.MAX_SIMULTANEOUS_ORDERS_PER_USER):
-        return None
+        print('rejecting users oferr - too many orders')
+        return None, utils.ERROR_ORDERS_COOLDOWN
 
     # get offer cost
     kin_amount, address = get_cost_and_address(offer_id)
     if None in (kin_amount, address):
         # should never happen
-        return None
+        raise InternalError('failed to get offer details')
 
     # make up an order_id
     order_id = str(uuid4())[:config.ORDER_ID_LENGTH] #max you can fit inside a stellar memo
@@ -53,7 +54,7 @@ def create_order(user_id, offer_id):
     if not allocate_good(offer_id, order_id):
         # no good available to allocate. bummer
         print('out of goods for offer_id: %s' % offer_id)
-        return None
+        return None, utils.ERROR_NO_GOODS
 
     try:
         order = Order()
@@ -69,7 +70,7 @@ def create_order(user_id, offer_id):
         print('failed to create a new order with id %s' % order_id)
         raise InternalError('failed to create a new order')
     else:
-        return str(order_id)
+        return str(order_id), None
 
 
 def list_all_order_data():
