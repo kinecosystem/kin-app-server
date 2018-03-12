@@ -3,14 +3,31 @@ import requests
 import json
 import os
 
-URL_PREFIX = "http://localhost:8000"
+URL_PREFIX = 'http://localhost:8000'
 
-def metric(url, metric_name):
+def simple_metric(url, metric_name, key):
+    '''reports a simple, numerical metric to statsd that is returned via REST api from the server'''
     response = requests.get(url)
     try:
-	    count = json.loads(response.text)['count']
+        value = json.loads(response.text)[key]
     except:
-	    count = -1
-    statsd.increment('kinitapp.%s.%s' % (os.environ['ENV'], metric_name), count)
+        value = -1
+        statsd.increment('kinitapp.%s.%s' % (os.environ['ENV'], metric_name), value)
 
-metric(URL_PREFIX + "/count_txs?minutes_ago=1", "tx_count")
+def report_inventory():
+    '''reports the total and available number of goods for every offer id in the server'''
+    response = requests.get(URL_PREFIX + '/good/inventory')
+    try:
+        inventory = json.loads(response.text)['inventory']
+    except:
+        print('cant collect inventory')
+        pass
+    for offer_id in inventory.keys():
+        metric_name_total = 'inventory-offerid-%s-total' % offer_id
+        metric_name_avilable = 'inventory-offerid-%s-available' % offer_id
+        statsd.increment('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_avilable), [offer_id]['available'])
+        statsd.increment('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_total), [offer_id]['total'])
+
+
+simple_metric(URL_PREFIX + '/count_txs?minutes_ago=1', 'tx_count', 'count')
+report_inventory()
