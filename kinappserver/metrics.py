@@ -24,9 +24,9 @@ def report_inventory():
         pass
     for offer_id in inventory.keys():
         metric_name_total = 'inventory-offerid-%s-total' % offer_id
-        metric_name_avilable = 'inventory-offerid-%s-available' % offer_id
-        statsd.increment('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_avilable), [offer_id]['available'])
-        statsd.increment('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_total), [offer_id]['total'])
+        metric_name_unallocated = 'inventory-offerid-%s-unallocated' % offer_id
+        statsd.increment('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_unallocated), inventory[offer_id]['unallocated'])
+        statsd.increment('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_total), inventory[offer_id]['total'])
 
 
 simple_metric(URL_PREFIX + '/count_txs?minutes_ago=1', 'tx_count', 'count')
