@@ -10,6 +10,8 @@
    deployment_env: stage
    environment_config:
      ENV: stage
+   datadog_config:
+     log_level: INFO
    datadog_api_key: "7d29689e7460c08f21128628adf11afd"
    debug: True
    nginx_domain: stage.kinitapp.com
