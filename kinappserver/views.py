@@ -177,6 +177,7 @@ def quest_answers():
         print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
 
+    increment_metric('task_completed')
     return jsonify(status='ok', memo=str(memo))
 
 

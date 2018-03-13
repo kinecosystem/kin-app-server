@@ -1,4 +1,4 @@
-from kinappserver import app, config
+from kinappserver import app, config, utils
 from kinappserver.utils import InvalidUsage
 from time import sleep
 import kin
@@ -9,7 +9,13 @@ def create_account(public_address, initial_xlm_amount):
     '''create an account for the given public address'''
     #TODO all repeating logic?
     print('creating account with balance:%s' % initial_xlm_amount)
-    return app.kin_sdk.create_account(public_address, starting_balance=initial_xlm_amount)
+    try:
+        return app.kin_sdk.create_account(public_address, starting_balance=initial_xlm_amount)
+    except Exception as e:
+        increment_metric('create_account_error')
+        print('caught exception creating account for address %s' % (public_address))
+        print(e)
+
 
 
 def send_kin(public_address, amount, memo=None):
@@ -17,8 +23,15 @@ def send_kin(public_address, amount, memo=None):
     #TODO add repeating logic?
     print('sending kin to address: %s' % public_address) #TODO REMOVE
     from stellar_base.asset import Asset
-    kin_asset = Asset(ASSET_NAME, config.STELLAR_KIN_ISSUER_ADDRESS)
-    return app.kin_sdk._send_asset(kin_asset, public_address, amount, memo)
+    try:
+        kin_asset = Asset(ASSET_NAME, config.STELLAR_KIN_ISSUER_ADDRESS)
+        return app.kin_sdk._send_asset(kin_asset, public_address, amount, memo)
+    except Exception as e:
+        increment_metric('send_kin_error')
+        print('caught exception sending %s kin to address %s' % (amount, public_address))
+        print(e)
+        
+
 
 
 def extract_tx_payment_data(tx_hash):
@@ -44,6 +57,7 @@ def extract_tx_payment_data(tx_hash):
 
     if tx_data is None:
         print('could not get tx_data for tx_hash: %s. waited %s seconds' % (tx_hash, count))
+        increment_metric('tx_data_timeout')
         return False, {}
 
     if len(tx_data.operations) != 1:
