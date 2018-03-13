@@ -108,11 +108,13 @@ def get_tasks_for_user(user_id):
         
         task_results = get_user_task_results(user_id)
         if not task_results:
+            print('no previous task results, no cooldown needed')
             return [get_task_by_id('0')]
 
         shift_seconds = 0
         if should_apply_cooldown(task_results):
             shift_seconds = calculate_cooldown(user_id)
+            print('applying cooldown: shift in seconds: %s' % user_id)
         return [get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), shift_seconds)]
 
 
