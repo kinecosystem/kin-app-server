@@ -1,6 +1,6 @@
 # tester config file. should be overwritten by ansible in prod/stage.
 
-ENV = 'test'
+DEPLOYMENT_ENV = 'test'
 DEBUG = True
 DB_CONNSTR = "this gets overwritten by the tester code. it acutally uses a temp postgress db on the local disc"
 REDIS_ENDPOINT = 'localhost'

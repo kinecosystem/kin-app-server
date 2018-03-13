@@ -38,7 +38,7 @@ def create_order(user_id, offer_id):
 
     # dont let users create too many simultaneous orders
     if len(get_orders_for_user(user_id)) >= int(config.MAX_SIMULTANEOUS_ORDERS_PER_USER):
-        print('rejecting users oferr - too many orders')
+        print('rejecting users ofer - too many orders')
         return None, utils.ERROR_ORDERS_COOLDOWN
 
     # get offer cost
