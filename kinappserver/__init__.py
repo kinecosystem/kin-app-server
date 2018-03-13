@@ -1,3 +1,5 @@
+import sys
+
 from flask import Flask
 from flask_cors import CORS
 from flask_admin import Admin
@@ -15,7 +17,16 @@ CORS(app)
 from flask_sqlalchemy import SQLAlchemy
 from kinappserver import config
 
-app.kin_sdk = SDK(secret_key=config.STELLAR_BASE_SEED,
+# get the base seed: either directly from config or decrypt using kms
+base_seed = config.STELLAR_BASE_SEED
+if not base_seed:
+    utils.decrypt_kms_key(config.STELLAR_BASE_SEED_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_BASE_SEED, config.KMS_KEY_AWS_REGION)
+
+if not base_seed:
+    print('failed to acquire base seed - aborting')
+    sys.exit(-1)
+
+app.kin_sdk = SDK(secret_key=base_seed,
                               horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                               network=config.STELLAR_NETWORK,
                               channel_secret_keys=config.STELLAR_CHANNEL_SEEDS)

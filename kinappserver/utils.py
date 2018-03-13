@@ -82,21 +82,12 @@ def send_apns(token, payload):
     #TODO 
     pass
 
-'''
-def get_private_key(config):
-    # return the private key or None. If a private key was given in the config, return that.
-    # Otherwise, try to decrypt the private key using KMS.
 
-    if config.PRIVATE_KEY:
-        return config.PRIVATE_KEY
-    else: # try to get the key from KMS
-        if not (config.KMS_KEY_AWS_REGION and config.CIPHER_TEXT_BLOB and config.ENCRYPTED_PRIVATE_KEY):
-            return None
-        # decrypt the key:
-        return decrypt_key(config.KMS_KEY_AWS_REGION, config.CIPHER_TEXT_BLOB, config.ENCRYPTED_PRIVATE_KEY)
-    return None
-
-def decrypt_key(kms_key_region, cipher_text_blob, encrypted_private_key):
+def decrypt_kms_key(cipher_text_blob, encrypted_private_key, kms_key_region):
+    '''uses KMS to return the unencrypted key for the given encrypted key, blob and aws region'''
+    if not (cipher_text_blob and encrypted_private_key and kms_key_region):
+        print('cant decrypt key - bad input params')
+        return None
     try:
         kms_client = boto3.client('kms', region_name=kms_key_region)
 
@@ -113,4 +104,3 @@ def decrypt_key(kms_key_region, cipher_text_blob, encrypted_private_key):
     except Exception as e:
         print('failed to extract key from kms: %s' % e)
         return None
-'''
