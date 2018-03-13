@@ -10,7 +10,7 @@ import redis_lock
 
 from kinappserver import app, config
 from kinappserver.stellar import create_account, send_kin
-from kinappserver.utils import InvalidUsage, InternalError, send_gcm, errors_to_string
+from kinappserver.utils import InvalidUsage, InternalError, send_gcm, errors_to_string, increment_metric
 from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago
 
 
@@ -245,6 +245,7 @@ def onboard_user():
         else:
             raise InvalidUsage('already creating account for user_id: %s and address: %s' % (user_id, public_address))
 
+        increment_metric('user_onboarded')
         return jsonify(status='ok')
 
 
@@ -279,6 +280,7 @@ def register_api():
             raise InvalidUsage('duplicate-userid')
         else:
             print('created user with user_id %s' % (user_id))
+            increment_metric('user_registered')
             return jsonify(status='ok')
 
 
@@ -360,6 +362,7 @@ def book_offer_api():
         raise InvalidUsage('bad-request')
     order_id, error_code = create_order(user_id, offer_id)
     if order_id:
+        increment_metric('offers_booked')
         return jsonify(status='ok', order_id=order_id)
     else:
         return jsonify(status='error', reason=errors_to_string(error_code)), status.HTTP_400_BAD_REQUEST
@@ -402,6 +405,7 @@ def purchase_api():
             success, goods = process_order(user_id, tx_hash)
             if not success:
                 raise InvalidUsage('cant redeem with tx_hash:%s' % tx_hash)
+            increment_metric('offers_redeemed')
             return jsonify(status='ok', goods=goods)
         else:
             return jsonify(status='error', reason='already processing tx_hash')
@@ -441,7 +445,9 @@ def release_unclaimed_api():
     '''endpoint used to populate the server with goods'''
     if not config.DEBUG:
         limit_to_local_host()
-    return jsonify(status='ok', released=release_unclaimed_goods())
+    released=release_unclaimed_goods()
+    increment_metric('unclaimed_released', released)
+    return jsonify(status='ok', released=released)
 
 
 @app.route('/metrics/count_txs', methods=['GET'])

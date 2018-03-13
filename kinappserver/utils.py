@@ -1,6 +1,7 @@
 import base64
 
-from flask import jsonify
+from datadog import statsd
+from flask import jsonify, config
 from kinappserver import db, amqp_publisher, config
 import boto3
 import requests
@@ -11,6 +12,13 @@ from kinappserver import config
 
 ERROR_ORDERS_COOLDOWN = -1
 ERROR_NO_GOODS = -2
+
+
+
+def increment_metric(metric_name, count=1):
+    '''increment a counter with the given name and value'''
+    # set env to undefined for local tests (which do not emit stats, as there's no agent)
+    statsd.increment('kinitapp.%s.%s' % (config.DEPLOYMENT_ENV, metric_name), count)
 
 
 def errors_to_string(errorcode):

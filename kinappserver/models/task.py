@@ -44,7 +44,7 @@ def store_task_results(user_id, task_id, results):
 
 def get_user_task_results(user_id):
     '''get the user's task results'''
-    return UserTaskResults.query.order_by(UserTaskResults.update_at).all()
+    return UserTaskResults.query.filter_by(user_id=user_id).order_by(UserTaskResults.update_at).all()
 
 
 def list_all_users_results_data():
@@ -107,14 +107,17 @@ def get_tasks_for_user(user_id):
         # with cooldown policy: 
         
         task_results = get_user_task_results(user_id)
-        if not task_results:
+        if len(task_results) == 0:
             print('no previous task results, no cooldown needed')
             return [get_task_by_id('0')]
 
         shift_seconds = 0
+        print('task results so far: %s' % task_results)
         if should_apply_cooldown(task_results):
             shift_seconds = calculate_cooldown(user_id)
             print('applying cooldown: shift in seconds: %s' % user_id)
+        else:
+            print('no cooldown needed')
         return [get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), shift_seconds)]
 
 
@@ -135,8 +138,8 @@ def should_apply_cooldown(ordered_task_results):
        cooldown is defined as time since the last time task results were submitted.
     '''
     if not ordered_task_results:
-        # no result, so no cooldown
-        return False
+        # should not happened, as checked before
+        raise InternalError('no task results were passed')
     else:
         if (arrow.utcnow() - arrow.get(ordered_task_results[0].update_at)).total_seconds() < 24*60*60:
             print('cooldown needed. last submission: %s, total seconds ago: %s' % (ordered_task_results[0].update_at, (arrow.utcnow() - arrow.get(ordered_task_results[0].update_at)).total_seconds()))
