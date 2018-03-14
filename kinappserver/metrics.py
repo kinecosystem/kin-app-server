@@ -28,6 +28,4 @@ def report_inventory():
         statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_unallocated), inventory[offer_id]['unallocated'])
         statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_total), inventory[offer_id]['total'])
 
-
-simple_metric_increment(URL_PREFIX + '/count_txs?minutes_ago=1', 'tx_count', 'count')
 report_inventory()

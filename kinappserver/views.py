@@ -449,16 +449,3 @@ def release_unclaimed_api():
     released=release_unclaimed_goods()
     increment_metric('unclaimed_released', released)
     return jsonify(status='ok', released=released)
-
-
-@app.route('/metrics/count_txs', methods=['GET'])
-def count_txs():
-    '''return stats about transactions in the system'''
-    limit_to_local_host()
-    minutes_ago = request.args.get('minutes_ago', None)
-    if (not minutes_ago):
-        raise InvalidUsage('no minutes_ago provided')
-
-    return jsonify(
-        count=count_transactions_by_minutes_ago(int(minutes_ago))
-        )

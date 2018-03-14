@@ -50,7 +50,6 @@ class Tester(unittest.TestCase):
 
                 
         # count the number of txs in the last minute
-        resp = self.app.get('/metrics/count_txs?minutes_ago=1')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(json.loads(resp.data)['count'], 0)
 
@@ -262,11 +261,6 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print(data)
-
-        # count the number of txs in the last minute
-        resp = self.app.get('/metrics/count_txs?minutes_ago=1')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['count'], 1)
 
         # no goods at this point
         resp = self.app.get('/good/inventory')
