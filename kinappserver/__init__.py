@@ -20,16 +20,27 @@ from kinappserver import config, utils
 # get the base seed: either directly from config or decrypt using kms
 base_seed = config.STELLAR_BASE_SEED
 if not base_seed:
+    print('decrypting base seed')
     base_seed = utils.decrypt_kms_key(config.STELLAR_BASE_SEED_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_BASE_SEED, config.KMS_KEY_AWS_REGION)
 
 if not base_seed:
     print('failed to acquire base seed - aborting')
     sys.exit(-1)
 
+# get the channel seeds: either directly from config or decrypt using kms
+channel_seeds = config.STELLAR_CHANNEL_SEEDS
+if not channel_seeds:
+    print('decrypting channel seeds')
+    channel_seeds = utils.decrypt_kms_key(config.STELLAR_CHANNEL_SEEDS_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_CHANNEL_SEEDS, config.KMS_KEY_AWS_REGION)
+
+if not channel_seeds:
+    print('failed to acquire channel seeds - aborting')
+    sys.exit(-1)
+
 app.kin_sdk = SDK(secret_key=base_seed,
                               horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                               network=config.STELLAR_NETWORK,
-                              channel_secret_keys=config.STELLAR_CHANNEL_SEEDS)
+                              channel_secret_keys=channel_seeds)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
