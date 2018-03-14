@@ -15,12 +15,12 @@ app = Flask(__name__)
 CORS(app)
 
 from flask_sqlalchemy import SQLAlchemy
-from kinappserver import config
+from kinappserver import config, utils
 
 # get the base seed: either directly from config or decrypt using kms
 base_seed = config.STELLAR_BASE_SEED
 if not base_seed:
-    utils.decrypt_kms_key(config.STELLAR_BASE_SEED_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_BASE_SEED, config.KMS_KEY_AWS_REGION)
+    base_seed = utils.decrypt_kms_key(config.STELLAR_BASE_SEED_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_BASE_SEED, config.KMS_KEY_AWS_REGION)
 
 if not base_seed:
     print('failed to acquire base seed - aborting')

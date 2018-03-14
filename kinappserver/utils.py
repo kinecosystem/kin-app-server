@@ -2,11 +2,11 @@ import base64
 
 from datadog import statsd
 from flask import jsonify, config
-from kinappserver import db, amqp_publisher, config
+from kinappserver import amqp_publisher, config
 import boto3
 import requests
-#from Crypto import Random
-#from Crypto.Cipher import AES
+from Crypto import Random
+from Crypto.Cipher import AES
 
 from kinappserver import config
 
