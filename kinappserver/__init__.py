@@ -31,7 +31,7 @@ if not base_seed:
 channel_seeds = config.STELLAR_CHANNEL_SEEDS
 if not channel_seeds:
     print('decrypting channel seeds')
-    channel_seeds = utils.decrypt_kms_key(config.STELLAR_CHANNEL_SEEDS_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_CHANNEL_SEEDS, config.KMS_KEY_AWS_REGION)
+    channel_seeds = utils.convert_byte_to_string_array(utils.decrypt_kms_key(config.STELLAR_CHANNEL_SEEDS_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_CHANNEL_SEEDS, config.KMS_KEY_AWS_REGION))
 
 if not channel_seeds:
     print('failed to acquire channel seeds - aborting')

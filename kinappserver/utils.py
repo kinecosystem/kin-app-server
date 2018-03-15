@@ -1,4 +1,5 @@
 import base64
+import json
 
 from datadog import statsd
 from flask import jsonify, config
@@ -40,6 +41,11 @@ def seconds_to_utc_midnight():
     tomorrow_dt = datetime.strptime(tomorrow.strftime('%Y%m%d'), '%Y%m%d')
     # calc hours until tomorrow
     return(int((tomorrow_dt - datetime.utcnow()).total_seconds()))
+
+def convert_byte_to_string_array(input_byte):
+    '''converts the input (a bytestring to a string array without using eval'''
+    # this is used to convert the decrypted seed channels bytestring to an array
+    return json.loads('['+input_byte.decode("utf-8") +']')
 
 
 class InvalidUsage(Exception):
