@@ -32,6 +32,7 @@
    stellar_kin_issuer_address: GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V
    stellar_channel_seeds: '' # leave empty if you use an encrypted key
    stellar_horizon_url: https://horizon-testnet.stellar.org/
+   stellar_public_address: ''
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
    stellar_base_seed_cipher_text_blob: 'AQIDAHhNi2+wi6LhNwRYR4UfKOaWqkHEzcCVcmTNoKpTpIuuGwHO5D8rdjR+YI7CVT2IUgl1AAAAbjBsBgkqhkiG9w0BBwagXzBdAgEAMFgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMs6YDEK/sIaV5qmesAgEQgCuCvmG12Gq+hDlgaY0gkn5AX4ohWHnhgMHr4uqpkE4KvWBMj6QVAhVCJEpN'

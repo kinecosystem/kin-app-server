@@ -72,7 +72,7 @@ class GoodAdmin(sqla.ModelView):
     column_display_pk = True
     form_columns = ['sid']
 
-if config.DEBUG:
+if False: #config.DEBUG:
     print('enabling admin UI...')
     admin.add_view(UserAdmin(User, db.session))
     admin.add_view(UserAppDataAdmin(UserAppData, db.session))
