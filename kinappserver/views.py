@@ -203,7 +203,11 @@ def get_next_task():
     '''returns the current task for the user with the given id'''
     user_id = extract_header(request)
     tasks = get_tasks_for_user(user_id)
-    print(tasks)
+    try:
+        # handle unprintable chars...
+        print(tasks)
+    except Exception as e:
+        print(e)
     return jsonify(tasks=tasks)
 
 
