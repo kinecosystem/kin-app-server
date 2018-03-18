@@ -1,28 +1,30 @@
 # kin-app-server
-Note: this repo is at a very early stage of work.
+Note: this is still very much only an MVP.
 
 An internal service for the Kin App aimed at:
     - storing user data (userid, push-token, device-id etc)
-    - oferring spend and earn opportunities for clients
+    - offering spend and earn opportunities for clients
     - paying clients for completing tasks
 
 ## General Design
 At the moment we design for simplicity: this is a straight-forward flask webapp backed
 by a Postgress SQL server in AWS. In the future we may split the logic to frontend/backend (with a message queue) but at the moment everything is synchronous.
 
-- We intend to monitor with datadog/pagerduty
-- We intend to add events in the server (currently there are none) for BI
+- We intend to monitor/alert with datadog/pagerduty
+- Refer to the groundcontrol repo for ops data
 
 ## Prerequisites
 Make sure you have Python 3 >=3.6.4.
 and ansible >= 2.4
 you'll need to get the ansible-galaxy deps with
-    ansible-galaxy install -r playbooks/requirements.yml
+
+     ansible-galaxy install -r playbooks/requirements.yml
 
 ## Installation
 this server is intended to be deployed on an ubuntu machine with python3. You'll need to tell Ansible to use the python3 interpreter.
 
 run ansible (2.4.2.0) with this command:
+
     ansible-playbook playbooks/kin-app-server.yml -i <public_ip>, -e 'ansible_python_interpreter=/usr/bin/python3'
 
 ## Configuration
