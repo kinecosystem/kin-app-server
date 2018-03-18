@@ -48,11 +48,6 @@ class Tester(unittest.TestCase):
                     {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
                 }
 
-                
-        # count the number of txs in the last minute
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['count'], 0)
-
         # add an offer
         resp = self.app.post('/offer/add',
                             data=json.dumps({

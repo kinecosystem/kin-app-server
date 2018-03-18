@@ -8,7 +8,7 @@ from flask import request, jsonify, abort
 from flask_api import status
 import redis_lock
 
-from kinappserver import app, config
+from kinappserver import app, config, stellar
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm, errors_to_string, increment_metric
 from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago
@@ -440,12 +440,25 @@ def inventory_api():
         limit_to_local_host()
     return jsonify(status='ok', inventory=list_inventory())
 
-
-@app.route('/good/release_unclaimed', methods=['GET'])
-def release_unclaimed_api():
+@app.route('/balance', methods=['GET'])
+def bvalance_api():
     '''endpoint used to populate the server with goods'''
     if not config.DEBUG:
         limit_to_local_host()
+    balance = {}
+    balance['kin'] = stellar.get_kin_balance(config.STELLAR_PUBLIC_ADDRESS)
+    balance['xlm'] = stellar.get_xlm_balance(config.STELLAR_PUBLIC_ADDRESS)
+    if balance[kin] is not None and balance['xlm'] is not None:
+        return jsonify(status='ok', balance=balance)
+    else:
+        return jsonify(status='error'), status.HTTP_500_INTERNAL_SERVER_ERROR  
+
+
+@app.route('/good/release_unclaimed', methods=['GET'])
+def release_unclaimed_api():
+    '''endpoint used to get the current balance'''
+    if not config.DEBUG:
+        limit_to_local_host()
     released=release_unclaimed_goods()
-    increment_metric('unclaimed_released', released)
+
     return jsonify(status='ok', released=released)

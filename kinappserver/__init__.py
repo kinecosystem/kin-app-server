@@ -15,7 +15,7 @@ app = Flask(__name__)
 CORS(app)
 
 from flask_sqlalchemy import SQLAlchemy
-from kinappserver import config, kms
+from kinappserver import config, kms, stellar
 
 base_seed, channel_seeds = kms.get_stellar_credentials()
 if not base_seed or not channel_seeds:
@@ -26,6 +26,11 @@ app.kin_sdk = SDK(secret_key=base_seed,
                               horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                               network=config.STELLAR_NETWORK,
                               channel_secret_keys=channel_seeds)
+
+# get (and print) the current balance for the account:
+print('the current KIN balance: %s' % stellar.get_kin_balance(config.STELLAR_PUBLIC_ADDRESS))
+# get (and print) the current balance for the account:
+print('the current XLM balance: %s' % stellar.get_xlm_balance(config.STELLAR_PUBLIC_ADDRESS))
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

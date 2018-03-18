@@ -1,7 +1,7 @@
 {
   "task": {
-    "id": "0",
-    "title": "Welcome to Kin!",
+    "id": "4",
+    "title": "Welcome to task 4!",
     "desc": "Complete this Welcome activity and earn your first KINs!",
     "type": "questionnaire",
     "price": 5000,

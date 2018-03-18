@@ -88,3 +88,23 @@ def extract_tx_payment_data(tx_hash):
     data['amount'] = op.get('amount', None)
     data['to_address'] = op.get('to_address', None)
     return True, data
+
+def get_kin_balance(public_address):
+    '''returns the current kin balance for this account'''
+    try:
+        from stellar_base.asset import Asset
+        kin_asset = Asset(ASSET_NAME, config.STELLAR_KIN_ISSUER_ADDRESS)
+        return app.kin_sdk._get_account_asset_balance(public_address, kin_asset)
+    except Exception as e:
+        print(e)
+        print('could not get kin balance for address: %s' % public_address)
+        return None
+
+def get_xlm_balance(public_address):
+    '''returns the current xl, balance for this account'''
+    try:
+        return app.kin_sdk.get_account_native_balance(public_address)
+    except Exception as e:
+        print(e)
+        print('could not get xlm balance for address: %s' % public_address)
+        return None
