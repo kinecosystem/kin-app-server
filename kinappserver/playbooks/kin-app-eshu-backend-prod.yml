@@ -11,7 +11,7 @@
     datadog_api_key: "7d29689e7460c08f21128628adf11afd"
     datadog_config:
       tags: "service:eshu-backend"
-    env: STAGE
+    env: PROD
     target_name: eshu-backend
     log_level: debug
 

@@ -17,8 +17,26 @@ class UserTaskResults(db.Model):
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
 
+def user_in_cooldown(user_id):
+    '''returns true iff the user is in cooldown'''
+    if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
+        return False
+
+    task_results = get_user_task_results(user_id)
+    if len(task_results) == 0:
+        # no previous results, so no cooldown
+        return False
+
+    return should_apply_cooldown(task_results)
+
+
 def store_task_results(user_id, task_id, results):
     '''store the results provided by the user'''
+
+    # reject hackers trying to send task results too soon
+    if user_in_cooldown(user_id):
+        return False
+
     try:
         # store the results
         userTaskResults = UserTaskResults()
@@ -37,13 +55,14 @@ def store_task_results(user_id, task_id, results):
         user_app_data.completed_tasks = json.dumps(completed_tasks)
         db.session.add(user_app_data)
         db.session.commit()
+        return True
     except Exception as e:
         print(e)
         raise InvalidUsage('cant store_task_results')
 
 
 def get_user_task_results(user_id):
-    '''get the user's task results'''
+    '''get the user's task results, ordered by update_at'''
     return UserTaskResults.query.filter_by(user_id=user_id).order_by(UserTaskResults.update_at).all()
 
 
@@ -94,7 +113,6 @@ def get_tasks_for_user(user_id):
     '''
 
     from .user import get_user_app_data
-    from .task import get_user_task_results
 
     user_app_data = get_user_app_data(user_id)
     # no cooldown policy: just return the time-zone adjusted next task
@@ -109,7 +127,7 @@ def get_tasks_for_user(user_id):
                 return [task]
     else:
         # with cooldown policy: 
-        
+        # set the next task's time to _just_ after the cooldown
         task_results = get_user_task_results(user_id)
         if len(task_results) == 0:
             print('no previous task results, no cooldown needed')
@@ -118,7 +136,7 @@ def get_tasks_for_user(user_id):
         shift_seconds = 0
         print('task results so far: %s' % task_results)
         if should_apply_cooldown(task_results):
-            shift_seconds = calculate_cooldown(user_id)
+            shift_seconds = calculate_timeshift(user_id)
             print('applying cooldown: shift in seconds: %s' % shift_seconds)
         else:
             print('no cooldown needed')
@@ -129,7 +147,7 @@ def get_tasks_for_user(user_id):
             return [task]
 
 
-def calculate_cooldown(user_id):
+def calculate_timeshift(user_id):
     '''calculate the time shift (in seconds) needed for cooldown, for this user'''
     from .user import get_user_tz
     user_tz = get_user_tz(user_id)

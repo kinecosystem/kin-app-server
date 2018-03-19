@@ -169,7 +169,12 @@ def quest_answers():
         #TODO more input checks here
     except Exception as e:
         raise InvalidUsage('bad-request')
-    store_task_results(user_id, task_id, results)
+
+    if not store_task_results(user_id, task_id, results):
+        # should never happen: the client sent the results too soon
+        print('rejecting user %s task %s results' % (user_id, task_id))
+        increment_metric('premature_task_results')
+        return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_400_BAD_REQUEST
     try:
         memo = str(uuid4())[:config.ORDER_ID_LENGTH] # generate a memo string and send it to the client
         reward_store_and_push(address, task_id, send_push, user_id, memo)

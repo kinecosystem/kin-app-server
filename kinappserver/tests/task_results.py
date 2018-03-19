@@ -129,7 +129,8 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        print(data['tasks'][0]['id'])
+        print('next task id: %s' % data['tasks'][0]['id'])
+        print('next task start date: %s' % data['tasks'][0]['start_date'])
         self.assertEqual(data['tasks'][0]['id'], '0')
 
 
@@ -155,10 +156,12 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        print(data['tasks'][0]['id'])
+        print('next task id: %s' % data['tasks'][0]['id'])
+        print('next task start date: %s' % data['tasks'][0]['start_date'])
+        
         self.assertEqual(data['tasks'][0]['id'], '1')
 
-                # send task results
+        # send task results before the next task is due (due to cooldown)
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '1',
@@ -169,7 +172,7 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 400)
         sleep(8) # give the thread enough time to complete before the db connection is shutdown
 
 
