@@ -88,7 +88,7 @@
 
 - cron:
     name: "release unclaimed goods every minute"
-    job: "/opt/kin-app-server/kinappserver/cron/release_unclaimed_goods_{{deployment_env}}.sh"
+    job: "/opt/kin-app-server/kinappserver/cron/release_unclaimed_goods.sh"
   run_once: true # runs every minute, on one machine of the 2
 
 - cron:
