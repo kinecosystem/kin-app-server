@@ -24,7 +24,7 @@
    eshu_queue: eshu-queue
    eshu_virtual_host: kinapp
    eshu_appid: kinapp
-   eshu_rabbit_address: 10.0.1.20
+   eshu_rabbit_address: eshu-rabbit-prod.kinitapp.com
    stellar_timeout_sec: 10
    stellar_initial_account_balance: 10
    stellar_base_seed: '' # leave empty if you use an encrypted key
