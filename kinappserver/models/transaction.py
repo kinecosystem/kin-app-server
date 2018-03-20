@@ -3,7 +3,7 @@ import datetime
 
 from sqlalchemy_utils import UUIDType
 
-from kinappserver import db
+from kinappserver import db, stellar
 
 
 class Transaction(db.Model):
@@ -50,3 +50,25 @@ def count_transactions_by_minutes_ago(minutes_ago=1):
     """return the number of failed txs since minutes_ago"""
     time_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes = minutes_ago)
     return len(Transaction.query.filter(Transaction.update_at>=time_minutes_ago).all())
+
+
+def expected_user_kin_balance(user_id):
+    '''this function calculates the expected kin balance of the given user based on his past txs'''
+    expected_balance = 0
+    user_txs = Transaction.query.filter(Transaction.user_id==user_id).all()
+    for tx in user_txs:
+        if tx.incoming_tx:
+            expected_balance = expected_balance - tx.amount
+        else:
+            expected_balance = expected_balance + tx.amount
+    return expected_balance
+
+def get_current_user_kin_balance(user_id):
+    '''get the current kin balance for the user with the given user_id.'''
+    # determine the user's public address from pre-existing outgoing txs
+    user_outgoing_txs = Transaction.query.filter(Transaction.user_id==user_id).filter(Transaction.incoming_tx==False).all()
+    if len(user_outgoing_txs)==0:
+        return 0 # user should not have any Kins
+    else:
+        return stellar.get_kin_balance(user_outgoing_txs[0].remote_address)
+

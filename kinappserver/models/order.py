@@ -6,7 +6,7 @@ from kinappserver.utils import InternalError
 from sqlalchemy_utils import UUIDType, ArrowType
 
 from .offer import get_cost_and_address
-from .transaction import create_tx
+from .transaction import create_tx, expected_user_kin_balance, get_current_user_kin_balance
 from .good import allocate_good, finalize_good
 
 class Order(db.Model):
@@ -152,6 +152,19 @@ def process_order(user_id, tx_hash):
 
     # tx matched! docuemnt the tx in the db with a tx object
     create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id': str(order.offer_id)})
+
+    # prevent doomsday scenario: ensure that the user's expected balance matches his actual balance
+    expected_balance = expected_user_kin_balance(user_id)
+    actual_balance = get_current_user_kin_balance(user_id)
+    if actual_balance is None:
+        print('doomsday: cant get user balance, so skipping check')
+        increment_metric('doomsday-skipped')
+    elif abs(expected_balance - actual_balance) > 100:
+        print('doomsday detected and rejected: userid: %s, expected %s, actual: %s' % (user_id, expected_balance, actual_balance))
+        increment_metric('doomsday-rejected')
+        return False, None
+    else:
+        print('doomsday checked and passed: userid: %s, expected %s, actual: %s' % (user_id, expected_balance, actual_balance))
 
     # get the allocated goods
     res, good = finalize_good(order.order_id, tx_hash)
