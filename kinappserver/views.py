@@ -8,7 +8,7 @@ from flask import request, jsonify, abort
 from flask_api import status
 import redis_lock
 
-from kinappserver import app, config, stellar
+from kinappserver import app, config, stellar, utils
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm, errors_to_string, increment_metric
 from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago
@@ -176,7 +176,7 @@ def quest_answers():
         increment_metric('premature_task_results')
         return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_400_BAD_REQUEST
     try:
-        memo = str(uuid4())[:config.ORDER_ID_LENGTH] # generate a memo string and send it to the client
+        memo = utils.KINIT_MEMO_PREFIX + str(uuid4())[:utils.ORDER_ID_LENGTH] # generate a memo string and send it to the client
         reward_store_and_push(address, task_id, send_push, user_id, memo)
     except Exception as e:
         print('exception: %s' % e)

@@ -7,6 +7,9 @@ from kinappserver import config
 ERROR_ORDERS_COOLDOWN = -1
 ERROR_NO_GOODS = -2
 
+KINIT_MEMO_PREFIX = '1-kit-'
+ORDER_ID_LENGTH = 22
+
 
 def increment_metric(metric_name, count=1):
     '''increment a counter with the given name and value'''
