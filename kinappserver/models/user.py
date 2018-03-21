@@ -180,7 +180,10 @@ def get_next_task_results_ts(user_id):
     '''return the task_result_ts field for the given user'''
     try:
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
+        if userAppData is None:
+            return None
         return userAppData.next_task_ts # can be None
     except Exception as e:
         print(e)
+        print('cant get task result ts')
         raise InvalidUsage('cant get task result ts')
