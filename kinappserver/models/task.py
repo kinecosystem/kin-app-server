@@ -34,8 +34,7 @@ def store_task_results(user_id, task_id, results):
     '''store the results provided by the user'''
 
     # reject hackers trying to send task results too soon
-    if user_in_cooldown(user_id):
-        return False
+    # TODO add logic here
 
     try:
         # store the results
