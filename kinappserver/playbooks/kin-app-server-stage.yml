@@ -36,7 +36,7 @@
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'  
 
-   stellar_base_seed_cipher_text_blob: 'AQIDAHhNi2+wi6LhNwRYR4UfKOaWqkHEzcCVcmTNoKpTpIuuGwEi9gDXNyaiWZiaVR1oM9swAAAAbjBsBgkqhkiG9w0BBwagXzBdAgEAMFgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMl1jydS+luh1M1htGAgEQgCu2j/0SkXTfSrMkf26Dc5rkDf0IfOQPDXkye2xyGE0kG6QVmKlQAZZWGSq4'
-   encrypted_stellar_base_seed: 'aVMud/PxSPKDK1D+ojSj4ny/KvkjJtFdYzB2HTmf6lsaXfxsY+PA5Ht6UdGt8LdDbRRRrvo6UIj8XB3/5/gGJ9v0ZXUVGTdyESbc3EOjmxg'
+   stellar_base_seed_cipher_text_blob: 'AQIDAHhNi2+wi6LhNwRYR4UfKOaWqkHEzcCVcmTNoKpTpIuuGwFz0F02h6d8OBhpnkbldImqAAAAbjBsBgkqhkiG9w0BBwagXzBdAgEAMFgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMaHmveDfZOGydZXUYAgEQgCtRAOh0v0ExIla1NvKTgBCIhmqgkECAZ42i3tVN9nEZ2DSTApyftGWlI8Ww'
+   encrypted_stellar_base_seed: 'J/+OvvIHhzpkyYg1qwYr2l9vWIKVsEZyPD3RKuGJXUKxZsMO+kL8c7Y3AVvvTMFGHviLYObjiGM9F75fPqcholMv5cqZiga59hyOq0y9+GY='
    stellar_channel_seeds_cipher_text_blob: ''
    encrypted_stellar_channel_seeds: ''

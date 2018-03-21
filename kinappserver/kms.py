@@ -7,19 +7,29 @@ from Crypto.Cipher import AES
 from kinappserver import config
 
 def get_stellar_credentials():
-	# get the base seed: either directly from config or decrypt using kms
-	base_seed = config.STELLAR_BASE_SEED
-	if not base_seed:
-	    print('decrypting base seed')
-	    base_seed = decrypt_kms_key(config.STELLAR_BASE_SEED_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_BASE_SEED, config.KMS_KEY_AWS_REGION)
+    # get the base seed: either directly from config or decrypt using kms
+    base_seed = config.STELLAR_BASE_SEED
+    if not base_seed:
+        print('decrypting base seed')
+        print('base seed cipher: %s' % config.STELLAR_BASE_SEED_CIPHER_TEXT_BLOB)
+        print('encrypted base seed: %s' % config.ENCRYPTED_STELLAR_BASE_SEED)
+        
+        base_seed = decrypt_kms_key(config.STELLAR_BASE_SEED_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_BASE_SEED, config.KMS_KEY_AWS_REGION)
 
-	# get the channel seeds: either directly from config or decrypt using kms
-	channel_seeds = config.STELLAR_CHANNEL_SEEDS
-	if not channel_seeds:
-	    print('decrypting channel seeds')
-	    channel_seeds = convert_byte_to_string_array(decrypt_kms_key(config.STELLAR_CHANNEL_SEEDS_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_CHANNEL_SEEDS, config.KMS_KEY_AWS_REGION))
+    # get the channel seeds: either directly from config or decrypt using kms
+    # channels are a good idea, but they are optional
+    channel_seeds = config.STELLAR_CHANNEL_SEEDS
+    if not channel_seeds:
+        if config.ENCRYPTED_STELLAR_CHANNEL_SEEDS and config.STELLAR_CHANNEL_SEEDS_CIPHER_TEXT_BLOB:
+           print('decrypting channel seeds')
+           channel_seeds = convert_byte_to_string_array(decrypt_kms_key(config.STELLAR_CHANNEL_SEEDS_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_CHANNEL_SEEDS, config.KMS_KEY_AWS_REGION))
+        elif not (config.ENCRYPTED_STELLAR_CHANNEL_SEEDS and config.STELLAR_CHANNEL_SEEDS_CIPHER_TEXT_BLOB):
+            print('no channels provided. continuing w/o them.')
+            channel_seeds = []
+        else:
+            channel_seeds = None
 
-	return base_seed, channel_seeds
+    return base_seed, channel_seeds
 
 def convert_byte_to_string_array(input_byte):
     '''converts the input (a bytestring to a string array without using eval'''
