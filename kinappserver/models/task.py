@@ -5,7 +5,7 @@ import json
 
 from kinappserver import db, config
 from kinappserver.utils import InvalidUsage, InternalError, seconds_to_utc_midnight
-
+from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
 
 class UserTaskResults(db.Model):
     '''
@@ -30,11 +30,26 @@ def user_in_cooldown(user_id):
     return should_apply_cooldown(task_results)
 
 
+def reject_premature_results(next_task_ts):
+    '''determine whether the results were submitted prematurely'''
+    if next_task_ts is None:
+        return False
+    
+    now = arrow.utcnow()
+    results_valid_at = arrow.get(next_task_ts)
+
+    if (results_valid_at > now):
+        print('rejecting results. will only be valid in %s seconds' % (results_valid_at - now).total_seconds() )
+        return True
+    return False
+
 def store_task_results(user_id, task_id, results):
     '''store the results provided by the user'''
 
     # reject hackers trying to send task results too soon
-    # TODO add logic here
+    if reject_premature_results(get_next_task_results_ts(user_id)):
+        print('rejecting premature results for user %s' % user_id)
+        return False
 
     try:
         # store the results
@@ -132,14 +147,21 @@ def get_tasks_for_user(user_id):
             print('no previous task results, no cooldown needed')
             return [get_task_by_id('0')]
 
-        shift_seconds = 0
+        shifted_ts = None
         print('task results so far: %s' % task_results)
         if should_apply_cooldown(task_results):
             shift_seconds = calculate_timeshift(user_id)
             print('applying cooldown: shift in seconds: %s' % shift_seconds)
+            shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
+            print('applying cooldown: new ts is: %s' % shifted_ts)
         else:
             print('no cooldown needed')
-        task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), shift_seconds)
+        task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), shifted_ts)
+        # store the ts at which the next results are acceptable. only do this if a cooldown was actually needed
+        if shifted_ts:
+            store_next_task_results_ts(user_id, shifted_ts)
+
+        # arrayify the results
         if task is None:
             return []
         else:
@@ -172,7 +194,7 @@ def should_apply_cooldown(ordered_task_results):
         return False
 
 
-def get_task_by_id(task_id, shift_seconds=0):
+def get_task_by_id(task_id, shifted_ts=None):
     '''return the json representation of the task or None if no such task exists'''
 
     task = Task.query.filter_by(task_id=task_id).first()
@@ -190,9 +212,9 @@ def get_task_by_id(task_id, shift_seconds=0):
     task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
     task_json['items'] = task.items
-    task_json['start_date'] = arrow.utcnow().shift(seconds=shift_seconds).timestamp
-    return task_json
+    task_json['start_date'] = shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp
 
+    return task_json
 
 def add_task(task_json):
     try:

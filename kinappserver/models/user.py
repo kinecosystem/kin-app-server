@@ -1,7 +1,6 @@
 '''The User model'''
 from sqlalchemy_utils import UUIDType
 import json
-from arrow import utcnow
 
 from kinappserver import db, config
 from kinappserver.utils import InvalidUsage, send_apns, send_gcm
@@ -76,6 +75,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user_app_data.user_id = user_id
     user_app_data.completed_tasks = '[]'
     user_app_data.app_ver = app_ver
+    user_app_data.next_task_ts = None
     db.session.add(user_app_data)
     db.session.commit()
 
@@ -105,6 +105,7 @@ class UserAppData(db.Model):
     app_ver = db.Column(db.String(40), primary_key=False, nullable=False)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     completed_tasks = db.Column(db.JSON)
+    next_task_ts = db.Column(db.String(40), primary_key=False, nullable=True) # the ts for th next task, can be None
 
 
 def update_user_app_version(user_id, app_ver):
@@ -140,7 +141,6 @@ def get_user_tz(user_id):
     return User.query.filter_by(user_id=user_id).one().time_zone
 
 
-
 def get_user_push_data(user_id):
     '''returns the os_type and the token for the given user_id'''
     user = User.query.filter_by(user_id=user_id).first()
@@ -163,3 +163,24 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
         payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
         send_gcm(token, payload)
     return True
+
+def store_next_task_results_ts(user_id, timestamp_str):
+    '''stores the given ts for the given user for later retrieval'''
+    try:
+        # stored as string, can be None
+        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
+        userAppData.next_task_ts = timestamp_str
+        db.session.add(userAppData)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('cant set task result ts')
+
+def get_next_task_results_ts(user_id):
+    '''return the task_result_ts field for the given user'''
+    try:
+        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
+        return userAppData.next_task_ts # can be None
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('cant get task result ts')
