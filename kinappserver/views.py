@@ -469,5 +469,5 @@ def release_unclaimed_api():
     if not config.DEBUG:
         limit_to_local_host()
     released=release_unclaimed_goods()
-
+    increment_metric('unclaimed_released', released)
     return jsonify(status='ok', released=released)
