@@ -28,10 +28,9 @@
    stellar_timeout_sec: 10
    stellar_initial_account_balance: 10
    stellar_base_seed: '' # leave empty if you use an encrypted key
-   stellar_network: 'CUSTOM'
-   stellar_kin_issuer_address: GBOJSMAO3YZ3CQYUJOUWWFV37IFLQVNVKHVRQDEJ4M3O364H5FEGGMBH
-   stellar_channel_seeds: '' # leave empty if you use an encrypted key
-   stellar_horizon_url: https://horizon-kik.kininfrastructure.com/
-   stellar_public_address: ''
+   stellar_network: 'TESTNET'
+   stellar_kin_issuer_address: GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V
+   stellar_horizon_url: https://horizon-testnet.stellar.org/
+   stellar_public_address: 'GC3VEVNMPOIFIQOKUYFROWR6LWQQM57OQSWLLD6TGDIPOA5S6UXQWHVL'
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
