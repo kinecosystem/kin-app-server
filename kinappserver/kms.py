@@ -7,13 +7,30 @@ from Crypto.Cipher import AES
 from kinappserver import config
 
 def get_stellar_credentials():
+    base_seed = get_ssm_parameter('/config/base-seed', config.KMS_KEY_AWS_REGION)
+    channel_seeds = get_ssm_parameter('/config/channel-seeds', config.KMS_KEY_AWS_REGION)
+
+    if base_seed is None:
+        print('cant get base_seed, aborting')
+        return None, None
+
+    if not channel_seeds:
+        return base_seed, []
+
+    return base_seed, convert_byte_to_string_array(channel_seeds)
+
+def get_stellar_credentials_old():
+
+    # use ssm to get encrypted base seed:
+
+
     # get the base seed: either directly from config or decrypt using kms
     base_seed = config.STELLAR_BASE_SEED
     if not base_seed:
         print('decrypting base seed')
         print('base seed cipher: %s' % config.STELLAR_BASE_SEED_CIPHER_TEXT_BLOB)
         print('encrypted base seed: %s' % config.ENCRYPTED_STELLAR_BASE_SEED)
-        
+
         base_seed = decrypt_kms_key(config.STELLAR_BASE_SEED_CIPHER_TEXT_BLOB, config.ENCRYPTED_STELLAR_BASE_SEED, config.KMS_KEY_AWS_REGION)
 
     # get the channel seeds: either directly from config or decrypt using kms
@@ -57,4 +74,16 @@ def decrypt_kms_key(cipher_text_blob, encrypted_private_key, kms_key_region):
         return cypher.decrypt(enc[AES.block_size:]).rstrip()
     except Exception as e:
         print('failed to extract key from kms: %s' % e)
+        return None
+
+def get_ssm_parameter(param_name, kms_key_region):
+    '''retreives an encrpyetd value from AWSs ssm or None'''
+    try:
+        ssm_client = boto3.client('ssm', region_name=kms_key_region)
+        res = ssm_client.get_parameter(Name=param_name, WithDecryption=True)
+        print(res)
+        return res['Parameter']['Value']
+    except Exception as e:
+        print('cant get secure value: %s from ssm' % param_name)
+        print(e)
         return None
