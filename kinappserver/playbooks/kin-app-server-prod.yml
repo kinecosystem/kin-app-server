@@ -27,7 +27,7 @@
    eshu_rabbit_address: eshu-rabbit-prod.kinitapp.com
    stellar_timeout_sec: 10
    stellar_initial_account_balance: 10
-   stellar_base_seed: '' # leave empty if you use an encrypted key
+   stellar_base_seed: 'SBKJRDZHJ7MTYDWD7ZACXIR22TYGYHJZTNF7CGJQKZBH2RLENFQCFYI5' # leave empty if you use an encrypted key
    stellar_network: 'CUSTOM'
    stellar_kin_issuer_address: GBOJSMAO3YZ3CQYUJOUWWFV37IFLQVNVKHVRQDEJ4M3O364H5FEGGMBH
    stellar_channel_seeds: '' # leave empty if you use an encrypted key
@@ -35,9 +35,4 @@
    stellar_public_address: 'GBYNGCLKPGC5YLABEHAPVB4YKGME7TKP6PZ3MSW56BBQM2MMIPBK4KSJ'
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
-
-   stellar_base_seed_cipher_text_blob: 'AQIDAHhNi2+wi6LhNwRYR4UfKOaWqkHEzcCVcmTNoKpTpIuuGwEi9gDXNyaiWZiaVR1oM9swAAAAbjBsBgkqhkiG9w0BBwagXzBdAgEAMFgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMl1jydS+luh1M1htGAgEQgCu2j/0SkXTfSrMkf26Dc5rkDf0IfOQPDXkye2xyGE0kG6QVmKlQAZZWGSq4'
-   encrypted_stellar_base_seed: 'aVMud/PxSPKDK1D+ojSj4ny/KvkjJtFdYzB2HTmf6lsaXfxsY+PA5Ht6UdGt8LdDbRRRrvo6UIj8XB3/5/gGJ9v0ZXUVGTdyESbc3EOjmxg'
-   stellar_channel_seeds_cipher_text_blob: ''
-   encrypted_stellar_channel_seeds: ''
 
