@@ -187,3 +187,13 @@ def get_next_task_results_ts(user_id):
         print(e)
         print('cant get task result ts')
         raise InvalidUsage('cant get task result ts')
+
+
+def get_apns_tokens():
+    '''get all the apns token in an arry'''
+    tokens = []
+    users = User.query.order_by(User.user_id).all()
+    for user in users:
+        if user.os_type == 'iOS' and user.push_token is not None:
+            tokens.append(user.push_token)
+    return tokens

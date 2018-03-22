@@ -11,7 +11,7 @@ import redis_lock
 from kinappserver import app, config, stellar, utils
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, send_gcm, errors_to_string, increment_metric
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago, get_apns_tokens
 
 
 def limit_to_local_host():
@@ -471,3 +471,16 @@ def release_unclaimed_api():
     released=release_unclaimed_goods()
     increment_metric('unclaimed_released', released)
     return jsonify(status='ok', released=released)
+
+
+@app.route('/get_apns_tokens', methods=['GET'])
+def get_apns_tokens_api():
+    '''endpoint used to get the apns tokens from the db. passport protected'''
+    password = request.args.get('password', '')
+    from kinappserver import kms
+    if password != kms.get_ssm_parameter('/config/web-password', config.KMS_KEY_AWS_REGION):
+        print('rejecting request with incorrect password')
+        abort(403)
+
+    tokens = get_apns_tokens()
+    return jsonify(status='ok', tokens=tokens)

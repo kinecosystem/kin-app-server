@@ -29,8 +29,8 @@ def get_ssm_parameter(param_name, kms_key_region):
     '''retreives an encrpyetd value from AWSs ssm or None'''
     try:
         ssm_client = boto3.client('ssm', region_name=kms_key_region)
+        print('getting param from ssm: %s' % param_name)
         res = ssm_client.get_parameter(Name=param_name, WithDecryption=True)
-        print(res)
         return res['Parameter']['Value']
     except Exception as e:
         print('cant get secure value: %s from ssm' % param_name)
