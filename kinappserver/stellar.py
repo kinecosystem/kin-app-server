@@ -1,5 +1,5 @@
 from kinappserver import app, config, utils
-from kinappserver.utils import InvalidUsage
+from kinappserver.utils import InvalidUsage, increment_metric
 from time import sleep
 import kin
 
