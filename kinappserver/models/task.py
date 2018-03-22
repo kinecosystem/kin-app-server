@@ -188,8 +188,8 @@ def should_apply_cooldown(ordered_task_results):
         # should not happened, as checked before
         raise InternalError('no task results were passed')
     else:
-        if (arrow.utcnow() - arrow.get(ordered_task_results[0].update_at)).total_seconds() < 24*60*60:
-            print('cooldown needed. last submission: %s, total seconds ago: %s' % (ordered_task_results[0].update_at, (arrow.utcnow() - arrow.get(ordered_task_results[0].update_at)).total_seconds()))
+        if (arrow.utcnow() - arrow.get(ordered_task_results[-1].update_at)).total_seconds() < 24*60*60:
+            print('cooldown needed. last submission: %s, total seconds ago: %s' % (ordered_task_results[-1].update_at, (arrow.utcnow() - arrow.get(ordered_task_results[-1].update_at)).total_seconds()))
             return True
         return False
 
