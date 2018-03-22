@@ -22,9 +22,7 @@ ESHU_QUEUE = "{{ eshu_queue }}"
 ESHU_RABBIT_ADDRESS = "{{ eshu_rabbit_address }}"
 GCM_TTL_SECS = 60*60
 
-STELLAR_BASE_SEED = "{{ stellar_base_seed }}"
 STELLAR_NETWORK = "{{ stellar_network }}"
-STELLAR_CHANNEL_SEEDS = [{{ stellar_channel_seeds }}]
 STELLAR_HORIZON_URL = "{{ stellar_horizon_url }}"
 STELLAR_KIN_ISSUER_ADDRESS = "{{ stellar_kin_issuer_address }}"
 STELLAR_PUBLIC_ADDRESS = "{{ stellar_public_address }}" 
@@ -34,7 +32,3 @@ ORDER_EXPIRATION_SECS = 60
 TASK_ALLOCATION_POLICY = 'default'
 
 KMS_KEY_AWS_REGION = "{{ kms_key_aws_region }}"
-STELLAR_BASE_SEED_CIPHER_TEXT_BLOB = "{{ stellar_base_seed_cipher_text_blob }}"
-ENCRYPTED_STELLAR_BASE_SEED = "{{ encrypted_stellar_base_seed }}"
-STELLAR_CHANNEL_SEEDS_CIPHER_TEXT_BLOB = "{{ stellar_channel_seeds_cipher_text_blob }}"
-ENCRYPTED_STELLAR_CHANNEL_SEEDS = "{{ encrypted_stellar_channel_seeds }}"

@@ -26,10 +26,6 @@ if channel_seeds is None:
     print('could not get channels seeds - aborting')
     sys.exit(-1)
 
-# for private testnet:
-from stellar_base.network import NETWORKS
-NETWORKS['CUSTOM'] = 'private testnet'
-
 app.kin_sdk = SDK(secret_key=base_seed,
                               horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                               network=config.STELLAR_NETWORK,
