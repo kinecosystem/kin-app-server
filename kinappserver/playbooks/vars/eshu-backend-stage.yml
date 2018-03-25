@@ -30,8 +30,8 @@ apps:
           - gcm
         all:
           gcm:
-            senderId: "1047515902881"
-            apiKey: AIzaSyCiTcK_-CMcrsw-Xl3NXTUZdoTBpSjsvCo
+            senderId: "{{ lookup('aws_ssm', '/config/stage/eshu/gcm-sender-id' )}}"
+            apiKey: "{{ lookup('aws_ssm', '/config/stage/eshu/gcm-api-key' )}}"
             sandbox: false
             dryRun: false
             requestReceipts: false

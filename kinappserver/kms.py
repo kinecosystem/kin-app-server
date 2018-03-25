@@ -1,4 +1,4 @@
-import base64, json
+import base64, json, os
 
 import boto3
 from Crypto import Random
@@ -7,8 +7,10 @@ from Crypto.Cipher import AES
 from kinappserver import config
 
 def get_stellar_credentials():
-    base_seed = get_ssm_parameter('/config/base-seed', config.KMS_KEY_AWS_REGION)
-    channel_seeds = get_ssm_parameter('/config/channel-seeds', config.KMS_KEY_AWS_REGION)
+    # get credetials from ssm
+    env = os.environ['ENV']
+    base_seed = get_ssm_parameter('/config/' + env + '/stellar/base-seed', config.KMS_KEY_AWS_REGION)
+    channel_seeds = get_ssm_parameter('/config/' + env + '/stellar/channel-seeds', config.KMS_KEY_AWS_REGION)
 
     if base_seed is None:
         print('cant get base_seed, aborting')

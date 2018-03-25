@@ -60,9 +60,9 @@
     name: /opt/kin-app-server
     state: latest
 
-- name: copy the supervisord config file
-  copy:
-    src: "{{ role_path }}/files/etc/supervisor/conf.d/kinappserver.conf"
+- name: template the supervisord config file
+  template:
+    src: "{{ role_path }}/templates/etc/supervisor/conf.d/kinappserver.conf.jinja2"
     dest: /etc/supervisor/conf.d/kinappserver.conf
     mode: 
 

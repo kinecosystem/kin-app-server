@@ -6,4 +6,5 @@ autorestart=true
 stderr_logfile=/var/log/kinappserver.err.log
 stdout_logfile=/var/log/kinappserver.out.log
 environment=
-    FLASK_APP=kinappserver
+    FLASK_APP=kinappserver,
+    ENV={{ deployment_env }}
