@@ -97,7 +97,7 @@ class Task(db.Model):
     title = db.Column(db.String(80), nullable=False, primary_key=False)
     desc = db.Column(db.String(80), nullable=False, primary_key=False)
     price = db.Column(db.Integer(), nullable=False, primary_key=False)
-    min_to_complete = db.Column(db.Integer(), nullable=False, primary_key=False)
+    min_to_complete = db.Column(db.Float(), nullable=False, primary_key=False)
     provider_data = db.Column(db.JSON)
     tags = db.Column(db.JSON)
     items = db.Column(db.JSON)
@@ -230,7 +230,7 @@ def add_task(task_json):
         task.title = task_json['title']
         task.desc = task_json['desc']
         task.price = int(task_json['price'])
-        task.min_to_complete = int(task_json['min_to_complete'])
+        task.min_to_complete = float(task_json['min_to_complete'])
         task.provider_data = task_json['provider']
         task.tags = task_json['tags']
         task.items = task_json['items']
