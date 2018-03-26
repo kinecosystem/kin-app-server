@@ -30,9 +30,9 @@ def user_in_cooldown(user_id):
     return should_apply_cooldown(task_results)
 
 
-def reject_premature_results(next_task_ts):
+def reject_premature_results(user_id):
     '''determine whether the results were submitted prematurely'''
-
+    next_task_ts = get_next_task_results_ts(user_id)
     if next_task_ts is None:
         return False
     
@@ -46,9 +46,8 @@ def reject_premature_results(next_task_ts):
 
 def store_task_results(user_id, task_id, results):
     '''store the results provided by the user'''
-
     # reject hackers trying to send task results too soon
-    if reject_premature_results(get_next_task_results_ts(user_id)):
+    if reject_premature_results():
         print('rejecting premature results for user %s' % user_id)
         return False
 
@@ -118,13 +117,15 @@ def list_all_task_data():
 
 
 def get_tasks_for_user(user_id):
-    '''return an array of the current tasks for this user
+    '''return an array of the current tasks for this user or empty array if there are
+        no more tasks in the db.
 
        if the policy is 'no-cooldown', always return the next avilable task with the time
        set to the user's local 'now'
 
        if the policy is 'default', always return the next availble task but take into account
-       the last time this user submitted task-results, and apply cooldown if nessecary 
+       the last time this user submitted task-results, and apply cooldown if nessecary - set
+       the next available time to the next midnight. 
     '''
 
     from .user import get_user_app_data
@@ -137,7 +138,7 @@ def get_tasks_for_user(user_id):
         else:
             task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))))
             if task is None:
-                return []
+                return [] # no 'next task', so return an empty array
             else:
                 return [task]
     else:
@@ -164,7 +165,7 @@ def get_tasks_for_user(user_id):
 
         # arrayify the results
         if task is None:
-            return []
+            return [] # no 'next task', so return an empty array
         else:
             return [task]
 

@@ -10,8 +10,8 @@ import redis_lock
 
 from kinappserver import app, config, stellar, utils
 from kinappserver.stellar import create_account, send_kin
-from kinappserver.utils import InvalidUsage, InternalError, send_gcm, errors_to_string, increment_metric
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago, get_apns_tokens
+from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric
+from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, send_engagement_push, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago, get_tokens_for_push
 
 
 def limit_to_local_host():
@@ -70,46 +70,6 @@ def update_task_time_endpoint():
     return jsonify(status='ok')
 
 
-@app.route('/send-kin', methods=['POST'])
-def send_kin_to_user():
-    '''temp endpoint for testing sending kin TODO DELETE ME'''
-    payload = request.get_json(silent=True)
-    try:
-        public_address = payload.get('public_address', None)
-        amount = payload.get('amount', None)
-        if None in (public_address, amount):
-            raise InvalidUsage('bad-request')
-    except Exception as e:
-        print('exception: %s' % e)
-        raise InvalidUsage('bad-request')
-
-    #establish trust
-    from stellar_base.asset import Asset
-    my_asset = Asset('KIN', 'GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V')
-    tx_hash = app.kin_sdk.trust_asset(my_asset, limit=2)
-    print('trust tx hash: %s' % tx_hash)
-
-    tx_hash = send_kin(public_address, amount, 'test')
-    print('transfer tx hash: %s' % tx_hash)
-    return jsonify(status='ok')
-
-
-@app.route('/send-gcm', methods=['POST'])
-def send_gcm_push():
-    '''temp endpoint for testing gcm TODO DELETE ME'''
-    payload = request.get_json(silent=True)
-    try:
-        push_payload = payload.get('push_payload', None)
-        push_token = payload.get('push_token', None)
-        if None in (push_token, push_payload):
-            raise InvalidUsage('bad-request')
-    except Exception as e:
-        print('exception: %s' % e)
-        raise InvalidUsage('bad-request')
-    send_gcm(push_token, push_payload)
-    return jsonify(status='ok')
-
-
 @app.route('/send-tx-completed', methods=['POST'])
 def send_gcm_push_tx_completed():
     #TODO DELETE ME
@@ -120,6 +80,19 @@ def send_gcm_push_tx_completed():
         print('exception in send_gcm_push_tx_completed: %s' % e)
         raise InvalidUsage('bad-request')
     send_push_tx_completed(user_id, 'tx_hash', 2, 'task_id')
+    return jsonify(status='ok')
+
+
+@app.route('/send_engagement_push', methods=['POST'])
+def send_engagement_push_api():
+    #TODO DELETE ME
+    '''temp endpoint for testing the engagement push'''
+    try:
+        user_id = extract_header(request)
+    except Exception as e:
+        print('exception in send_gcm_push_tx_completed: %s' % e)
+        raise InvalidUsage('bad-request')
+    send_engagement_push(user_id, 'engage-recent')
     return jsonify(status='ok')
 
 
@@ -273,6 +246,7 @@ def register_api():
         device_model = payload.get('device_model', None)
         token = payload.get('token', None)
         time_zone = payload.get('time_zone', None)
+        print('raw time_zone: %s' % time_zone)
         device_id = payload.get('device_id', None)
         app_ver = payload.get('app_ver', None)
         #TODO more input check on the values
@@ -473,14 +447,22 @@ def release_unclaimed_api():
     return jsonify(status='ok', released=released)
 
 
-@app.route('/get_apns_tokens', methods=['GET'])
+@app.route('/get_push_tokens', methods=['GET'])
 def get_apns_tokens_api():
-    '''endpoint used to get the apns tokens from the db. passport protected'''
+    '''endpoint used to get push-tokens for engagment messages'''
     password = request.args.get('password', '')
     from kinappserver import kms
-    if password != kms.get_ssm_parameter('/config/web-password', config.KMS_KEY_AWS_REGION):
+
+    if not config.DEBUG and password != kms.get_ssm_parameter('/config/web-password', config.KMS_KEY_AWS_REGION):
         print('rejecting request with incorrect password')
         abort(403)
 
-    tokens = get_apns_tokens()
+    scheme = request.args.get('scheme')
+    if scheme is None:
+        raise InvalidUsage('invalid param')
+
+    tokens = get_tokens_for_push(scheme)
+    if tokens is None:
+         raise InvalidUsage('invalid scheme')
+
     return jsonify(status='ok', tokens=tokens)

@@ -1,9 +1,11 @@
 '''The User model'''
 from sqlalchemy_utils import UUIDType
 import json
+import datetime
 
 from kinappserver import db, config
-from kinappserver.utils import InvalidUsage, send_apns, send_gcm
+from kinappserver.utils import InvalidUsage
+from push import send_gcm, send_apns, engagement_payload_apns
 
 
 class User(db.Model):
@@ -157,12 +159,26 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
         print('cant push to user %s: no push token' % user_id)
         return False
     if os_type == 'iOS': #TODO move to consts
-        payload = {} #TODO finalize this
-        send_apns(token, payload)
+        print('not supported yet')
     else:
         payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
         send_gcm(token, payload)
     return True
+
+
+def send_engagement_push(user_id, push_type):
+    '''sends an engagement push message to the user with the given user_id'''
+    os_type, token = get_user_push_data(user_id)
+    if token is None:
+        print('cant push to user %s: no push token' % user_id)
+        return False
+    if os_type == 'iOS': #TODO move to consts
+        send_apns(token, engagement_payload_apns(push_type))
+    else:
+        print('not supported yet')
+        #payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
+        #send_gcm(token, payload)
+    return True 
 
 def store_next_task_results_ts(user_id, timestamp_str):
     '''stores the given ts for the given user for later retrieval'''
@@ -189,11 +205,85 @@ def get_next_task_results_ts(user_id):
         raise InvalidUsage('cant get task result ts')
 
 
-def get_apns_tokens():
-    '''get all the apns token in an arry'''
-    tokens = []
-    users = User.query.order_by(User.user_id).all()
-    for user in users:
-        if user.os_type == 'iOS' and user.push_token is not None:
-            tokens.append(user.push_token)
-    return tokens
+def get_tokens_for_push(scheme):
+    '''get push tokens for a scheme'''
+    from datetime import datetime, timedelta
+    from kinappserver.models import get_tasks_for_user
+    tokens = {'iOS':[], 'android':[]}
+
+    if scheme == 'engage-recent':
+        # get all tokens that:
+        # (1) have active tasks and 
+        # (2) did not log in today and
+        # (3) last login was sometimes in the last 4 days
+        today = datetime.date(datetime.today())
+        four_days_ago = datetime.date(datetime.today() + timedelta(days=-4))
+
+        all_pushable_users = User.query.filter(User.push_token!=None).all()
+        for user in all_pushable_users:
+            try:
+
+                if not get_tasks_for_user(user.user_id):
+                    print('skipping user %s - no active task' % user.user_id)
+
+                last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
+                last_active_date = datetime.date(last_active)
+
+                if (today == last_active_date):
+                    print('skipping user %s: was active today' % user.user_id)
+                    continue
+                if (last_active_date < four_days_ago):
+                    print('skipping user %s: last active more than 4 days ago' % user.user_id)
+                    continue
+
+                print('adding user %s with last_active: %s' % (user.user_id, last_active_date))
+                if user.os_type == 'iOS':
+                    tokens['iOS'].append(user.push_token)
+                else:
+                    tokens['android'].append(user.push_token)
+
+            except Exception as e:
+                print('caught exception trying to calculate push for user %s' % user.user_id)
+                print(e)
+                continue
+        return tokens
+
+    elif scheme == 'engage-week':
+        # get all tokens that:
+        # (1) have active tasks and 
+        # (2) logged in exactly a week ago
+        # (3) last login was sometimes in the last 4 days
+        today = datetime.date(datetime.today())
+        seven_days_ago = datetime.date(datetime.today() + timedelta(days=-7))
+
+        all_pushable_users = User.query.filter(User.push_token!=None).all()
+        for user in all_pushable_users:
+            try:
+
+                if not get_tasks_for_user(user.user_id):
+                    print('skipping user %s - no active task' % user.user_id)
+
+                last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
+                last_active_date = datetime.date(last_active)
+
+                if (seven_days_ago != last_active_date):
+                    print('skipping user %s: last active not seven days ago' % user.user_id)
+                    continue
+            
+                print('adding user %s with last_active: %s' % (user.user_id, last_active_date))
+                if user.os_type == 'iOS':
+                    tokens['iOS'].append(user.push_token)
+                else:
+                    tokens['android'].append(user.push_token)
+
+            except Exception as e:
+                print('caught exception trying to calculate push for user %s' % user.user_id)
+                print(e)
+                continue
+        return tokens
+    else:
+        print('unknown scheme')
+        return None
+
+
+  

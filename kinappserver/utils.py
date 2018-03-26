@@ -1,6 +1,6 @@
 from datadog import statsd
 from flask import jsonify, config
-from kinappserver import amqp_publisher, config
+from kinappserver import config
 
 from kinappserver import config
 
@@ -67,13 +67,3 @@ class InternalError(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
-
-def send_gcm(token, payload):
-    payload_dict = {}
-    payload_dict['message'] = payload
-    amqp_publisher.send_gcm("eshu-key", payload_dict, [token], False, config.GCM_TTL_SECS)
-
-
-def send_apns(token, payload):
-    #TODO 
-    pass

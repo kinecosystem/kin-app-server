@@ -6,7 +6,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
 import redis
-from kin import SDK
+import kin
 
 from kinappserver import amqp_publisher
 
@@ -26,7 +26,7 @@ if channel_seeds is None:
     print('could not get channels seeds - aborting')
     sys.exit(-1)
 
-app.kin_sdk = SDK(secret_key=base_seed,
+app.kin_sdk = kin.SDK(secret_key=base_seed,
                               horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                               network=config.STELLAR_NETWORK,
                               channel_secret_keys=channel_seeds)
