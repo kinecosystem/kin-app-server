@@ -1,6 +1,6 @@
 import uuid
 
-from kinappserver import amqp_publisher
+from kinappserver import amqp_publisher, config
 
 def generate_push_id():
     return uuid.uuid4().hex
