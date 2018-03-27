@@ -47,7 +47,7 @@ def reject_premature_results(user_id):
 def store_task_results(user_id, task_id, results):
     '''store the results provided by the user'''
     # reject hackers trying to send task results too soon
-    if reject_premature_results():
+    if reject_premature_results(user_id):
         print('rejecting premature results for user %s' % user_id)
         return False
 

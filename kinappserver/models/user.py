@@ -166,16 +166,19 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
     return True
 
 
-def send_engagement_push(user_id, push_type):
+def send_engagement_push(user_id, push_type, token=None, os_type=None):
     '''sends an engagement push message to the user with the given user_id'''
-    os_type, token = get_user_push_data(user_id)
+    if None in (token, os_type):
+        os_type, token = get_user_push_data(user_id)
+
     if token is None:
         print('cant push to user %s: no push token' % user_id)
         return False
+        
     if os_type == 'iOS': #TODO move to consts
         send_apns(token, engagement_payload_apns(push_type))
     else:
-        print('not supported yet')
+        print('gcm not supported yet')
         #payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
         #send_gcm(token, payload)
     return True 

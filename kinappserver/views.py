@@ -416,6 +416,7 @@ def add_good_api():
     else:
         raise InvalidUsage('failed to add good')
 
+
 @app.route('/good/inventory', methods=['GET'])
 def inventory_api():
     '''endpoint used to populate the server with goods'''
@@ -423,8 +424,9 @@ def inventory_api():
         limit_to_local_host()
     return jsonify(status='ok', inventory=list_inventory())
 
+
 @app.route('/balance', methods=['GET'])
-def bvalance_api():
+def balance_api():
     '''endpoint used to populate the server with goods'''
     if not config.DEBUG:
         limit_to_local_host()
@@ -445,6 +447,32 @@ def release_unclaimed_api():
     released=release_unclaimed_goods()
     increment_metric('unclaimed_released', released)
     return jsonify(status='ok', released=released)
+
+
+@app.route('/engagement/send', methods=['GET'])
+def send_engagemnt_api():
+    '''endpoint used to send engagement push notifications to users by scheme. password protected'''
+    password = request.args.get('password', '')
+    from kinappserver import kms
+
+    if password != kms.get_ssm_parameter('/config/web-password', config.KMS_KEY_AWS_REGION):
+        print('rejecting request with incorrect password')
+        abort(403)
+
+    scheme = request.args.get('scheme')
+    if scheme is None:
+        raise InvalidUsage('invalid param')
+
+    tokens = get_tokens_for_push(scheme)
+    if tokens is None:
+         raise InvalidUsage('invalid scheme')
+
+    for token in tokens['iOS']:
+        send_engagement_push(None, scheme, token, 'iOS')
+    for token in tokens['android']:
+        send_engagement_push(None, scheme, token, 'android')
+    
+    return jsonify(status='ok')
 
 
 @app.route('/get_push_tokens', methods=['GET'])
