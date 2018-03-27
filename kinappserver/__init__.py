@@ -15,9 +15,9 @@ app = Flask(__name__)
 CORS(app)
 
 from flask_sqlalchemy import SQLAlchemy
-from kinappserver import config, kms, stellar
+from kinappserver import config, ssm, stellar
 
-base_seed, channel_seeds = kms.get_stellar_credentials()
+base_seed, channel_seeds = ssm.get_stellar_credentials()
 if not base_seed:
     print('could not get base seed - aborting')
     sys.exit(-1)

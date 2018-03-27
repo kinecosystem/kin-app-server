@@ -8,7 +8,7 @@ from kinappserver import config
 
 def get_stellar_credentials():
     # get credetials from ssm
-    env = os.environ['ENV']
+    env = os.environ.get('ENV', 'test')
     base_seed = get_ssm_parameter('/config/' + env + '/stellar/base-seed', config.KMS_KEY_AWS_REGION)
     channel_seeds = get_ssm_parameter('/config/' + env + '/stellar/channel-seeds', config.KMS_KEY_AWS_REGION)
 
