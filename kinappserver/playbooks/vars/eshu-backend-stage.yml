@@ -44,7 +44,7 @@ apps:
           apns:
             certFile: certs/Kinit-beta-kik.p12 # needs to be manually deployed
             password:
-            sandbox: false
+            sandbox: true
             topic: com.kik.kinit-beta
             circuitBreaker:
               tripFailures: 10

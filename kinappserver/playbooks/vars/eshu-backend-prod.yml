@@ -28,6 +28,7 @@ apps:
       providers:
         enabled:
           - gcm
+          - apns
         all:
           gcm:
             senderId: "{{ lookup('aws_ssm', '/config/prod/eshu/gcm-sender-id' )}}"
