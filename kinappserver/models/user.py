@@ -5,7 +5,7 @@ import datetime
 
 from kinappserver import db, config
 from kinappserver.utils import InvalidUsage
-from push import send_gcm, send_apns, engagement_payload_apns
+from kinappserver.push import send_gcm, send_apns, engagement_payload_apns
 
 
 class User(db.Model):
@@ -174,7 +174,7 @@ def send_engagement_push(user_id, push_type, token=None, os_type=None):
     if token is None:
         print('cant push to user %s: no push token' % user_id)
         return False
-        
+
     if os_type == 'iOS': #TODO move to consts
         send_apns(token, engagement_payload_apns(push_type))
     else:

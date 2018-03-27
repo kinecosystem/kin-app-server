@@ -2,7 +2,7 @@ from uuid import uuid4
 import arrow
 
 from kinappserver import db, config, stellar, utils
-from kinappserver.utils import InternalError, ORDER_ID_LENGTH, KINIT_MEMO_PREFIX, increment_metric
+from kinappserver.utils import InternalError, ORDER_ID_LENGTH, KINIT_MEMO_PREFIX, increment_metric, generate_memo
 from sqlalchemy_utils import UUIDType, ArrowType
 
 from .offer import get_cost_and_address
@@ -15,7 +15,7 @@ class Order(db.Model):
        orders are generated when a client wishes to buy an offer.
        orders are time-limited and expire after a while.
     '''
-    order_id = db.Column(db.String(len(KINIT_MEMO_PREFIX) + ORDER_ID_LENGTH), primary_key=True, nullable=False)
+    order_id = db.Column(db.String(len(generate_memo())), primary_key=True, nullable=False)
     offer_id = db.Column('offer_id', db.String(40), db.ForeignKey("offer.offer_id"), primary_key=False, nullable=False)
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     kin_amount = db.Column(db.Integer(), nullable=False, primary_key=False)
@@ -48,7 +48,7 @@ def create_order(user_id, offer_id):
         raise InternalError('failed to get offer details')
 
     # make up an order_id
-    order_id = KINIT_MEMO_PREFIX + str(uuid4())[:ORDER_ID_LENGTH] #max you can fit inside a stellar memo
+    order_id = utils.generate_memo()
 
     # attempt to allocate a good for this order
     if not allocate_good(offer_id, order_id):
@@ -68,6 +68,7 @@ def create_order(user_id, offer_id):
         db.session.commit()
     except Exception as e:
         print('failed to create a new order with id %s' % order_id)
+        print(e)
         raise InternalError('failed to create a new order')
     else:
         return str(order_id), None

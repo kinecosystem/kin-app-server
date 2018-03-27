@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from datadog import statsd
 from flask import jsonify, config
 from kinappserver import config
@@ -8,8 +10,12 @@ ERROR_ORDERS_COOLDOWN = -1
 ERROR_NO_GOODS = -2
 
 KINIT_MEMO_PREFIX = '1-kit-'
-ORDER_ID_LENGTH = 22
+ORDER_ID_LENGTH = 21
 
+def generate_memo():
+    # generate a unique-ish id for txs, this goes into the memo field of txs
+    env = config.DEPLOYMENT_ENV[0:1] # either 's(tage)', 't(est)' or 'p(rod)'
+    return KINIT_MEMO_PREFIX + env + str(uuid4().hex[:ORDER_ID_LENGTH]) # generate a memo string and send it to the client
 
 def increment_metric(metric_name, count=1):
     '''increment a counter with the given name and value'''

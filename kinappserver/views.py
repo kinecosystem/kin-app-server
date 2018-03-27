@@ -149,7 +149,7 @@ def quest_answers():
         increment_metric('premature_task_results')
         return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_400_BAD_REQUEST
     try:
-        memo = utils.KINIT_MEMO_PREFIX + str(uuid4())[:utils.ORDER_ID_LENGTH] # generate a memo string and send it to the client
+        memo = utils.generate_memo()
         reward_store_and_push(address, task_id, send_push, user_id, memo)
     except Exception as e:
         print('exception: %s' % e)
