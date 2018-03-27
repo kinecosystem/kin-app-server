@@ -15,21 +15,10 @@ def engagement_payload_apns(push_type):
 
 def apns_payload(title, body, push_type, push_id, sound='default'):
     '''generate an apns payload'''
-    payload = '''{
-                    'aps':{
-                        'alert': {
-                            'title': '%s',
-                            'body': '%s'
-                        },
-                        'sound': '%s',
-                    },
-                    'kin': {
-                        'push_type': '%s',
-                        'push_id': '%s'
-                    }
-                }''' % (title, body, sound, push_type, str(push_id))
-    print('the payload: %s' % payload)
-    return payload
+    payload_dict = {'aps': {'alert':{'title': title, 'body': body}, 'sound': sound}, 'kin':{'push_type': push_type, 'push_id': push_id}}
+
+    print('the payload: %s' % payload_dict)
+    return payload_dict
 
 
 def send_gcm(token, payload):
@@ -39,6 +28,4 @@ def send_gcm(token, payload):
 
 
 def send_apns(token, payload):
-    payload_dict = {}
-    payload_dict['message'] = payload
-    amqp_publisher.send_apns("eshu-key", payload_dict, [token])
+    amqp_publisher.send_apns("eshu-key", payload, [token])
