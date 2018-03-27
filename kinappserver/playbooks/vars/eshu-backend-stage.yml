@@ -28,6 +28,7 @@ apps:
       providers:
         enabled:
           - gcm
+          - apns
         all:
           gcm:
             senderId: "{{ lookup('aws_ssm', '/config/stage/eshu/gcm-sender-id' )}}"
@@ -41,9 +42,9 @@ apps:
             circuitBreaker:
               tripFailures: 10
           apns:
-            certFile: certs/PushServicesProductionHTTP2.p12
+            certFile: certs/Kinit-beta-kik.p12 # needs to be manually deployed
             password:
             sandbox: false
-            topic: com.rounds.RoundsForiPhone
+            topic: com.kik.kinit-beta
             circuitBreaker:
               tripFailures: 10

@@ -41,9 +41,9 @@ apps:
             circuitBreaker:
               tripFailures: 10
           apns:
-            certFile: certs/PushServicesProductionHTTP2.p12
+            certFile: certs/Kinit-beta-kik.p12 # needs to be manually deployed
             password:
             sandbox: false
-            topic: com.rounds.RoundsForiPhone
+            topic: com.kik.kinit-beta
             circuitBreaker:
               tripFailures: 10
