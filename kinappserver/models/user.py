@@ -7,6 +7,7 @@ from kinappserver import db, config
 from kinappserver.utils import InvalidUsage
 from kinappserver.push import send_gcm, send_apns, engagement_payload_apns
 
+DEFAULT_TIME_ZONE = 2
 
 class User(db.Model):
     '''
@@ -58,9 +59,15 @@ def set_onboarded(user_id, onboarded):
 
 def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver):
     '''create a new user and commit to the database. should only fail if the user_id is duplicate'''
+
     def parse_timezone(tz):
         '''convert -02:00 to -2 etc'''
-        return int(tz[:(tz.find(':'))])
+        try:
+            return int(tz[:(tz.find(':'))])
+        except:
+            print('failed to parse timezone: %s. using default' % tz)
+            return int(DEFAULT_TIME_ZONE)
+
     if user_exists(user_id):
             raise InvalidUsage('refusing to create user. user_id %s already exists' % user_id)
     user = User()
