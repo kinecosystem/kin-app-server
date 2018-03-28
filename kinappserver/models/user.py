@@ -7,7 +7,7 @@ from kinappserver import db, config
 from kinappserver.utils import InvalidUsage
 from kinappserver.push import send_gcm, send_apns, engagement_payload_apns
 
-DEFAULT_TIME_ZONE = 2
+DEFAULT_TIME_ZONE = -4
 
 class User(db.Model):
     '''
