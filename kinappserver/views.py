@@ -473,24 +473,3 @@ def send_engagemnt_api():
         send_engagement_push(None, scheme, token, 'android')
 
     return jsonify(status='ok')
-
-
-@app.route('/get_push_tokens', methods=['GET'])
-def get_apns_tokens_api():
-    '''endpoint used to get push-tokens for engagment messages'''
-    password = request.args.get('password', '')
-    from kinappserver import ssm
-
-    if not config.DEBUG and password != ssm.get_ssm_parameter('/config/web-password', config.KMS_KEY_AWS_REGION):
-        print('rejecting request with incorrect password')
-        abort(403)
-
-    scheme = request.args.get('scheme')
-    if scheme is None:
-        raise InvalidUsage('invalid param')
-
-    tokens = get_tokens_for_push(scheme)
-    if tokens is None:
-         raise InvalidUsage('invalid scheme')
-
-    return jsonify(status='ok', tokens=tokens)
