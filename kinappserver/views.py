@@ -459,13 +459,18 @@ def send_engagemnt_api():
     if scheme is None:
         raise InvalidUsage('invalid param')
 
+    dryrun = request.args.get('dryrun', True)
+
     tokens = get_tokens_for_push(scheme)
     if tokens is None:
          raise InvalidUsage('invalid scheme')
 
-    for token in tokens['iOS']:
-        send_engagement_push(None, scheme, token, 'iOS')
-    for token in tokens['android']:
-        send_engagement_push(None, scheme, token, 'android')
+    if not dryrun:
+        for token in tokens['iOS']:
+            send_engagement_push(None, scheme, token, 'iOS')
+        for token in tokens['android']:
+            send_engagement_push(None, scheme, token, 'android')
+    else:
+        print('send_engagemnt_api - dryrun - not sending push')
 
     return jsonify(status='ok')
