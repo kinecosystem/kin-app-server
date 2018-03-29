@@ -452,12 +452,8 @@ def release_unclaimed_api():
 @app.route('/engagement/send', methods=['GET'])
 def send_engagemnt_api():
     '''endpoint used to send engagement push notifications to users by scheme. password protected'''
-    password = request.args.get('password', '')
-    from kinappserver import ssm
-
-    if password != ssm.get_ssm_parameter('/config/web-password', config.KMS_KEY_AWS_REGION):
-        print('rejecting request with incorrect password')
-        abort(403)
+    if not config.DEBUG:
+        limit_to_local_host()
 
     scheme = request.args.get('scheme')
     if scheme is None:
