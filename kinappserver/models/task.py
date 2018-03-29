@@ -32,6 +32,7 @@ def user_in_cooldown(user_id):
 
 def reject_premature_results(user_id):
     '''determine whether the results were submitted prematurely'''
+    return False
     next_task_ts = get_next_task_results_ts(user_id)
     if next_task_ts is None:
         return False
