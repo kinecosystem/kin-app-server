@@ -35,6 +35,7 @@ def errors_to_string(errorcode):
 
 def seconds_to_utc_midnight():
     '''returs the (integer) number of seconds to the next midnight at utc'''
+    # no longer in use, delete
     from datetime import datetime, timedelta, timezone
 
     tomorrow = datetime.date(datetime.today() + timedelta(days=1))
@@ -42,6 +43,18 @@ def seconds_to_utc_midnight():
     tomorrow_dt = datetime.strptime(tomorrow.strftime('%Y%m%d'), '%Y%m%d')
     # calc hours until tomorrow
     return(int((tomorrow_dt - datetime.utcnow()).total_seconds()))
+
+def seconds_to_local_midnight(tz_shift):
+    '''returs the (integer) number of seconds to the next midnight at utc'''
+    from datetime import datetime, timedelta, timezone
+    # get a datetime of the local (time-zone shifted) time:
+    local_time_dt = (datetime.utcnow() + timedelta(hours=tz_shift))
+    # get the next local day as date object:
+    local_tomorrow_date = datetime.date(local_time_dt + timedelta(days=1))
+    # convert date object back to datetime. hack from https://stackoverflow.com/a/27760382/1277048
+    tomorrow_dt = datetime.strptime(local_tomorrow_date.strftime('%Y%m%d'), '%Y%m%d')
+    # calc hours until tomorrow
+    return(int((tomorrow_dt - local_time_dt).total_seconds()))
 
 
 class InvalidUsage(Exception):

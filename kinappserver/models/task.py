@@ -4,7 +4,7 @@ import arrow
 import json
 
 from kinappserver import db, config
-from kinappserver.utils import InvalidUsage, InternalError, seconds_to_utc_midnight
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_midnight
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
 
 class UserTaskResults(db.Model):
@@ -175,11 +175,9 @@ def calculate_timeshift(user_id):
     '''calculate the time shift (in seconds) needed for cooldown, for this user'''
     from .user import get_user_tz
     user_tz = get_user_tz(user_id)
-    seconds_to_midnight = seconds_to_utc_midnight()
-    print('seconds to next utc midnight: %s, tz-shift in seconds: %s' % (seconds_to_midnight, -(60*60 * int(user_tz))))
-    cooldown = (seconds_to_midnight - (60*60 * int(user_tz)))
-    print('total cooldown, in seconds: %s' % cooldown)
-    return cooldown
+    seconds_to_midnight = seconds_to_local_midnight(user_tz)
+    print('seconds to next local midnight: %s for user_id %s with tz %s' % (seconds_to_midnight, user_id, user_tz))
+    return seconds_to_midnight
 
 
 def should_apply_cooldown(ordered_task_results):
