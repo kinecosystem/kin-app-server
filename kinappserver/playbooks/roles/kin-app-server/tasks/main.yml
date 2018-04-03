@@ -99,5 +99,6 @@
 - cron:
     name: "send daily push messages"
     hour: 15
+    minute: 0
     job: "/opt/kin-app-server/kinappserver/cron/send_engagement_push.sh"
   run_once: true # runs every minute, on one machine of the 2
