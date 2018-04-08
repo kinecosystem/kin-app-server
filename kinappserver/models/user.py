@@ -1,9 +1,7 @@
 '''The User model'''
 from sqlalchemy_utils import UUIDType
-import json
-import datetime
 
-from kinappserver import db, config
+from kinappserver import db
 from kinappserver.utils import InvalidUsage
 from kinappserver.push import send_gcm, send_apns, engagement_payload_apns
 
@@ -55,13 +53,11 @@ def set_onboarded(user_id, onboarded):
     db.session.commit()
 
 
-
-
 def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver):
     '''create a new user and commit to the database. should only fail if the user_id is duplicate'''
 
     def parse_timezone(tz):
-        '''convert -02:00 to -2 etc'''
+        '''convert -02:00 to -2 or set reasonable default'''
         try:
             return int(tz[:(tz.find(':'))])
         except:
@@ -114,7 +110,7 @@ class UserAppData(db.Model):
     app_ver = db.Column(db.String(40), primary_key=False, nullable=False)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     completed_tasks = db.Column(db.JSON)
-    next_task_ts = db.Column(db.String(40), primary_key=False, nullable=True) # the ts for th next task, can be None
+    next_task_ts = db.Column(db.String(40), primary_key=False, nullable=True)  # the ts for th next task, can be None
 
 
 def update_user_app_version(user_id, app_ver):
@@ -165,7 +161,7 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
     if token is None:
         print('cant push to user %s: no push token' % user_id)
         return False
-    if os_type == 'iOS': #TODO move to consts
+    if os_type == 'iOS': # TODO move to consts
         print('not supported yet')
     else:
         payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
@@ -182,7 +178,7 @@ def send_engagement_push(user_id, push_type, token=None, os_type=None):
         print('cant push to user %s: no push token' % user_id)
         return False
 
-    if os_type == 'iOS': #TODO move to consts
+    if os_type == 'iOS': # TODO move to consts
         send_apns(token, engagement_payload_apns(push_type))
     else:
         print('gcm not supported yet')
@@ -194,9 +190,9 @@ def store_next_task_results_ts(user_id, timestamp_str):
     '''stores the given ts for the given user for later retrieval'''
     try:
         # stored as string, can be None
-        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
-        userAppData.next_task_ts = timestamp_str
-        db.session.add(userAppData)
+        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
+        user_app_data.next_task_ts = timestamp_str
+        db.session.add(user_app_data)
         db.session.commit()
     except Exception as e:
         print(e)
@@ -205,10 +201,10 @@ def store_next_task_results_ts(user_id, timestamp_str):
 def get_next_task_results_ts(user_id):
     '''return the task_result_ts field for the given user'''
     try:
-        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
-        if userAppData is None:
+        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
+        if user_app_data is None:
             return None
-        return userAppData.next_task_ts # can be None
+        return user_app_data.next_task_ts # can be None
     except Exception as e:
         print(e)
         print('cant get task result ts')
@@ -239,10 +235,10 @@ def get_tokens_for_push(scheme):
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
                 last_active_date = datetime.date(last_active)
 
-                if (today == last_active_date):
+                if today == last_active_date:
                     print('skipping user %s: was active today' % user.user_id)
                     continue
-                if (last_active_date < four_days_ago):
+                if last_active_date < four_days_ago:
                     print('skipping user %s: last active more than 4 days ago' % user.user_id)
                     continue
 
@@ -276,7 +272,7 @@ def get_tokens_for_push(scheme):
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
                 last_active_date = datetime.date(last_active)
 
-                if (seven_days_ago != last_active_date):
+                if seven_days_ago != last_active_date:
                     print('skipping user %s: last active not seven days ago' % user.user_id)
                     continue
             
@@ -294,6 +290,3 @@ def get_tokens_for_push(scheme):
     else:
         print('unknown scheme')
         return None
-
-
-  

@@ -1,8 +1,7 @@
 from uuid import uuid4
 
 from datadog import statsd
-from flask import jsonify, config
-from kinappserver import config
+from flask import config
 
 from kinappserver import config
 

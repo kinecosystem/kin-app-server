@@ -1,8 +1,7 @@
-from uuid import uuid4
 import arrow
 
 from kinappserver import db, config, stellar, utils
-from kinappserver.utils import InternalError, ORDER_ID_LENGTH, KINIT_MEMO_PREFIX, increment_metric, generate_memo
+from kinappserver.utils import InternalError, increment_metric, generate_memo
 from sqlalchemy_utils import UUIDType, ArrowType
 
 from .offer import get_cost_and_address

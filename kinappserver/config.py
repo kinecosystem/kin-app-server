@@ -6,7 +6,7 @@ DB_CONNSTR = "this gets overwritten by the tester code. it acutally uses a temp 
 REDIS_ENDPOINT = 'localhost'
 REDIS_PORT = 6379
 
-STELLAR_TIMEOUT_SEC = 10 # waitloop for tx data to be available
+STELLAR_TIMEOUT_SEC = 10  # waitloop for tx data to be available
 STELLAR_INITIAL_ACCOUNT_BALANCE = 10
 
 ESHU_USERNAME = ''

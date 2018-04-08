@@ -2,8 +2,10 @@ import uuid
 
 from kinappserver import amqp_publisher, config
 
+
 def generate_push_id():
     return uuid.uuid4().hex
+
 
 def engagement_payload_apns(push_type):
     push_id = generate_push_id()
@@ -13,9 +15,10 @@ def engagement_payload_apns(push_type):
     elif push_type == 'engage-week':
         return apns_payload("", "Let's earn some Kin!", push_type, push_id)
 
+
 def apns_payload(title, body, push_type, push_id, sound='default'):
     '''generate an apns payload'''
-    payload_dict = {'aps': {'alert':{'title': title, 'body': body}, 'sound': sound}, 'kin':{'push_type': push_type, 'push_id': push_id}}
+    payload_dict = {'aps': {'alert': {'title': title, 'body': body}, 'sound': sound}, 'kin': {'push_type': push_type, 'push_id': push_id}}
 
     print('the payload: %s' % payload_dict)
     return payload_dict

@@ -2,7 +2,7 @@
 The Kin App Server API is defined here.
 '''
 from threading import Thread
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from flask import request, jsonify, abort
 from flask_api import status
@@ -11,7 +11,12 @@ import redis_lock
 from kinappserver import app, config, stellar, utils
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric
-from kinappserver.models import create_user, update_user_token, update_user_app_version, store_task_results, add_task, get_tasks_for_user, is_onboarded, set_onboarded, send_push_tx_completed, send_engagement_push, create_tx, update_task_time, get_reward_for_task, add_offer, get_offers_for_user, set_offer_active, create_order, process_order, create_good, list_inventory, release_unclaimed_goods, count_transactions_by_minutes_ago, get_tokens_for_push
+from kinappserver.models import create_user, update_user_token, update_user_app_version, \
+    store_task_results, add_task, get_tasks_for_user, is_onboarded, \
+    set_onboarded, send_push_tx_completed, send_engagement_push, \
+    create_tx, update_task_time, get_reward_for_task, add_offer, \
+    get_offers_for_user, set_offer_active, create_order, process_order, \
+    create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push
 
 
 def limit_to_local_host():
@@ -107,8 +112,10 @@ def app_launch():
         app_ver = payload.get('app_ver', None)
     except Exception as e:
         raise InvalidUsage('bad-request')
+
     update_user_app_version(user_id, app_ver)
     return jsonify(status='ok')
+
 
 
 @app.route('/user/update-token', methods=['POST'])
@@ -249,12 +256,12 @@ def register_api():
         print('raw time_zone: %s' % time_zone)
         device_id = payload.get('device_id', None)
         app_ver = payload.get('app_ver', None)
-        #TODO more input check on the values
+        # TODO more input check on the values
         if None in (user_id, os, device_model, time_zone, app_ver): # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
         if os not in ('iOS', 'android'):
             raise InvalidUsage('bad-request')
-        user_id = UUID(user_id) # throws exception on invalid uuid
+        user_id = UUID(user_id)  # throws exception on invalid uuid
     except Exception as e:
         raise InvalidUsage('bad-request')
     else:
@@ -291,7 +298,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
     except Exception as e:
         print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
-    finally: #TODO dont do this if we fail with the tx
+    finally:  # TODO dont do this if we fail with the tx
         if send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
         create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo}) # TODO Add memeo?
@@ -305,7 +312,7 @@ def add_offer_api():
     payload = request.get_json(silent=True)
     try:
         offer = payload.get('offer', None)
-        set_active = payload.get('set_active', False) # optional
+        set_active = payload.get('set_active', False)  # optional
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
@@ -433,7 +440,7 @@ def balance_api():
     balance = {}
     balance['kin'] = stellar.get_kin_balance(config.STELLAR_PUBLIC_ADDRESS)
     balance['xlm'] = stellar.get_xlm_balance(config.STELLAR_PUBLIC_ADDRESS)
-    if balance[kin] is not None and balance['xlm'] is not None:
+    if balance['kin'] is not None and balance['xlm'] is not None:
         return jsonify(status='ok', balance=balance)
     else:
         return jsonify(status='error'), status.HTTP_500_INTERNAL_SERVER_ERROR  
@@ -459,13 +466,13 @@ def send_engagemnt_api():
     if scheme is None:
         raise InvalidUsage('invalid param')
 
-    dryrun = request.args.get('dryrun', True)
+    dry_run = request.args.get('dryrun', True)
 
     tokens = get_tokens_for_push(scheme)
     if tokens is None:
-         raise InvalidUsage('invalid scheme')
+        raise InvalidUsage('invalid scheme')
 
-    if not dryrun:
+    if not dry_run:
         for token in tokens['iOS']:
             send_engagement_push(None, scheme, token, 'iOS')
         for token in tokens['android']:

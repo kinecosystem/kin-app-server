@@ -1,9 +1,10 @@
-from kinappserver import app, config, utils
+from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, increment_metric
 from time import sleep
 import kin
 
 ASSET_NAME = 'KIN'
+
 
 def create_account(public_address, initial_xlm_amount):
     '''create an account for the given public address'''
@@ -15,7 +16,6 @@ def create_account(public_address, initial_xlm_amount):
         increment_metric('create_account_error')
         print('caught exception creating account for address %s' % (public_address))
         print(e)
-
 
 
 def send_kin(public_address, amount, memo=None):
@@ -31,8 +31,6 @@ def send_kin(public_address, amount, memo=None):
         print('caught exception sending %s kin to address %s' % (amount, public_address))
         print(e)
         
-
-
 
 def extract_tx_payment_data(tx_hash):
     '''ensures that the given tx_hash is a valid payment tx,
@@ -73,7 +71,8 @@ def extract_tx_payment_data(tx_hash):
         return False, {}
 
     # verify asset params
-    if op['asset_code'] != ASSET_NAME and op['asset_issuer'] != config.STELLAR_KIN_ISSUER_ADDRESS and op['asset_type'] != 'credit_alphanum4':
+    if op['asset_code'] != ASSET_NAME and op['asset_issuer'] != \
+            config.STELLAR_KIN_ISSUER_ADDRESS and op['asset_type'] != 'credit_alphanum4':
         print('unexpected asset-code/issuer/asset_type')
         return False, {}
 
@@ -89,6 +88,7 @@ def extract_tx_payment_data(tx_hash):
     data['to_address'] = op.get('to_address', None)
     return True, data
 
+
 def get_kin_balance(public_address):
     '''returns the current kin balance for this account'''
     try:
@@ -99,6 +99,7 @@ def get_kin_balance(public_address):
         print(e)
         print('could not get kin balance for address: %s' % public_address)
         return None
+
 
 def get_xlm_balance(public_address):
     '''returns the current xl, balance for this account'''

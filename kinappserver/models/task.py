@@ -7,6 +7,7 @@ from kinappserver import db, config
 from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_midnight
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
 
+
 class UserTaskResults(db.Model):
     '''
     the user task results
@@ -24,7 +25,7 @@ def user_in_cooldown(user_id):
 
     task_results = get_user_task_results(user_id)
     if len(task_results) == 0:
-        # no previous results, so no cooldown
+        # no previous results, so no cool-down
         return False
 
     return should_apply_cooldown(task_results)
@@ -40,10 +41,11 @@ def reject_premature_results(user_id):
     now = arrow.utcnow()
     results_valid_at = arrow.get(next_task_ts)
 
-    if (results_valid_at > now):
+    if results_valid_at > now:
         print('rejecting results. will only be valid in %s seconds' % (results_valid_at - now).total_seconds() )
         return True
     return False
+
 
 def store_task_results(user_id, task_id, results):
     '''store the results provided by the user'''
@@ -105,7 +107,8 @@ class Task(db.Model):
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
-        return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, min_to_complete: %s, start_date>' % (self.task_id, self.task_type, self.title, self.desc, self.price, self.min_to_complete, self.start_data)
+        return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, min_to_complete: %s, start_date: %s>' % \
+               (self.task_id, self.task_type, self.title, self.desc, self.price, self.min_to_complete, self.start_data)
 
 
 def list_all_task_data():
@@ -133,7 +136,7 @@ def get_tasks_for_user(user_id):
 
     user_app_data = get_user_app_data(user_id)
     # no cooldown policy: just return the time-zone adjusted next task
-    if config.TASK_ALLOCATION_POLICY=='no-cooldown':
+    if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
         if len(user_app_data.completed_tasks) == 0:
             return [get_task_by_id('0')]
         else:
@@ -164,7 +167,7 @@ def get_tasks_for_user(user_id):
         if shifted_ts:
             store_next_task_results_ts(user_id, shifted_ts)
 
-        # arrayify the results
+        # array-ify the results
         if task is None:
             return [] # no 'next task', so return an empty array
         else:
@@ -216,6 +219,7 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['start_date'] = shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp
 
     return task_json
+
 
 def add_task(task_json):
     try:

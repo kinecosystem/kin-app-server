@@ -18,7 +18,8 @@ class Offer(db.Model):
     provider_data = db.Column(db.JSON)
 
     def __repr__(self):
-        return '<offer_id: %s, offer_type: %s, title: %s, desc: %s, kin_cost: %s, is_active: %s>' % (self.offer_id, self.offer_type, self.title, self.desc, self.kin_cost, self.is_active)
+        return '<offer_id: %s, offer_type: %s, title: %s, desc: %s, kin_cost: %s, is_active: %s>' % \
+               (self.offer_id, self.offer_type, self.title, self.desc, self.kin_cost, self.is_active)
 
 
 def list_all_offer_data():
@@ -107,9 +108,9 @@ def get_offers_for_user(user_id):
         if goods_avilable(offer.offer_id):
             redeemable_offers.append(offer)
         else:
-            print('filtering out unredeemable offer-id: %s' % offer.offer_id)
+            print('filtering out un-redeemable offer-id: %s' % offer.offer_id)
 
     offers_json_array = []
     for offer in redeemable_offers:
-         offers_json_array.append(offer_to_json(offer))
+        offers_json_array.append(offer_to_json(offer))
     return offers_json_array

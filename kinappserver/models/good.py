@@ -1,12 +1,10 @@
-from uuid import uuid4
 import arrow
 
-from kinappserver import db, config, stellar
+from kinappserver import db
 from kinappserver.utils import InternalError
 from sqlalchemy_utils import UUIDType, ArrowType
 
-from .offer import Offer, get_cost_and_address
-from .transaction import create_tx
+from .offer import Offer
 
 class Good(db.Model):
     '''the Good class represent a single goods (as in, the singular of Goods). 
@@ -145,7 +143,6 @@ def release_unclaimed_goods():
     '''
     print('releasing unclaimed goods...')
     released = 0
-    #from sqlalchemy import and_
     goods = db.session.query(Good).filter(Good.tx_hash==None).filter(Good.order_id!=None).all()
     for good in goods:
         from .order import has_expired # dont move me to prevet cyclical deps

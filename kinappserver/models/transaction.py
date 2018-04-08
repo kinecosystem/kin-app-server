@@ -13,7 +13,7 @@ class Transaction(db.Model):
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     tx_hash = db.Column(db.String(100), nullable=False, primary_key=True)
     amount = db.Column(db.Integer(), nullable=False, primary_key=False)
-    incoming_tx = db.Column(db.Boolean, unique=False, default=False) # are the moneys coming or going
+    incoming_tx = db.Column(db.Boolean, unique=False, default=False)  # are the moneys coming or going
     remote_address = db.Column(db.String(100), nullable=False, primary_key=False)
     tx_info = db.Column(db.JSON)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
@@ -48,14 +48,14 @@ def create_tx(tx_hash, user_id, remote_address, incoming_tx, amount, tx_info):
 
 def count_transactions_by_minutes_ago(minutes_ago=1):
     """return the number of failed txs since minutes_ago"""
-    time_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes = minutes_ago)
-    return len(Transaction.query.filter(Transaction.update_at>=time_minutes_ago).all())
+    time_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes=minutes_ago)
+    return len(Transaction.query.filter(Transaction.update_at >= time_minutes_ago).all())
 
 
 def expected_user_kin_balance(user_id):
     '''this function calculates the expected kin balance of the given user based on his past txs'''
     expected_balance = 0
-    user_txs = Transaction.query.filter(Transaction.user_id==user_id).all()
+    user_txs = Transaction.query.filter(Transaction.user_id == user_id).all()
     for tx in user_txs:
         if tx.incoming_tx:
             expected_balance = expected_balance - tx.amount
@@ -66,9 +66,9 @@ def expected_user_kin_balance(user_id):
 def get_current_user_kin_balance(user_id):
     '''get the current kin balance for the user with the given user_id.'''
     # determine the user's public address from pre-existing outgoing txs
-    user_outgoing_txs = Transaction.query.filter(Transaction.user_id==user_id).filter(Transaction.incoming_tx==False).all()
-    if len(user_outgoing_txs)==0:
-        return 0 # user should not have any Kins
+    user_outgoing_txs = Transaction.query.filter(Transaction.user_id == user_id).filter(Transaction.incoming_tx==False).all()
+    if len(user_outgoing_txs) == 0:
+        return 0  # user should not have any Kins
     else:
         return stellar.get_kin_balance(user_outgoing_txs[0].remote_address)
 
