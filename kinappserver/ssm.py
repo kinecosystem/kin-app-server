@@ -5,6 +5,7 @@ import boto3
 
 from kinappserver import config
 
+
 def get_stellar_credentials():
     # get credentials from ssm. the base_seed is required, the channel-seeds are optional
     env = os.environ.get('ENV', 'test')
@@ -20,11 +21,13 @@ def get_stellar_credentials():
 
     return base_seed, []  # convert_byte_to_string_array(channel_seeds)
 
+
 def convert_byte_to_string_array(input_byte):
     '''converts the input (a bytestring to a string array without using eval'''
     # this is used to convert the decrypted seed channels bytestring to an array
-    #return json.loads('['+input_byte.decode("utf-8") +']')
+    # return json.loads('['+input_byte.decode("utf-8") +']')
     return json.loads('['+ input_byte +']')
+
 
 def get_ssm_parameter(param_name, kms_key_region):
     '''retreives an encrpyetd value from AWSs ssm or None'''

@@ -259,7 +259,7 @@ def register_api():
         # TODO more input check on the values
         if None in (user_id, os, device_model, time_zone, app_ver): # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
-        if os not in ('iOS', 'android'):
+        if os not in (utils.OS_ANDROID, utils.OS_IOS):
             raise InvalidUsage('bad-request')
         user_id = UUID(user_id)  # throws exception on invalid uuid
     except Exception as e:
@@ -473,10 +473,10 @@ def send_engagemnt_api():
         raise InvalidUsage('invalid scheme')
 
     if not dry_run:
-        for token in tokens['iOS']:
-            send_engagement_push(None, scheme, token, 'iOS')
-        for token in tokens['android']:
-            send_engagement_push(None, scheme, token, 'android')
+        for token in tokens[utils.OS_IOS]:
+            send_engagement_push(None, scheme, token, utils.OS_IOS)
+        for token in tokens[utils.OS_ANDROID]:
+            send_engagement_push(None, scheme, token, utils.OS_ANDROID)
     else:
         print('send_engagemnt_api - dryrun - not sending push')
 

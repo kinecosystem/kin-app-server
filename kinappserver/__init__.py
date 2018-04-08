@@ -3,9 +3,6 @@ import sys
 from flask import Flask
 from flask_cors import CORS
 from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
-
-import redis
 import kin
 
 from kinappserver import amqp_publisher
@@ -90,12 +87,7 @@ else:
     print('NOT enabling admin UI')
 
 import kinappserver.views
-import time
-import redis_lock
 import redis
-import sys
-from threading import Lock
-import requests
 
 app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0)
 amqp_publisher.init_config(config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE, config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD, config.ESHU_HEARTBEAT, config.ESHU_APPID)
@@ -103,5 +95,4 @@ app.amqp_publisher = amqp_publisher
 
 # sanity for configuration
 if not config.DEBUG:
-    # redis
     app.redis.setex('temp-key', 1, 'temp-value')

@@ -2,10 +2,11 @@
 from sqlalchemy_utils import UUIDType
 
 from kinappserver import db
-from kinappserver.utils import InvalidUsage
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID
 from kinappserver.push import send_gcm, send_apns, engagement_payload_apns
 
 DEFAULT_TIME_ZONE = -4
+
 
 class User(db.Model):
     '''
@@ -161,7 +162,7 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
     if token is None:
         print('cant push to user %s: no push token' % user_id)
         return False
-    if os_type == 'iOS': # TODO move to consts
+    if os_type == OS_IOS:
         print('not supported yet')
     else:
         payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
@@ -178,13 +179,14 @@ def send_engagement_push(user_id, push_type, token=None, os_type=None):
         print('cant push to user %s: no push token' % user_id)
         return False
 
-    if os_type == 'iOS': # TODO move to consts
+    if os_type == OS_IOS:
         send_apns(token, engagement_payload_apns(push_type))
     else:
         print('gcm not supported yet')
         #payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
         #send_gcm(token, payload)
     return True 
+
 
 def store_next_task_results_ts(user_id, timestamp_str):
     '''stores the given ts for the given user for later retrieval'''
@@ -198,13 +200,14 @@ def store_next_task_results_ts(user_id, timestamp_str):
         print(e)
         raise InvalidUsage('cant set task result ts')
 
+
 def get_next_task_results_ts(user_id):
     '''return the task_result_ts field for the given user'''
     try:
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
         if user_app_data is None:
             return None
-        return user_app_data.next_task_ts # can be None
+        return user_app_data.next_task_ts  # can be None
     except Exception as e:
         print(e)
         print('cant get task result ts')
@@ -215,7 +218,7 @@ def get_tokens_for_push(scheme):
     '''get push tokens for a scheme'''
     from datetime import datetime, timedelta
     from kinappserver.models import get_tasks_for_user
-    tokens = {'iOS':[], 'android':[]}
+    tokens = {OS_IOS: [], OS_ANDROID: []}
 
     if scheme == 'engage-recent':
         # get all tokens that:
@@ -243,10 +246,10 @@ def get_tokens_for_push(scheme):
                     continue
 
                 print('adding user %s with last_active: %s' % (user.user_id, last_active_date))
-                if user.os_type == 'iOS':
-                    tokens['iOS'].append(user.push_token)
+                if user.os_type == OS_IOS:
+                    tokens[OS_IOS].append(user.push_token)
                 else:
-                    tokens['android'].append(user.push_token)
+                    tokens[OS_ANDROID].append(user.push_token)
 
             except Exception as e:
                 print('caught exception trying to calculate push for user %s' % user.user_id)
@@ -277,10 +280,10 @@ def get_tokens_for_push(scheme):
                     continue
             
                 print('adding user %s with last_active: %s' % (user.user_id, last_active_date))
-                if user.os_type == 'iOS':
-                    tokens['iOS'].append(user.push_token)
+                if user.os_type == OS_IOS:
+                    tokens[OS_IOS].append(user.push_token)
                 else:
-                    tokens['android'].append(user.push_token)
+                    tokens[OS_ANDROID].append(user.push_token)
 
             except Exception as e:
                 print('caught exception trying to calculate push for user %s' % user.user_id)

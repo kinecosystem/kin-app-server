@@ -11,10 +11,15 @@ ERROR_NO_GOODS = -2
 KINIT_MEMO_PREFIX = '1-kit-'
 ORDER_ID_LENGTH = 21
 
+OS_ANDROID = 'android'
+OS_IOS = 'iOS'
+
+
 def generate_memo():
     # generate a unique-ish id for txs, this goes into the memo field of txs
     env = config.DEPLOYMENT_ENV[0:1] # either 's(tage)', 't(est)' or 'p(rod)'
     return KINIT_MEMO_PREFIX + env + str(uuid4().hex[:ORDER_ID_LENGTH]) # generate a memo string and send it to the client
+
 
 def increment_metric(metric_name, count=1):
     '''increment a counter with the given name and value'''
@@ -32,16 +37,6 @@ def errors_to_string(errorcode):
         print('should never happen')
         return 'unknown-error'
 
-def seconds_to_utc_midnight():
-    '''returs the (integer) number of seconds to the next midnight at utc'''
-    # no longer in use, delete
-    from datetime import datetime, timedelta, timezone
-
-    tomorrow = datetime.date(datetime.today() + timedelta(days=1))
-    # convert date objevt to datetime. hack from https://stackoverflow.com/a/27760382/1277048
-    tomorrow_dt = datetime.strptime(tomorrow.strftime('%Y%m%d'), '%Y%m%d')
-    # calc hours until tomorrow
-    return(int((tomorrow_dt - datetime.utcnow()).total_seconds()))
 
 def seconds_to_local_midnight(tz_shift):
     '''returs the (integer) number of seconds to the next midnight at utc'''
@@ -53,7 +48,7 @@ def seconds_to_local_midnight(tz_shift):
     # convert date object back to datetime. hack from https://stackoverflow.com/a/27760382/1277048
     tomorrow_dt = datetime.strptime(local_tomorrow_date.strftime('%Y%m%d'), '%Y%m%d')
     # calc hours until tomorrow
-    return(int((tomorrow_dt - local_time_dt).total_seconds()))
+    return int((tomorrow_dt - local_time_dt).total_seconds())
 
 
 class InvalidUsage(Exception):
@@ -70,6 +65,7 @@ class InvalidUsage(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
+
 
 class InternalError(Exception):
     status_code = 500
