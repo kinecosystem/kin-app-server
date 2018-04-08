@@ -156,3 +156,13 @@ def release_unclaimed_goods():
 def goods_avilable(offer_id):
     '''returns true if the given offer_id has avilable goods'''
     return (db.session.query(Good).filter(Good.offer_id==offer_id).filter(Good.order_id==None).count()>0)
+
+
+def get_redeemed(tx_hases):
+    redeemed = []
+    goods = db.session.query(Good).filter(Good.tx_hash in tx_hases)
+    for good in goods:
+        if good.tx_hash is not None:
+            local_date = good.updated_at
+            redeemed.append({'date':good.updated_at, 'value': good.value, 'type': good.good_type})
+    return redeemed

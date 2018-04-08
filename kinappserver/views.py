@@ -196,6 +196,20 @@ def get_next_task():
     return jsonify(tasks=tasks)
 
 
+@app.route('/user/redeemed', methods=['POST'])
+def user_redeemed_api():
+    '''return the list of offers that were redeemed by this user'''
+    redeemed = []
+    try:
+        user_id = extract_header(request)
+        #redeemed = get_user_redeemed(user_id)
+    except Exception as e:
+        print('cant get redeemed items for user')
+        print(e)
+
+    return jsonify(status='ok', redeemed=redeemed)
+
+
 @app.route('/user/onboard', methods=['POST'])
 def onboard_user():
     '''creates a wallet for the user and deposits some xlms there'''
