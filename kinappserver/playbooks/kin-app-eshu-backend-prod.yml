@@ -10,7 +10,7 @@
     git_rev: e153ed6
     datadog_api_key: "7d29689e7460c08f21128628adf11afd"
     datadog_config:
-      tags: "service:eshu-backend"
+      tags: "service:kin-app-eshu-backend"
     env: PROD
     target_name: eshu-backend
     log_level: debug
