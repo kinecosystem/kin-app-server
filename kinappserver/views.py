@@ -172,6 +172,7 @@ def add_task_api():
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
+
     try:
         task = payload.get('task', None)
     except Exception as e:

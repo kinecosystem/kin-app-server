@@ -147,6 +147,11 @@ def get_user_tz(user_id):
     return User.query.filter_by(user_id=user_id).one().time_zone
 
 
+def get_user_os_type(user_id):
+    '''return the user os_type'''
+    return User.query.filter_by(user_id=user_id).one().os_type
+
+
 def get_user_push_data(user_id):
     '''returns the os_type and the token for the given user_id'''
     user = User.query.filter_by(user_id=user_id).first()

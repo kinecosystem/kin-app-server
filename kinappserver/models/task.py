@@ -132,15 +132,17 @@ def get_tasks_for_user(user_id):
        the next available time to the next midnight. 
     '''
 
-    from .user import get_user_app_data
+    from .user import get_user_app_data, get_user_os_type
 
     user_app_data = get_user_app_data(user_id)
+    os_type = get_user_os_type(user_id)
+
     # no cooldown policy: just return the time-zone adjusted next task
     if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
         if len(user_app_data.completed_tasks) == 0:
-            return [get_task_by_id('0')]
+            return [get_task_by_id('0'), os_type, user_app_data.app_ver]
         else:
-            task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))))
+            task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), os_type, user_app_data.app_ver)
             if task is None:
                 return [] # no 'next task', so return an empty array
             else:
@@ -151,7 +153,7 @@ def get_tasks_for_user(user_id):
         task_results = get_user_task_results(user_id)
         if len(task_results) == 0:
             print('no previous task results, no cooldown needed')
-            return [get_task_by_id('0')]
+            return [get_task_by_id('0'), os_type, user_app_data.app_ver]
 
         shifted_ts = None
         print('task results so far: %s' % task_results)
@@ -162,7 +164,7 @@ def get_tasks_for_user(user_id):
             print('applying cooldown: new ts is: %s' % shifted_ts)
         else:
             print('no cooldown needed')
-        task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), shifted_ts)
+        task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), os_type, user_app_data.app_ver, shifted_ts)
         # store the ts at which the next results are acceptable. only do this if a cooldown was actually needed
         if shifted_ts:
             store_next_task_results_ts(user_id, shifted_ts)
@@ -198,7 +200,7 @@ def should_apply_cooldown(ordered_task_results):
         return False
 
 
-def get_task_by_id(task_id, shifted_ts=None):
+def get_task_by_id(task_id, os_type, app_ver, shifted_ts=None):
     '''return the json representation of the task or None if no such task exists'''
 
     task = Task.query.filter_by(task_id=task_id).first()
@@ -215,17 +217,28 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['min_to_complete'] = task.min_to_complete
     task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
-    task_json['items'] = task.items
+    task_json['items'] = trasmute_items(task.items, os_type, app_ver)
     task_json['start_date'] = shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp
 
     return task_json
+
+
+def trasmute_items(items, os_type, app_ver):
+    '''sanitize the items of the task to match the app-version'''
+    from kinappserver.utils import OS_IOS, OS_ANDROID
+    if os_type == OS_IOS and app_ver < '0.7.0':
+        items = items.replace('textemoji', 'text')
+        items = items.replace('textmultiple', 'text')
+        # TODO deal with rating questions
+        return items
+    return items
 
 
 def add_task(task_json):
     try:
         # sanity for task data
         for item in task_json['items']:
-            if item['type'] not in ['textimage', 'text', 'text-multiple', 'text-emoji', 'rating']:
+            if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating']:
                 raise InvalidUsage('cant add task with invalid item-type')
 
         task = Task()
