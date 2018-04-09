@@ -22,13 +22,9 @@ class Transaction(db.Model):
         return '<tx_hash: %s, user_id: %s, amount: %s, remote_address: %s, incoming_tx: %s, tx_info: %s,  update_at: %s>' % (self.tx_hash, self.user_id, self.amount, self.remote_address, self.incoming_tx, self.tx_info, self.update_at)
 
 
-def list_all_transactions():
-    '''returns a dict of all the tasks'''
-    response = {}
-    txs = Transaction.query.order_by(Transaction.update_at).all()
-    for tx in txs:
-        response[tx.tx_hash] = {'tx_hash': tx.tx_hash, 'user_id': tx.user_id, 'remote_address': tx.remote_address, 'incoming_tx': tx.incoming_tx, 'amount': tx.amount, 'tx_info': tx.tx_info, 'update_at': tx.update_at}
-    return response
+def list_user_transactions(user_id):
+    '''returns all txs by this user'''
+    return Transaction.query.filter(Transaction.user_id == user_id).order_by(Transaction.update_at).all()
 
 
 def create_tx(tx_hash, user_id, remote_address, incoming_tx, amount, tx_info):

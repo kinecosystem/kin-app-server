@@ -16,7 +16,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     set_onboarded, send_push_tx_completed, send_engagement_push, \
     create_tx, update_task_time, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
-    create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push
+    create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, list_user_transactions, get_redeemed
 
 
 def limit_to_local_host():
@@ -95,7 +95,7 @@ def send_engagement_push_api():
     try:
         user_id = extract_header(request)
     except Exception as e:
-        print('exception in send_gcm_push_tx_completed: %s' % e)
+        print('exception in send_engagement_push: %s' % e)
         raise InvalidUsage('bad-request')
     send_engagement_push(user_id, 'engage-recent')
     return jsonify(status='ok')
@@ -200,9 +200,16 @@ def get_next_task():
 def user_redeemed_api():
     '''return the list of offers that were redeemed by this user'''
     redeemed = []
+    outgoing_txs = []
     try:
         user_id = extract_header(request)
-        #redeemed = get_user_redeemed(user_id)
+        for tx in list_user_transactions(user_id):
+            if not tx.incoming_tx:
+                outgoing_txs.append(tx.tx_hash)
+
+        redeemed = get_redeemed(outgoing_txs)
+
+        # TODOlocalize the time for the user
     except Exception as e:
         print('cant get redeemed items for user')
         print(e)
@@ -480,18 +487,21 @@ def send_engagemnt_api():
     if scheme is None:
         raise InvalidUsage('invalid param')
 
-    dry_run = request.args.get('dryrun', True)
+    dry_run = request.args.get('dryrun', True) == 'True'
 
     tokens = get_tokens_for_push(scheme)
     if tokens is None:
         raise InvalidUsage('invalid scheme')
 
-    if not dry_run:
+    print('gathered %d ios tokens and %d gcm tokens for scheme: %s, dry-run:%s' % (len(tokens[utils.OS_IOS]), len(tokens[utils.OS_ANDROID]), scheme, dry_run))
+
+    if dry_run:
+        print('send_engagemnt_api - dryrun - not sending push')
+    else:
         for token in tokens[utils.OS_IOS]:
+            print('sending push %d tokens')
             send_engagement_push(None, scheme, token, utils.OS_IOS)
         for token in tokens[utils.OS_ANDROID]:
             send_engagement_push(None, scheme, token, utils.OS_ANDROID)
-    else:
-        print('send_engagemnt_api - dryrun - not sending push')
 
     return jsonify(status='ok')
