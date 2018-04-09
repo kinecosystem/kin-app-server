@@ -3,7 +3,7 @@ from sqlalchemy_utils import UUIDType
 
 from kinappserver import db
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID
-from kinappserver.push import send_gcm, send_apns, engagement_payload_apns
+from kinappserver.push import send_gcm, send_apns, engagement_payload_apns, engagement_payload_gcm
 
 DEFAULT_TIME_ZONE = -4
 
@@ -187,9 +187,7 @@ def send_engagement_push(user_id, push_type, token=None, os_type=None):
     if os_type == OS_IOS:
         send_apns(token, engagement_payload_apns(push_type))
     else:
-        print('gcm not supported yet')
-        #payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
-        #send_gcm(token, payload)
+        send_gcm(token, engagement_payload_gcm(push_type))
     return True 
 
 
