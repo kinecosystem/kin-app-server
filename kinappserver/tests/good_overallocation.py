@@ -5,7 +5,7 @@ import json
 import testing.postgresql
 
 import kinappserver
-from kinappserver import db, models
+from kinappserver import db
 
 USER_ID_HEADER = "X-USERID"
 

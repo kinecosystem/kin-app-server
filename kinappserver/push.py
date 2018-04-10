@@ -1,6 +1,7 @@
 import uuid
 
 from kinappserver import amqp_publisher, config
+from kinappserver.utils import InvalidUsage
 
 
 def generate_push_id():
@@ -10,19 +11,17 @@ def generate_push_id():
 def engagement_payload_apns(push_type):
     push_id = generate_push_id()
     # TODO report push_id
-    if push_type == 'engage-recent':
-        return apns_payload("", "Let's earn some Kin!", push_type, push_id)
-    elif push_type == 'engage-week':
+    if push_type in ('engage-recent', 'engage-week'):
         return apns_payload("", "Let's earn some Kin!", push_type, push_id)
 
 
 def engagement_payload_gcm(push_type):
     push_id = generate_push_id()
     # TODO report push_id
-    if push_type == 'engage-recent':
-        return gcm_payload("", "Let's earn some Kin!", push_type, push_id)
-    elif push_type == 'engage-week':
-        return gcm_payload("", "Let's earn some Kin!", push_type, push_id)
+    if push_type in ('engage-recent', 'engage-week'):
+        return gcm_payload(push_type, push_id, {'title': '', 'body': "Let's earn some Kin!"})
+    else:
+        raise InvalidUsage('no such push type: %s' % push_type)
 
 
 def apns_payload(title, body, push_type, push_id, sound='default'):
@@ -33,20 +32,12 @@ def apns_payload(title, body, push_type, push_id, sound='default'):
     return payload_dict
 
 
-def gcm_payload(title, body, push_type, push_id, message=None):
+def gcm_payload(push_type, push_id, message_dict):
     payload = {
-        "notification": {
-            "title": title,
-            "body": body
-        },
-        "data": {
-            "push_type": push_type,
-            "push_id": push_id
-            }
+            'push_type': push_type,
+            'push_id': push_id,
+            'message': message_dict
         }
-    if message:
-        payload["message"] = message
-
     return payload
 
 

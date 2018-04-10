@@ -170,7 +170,8 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
     if os_type == OS_IOS:
         print('not supported yet')
     else:
-        payload = {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id}
+        from kinappserver.push import gcm_payload, generate_push_id
+        payload = gcm_payload('tx_completed', generate_push_id(), {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id})
         send_gcm(token, payload)
     return True
 

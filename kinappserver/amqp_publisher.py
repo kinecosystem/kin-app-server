@@ -65,19 +65,14 @@ def send_gcm(routing_key, payload, tokens, dry_run, ttl):
     for token in tokens:
         message = {'app_id': ESHU_CONFIG['APP_ID'],
                    'data': {
-                        'gcm': {'to': token,
-                            'dry_run': dry_run,
-                            'time_to_live': ttl
+                        'gcm': {
+                                'to': token,
+                                'dry_run': dry_run,
+                                'time_to_live': ttl,
+                                'data': payload
                                }
+                        }
                     }
-                   }
-        if 'notification' in payload:
-            message['notification'] = payload['notification']
-        if 'data' in payload:
-            message['data'] = {**message['data'], **payload['data']} # joins two dicts
-
-        print('message:%s' % dumps(message))
-
         publish(routing_key, dumps(message))
 
 
