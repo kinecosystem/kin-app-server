@@ -10,14 +10,14 @@ import redis_lock
 
 from kinappserver import app, config, stellar, utils
 from kinappserver.stellar import create_account, send_kin
-from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric
+from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     store_task_results, add_task, get_tasks_for_user, is_onboarded, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
     create_tx, update_task_time, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
-    list_user_transactions, get_redeemed_items, get_offer_details
+    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details
 
 
 def limit_to_local_host():
@@ -198,6 +198,38 @@ def get_next_task():
     return jsonify(tasks=tasks)
 
 
+@app.route('/user/transactions', methods=['GET'])
+def get_transactions_api():
+    '''return a list of the last 50 txs for this user
+
+    each item in the list contains:
+        - the tx_hash
+        - tx direction (in, out)
+        - amount of kins transferred
+        - date
+        - title and additional details
+    '''
+
+    txs = []
+    detailed_txs = []
+    try:
+        user_id = extract_header(request)
+        txs = [{'tx_hash': tx.tx_hash, 'amount': tx.amount, 'incoming': tx.incoming_tx, 'tx_info': tx.tx_info, 'date': tx.update_at} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
+
+        # get the offer, task details
+        for tx in txs:
+            details = get_offer_details(tx['tx_info']['offer_id']) if tx['incoming'] else get_task_details(tx['tx_info']['task_id'])
+            detailed_txs.append({**tx, **details})
+
+        # TODO localize the time?
+
+    except Exception as e:
+        print('cant get txs for user')
+        print(e)
+
+    return jsonify(status='ok', txs=detailed_txs)
+
+
 @app.route('/user/redeemed', methods=['GET'])
 def user_redeemed_api():
     '''return the list of offers that were redeemed by this user
@@ -218,7 +250,7 @@ def user_redeemed_api():
         # get an array of the goods and add details from the offer table:
         for good in get_redeemed_items(incoming_txs_hashes):
             # merge two dicts (python 3.5)
-            redmeed_goods.append({**good , **get_offer_details(good['offer_id'])})
+            redmeed_goods.append({**good, **get_offer_details(good['offer_id'])})
 
         # TODO localize the time for the user
     except Exception as e:
@@ -333,7 +365,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
     finally:  # TODO dont do this if we fail with the tx
         if send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
-        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo}) # TODO Add memeo?
+        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
 
 
 @app.route('/offer/add', methods=['POST'])

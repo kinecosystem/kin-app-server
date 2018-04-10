@@ -119,4 +119,4 @@ def get_offer_details(offer_id):
     offer = Offer.query.filter_by(offer_id=offer_id).first()
     if not offer:
         raise InvalidUsage('no offer with id %s exists' % offer_id)
-    return {'title': offer.title, 'desc': offer.desc}
+    return {'title': offer.title, 'desc': offer.desc, 'provider': offer.provider_data}

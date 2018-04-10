@@ -14,6 +14,8 @@ ORDER_ID_LENGTH = 21
 OS_ANDROID = 'android'
 OS_IOS = 'iOS'
 
+MAX_TXS_PER_USER = 50
+
 
 def generate_memo():
     # generate a unique-ish id for txs, this goes into the memo field of txs

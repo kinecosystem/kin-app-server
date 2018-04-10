@@ -150,6 +150,12 @@ class Tester(unittest.TestCase):
 
         #print(model.list_all_users_results_data())
 
+        # get user tx history - should have 1 items
+        resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid)})
+        self.assertEqual(resp.status_code, 200)
+        print('txs: %s' % json.loads(resp.data))
+        self.assertNotEqual(json.loads(resp.data)['txs'], [])
+
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/tasks', headers=headers)

@@ -33,7 +33,6 @@ def user_in_cooldown(user_id):
 
 def reject_premature_results(user_id):
     '''determine whether the results were submitted prematurely'''
-    return False
     next_task_ts = get_next_task_results_ts(user_id)
     if next_task_ts is None:
         return False
@@ -56,11 +55,11 @@ def store_task_results(user_id, task_id, results):
 
     try:
         # store the results
-        userTaskResults = UserTaskResults()
-        userTaskResults.user_id = user_id
-        userTaskResults.task_id = task_id
-        userTaskResults.results = results
-        db.session.add(userTaskResults)
+        user_task_results = UserTaskResults()
+        user_task_results.user_id = user_id
+        user_task_results.task_id = task_id
+        user_task_results.results = results
+        db.session.add(user_task_results)
 
         # write down the completed task-id
         from kinappserver.models import UserAppData
@@ -280,3 +279,11 @@ def get_reward_for_task(task_id):
     if not task:
         raise InternalError('no such task_id')
     return task.price
+
+
+def get_task_details(task_id):
+    '''return a dict with some of the given taskid's metadata'''
+    task = Task.query.filter_by(task_id=task_id).first()
+    if not task:
+        raise InvalidUsage('no task with id %s exists' % task_id)
+    return {'title': task.title, 'desc': task.desc, 'provider': task.provider_data}

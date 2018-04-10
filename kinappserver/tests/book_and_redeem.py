@@ -145,8 +145,14 @@ class Tester(unittest.TestCase):
         # get user2 redeem history - should be empty
         resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid2)})
         self.assertEqual(resp.status_code, 200)
-        print(json.loads(resp.data))
+        print('redeemed: %s' % json.loads(resp.data))
         self.assertEqual(json.loads(resp.data)['redeemed'], [])
+
+        # get user2 tx history - should have 0 items
+        resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid2)})
+        self.assertEqual(resp.status_code, 200)
+        print('txs: %s' % json.loads(resp.data))
+        self.assertEqual(json.loads(resp.data)['txs'], [])
 
         # create the first order
         resp = self.app.post('/offer/book',
@@ -266,8 +272,16 @@ class Tester(unittest.TestCase):
         # get user2 redeem history - should have one item
         resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid2)})
         self.assertEqual(resp.status_code, 200)
-        print(json.loads(resp.data))
+        print('redeemed: %s' % json.loads(resp.data))
         self.assertNotEqual(json.loads(resp.data)['redeemed'], [])
+
+
+        # get user2 tx history - should have 2 items
+        resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid2)})
+        self.assertEqual(resp.status_code, 200)
+        print('txs: %s' % json.loads(resp.data))
+        self.assertNotEqual(json.loads(resp.data)['txs'], [])
+
 
         # no unallocated goods at this point
         resp = self.app.get('/good/inventory')

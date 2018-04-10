@@ -22,9 +22,10 @@ class Transaction(db.Model):
         return '<tx_hash: %s, user_id: %s, amount: %s, remote_address: %s, incoming_tx: %s, tx_info: %s,  update_at: %s>' % (self.tx_hash, self.user_id, self.amount, self.remote_address, self.incoming_tx, self.tx_info, self.update_at)
 
 
-def list_user_transactions(user_id):
-    '''returns all txs by this user'''
-    return Transaction.query.filter(Transaction.user_id == user_id).order_by(Transaction.update_at).all()
+def list_user_transactions(user_id, max_txs=None):
+    '''returns all txs by this user - or the last x tx if max_txs was passed'''
+    txs = Transaction.query.filter(Transaction.user_id == user_id).order_by(Transaction.update_at.asc()).all()
+    return txs[:max_txs] if max_txs and max_txs > len(txs) else txs
 
 
 def create_tx(tx_hash, user_id, remote_address, incoming_tx, amount, tx_info):
