@@ -140,7 +140,7 @@ def get_tasks_for_user(user_id):
     # no cooldown policy: just return the time-zone adjusted next task
     if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
         if len(user_app_data.completed_tasks) == 0:
-            return [get_task_by_id('0'), os_type, user_app_data.app_ver]
+            return [get_task_by_id('0', os_type, user_app_data.app_ver)]
         else:
             task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), os_type, user_app_data.app_ver)
             if task is None:
@@ -153,7 +153,7 @@ def get_tasks_for_user(user_id):
         task_results = get_user_task_results(user_id)
         if len(task_results) == 0:
             print('no previous task results, no cooldown needed')
-            return [get_task_by_id('0'), os_type, user_app_data.app_ver]
+            return [get_task_by_id('0', os_type, user_app_data.app_ver)]
 
         shifted_ts = None
         print('task results so far: %s' % task_results)
@@ -171,7 +171,7 @@ def get_tasks_for_user(user_id):
 
         # array-ify the results
         if task is None:
-            return [] # no 'next task', so return an empty array
+            return []  # no 'next task', so return an empty array
         else:
             return [task]
 

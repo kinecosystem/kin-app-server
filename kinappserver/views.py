@@ -197,20 +197,16 @@ def get_next_task():
     return jsonify(tasks=tasks)
 
 
-@app.route('/user/redeemed', methods=['POST'])
+@app.route('/user/redeemed', methods=['GET'])
 def user_redeemed_api():
     '''return the list of offers that were redeemed by this user'''
     redeemed = []
-    outgoing_txs = []
     try:
         user_id = extract_header(request)
-        for tx in list_user_transactions(user_id):
-            if not tx.incoming_tx:
-                outgoing_txs.append(tx.tx_hash)
-
+        outgoing_txs = [tx for tx in list_user_transactions(user_id) if not tx.incoming_tx]
         redeemed = get_redeemed(outgoing_txs)
 
-        # TODOlocalize the time for the user
+        # TODO localize the time for the user
     except Exception as e:
         print('cant get redeemed items for user')
         print(e)
