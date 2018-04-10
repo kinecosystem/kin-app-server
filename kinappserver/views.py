@@ -16,7 +16,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     set_onboarded, send_push_tx_completed, send_engagement_push, \
     create_tx, update_task_time, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
-    create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, list_user_transactions, get_redeemed
+    create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
+    list_user_transactions, get_redeemed_items, get_offer_details
 
 
 def limit_to_local_host():
@@ -199,19 +200,32 @@ def get_next_task():
 
 @app.route('/user/redeemed', methods=['GET'])
 def user_redeemed_api():
-    '''return the list of offers that were redeemed by this user'''
-    redeemed = []
+    '''return the list of offers that were redeemed by this user
+
+    each item in the list contains:
+        - the actual redeemed item (i.e. the code
+        - localized time
+        - info about the offer that was redeemed
+
+        essentially, this is a 3-way join between the good, user and offer tables
+        that is implemented iteratively. the implementation can be made more efficient
+    '''
+
+    redmeed_goods = []
     try:
         user_id = extract_header(request)
-        outgoing_txs = [tx for tx in list_user_transactions(user_id) if not tx.incoming_tx]
-        redeemed = get_redeemed(outgoing_txs)
+        incoming_txs_hashes = [tx.tx_hash for tx in list_user_transactions(user_id) if tx.incoming_tx]
+        # get an array of the goods and add details from the offer table:
+        for good in get_redeemed_items(incoming_txs_hashes):
+            # merge two dicts (python 3.5)
+            redmeed_goods.append({**good , **get_offer_details(good['offer_id'])})
 
         # TODO localize the time for the user
     except Exception as e:
         print('cant get redeemed items for user')
         print(e)
 
-    return jsonify(status='ok', redeemed=redeemed)
+    return jsonify(status='ok', redeemed=redmeed_goods)
 
 
 @app.route('/user/onboard', methods=['POST'])

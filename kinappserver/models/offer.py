@@ -90,8 +90,6 @@ def add_offer(offer_json, set_active=False):
 def get_cost_and_address(offer_id):
     '''return the kin cost and address associated with this offer'''
     offer = Offer.query.filter_by(offer_id=offer_id).first()
-    if not offer:
-        raise InvalidUsage('no such offer_id')
     if not offer.is_active:
         raise InvalidUsage('offer is not active')
     return offer.kin_cost, offer.address
@@ -114,3 +112,11 @@ def get_offers_for_user(user_id):
     for offer in redeemable_offers:
         offers_json_array.append(offer_to_json(offer))
     return offers_json_array
+
+
+def get_offer_details(offer_id):
+    '''return a dict with some of the given offerid's metadata'''
+    offer = Offer.query.filter_by(offer_id=offer_id).first()
+    if not offer:
+        raise InvalidUsage('no offer with id %s exists' % offer_id)
+    return {'title': offer.title, 'desc': offer.desc}

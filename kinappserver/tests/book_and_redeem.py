@@ -127,6 +127,7 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+
         userid2 = uuid4()
         resp = self.app.post('/user/register',
             data=json.dumps({
@@ -140,6 +141,12 @@ class Tester(unittest.TestCase):
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        # get user2 redeem history - should be empty
+        resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid2)})
+        self.assertEqual(resp.status_code, 200)
+        print(json.loads(resp.data))
+        self.assertEqual(json.loads(resp.data)['redeemed'], [])
 
         # create the first order
         resp = self.app.post('/offer/book',
@@ -246,7 +253,6 @@ class Tester(unittest.TestCase):
         tx_hash = stellar.send_kin(offer['address'], offer['price'], orderid1)
         print('tx_hash: %s' % tx_hash)
 
-
         #try to redeem the goods - should work
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
@@ -257,7 +263,13 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print(data)
 
-        # no goods at this point
+        # get user2 redeem history - should have one item
+        resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid2)})
+        self.assertEqual(resp.status_code, 200)
+        print(json.loads(resp.data))
+        self.assertNotEqual(json.loads(resp.data)['redeemed'], [])
+
+        # no unallocated goods at this point
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 4, 'unallocated': 0}})

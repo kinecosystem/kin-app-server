@@ -158,11 +158,13 @@ def goods_avilable(offer_id):
     return (db.session.query(Good).filter(Good.offer_id==offer_id).filter(Good.order_id==None).count()>0)
 
 
-def get_redeemed(tx_hases):
+def get_redeemed_items(tx_hases):
     '''returns an array of redeemed goods by the given tx_hashes array'''
     redeemed = []
-    goods = db.session.query(Good).filter(Good.tx_hash in tx_hases)
-    for good in goods:
-        if good.tx_hash is not None:
-            redeemed.append({'date': good.updated_at, 'value': good.value, 'type': good.good_type})
+
+    if not tx_hases:
+        return redeemed
+
+    for good in db.session.query(Good).filter(Good.tx_hash.in_(tx_hases)).all():
+            redeemed.append({'date': good.updated_at, 'value': good.value, 'type': good.good_type, 'offer_id': good.offer_id})
     return redeemed
