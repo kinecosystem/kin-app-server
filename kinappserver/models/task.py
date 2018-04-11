@@ -46,6 +46,15 @@ def reject_premature_results(user_id):
     return False
 
 
+def calculate_timeshift(user_id):
+    '''calculate the time shift (in seconds) needed for cooldown, for this user'''
+    from .user import get_user_tz
+    user_tz = get_user_tz(user_id)
+    seconds_to_midnight = seconds_to_local_midnight(user_tz)
+    print('seconds to next local midnight: %s for user_id %s with tz %s' % (seconds_to_midnight, user_id, user_tz))
+    return seconds_to_midnight
+
+
 def store_task_results(user_id, task_id, results):
     '''store the results provided by the user'''
     # reject hackers trying to send task results too soon
@@ -71,6 +80,13 @@ def store_task_results(user_id, task_id, results):
         user_app_data.completed_tasks = json.dumps(completed_tasks)
         db.session.add(user_app_data)
         db.session.commit()
+
+        # calculate the next valid submission time, and store it:
+        shift_seconds = calculate_timeshift(user_id)
+        shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
+        print('next valid submission time for user %s: in seconds: %s, in shifted_ts: %s' % (user_id, shift_seconds, shifted_ts))
+        store_next_task_results_ts(user_id, shifted_ts)
+
         return True
     except Exception as e:
         print(e)
@@ -136,67 +152,27 @@ def get_tasks_for_user(user_id):
     user_app_data = get_user_app_data(user_id)
     os_type = get_user_os_type(user_id)
 
-    # no cooldown policy: just return the time-zone adjusted next task
+    previous_task_results = get_user_task_results(user_id)
+
+    # regardless of the policy: if the user has no previous task results, just give her task '0'
+    if len(previous_task_results) == 0:
+        print('no previous task results, giving task 0')
+        return [get_task_by_id('0', os_type, user_app_data.app_ver)]
+
+    # no cooldown policy: just return next task (if one exists) with no delay
     if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
-        if len(user_app_data.completed_tasks) == 0:
-            return [get_task_by_id('0', os_type, user_app_data.app_ver)]
-        else:
-            task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), os_type, user_app_data.app_ver)
-            if task is None:
-                return [] # no 'next task', so return an empty array
-            else:
-                return [task]
+        next_task_ts = None
     else:
-        # with cooldown policy: 
-        # set the next task's time to _just_ after the cooldown
-        task_results = get_user_task_results(user_id)
-        if len(task_results) == 0:
-            print('no previous task results, no cooldown needed')
-            return [get_task_by_id('0', os_type, user_app_data.app_ver)]
-
-        shifted_ts = None
-        print('task results so far: %s' % task_results)
-        if should_apply_cooldown(task_results):
-            shift_seconds = calculate_timeshift(user_id)
-            print('applying cooldown: shift in seconds: %s' % shift_seconds)
-            shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
-            print('applying cooldown: new ts is: %s' % shifted_ts)
-        else:
-            print('no cooldown needed')
-        task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), os_type, user_app_data.app_ver, shifted_ts)
-        # store the ts at which the next results are acceptable. only do this if a cooldown was actually needed
-        if shifted_ts:
-            store_next_task_results_ts(user_id, shifted_ts)
-
-        # array-ify the results
-        if task is None:
-            return []  # no 'next task', so return an empty array
-        else:
-            return [task]
+        # get the ts for the next task from the db
+        next_task_ts = get_next_task_results_ts(user_id)
 
 
-def calculate_timeshift(user_id):
-    '''calculate the time shift (in seconds) needed for cooldown, for this user'''
-    from .user import get_user_tz
-    user_tz = get_user_tz(user_id)
-    seconds_to_midnight = seconds_to_local_midnight(user_tz)
-    print('seconds to next local midnight: %s for user_id %s with tz %s' % (seconds_to_midnight, user_id, user_tz))
-    return seconds_to_midnight
-
-
-def should_apply_cooldown(ordered_task_results):
-    '''return True if cooldown is needed.
-    
-       cooldown is defined as time since the last time task results were submitted.
-    '''
-    if not ordered_task_results:
-        # should not happened, as checked before
-        raise InternalError('no task results were passed')
+    next_task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), os_type, user_app_data.app_ver, next_task_ts)
+    if next_task is None:
+        return []
     else:
-        if (arrow.utcnow() - arrow.get(ordered_task_results[-1].update_at)).total_seconds() < 24*60*60:
-            print('cooldown needed. last submission: %s, total seconds ago: %s' % (ordered_task_results[-1].update_at, (arrow.utcnow() - arrow.get(ordered_task_results[-1].update_at)).total_seconds()))
-            return True
-        return False
+        return [next_task]
+
 
 
 def get_task_by_id(task_id, os_type, app_ver, shifted_ts=None):
