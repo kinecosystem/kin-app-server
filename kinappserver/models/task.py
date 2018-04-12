@@ -72,14 +72,17 @@ def store_task_results(user_id, task_id, results):
         if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
             # just set it to 'now'
             shifted_ts = arrow.utcnow().timestamp
+            print('setting next task time to now (no-cooldown policy)')
         else:
             # calculate the next task's valid submission time, and store it:
             # this takes into account the delay_days field on the next task.
             delay_days = get_task_delay(str(int(task_id) + 1))  # returns None if task doesn't exist
             shift_seconds = calculate_timeshift(user_id, delay_days)
             shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
+            print('setting next task time to %s seconds in the future' % shift_seconds)
 
-        print('next valid submission time for user %s: in seconds: %s, in shifted_ts: %s' % (user_id, shift_seconds, shifted_ts))
+        print('next valid submission time for user %s: in shifted_ts: %s' % (user_id, shifted_ts))
+
         store_next_task_results_ts(user_id, shifted_ts)
 
         return True
