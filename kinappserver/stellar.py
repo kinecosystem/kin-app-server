@@ -38,7 +38,7 @@ def extract_tx_payment_data(tx_hash):
     if tx_hash is None:
         raise InvalidUsage('invlid params')
 
-    # get the tx_hash data. this might take a second, 
+    # get the tx_hash data. this might take a second,
     # so retry while 'Resource Missing' is recevied
     count = 0
     tx_data = None

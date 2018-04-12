@@ -72,14 +72,21 @@ def store_task_results(user_id, task_id, results):
         if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
             # just set it to 'now'
             shifted_ts = arrow.utcnow().timestamp
+            print('setting next task time to now (no-cooldown policy)')
         else:
             # calculate the next task's valid submission time, and store it:
             # this takes into account the delay_days field on the next task.
             delay_days = get_task_delay(str(int(task_id) + 1))  # returns None if task doesn't exist
-            shift_seconds = calculate_timeshift(user_id, delay_days)
-            shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
+            if delay_days == 0:
+                shifted_ts = arrow.utcnow().timestamp
+                print('setting next task time to now (delay_days is zero)')
+            else:
+                shift_seconds = calculate_timeshift(user_id, delay_days)
+                shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
+                print('setting next task time to %s seconds in the future' % shift_seconds)
 
-        print('next valid submission time for user %s: in seconds: %s, in shifted_ts: %s' % (user_id, shift_seconds, shifted_ts))
+        print('next valid submission time for user %s: in shifted_ts: %s' % (user_id, shifted_ts))
+
         store_next_task_results_ts(user_id, shifted_ts)
 
         return True
@@ -181,7 +188,7 @@ def get_task_by_id(task_id, os_type, app_ver, shifted_ts=None):
     task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
     task_json['items'] = trasmute_items(task.items, os_type, app_ver)
-    task_json['start_date'] = shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp
+    task_json['start_date'] = int(shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp)
 
     return task_json
 
