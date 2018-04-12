@@ -82,9 +82,13 @@ def store_task_results(user_id, task_id, results):
         db.session.commit()
 
         # calculate the next valid submission time, and store it:
-        shift_seconds = calculate_timeshift(user_id)
-        shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
-        print('next valid submission time for user %s: in seconds: %s, in shifted_ts: %s' % (user_id, shift_seconds, shifted_ts))
+        if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
+            # just set it to 'now'
+            shifted_ts = arrow.utcnow().timestamp
+        else:
+            shift_seconds = calculate_timeshift(user_id)
+            shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
+        print('next valid submission time for user %s: in shifted_ts: %s' % (user_id, shifted_ts))
         store_next_task_results_ts(user_id, shifted_ts)
 
         return True
@@ -159,20 +163,12 @@ def get_tasks_for_user(user_id):
         print('no previous task results, giving task 0')
         return [get_task_by_id('0', os_type, user_app_data.app_ver)]
 
-    # no cooldown policy: just return next task (if one exists) with no delay
-    if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
-        next_task_ts = None
-    else:
-        # get the ts for the next task from the db
-        next_task_ts = get_next_task_results_ts(user_id)
-
-
-    next_task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), os_type, user_app_data.app_ver, next_task_ts)
+    next_task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))),
+                               os_type, user_app_data.app_ver, get_next_task_results_ts(user_id))
     if next_task is None:
         return []
     else:
         return [next_task]
-
 
 
 def get_task_by_id(task_id, os_type, app_ver, shifted_ts=None):
