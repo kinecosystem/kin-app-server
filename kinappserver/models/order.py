@@ -9,11 +9,11 @@ from .transaction import create_tx, expected_user_kin_balance, get_current_user_
 from .good import allocate_good, finalize_good
 
 class Order(db.Model):
-    '''the Order class represent a single order. 
+    """the Order class represent a single order.
 
        orders are generated when a client wishes to buy an offer.
        orders are time-limited and expire after a while.
-    '''
+    """
     order_id = db.Column(db.String(len(generate_memo())), primary_key=True, nullable=False)
     offer_id = db.Column('offer_id', db.String(40), db.ForeignKey("offer.offer_id"), primary_key=False, nullable=False)
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
@@ -24,16 +24,18 @@ class Order(db.Model):
     def __repr__(self):
         return '<order_id: %s, offer_id: %s, user_id: %s, kin_amount: %s, created_at: %s>' % (self.order_id, self.offer_id, self.user_id, self.kin_amount, self.created_at)
 
+
 def has_expired(order_id):
-    '''determines whether an order has expired. this feteches from db.'''
+    """determines whether an order has expired. this feteches from db."""
     now = arrow.utcnow()
     order = Order.query.filter_by(order_id=order_id).one()
     if (now - order.created_at).total_seconds() <= config.ORDER_EXPIRATION_SECS:
         return False
     return True
 
+
 def create_order(user_id, offer_id):
-    '''creates a new order and allocate the goods for it'''
+    """creates a new order and allocate the goods for it"""
 
     # dont let users create too many simultaneous orders
     if len(get_orders_for_user(user_id)) >= int(config.MAX_SIMULTANEOUS_ORDERS_PER_USER):
@@ -74,7 +76,7 @@ def create_order(user_id, offer_id):
 
 
 def list_all_order_data():
-    '''returns a dict of all the orders'''
+    """returns a dict of all the orders"""
     response = {}
     orders = Order.query.order_by(Order.order_id).all()
     for order in orders:
@@ -83,7 +85,7 @@ def list_all_order_data():
 
 
 def delete_order(order_id):
-    '''delete an order'''
+    """delete an order"""
     try:
         deleted_count = Order.query.filter_by(order_id=order_id).delete()
         if deleted_count != 1:
@@ -94,10 +96,10 @@ def delete_order(order_id):
 
 
 def get_orders_for_user(user_id):
-    '''return a dict of active orders for this user
+    """return a dict of active orders for this user
 
        returns a dict with the order-id as its key and the order object as value
-    '''
+    """
     orders = Order.query.filter_by(user_id=user_id).all()
     active_orders = {}
     now = arrow.utcnow()
@@ -111,7 +113,7 @@ def get_orders_for_user(user_id):
 
 
 def get_order_by_order_id(order_id):
-    '''returns the order object from the db, if it exists and is active'''
+    """returns the order object from the db, if it exists and is active"""
     if order_id is None:
         return None
 
@@ -128,7 +130,7 @@ def get_order_by_order_id(order_id):
 
 
 def process_order(user_id, tx_hash):
-    '''release the goods to the user, provided that they've been payed for'''
+    """release the goods to the user, provided that they've been payed for"""
     # extract the tx_data from the blockchain
     goods  = []
     res, tx_data = stellar.extract_tx_payment_data(tx_hash)
@@ -150,7 +152,7 @@ def process_order(user_id, tx_hash):
         print('tx amount does not match offer amount')
         return False, None
 
-    # tx matched! docuemnt the tx in the db with a tx object
+    # tx matched! document the tx in the db with a tx object
     create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id': str(order.offer_id)})
 
     # prevent doomsday scenario: ensure that the user's expected balance matches his actual balance

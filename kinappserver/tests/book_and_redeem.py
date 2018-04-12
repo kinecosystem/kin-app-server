@@ -11,7 +11,7 @@ from kinappserver import db, stellar, models
 USER_ID_HEADER = "X-USERID"
 
 class Tester(unittest.TestCase):
-    '''tests the entire spend-scenario: creating an order and then redeeming it'''
+    """tests the entire spend-scenario: creating an order and then redeeming it"""
 
     @classmethod
     def setUpClass(cls):

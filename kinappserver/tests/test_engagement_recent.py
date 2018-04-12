@@ -13,7 +13,7 @@ from kinappserver import db, models
 USER_ID_HEADER = "X-USERID"
 
 class Tester(unittest.TestCase):
-    '''tests the selection logic for engagement-recent'''
+    """tests the selection logic for engagement-recent"""
 
     @classmethod
     def setUpClass(cls):

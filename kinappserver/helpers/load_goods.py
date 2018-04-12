@@ -9,7 +9,7 @@ def load_goods(filename, offer_id):
     url = 'http://localhost:8000/good/add'
     headers = {"Content-Type": "application/json"}
     lines = tuple(open(filename, 'r'))
-    payload = '''{"offer_id": "%s", "good_type": "code", "value": "%s"}'''
+    payload = """{"offer_id": "%s", "good_type": "code", "value": "%s"}"""
     for code in lines:
         inner_payload = payload % (offer_id, code.rstrip())
         print('posting payload: %s' % inner_payload)

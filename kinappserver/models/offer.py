@@ -3,7 +3,7 @@ from kinappserver.utils import InvalidUsage
 
 
 class Offer(db.Model):
-    '''the Offer class represent a single offer'''
+    """the Offer class represent a single offer"""
     offer_id = db.Column(db.String(40), nullable=False, primary_key=True)
     offer_type = db.Column(db.String(40), nullable=False, primary_key=False)
     offer_type_image_url = db.Column(db.String(100), nullable=False, primary_key=False)
@@ -23,15 +23,16 @@ class Offer(db.Model):
 
 
 def list_all_offer_data():
-    '''returns a dict of all the offers'''
+    """returns a dict of all the offers"""
     response = {}
     offers = Offer.query.order_by(Offer.offer_id).all()
     for offer in offers:
         response[offer.offer_id] = {'id': offer.offer_id, 'offer_type': offer.offer_type, 'title': offer.title}
     return response
 
+
 def offer_to_json(offer):
-    '''converts the given offer object to a json-representation'''
+    """converts the given offer object to a json-representation"""
     if not offer:
         return {}
     # build the json object:
@@ -50,7 +51,7 @@ def offer_to_json(offer):
 
 
 def set_offer_active(offer_id, is_active):
-    '''enable/disable offer by offer_id'''
+    """enable/disable offer by offer_id"""
     offer = Offer.query.filter_by(offer_id=offer_id).first()
     if not offer:
         raise InvalidUsage('no such offer_id')
@@ -62,7 +63,7 @@ def set_offer_active(offer_id, is_active):
 
 
 def add_offer(offer_json, set_active=False):
-    '''adds an offer to the db'''
+    """adds an offer to the db"""
     try:
         offer = Offer()
         offer.offer_id = str(offer_json['id'])
@@ -88,7 +89,7 @@ def add_offer(offer_json, set_active=False):
 
 
 def get_cost_and_address(offer_id):
-    '''return the kin cost and address associated with this offer'''
+    """return the kin cost and address associated with this offer"""
     offer = Offer.query.filter_by(offer_id=offer_id).first()
     if not offer.is_active:
         raise InvalidUsage('offer is not active')
@@ -96,7 +97,7 @@ def get_cost_and_address(offer_id):
 
 
 def get_offers_for_user(user_id):
-    '''return the list of active offers for this user'''
+    """return the list of active offers for this user"""
     offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
     
     # filter out offers with no goods
@@ -115,7 +116,7 @@ def get_offers_for_user(user_id):
 
 
 def get_offer_details(offer_id):
-    '''return a dict with some of the given offerid's metadata'''
+    """return a dict with some of the given offerid's metadata"""
     offer = Offer.query.filter_by(offer_id=offer_id).first()
     if not offer:
         raise InvalidUsage('no offer with id %s exists' % offer_id)

@@ -1,4 +1,4 @@
-'''The User model'''
+"""The User model"""
 from sqlalchemy_utils import UUIDType
 
 from kinappserver import db
@@ -9,9 +9,9 @@ DEFAULT_TIME_ZONE = -4
 
 
 class User(db.Model):
-    '''
+    """
     the user model
-    '''
+    """
     sid = db.Column(db.Integer(), db.Sequence('sid', start=1, increment=1), primary_key=False)
     user_id = db.Column(UUIDType(binary=False), primary_key=True, nullable=False)
     os_type = db.Column(db.String(10), primary_key=False, nullable=False)
@@ -23,7 +23,8 @@ class User(db.Model):
     onboarded = db.Column(db.Boolean, unique=False, default=False)
 
     def __repr__(self):
-        return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s, onboarded: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone, self.device_id, self.onboarded)
+        return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s,' \
+               ' onboarded: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone, self.device_id, self.onboarded)
 
 
 def get_user(user_id):
@@ -39,15 +40,16 @@ def user_exists(user_id):
 
 
 def is_onboarded(user_id):
-    '''returns wheather the user has an account or None if there's no such user.'''
+    """returns whether the user has an account or None if there's no such user."""
     try:
         return User.query.filter_by(user_id=user_id).first().onboarded
     except Exception as e:
+        print(e)
         return None
 
 
 def set_onboarded(user_id, onboarded):
-    '''set the onbarded field of the user in the db'''
+    """set the onbarded field of the user in the db"""
     user = get_user(user_id)
     user.onboarded = onboarded
     db.session.add(user)
@@ -55,14 +57,15 @@ def set_onboarded(user_id, onboarded):
 
 
 def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver):
-    '''create a new user and commit to the database. should only fail if the user_id is duplicate'''
+    """create a new user and commit to the database. should only fail if the user_id is duplicate"""
 
     def parse_timezone(tz):
-        '''convert -02:00 to -2 or set reasonable default'''
+        """convert -02:00 to -2 or set reasonable default"""
         try:
             return int(tz[:(tz.find(':'))])
-        except:
+        except Exception as e:
             print('failed to parse timezone: %s. using default' % tz)
+            print(e)
             return int(DEFAULT_TIME_ZONE)
 
     if user_exists(user_id):
@@ -87,7 +90,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
 
 
 def update_user_token(user_id, push_token):
-    '''updates the user's token with a new one'''
+    """updates the user's token with a new one"""
     user = get_user(user_id)
     user.push_token = push_token
     db.session.add(user)
@@ -95,18 +98,19 @@ def update_user_token(user_id, push_token):
 
 
 def list_all_users():
-    '''returns a dict of all the whitelisted users and their PAs (if available)'''
+    """returns a dict of all the whitelisted users and their PAs (if available)"""
     response = {}
     users = User.query.order_by(User.user_id).all()
     for user in users:
-        response[str(user.user_id)] = {'sid': user.sid, 'os': user.os_type, 'push_token': user.push_token, 'time_zone': user.time_zone, 'device_id': user.device_id, 'device_model': user.device_model, 'onboarded': user.onboarded}
+        response[str(user.user_id)] = {'sid': user.sid, 'os': user.os_type, 'push_token': user.push_token,
+                                       'time_zone': user.time_zone, 'device_id': user.device_id, 'device_model': user.device_model, 'onboarded': user.onboarded}
     return response
 
 
 class UserAppData(db.Model):
-    '''
+    """
     the user app data model tracks the version of the app installed @ the client
-    '''
+    """
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
     app_ver = db.Column(db.String(40), primary_key=False, nullable=False)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
@@ -115,7 +119,7 @@ class UserAppData(db.Model):
 
 
 def update_user_app_version(user_id, app_ver):
-    '''update the user app version'''
+    """update the user app version"""
     try:
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
         userAppData.app_ver = app_ver
@@ -127,7 +131,7 @@ def update_user_app_version(user_id, app_ver):
 
 
 def list_all_users_app_data():
-    '''returns a dict of all the user-app-data'''
+    """returns a dict of all the user-app-data"""
     response = {}
     users = UserAppData.query.order_by(UserAppData.user_id).all()
     for user in users:
@@ -143,17 +147,17 @@ def get_user_app_data(user_id):
 
 
 def get_user_tz(user_id):
-    '''return the user timezone'''
+    """return the user timezone"""
     return User.query.filter_by(user_id=user_id).one().time_zone
 
 
 def get_user_os_type(user_id):
-    '''return the user os_type'''
+    """return the user os_type"""
     return User.query.filter_by(user_id=user_id).one().os_type
 
 
 def get_user_push_data(user_id):
-    '''returns the os_type and the token for the given user_id'''
+    """returns the os_type and the token for the given user_id"""
     user = User.query.filter_by(user_id=user_id).first()
     if not user:
         return None, None
@@ -162,7 +166,7 @@ def get_user_push_data(user_id):
 
 
 def send_push_tx_completed(user_id, tx_hash, amount, task_id):
-    '''send a message indicating that the tx has been successfully completed'''
+    """send a message indicating that the tx has been successfully completed"""
     os_type, token = get_user_push_data(user_id)
     if token is None:
         print('cant push to user %s: no push token' % user_id)
@@ -177,7 +181,7 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
 
 
 def send_engagement_push(user_id, push_type, token=None, os_type=None):
-    '''sends an engagement push message to the user with the given user_id'''
+    """sends an engagement push message to the user with the given user_id"""
     if None in (token, os_type):
         os_type, token = get_user_push_data(user_id)
 
@@ -193,7 +197,7 @@ def send_engagement_push(user_id, push_type, token=None, os_type=None):
 
 
 def store_next_task_results_ts(user_id, timestamp_str):
-    '''stores the given ts for the given user for later retrieval'''
+    """stores the given ts for the given user for later retrieval"""
     try:
         # stored as string, can be None
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
@@ -206,7 +210,7 @@ def store_next_task_results_ts(user_id, timestamp_str):
 
 
 def get_next_task_results_ts(user_id):
-    '''return the task_result_ts field for the given user'''
+    """return the task_result_ts field for the given user"""
     try:
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
         if user_app_data is None:
@@ -219,7 +223,7 @@ def get_next_task_results_ts(user_id):
 
 
 def get_tokens_for_push(scheme):
-    '''get push tokens for a scheme'''
+    """get push tokens for a scheme"""
     from datetime import datetime, timedelta
     from kinappserver.models import get_tasks_for_user
     tokens = {OS_IOS: [], OS_ANDROID: []}
@@ -232,7 +236,7 @@ def get_tokens_for_push(scheme):
         today = datetime.date(datetime.today())
         four_days_ago = datetime.date(datetime.today() + timedelta(days=-4))
 
-        all_pushable_users = User.query.filter(User.push_token!=None).all()
+        all_pushable_users = User.query.filter(User.push_token != None).all()
         for user in all_pushable_users:
             try:
 
@@ -266,10 +270,9 @@ def get_tokens_for_push(scheme):
         # (1) have active tasks and 
         # (2) logged in exactly a week ago
         # (3) last login was sometimes in the last 4 days
-        today = datetime.date(datetime.today())
         seven_days_ago = datetime.date(datetime.today() + timedelta(days=-7))
 
-        all_pushable_users = User.query.filter(User.push_token!=None).all()
+        all_pushable_users = User.query.filter(User.push_token != None).all()
         for user in all_pushable_users:
             try:
 

@@ -6,7 +6,7 @@ import os
 URL_PREFIX = 'http://localhost:8000'
 
 def simple_metric_increment(url, metric_name, key):
-    '''reports a simple, numerical metric to statsd that is returned via REST api from the server'''
+    """reports a simple, numerical metric to statsd that is returned via REST api from the server"""
     response = requests.get(url)
     try:
         value = json.loads(response.text)[key]
@@ -15,7 +15,7 @@ def simple_metric_increment(url, metric_name, key):
     statsd.increment('kinitapp.%s.%s' % (os.environ['ENV'], metric_name), value)
 
 def report_inventory():
-    '''reports the total and available number of goods for every offer id in the server'''
+    """reports the total and available number of goods for every offer id in the server"""
     inventory = {}
     response = requests.get(URL_PREFIX + '/good/inventory')
     try:
