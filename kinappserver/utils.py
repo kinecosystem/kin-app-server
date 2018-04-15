@@ -24,13 +24,13 @@ def generate_memo():
 
 
 def increment_metric(metric_name, count=1):
-    '''increment a counter with the given name and value'''
+    """increment a counter with the given name and value"""
     # set env to undefined for local tests (which do not emit stats, as there's no agent)
     statsd.increment('kinitapp.%s.%s' % (config.DEPLOYMENT_ENV, metric_name), count)
 
 
 def errors_to_string(errorcode):
-    '''translate error codes to human-readable reasons'''
+    """ translate error codes to human-readable reasons """
     if errorcode == ERROR_ORDERS_COOLDOWN:
         return 'orders-cooldown'
     elif errorcode == ERROR_NO_GOODS:
@@ -40,13 +40,13 @@ def errors_to_string(errorcode):
         return 'unknown-error'
 
 
-def seconds_to_local_midnight(tz_shift):
-    '''returs the (integer) number of seconds to the next midnight at utc'''
-    from datetime import datetime, timedelta, timezone
+def seconds_to_local_nth_midnight(tz_shift, delay_days):
+    """ return the (integer) number of seconds to the next nth midnight at utc """
+    from datetime import datetime, timedelta
     # get a datetime of the local (time-zone shifted) time:
     local_time_dt = (datetime.utcnow() + timedelta(hours=tz_shift))
     # get the next local day as date object:
-    local_tomorrow_date = datetime.date(local_time_dt + timedelta(days=1))
+    local_tomorrow_date = datetime.date(local_time_dt + timedelta(days=delay_days))
     # convert date object back to datetime. hack from https://stackoverflow.com/a/27760382/1277048
     tomorrow_dt = datetime.strptime(local_tomorrow_date.strftime('%Y%m%d'), '%Y%m%d')
     # calc hours until tomorrow

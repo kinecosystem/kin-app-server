@@ -23,14 +23,14 @@ def get_stellar_credentials():
 
 
 def convert_byte_to_string_array(input_byte):
-    '''converts the input (a bytestring to a string array without using eval'''
+    """converts the input (a bytestring to a string array without using eval"""
     # this is used to convert the decrypted seed channels bytestring to an array
     # return json.loads('['+input_byte.decode("utf-8") +']')
     return json.loads('['+ input_byte +']')
 
 
 def get_ssm_parameter(param_name, kms_key_region):
-    '''retreives an encrpyetd value from AWSs ssm or None'''
+    """retreives an encrpyetd value from AWSs ssm or None"""
     try:
         ssm_client = boto3.client('ssm', region_name=kms_key_region)
         print('getting param from ssm: %s' % param_name)

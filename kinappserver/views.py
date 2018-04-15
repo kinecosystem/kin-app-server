@@ -1,12 +1,13 @@
-'''
+"""
 The Kin App Server API is defined here.
-'''
+"""
 from threading import Thread
 from uuid import UUID
 
 from flask import request, jsonify, abort
 from flask_api import status
 import redis_lock
+import arrow
 
 from kinappserver import app, config, stellar, utils
 from kinappserver.stellar import create_account, send_kin
@@ -21,7 +22,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
 
 
 def limit_to_local_host():
-    '''aborts non-local requests for sensitive APIs (nginx specific). allow on DEBUG'''
+    """aborts non-local requests for sensitive APIs (nginx specific). allow on DEBUG"""
     if config.DEBUG or request.headers.get('X-Forwarded-For', None) is None:
         pass
     else:
@@ -45,7 +46,7 @@ def handle_internal_error(error):
 
 
 def extract_header(request):
-    '''extracts the user_id from the request header'''
+    """extracts the user_id from the request header"""
     try:
         return request.headers.get('X-USERID')
     except Exception as e:
@@ -55,13 +56,13 @@ def extract_header(request):
 
 @app.route('/health', methods=['GET'])
 def get_health():
-    '''health endpoint'''
+    """health endpoint"""
     return jsonify(status='ok')
 
 
 @app.route('/update-task-time', methods=['POST'])
 def update_task_time_endpoint():
-    '''temp endpoint for setting a task time TODO DELETE ME'''
+    """temp endpoint for setting a task time TODO DELETE ME"""
     payload = request.get_json(silent=True)
     try:
         task_id = str(payload.get('task_id', None))
@@ -79,7 +80,7 @@ def update_task_time_endpoint():
 @app.route('/send-tx-completed', methods=['POST'])
 def send_gcm_push_tx_completed():
     #TODO DELETE ME
-    '''temp endpoint for testing the tx-completed push'''
+    """temp endpoint for testing the tx-completed push"""
     try:
         user_id = extract_header(request)
     except Exception as e:
@@ -92,7 +93,7 @@ def send_gcm_push_tx_completed():
 @app.route('/send_engagement_push', methods=['POST'])
 def send_engagement_push_api():
     #TODO DELETE ME
-    '''temp endpoint for testing the engagement push'''
+    """temp endpoint for testing the engagement push"""
     try:
         user_id = extract_header(request)
     except Exception as e:
@@ -104,7 +105,7 @@ def send_engagement_push_api():
 
 @app.route('/user/app-launch', methods=['POST'])
 def app_launch():
-    '''called whenever the app is launched'''
+    """called whenever the app is launched"""
     payload = request.get_json(silent=True)
     app_ver, user_id = None, None
     try:
@@ -118,10 +119,9 @@ def app_launch():
     return jsonify(status='ok')
 
 
-
 @app.route('/user/update-token', methods=['POST'])
 def update_token():
-    '''updates a user's token in the database '''
+    """updates a user's token in the database """
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
@@ -129,6 +129,7 @@ def update_token():
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
     except Exception as e:
+        print(e)
         raise InvalidUsage('bad-request')
 
     print('updating token for user %s' % user_id)
@@ -138,7 +139,7 @@ def update_token():
 
 @app.route('/user/task/results', methods=['POST'])
 def quest_answers():
-    '''receive the results for a tasks and pay the user for them'''
+    """receive the results for a tasks and pay the user for them"""
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
@@ -170,7 +171,7 @@ def quest_answers():
 
 @app.route('/task/add', methods=['POST'])
 def add_task_api():
-    '''used to add tasks to the db'''
+    """used to add tasks to the db"""
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -188,7 +189,7 @@ def add_task_api():
 
 @app.route('/user/tasks', methods=['GET'])
 def get_next_task():
-    '''returns the current task for the user with the given id'''
+    """returns the current task for the user with the given id"""
     user_id = extract_header(request)
     tasks = get_tasks_for_user(user_id)
     try:
@@ -201,7 +202,7 @@ def get_next_task():
 
 @app.route('/user/transactions', methods=['GET'])
 def get_transactions_api():
-    '''return a list of the last 50 txs for this user
+    """return a list of the last 50 txs for this user
 
     each item in the list contains:
         - the tx_hash
@@ -209,20 +210,16 @@ def get_transactions_api():
         - amount of kins transferred
         - date
         - title and additional details
-    '''
-
-    txs = []
+    """
     detailed_txs = []
     try:
         user_id = extract_header(request)
-        txs = [{'tx_hash': tx.tx_hash, 'amount': tx.amount, 'server_received': tx.incoming_tx, 'tx_info': tx.tx_info, 'date': tx.update_at} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
+        txs = [{'tx_hash': tx.tx_hash, 'amount': tx.amount, 'server_received': tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
 
         # get the offer, task details
         for tx in txs:
             details = get_offer_details(tx['tx_info']['offer_id']) if tx['server_received'] else get_task_details(tx['tx_info']['task_id'])
             detailed_txs.append({**tx, **details})
-
-        # TODO localize the time?
 
     except Exception as e:
         print('cant get txs for user')
@@ -233,7 +230,7 @@ def get_transactions_api():
 
 @app.route('/user/redeemed', methods=['GET'])
 def user_redeemed_api():
-    '''return the list of offers that were redeemed by this user
+    """return the list of offers that were redeemed by this user
 
     each item in the list contains:
         - the actual redeemed item (i.e. the code
@@ -242,28 +239,27 @@ def user_redeemed_api():
 
         essentially, this is a 3-way join between the good, user and offer tables
         that is implemented iteratively. the implementation can be made more efficient
-    '''
+    """
 
-    redmeed_goods = []
+    redeemed_goods = []
     try:
         user_id = extract_header(request)
         incoming_txs_hashes = [tx.tx_hash for tx in list_user_transactions(user_id) if tx.incoming_tx]
         # get an array of the goods and add details from the offer table:
         for good in get_redeemed_items(incoming_txs_hashes):
             # merge two dicts (python 3.5)
-            redmeed_goods.append({**good, **get_offer_details(good['offer_id'])})
+            redeemed_goods.append({**good, **get_offer_details(good['offer_id'])})
 
-        # TODO localize the time for the user
     except Exception as e:
         print('cant get redeemed items for user')
         print(e)
 
-    return jsonify(status='ok', redeemed=redmeed_goods)
+    return jsonify(status='ok', redeemed=redeemed_goods)
 
 
 @app.route('/user/onboard', methods=['POST'])
 def onboard_user():
-    '''creates a wallet for the user and deposits some xlms there'''
+    """creates a wallet for the user and deposits some xlms there"""
     # input sanity
     try:
         user_id = extract_header(request)
@@ -286,7 +282,7 @@ def onboard_user():
             try:
                 print('creating account with address %s and amount %s' % (public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE))
                 tx_id = create_account(public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE)
-                if(tx_id):
+                if tx_id:
                     set_onboarded(user_id, True)
                 else:
                     raise InternalError('failed to create account at %s' % public_address)
@@ -306,10 +302,10 @@ def onboard_user():
 
 @app.route('/user/register', methods=['POST'])
 def register_api():
-    ''' register a user to the system
+    """ register a user to the system
     called once by every client until 200OK is received from the server.
     the payload may contain a optional push token.
-    '''
+    """
     payload = request.get_json(silent=True)
     try:
         # add redis lock here?
@@ -335,27 +331,27 @@ def register_api():
         except InvalidUsage as e:
             raise InvalidUsage('duplicate-userid')
         else:
-            print('created user with user_id %s' % (user_id))
+            print('created user with user_id %s' % user_id)
             increment_metric('user_registered')
             return jsonify(status='ok')
 
 
 def reward_store_and_push(public_address, task_id, send_push, user_id, memo):
-    '''create a thread to perform this function in the background'''
+    """create a thread to perform this function in the background"""
     Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo)).start()
 
 
 def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo):
-    '''transfer the correct amount of kins for the task to the given address
+    """transfer the correct amount of kins for the task to the given address
     
        this function runs in the background and sends a push message to the client to
        indicate that the money was indeed transferred.
-    '''
+    """
     # get reward amount from db
     amount = get_reward_for_task(task_id)
     if not amount:
         print('could not figure reward amount for task_id: %s' % task_id)
-        raise InternalError('cant find reward for taskid %s' % task_id)
+        raise InternalError('cant find reward for task_id %s' % task_id)
     try:
         # send the moneys
         print('calling send_kin: %s, %s' % (public_address, amount))
@@ -371,7 +367,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
 
 @app.route('/offer/add', methods=['POST'])
 def add_offer_api():
-    '''endpoint used to populate the server with offers'''
+    """endpoint used to populate the server with offers"""
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -389,7 +385,7 @@ def add_offer_api():
 
 @app.route('/offer/set_active', methods=['POST'])
 def set_active_api():
-    '''enables/disables an offer'''
+    """enables/disables an offer"""
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -407,7 +403,7 @@ def set_active_api():
 
 @app.route('/offer/book', methods=['POST'])
 def book_offer_api():
-    '''books an offer by a user'''
+    """books an offer by a user"""
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
@@ -426,7 +422,7 @@ def book_offer_api():
 
 @app.route('/user/offers', methods=['GET'])
 def get_offers_api():
-    '''return the list of availble offers for this user'''
+    """return the list of availble offers for this user"""
     try:
         user_id = extract_header(request)
         if user_id is None:
@@ -440,10 +436,10 @@ def get_offers_api():
 
 @app.route('/offer/redeem', methods=['POST'])
 def purchase_api():
-    '''process the given tx_hash and return the payed-for goods'''
+    """process the given tx_hash and return the payed-for goods"""
 
     #TODO: at some point we should try to listen in on incoming tx_hashes
-    # for our account(s). this should hasten the process of reedeming offers.
+    # for our account(s). this should hasten the process of redeeming offers.
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
@@ -468,9 +464,10 @@ def purchase_api():
     finally:
             lock.release()
 
+
 @app.route('/good/add', methods=['POST'])
 def add_good_api():
-    '''endpoint used to populate the server with goods'''
+    """endpoint used to populate the server with goods"""
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -491,7 +488,7 @@ def add_good_api():
 
 @app.route('/good/inventory', methods=['GET'])
 def inventory_api():
-    '''endpoint used to populate the server with goods'''
+    """endpoint used to populate the server with goods"""
     if not config.DEBUG:
         limit_to_local_host()
     return jsonify(status='ok', inventory=list_inventory())
@@ -499,7 +496,7 @@ def inventory_api():
 
 @app.route('/balance', methods=['GET'])
 def balance_api():
-    '''endpoint used to populate the server with goods'''
+    """endpoint used to populate the server with goods"""
     if not config.DEBUG:
         limit_to_local_host()
     balance = {}
@@ -513,7 +510,7 @@ def balance_api():
 
 @app.route('/good/release_unclaimed', methods=['GET'])
 def release_unclaimed_api():
-    '''endpoint used to get the current balance'''
+    """endpoint used to get the current balance"""
     if not config.DEBUG:
         limit_to_local_host()
     released=release_unclaimed_goods()
@@ -523,7 +520,7 @@ def release_unclaimed_api():
 
 @app.route('/engagement/send', methods=['GET'])
 def send_engagemnt_api():
-    '''endpoint used to send engagement push notifications to users by scheme. password protected'''
+    """endpoint used to send engagement push notifications to users by scheme. password protected"""
     if not config.DEBUG:
         limit_to_local_host()
 
@@ -540,7 +537,7 @@ def send_engagemnt_api():
     print('gathered %d ios tokens and %d gcm tokens for scheme: %s, dry-run:%s' % (len(tokens[utils.OS_IOS]), len(tokens[utils.OS_ANDROID]), scheme, dry_run))
 
     if dry_run:
-        print('send_engagemnt_api - dryrun - not sending push')
+        print('send_engagement_api - dry_run - not sending push')
     else:
         for token in tokens[utils.OS_IOS]:
             print('sending push %d tokens')

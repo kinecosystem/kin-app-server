@@ -25,7 +25,7 @@ def engagement_payload_gcm(push_type):
 
 
 def apns_payload(title, body, push_type, push_id, sound='default'):
-    '''generate an apns payload'''
+    """generate an apns payload"""
     payload_dict = {'aps': {'alert': {'title': title, 'body': body}, 'sound': sound}, 'kin': {'push_type': push_type, 'push_id': push_id}}
 
     print('the payload: %s' % payload_dict)

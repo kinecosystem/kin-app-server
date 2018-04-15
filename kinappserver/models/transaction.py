@@ -1,15 +1,17 @@
-'''The model for the Kin App Server.'''
+"""The model for the Kin App Server."""
 import datetime
 
 from sqlalchemy_utils import UUIDType
+from sqlalchemy import desc
+import arrow
 
 from kinappserver import db, stellar
 
 
 class Transaction(db.Model):
-    '''
+    """
     kin transactions
-    '''
+    """
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     tx_hash = db.Column(db.String(100), nullable=False, primary_key=True)
     amount = db.Column(db.Integer(), nullable=False, primary_key=False)
@@ -23,9 +25,11 @@ class Transaction(db.Model):
 
 
 def list_user_transactions(user_id, max_txs=None):
-    '''returns all txs by this user - or the last x tx if max_txs was passed'''
-    txs = Transaction.query.filter(Transaction.user_id == user_id).order_by(Transaction.update_at.asc()).all()
-    return txs[:max_txs] if max_txs and max_txs > len(txs) else txs
+    """returns all txs by this user - or the last x tx if max_txs was passed"""
+    txs = Transaction.query.filter(Transaction.user_id == user_id).order_by(desc(Transaction.update_at)).all()
+    # trim the amount of txs
+    txs = txs[:max_txs] if max_txs and max_txs > len(txs) else txs
+    return txs
 
 
 def create_tx(tx_hash, user_id, remote_address, incoming_tx, amount, tx_info):
@@ -50,7 +54,7 @@ def count_transactions_by_minutes_ago(minutes_ago=1):
 
 
 def expected_user_kin_balance(user_id):
-    '''this function calculates the expected kin balance of the given user based on his past txs'''
+    """this function calculates the expected kin balance of the given user based on his past txs"""
     expected_balance = 0
     user_txs = Transaction.query.filter(Transaction.user_id == user_id).all()
     for tx in user_txs:
@@ -60,8 +64,9 @@ def expected_user_kin_balance(user_id):
             expected_balance = expected_balance + tx.amount
     return expected_balance
 
+
 def get_current_user_kin_balance(user_id):
-    '''get the current kin balance for the user with the given user_id.'''
+    """get the current kin balance for the user with the given user_id."""
     # determine the user's public address from pre-existing outgoing txs
     user_outgoing_txs = Transaction.query.filter(Transaction.user_id == user_id).filter(Transaction.incoming_tx==False).all()
     if len(user_outgoing_txs) == 0:

@@ -7,7 +7,7 @@ ASSET_NAME = 'KIN'
 
 
 def create_account(public_address, initial_xlm_amount):
-    '''create an account for the given public address'''
+    """create an account for the given public address"""
     #TODO all repeating logic?
     print('creating account with balance:%s' % initial_xlm_amount)
     try:
@@ -19,7 +19,7 @@ def create_account(public_address, initial_xlm_amount):
 
 
 def send_kin(public_address, amount, memo=None):
-    '''send kins to an address'''
+    """send kins to an address"""
     #TODO add repeating logic?
     print('sending kin to address: %s' % public_address) #TODO REMOVE
     from stellar_base.asset import Asset
@@ -33,12 +33,12 @@ def send_kin(public_address, amount, memo=None):
         
 
 def extract_tx_payment_data(tx_hash):
-    '''ensures that the given tx_hash is a valid payment tx,
-       and return a dict with the memo, amount and to_address'''
+    """ensures that the given tx_hash is a valid payment tx,
+       and return a dict with the memo, amount and to_address"""
     if tx_hash is None:
         raise InvalidUsage('invlid params')
 
-    # get the tx_hash data. this might take a second, 
+    # get the tx_hash data. this might take a second,
     # so retry while 'Resource Missing' is recevied
     count = 0
     tx_data = None
@@ -90,7 +90,7 @@ def extract_tx_payment_data(tx_hash):
 
 
 def get_kin_balance(public_address):
-    '''returns the current kin balance for this account'''
+    """returns the current kin balance for this account"""
     try:
         from stellar_base.asset import Asset
         kin_asset = Asset(ASSET_NAME, config.STELLAR_KIN_ISSUER_ADDRESS)
@@ -102,7 +102,7 @@ def get_kin_balance(public_address):
 
 
 def get_xlm_balance(public_address):
-    '''returns the current xl, balance for this account'''
+    """returns the current xl, balance for this account"""
     try:
         return app.kin_sdk.get_account_native_balance(public_address)
     except Exception as e:
