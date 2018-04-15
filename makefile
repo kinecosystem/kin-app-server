@@ -8,6 +8,7 @@ test:
 	export LC_ALL=C
 	python3 kinappserver/tests/book_and_dont_redeem.py
 	python3 kinappserver/tests/book_and_redeem.py
+	python3 kinappserver/tests/book_and_redeem_multiple.py
 	python3 kinappserver/tests/good_overallocation.py
 	python3 kinappserver/tests/good.py
 	python3 kinappserver/tests/order.py

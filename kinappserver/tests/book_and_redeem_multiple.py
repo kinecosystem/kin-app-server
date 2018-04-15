@@ -84,35 +84,14 @@ class Tester(unittest.TestCase):
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
- 
 
-        # create a good instance for the offer (3)
-        resp = self.app.post('/good/add',
-            data=json.dumps({
-            'offer_id': offerid,
-            'good_type': 'code',
-            'value': 'abcd'}),
-            headers={},
-            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # create a good instance for the offer (4)
-        resp = self.app.post('/good/add',
-            data=json.dumps({
-            'offer_id': offerid,
-            'good_type': 'code',
-            'value': 'abcd'}),
-            headers={},
-            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # 4 goods at this point
+        # 2 goods at this point
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 4, 'unallocated': 4}})
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 2, 'unallocated': 2}})
 
 
-        # register a couple of users
+        # register a user
         userid1 = uuid4()
         resp = self.app.post('/user/register',
             data=json.dumps({
@@ -128,124 +107,23 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-        userid2 = uuid4()
-        resp = self.app.post('/user/register',
-            data=json.dumps({
-                            'user_id': str(userid2),
-                            'os': 'android',
-                            'device_model': 'samsung8',
-                            'device_id': '234234',
-                            'time_zone': '05:00',
-                            'token': 'fake_token',
-                            'app_ver': '1.0'}),
-            headers={},
-            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # get user2 redeem history - should be empty
-        resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid2)})
+        # get user1 redeem history - should be empty
+        resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid1)})
         self.assertEqual(resp.status_code, 200)
         print('redeemed: %s' % json.loads(resp.data))
         self.assertEqual(json.loads(resp.data)['redeemed'], [])
 
-        # get user2 tx history - should have 0 items
-        resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid2)})
+        # get user1 tx history - should have 0 items
+        resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid1)})
         self.assertEqual(resp.status_code, 200)
         print('txs: %s' % json.loads(resp.data))
         self.assertEqual(json.loads(resp.data)['txs'], [])
 
-        # create the first order
+        # create the order
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offerid}),
                     headers={USER_ID_HEADER: str(userid1)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        self.assertEqual(data['status'], 'ok')
-        self.assertNotEqual(data['order_id'], None)
-        orderid1 = data['order_id']
-        print('order_id: %s' % orderid1)
-
-        # pay for the order but give a differet address - should fail
-        print('setting memo of %s' % orderid1)
-        tx_hash_wrong_address = stellar.send_kin('GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V', offer['price'], orderid1)
-        print('tx_hash: %s' % tx_hash_wrong_address)
-
-        # try to redeem the goods with the tx_hash - should fail
-        print('trying to redeem with the wrong address...')
-        resp = self.app.post('/offer/redeem',
-                    data=json.dumps({
-                    'tx_hash': tx_hash_wrong_address}),
-                    headers={USER_ID_HEADER: str(userid1)},
-                    content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        print(data)
-
-        # re-create the first order
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid1)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        self.assertEqual(data['status'], 'ok')
-        self.assertNotEqual(data['order_id'], None)
-        orderid1 = data['order_id']
-        print('order_id: %s' % orderid1)
-
-        # pay for the order - but pay less than expected
-        print('setting memo of %s' % orderid1)
-        tx_hash_pay_less = stellar.send_kin(offer['address'], offer['price'] - 1, orderid1)
-        print('tx_hash: %s' % tx_hash_pay_less)
-
-        # try to redeem the goods - shuld fail
-        print('trying to redeem with underpayed tx...')
-        resp = self.app.post('/offer/redeem',
-                    data=json.dumps({
-                    'tx_hash': tx_hash_pay_less}),
-                    headers={USER_ID_HEADER: str(userid1)},
-                    content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        print(data)
-
-        # re-create the order (use userid2 now)
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid2)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        self.assertEqual(data['status'], 'ok')
-        self.assertNotEqual(data['order_id'], None)
-        orderid1 = data['order_id']
-        print('order_id: %s' % orderid1)
-
-        # pay for the order - but use an invalid orderid
-        print('setting memo of %s' % orderid1)
-        tx_hash_other_orderid = stellar.send_kin(offer['address'], offer['price'], "other_order_id")
-        print('tx_hash: %s' % tx_hash_other_orderid)
-
-        # try to redeem the goods - should fail
-        print('trying to redeem with unknown order_id...')
-        resp = self.app.post('/offer/redeem',
-                    data=json.dumps({
-                    'tx_hash': tx_hash_other_orderid}),
-                    headers={USER_ID_HEADER: str(userid2)},
-                    content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        print(data)
-
-        # re-create the order
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid2)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
@@ -263,28 +141,74 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/offer/redeem',
                     data=json.dumps({
                     'tx_hash': tx_hash}),
-                    headers={USER_ID_HEADER: str(userid2)},
+                    headers={USER_ID_HEADER: str(userid1)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print(data)
 
-        # get user2 redeem history - should have one item
-        resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid2)})
+        # get user1 redeem history - should have one item
+        resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid1)})
         self.assertEqual(resp.status_code, 200)
         print('redeemed: %s' % json.loads(resp.data))
-        self.assertEqual(len(json.loads(resp.data)['redeemed']), 2)
+        self.assertNotEqual(json.loads(resp.data)['redeemed'], [])
 
-        # get user2 tx history - should have 2 items
-        resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid2)})
+        # get user1 tx history - should have 2 items
+        resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid1)})
         self.assertEqual(resp.status_code, 200)
         print('txs: %s' % json.loads(resp.data))
-        self.assertEqual(len(json.loads(resp.data)['txs']), 2)
+        self.assertNotEqual(json.loads(resp.data)['txs'], [])
+
+        # create the order
+        resp = self.app.post('/offer/book',
+                    data=json.dumps({
+                    'id': offerid}),
+                    headers={USER_ID_HEADER: str(userid1)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(data['status'], 'ok')
+        self.assertNotEqual(data['order_id'], None)
+        orderid1 = data['order_id']
+        print('order_id: %s' % orderid1)
+
+        # pay for the order
+        print('setting memo of %s' % orderid1)
+        tx_hash = stellar.send_kin(offer['address'], offer['price'], orderid1)
+        print('tx_hash: %s' % tx_hash)
+
+        # try to redeem the goods - should work
+        resp = self.app.post('/offer/redeem',
+                    data=json.dumps({
+                    'tx_hash': tx_hash}),
+                    headers={USER_ID_HEADER: str(userid1)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        print(data)
+
+        # get user1 redeem history - should have 2 items
+        resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid1)})
+        self.assertEqual(resp.status_code, 200)
+        print('redeemed: %s' % json.loads(resp.data))
+        self.assertNotEqual(json.loads(resp.data)['redeemed'], [])
+
+        print('asserting redeemed goods order')
+        self.assertEqual(json.loads(resp.data)['redeemed'][0]['date'] > json.loads(resp.data)['redeemed'][1]['date'], True)
+
+        # get user1 tx history - should have 4 items
+        resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid1)})
+        self.assertEqual(resp.status_code, 200)
+        print('txs: %s' % json.loads(resp.data))
+        self.assertNotEqual(json.loads(resp.data)['txs'], [])
+
+        print('assert tx order')
+        self.assertEqual(json.loads(resp.data)['txs'][0]['date'] > json.loads(resp.data)['txs'][1]['date'], True)
 
         # no unallocated goods at this point
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 4, 'unallocated': 0}})
+        self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 2, 'unallocated': 0}})
 
 
 if __name__ == '__main__':
