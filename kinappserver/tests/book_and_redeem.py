@@ -273,13 +273,13 @@ class Tester(unittest.TestCase):
         resp = self.app.get('/user/redeemed', headers={USER_ID_HEADER: str(userid2)})
         self.assertEqual(resp.status_code, 200)
         print('redeemed: %s' % json.loads(resp.data))
-        self.assertEqual(len(json.loads(resp.data)['redeemed']), 2)
+        self.assertEqual(len(json.loads(resp.data)['redeemed']), 1)
 
         # get user2 tx history - should have 2 items
         resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid2)})
         self.assertEqual(resp.status_code, 200)
         print('txs: %s' % json.loads(resp.data))
-        self.assertEqual(len(json.loads(resp.data)['txs']), 2)
+        self.assertEqual(len(json.loads(resp.data)['txs']), 1)
 
         # no unallocated goods at this point
         resp = self.app.get('/good/inventory')

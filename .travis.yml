@@ -1,4 +1,6 @@
 sudo: required
+services:
+  - redis-server
 language: python
 python:
   - "3.6"
@@ -7,7 +9,8 @@ install:
   - pip install -r kinappserver/requirements.txt
   - pip install -r kinappserver/requirements_dev.txt
 # command to run tests
+before_script:
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)
 script:
-  - sudo alias pip3="pip"
-  - sudo alias python3="python"
-  - make install; make build;
+  - make install-sdk; make install; make freeze; 
+  - make test;
