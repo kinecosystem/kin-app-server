@@ -197,8 +197,8 @@ def trasmute_items(items, os_type, app_ver):
     """sanitize the items of the task to match the app-version"""
     from kinappserver.utils import OS_IOS
     if os_type == OS_IOS and app_ver < '0.7.0':
-        items = items.replace('textemoji', 'text')
-        items = items.replace('textmultiple', 'text')
+        #items = items.replace('textemoji', 'text')
+        #items = items.replace('textmultiple', 'text')
         # TODO deal with rating questions
         return items
     return items
