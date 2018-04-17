@@ -24,6 +24,11 @@ def engagement_payload_gcm(push_type):
         raise InvalidUsage('no such push type: %s' % push_type)
 
 
+def send_please_upgrade_push(user_id):
+    """sends a push to the given userid to please upgrade"""
+    return
+
+
 def apns_payload(title, body, push_type, push_id, sound='default'):
     """generate an apns payload"""
     payload_dict = {'aps': {'alert': {'title': title, 'body': body}, 'sound': sound}, 'kin': {'push_type': push_type, 'push_id': push_id}}

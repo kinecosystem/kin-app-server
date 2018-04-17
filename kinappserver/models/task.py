@@ -4,7 +4,8 @@ import arrow
 import json
 
 from kinappserver import db, config
-from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight
+from kinappserver.push import send_please_upgrade_push
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, DEFAULT_MIN_CLIENT_VERSION
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
 
 
@@ -130,10 +131,12 @@ class Task(db.Model):
     start_date = db.Column(ArrowType)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     delay_days = db.Column(db.Integer(), nullable=False, primary_key=False)
+    min_client_version_android = db.Column(db.String(80), nullable=False, primary_key=False)
+    min_client_version_ios = db.Column(db.String(80), nullable=False, primary_key=False)
 
     def __repr__(self):
-        return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, min_to_complete: %s, start_date: %s, delay_days: %s>' % \
-               (self.task_id, self.task_type, self.title, self.desc, self.price, self.min_to_complete, self.start_data, self.delay_days)
+        return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, min_to_complete: %s, start_date: %s, delay_days: %s, min_client_version_android: %s, min_client_version_ios %s>' % \
+               (self.task_id, self.task_type, self.title, self.desc, self.price, self.min_to_complete, self.start_data, self.delay_days, self.min_client_version_android, self.min_client_version_ios)
 
 
 def list_all_task_data():
@@ -157,25 +160,40 @@ def get_tasks_for_user(user_id):
 
     from .user import get_user_app_data, get_user_os_type
 
-    user_app_data = get_user_app_data(user_id)
-    os_type = get_user_os_type(user_id)
-
     previous_task_results = get_user_task_results(user_id)
 
     # if the user has no previous task results, just give her task '0'
     if len(previous_task_results) == 0:
         print('no previous task results, giving task 0')
-        return [get_task_by_id('0', os_type, user_app_data.app_ver)]
+        return [get_task_by_id('0')]
 
-    next_task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))),
-                               os_type, user_app_data.app_ver, get_next_task_results_ts(user_id))
-    if next_task is None:
+    user_app_data = get_user_app_data(user_id)
+    next_task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), get_next_task_results_ts(user_id))
+
+    if next_task is None:  # no more tasks atm...
         return []
     else:
-        return [next_task]
+        # does the user's client support this task?
+        if not can_support_task(get_user_os_type(user_id), user_app_data.app_ver, next_task):
+            # client does NOT support the next task, so return an empty array and push a notification
+            send_please_upgrade_push(user_id)
+            return []
+
+        else:
+            return [next_task]
 
 
-def get_task_by_id(task_id, os_type, app_ver, shifted_ts=None):
+def can_support_task(os_type, app_ver, task):
+    """ returns true if the client with the given os_type and app_ver can correctly handle the given task"""
+    if os_type == OS_ANDROID:
+        if float(app_ver) >= float(task.get('min_client_version_android', 0.1)):
+            return True
+    elif float(app_ver) >= float(task.get('min_client_version_ios', 0.1)):
+            return True
+    return False
+
+
+def get_task_by_id(task_id, shifted_ts=None):
     """return the json representation of the task or None if no such task exists"""
 
     task = Task.query.filter_by(task_id=task_id).first()
@@ -192,21 +210,12 @@ def get_task_by_id(task_id, os_type, app_ver, shifted_ts=None):
     task_json['min_to_complete'] = task.min_to_complete
     task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
-    task_json['items'] = trasmute_items(task.items, os_type, app_ver)
+    task_json['items'] = task.items
     task_json['start_date'] = int(shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp)
+    task_json['min_client_version_android'] = task.min_client_version_android
+    task_json['min_client_version_ios'] = task.min_client_version_ios
 
     return task_json
-
-
-def trasmute_items(items, os_type, app_ver):
-    """sanitize the items of the task to match the app-version"""
-    from kinappserver.utils import OS_IOS
-    if os_type == OS_IOS and app_ver < '0.7.0':
-        #items = items.replace('textemoji', 'text')
-        #items = items.replace('textmultiple', 'text')
-        # TODO deal with rating questions
-        return items
-    return items
 
 
 def add_task(task_json):
@@ -229,6 +238,8 @@ def add_task(task_json):
         task.items = task_json['items']
         print(task_json['start_date'])
         task.start_date = arrow.get(task_json['start_date'])
+        task.min_client_version_ios = task_json.get('min_client_version_ios', DEFAULT_MIN_CLIENT_VERSION)
+        task.min_client_version_android = task_json.get('min_client_version_android', DEFAULT_MIN_CLIENT_VERSION)
         print("the task: %s" % task.start_date)
         db.session.add(task)
         db.session.commit()
