@@ -35,9 +35,10 @@ app.kin_sdk = kin.SDK(secret_key=base_seed,
                               network=config.STELLAR_NETWORK)
 
 # get (and print) the current balance for the account:
-print('the current KIN balance: %s' % stellar.get_kin_balance(config.STELLAR_PUBLIC_ADDRESS))
+from stellar_base.keypair import Keypair
+print('the current KIN balance: %s' % stellar.get_kin_balance(Keypair.from_seed(base_seed).address))
 # get (and print) the current balance for the account:
-print('the current XLM balance: %s' % stellar.get_xlm_balance(config.STELLAR_PUBLIC_ADDRESS))
+print('the current XLM balance!: %s' % stellar.get_xlm_balance(Keypair.from_seed(base_seed).address))
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
