@@ -540,9 +540,10 @@ def send_engagemnt_api():
         print('send_engagement_api - dry_run - not sending push')
     else:
         for token in tokens[utils.OS_IOS]:
-            print('sending push %d tokens')
+            print('sending push ios %d tokens' % len(tokens[utils.OS_IOS]))
             send_engagement_push(None, scheme, token, utils.OS_IOS)
         for token in tokens[utils.OS_ANDROID]:
+            print('sending push android %d tokens' % len(tokens[utils.OS_ANDROID]))
             send_engagement_push(None, scheme, token, utils.OS_ANDROID)
 
     return jsonify(status='ok')

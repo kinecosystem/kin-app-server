@@ -1,4 +1,7 @@
 # kin-app-server
+
+![](https://travis-ci.org/kinecosystem/kin-app-server.svg?branch=master)
+
 Note: this is still very much only an MVP.
 
 An internal service for the Kin App aimed at:
@@ -37,6 +40,9 @@ To test the service, run the unittests.
     make install; make test
 
 note that the tester uses a local, temporary postgress db - it does not mess with prod/stage.
+
+## CI
+we use travis to run our tests: https://travis-ci.org/kinecosystem/kin-app-server
 
 ## Running
 At the moment, you can run this service with
