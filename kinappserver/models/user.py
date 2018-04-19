@@ -240,8 +240,9 @@ def get_tokens_for_push(scheme):
         for user in all_pushable_users:
             try:
 
-                if not get_tasks_for_user(user.user_id):
+                if get_tasks_for_user(user.user_id) == []:
                     print('skipping user %s - no active task' % user.user_id)
+                    continue
 
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
                 last_active_date = datetime.date(last_active)
@@ -276,8 +277,9 @@ def get_tokens_for_push(scheme):
         for user in all_pushable_users:
             try:
 
-                if not get_tasks_for_user(user.user_id):
+                if get_tasks_for_user(user.user_id) == []:
                     print('skipping user %s - no active task' % user.user_id)
+                    continue
 
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
                 last_active_date = datetime.date(last_active)
