@@ -148,6 +148,7 @@ def quest_answers():
         results = payload.get('results', None)
         send_push = payload.get('send_push', True)
         if None in (user_id, task_id, address, results):
+            print('failed input checks on /user/task/results')
             raise InvalidUsage('bad-request')
         #TODO more input checks here
     except Exception as e:
@@ -539,11 +540,11 @@ def send_engagemnt_api():
     if dry_run:
         print('send_engagement_api - dry_run - not sending push')
     else:
+        print('sending push ios %d tokens' % len(tokens[utils.OS_IOS]))
         for token in tokens[utils.OS_IOS]:
-            print('sending push ios %d tokens' % len(tokens[utils.OS_IOS]))
             send_engagement_push(None, scheme, token, utils.OS_IOS)
+        print('sending push android %d tokens' % len(tokens[utils.OS_ANDROID]))
         for token in tokens[utils.OS_ANDROID]:
-            print('sending push android %d tokens' % len(tokens[utils.OS_ANDROID]))
             send_engagement_push(None, scheme, token, utils.OS_ANDROID)
 
     return jsonify(status='ok')

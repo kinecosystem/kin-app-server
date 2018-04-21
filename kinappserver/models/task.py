@@ -91,6 +91,7 @@ def store_task_results(user_id, task_id, results):
 
         return True
     except Exception as e:
+        print('exception in store_task_results:')
         print(e)
         raise InvalidUsage('cant store_task_results')
 
