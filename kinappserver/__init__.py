@@ -23,10 +23,16 @@ if channel_seeds is None:
     print('could not get channels seeds - aborting')
     sys.exit(-1)
 
+# TODO REMOVE LATER
+# disable channel seed
+#app.kin_sdk = kin.SDK(secret_key=base_seed,
+#                              horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
+#                              network=config.STELLAR_NETWORK,
+#                              channel_secret_keys=channel_seeds)
+
 app.kin_sdk = kin.SDK(secret_key=base_seed,
                               horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
-                              network=config.STELLAR_NETWORK,
-                              channel_secret_keys=channel_seeds)
+                              network=config.STELLAR_NETWORK)
 
 # get (and print) the current balance for the account:
 print('the current KIN balance: %s' % stellar.get_kin_balance(config.STELLAR_PUBLIC_ADDRESS))
