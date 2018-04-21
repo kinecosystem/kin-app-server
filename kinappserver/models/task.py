@@ -36,6 +36,7 @@ def reject_premature_results(user_id):
 def calculate_timeshift(user_id, delay_days=1):
     """calculate the time shift (in seconds) needed for cooldown, for this user"""
     from .user import get_user_tz
+    print('calculating timeshift for user_id: %s' % user_id)
     user_tz = get_user_tz(user_id)
     seconds_to_midnight = seconds_to_local_nth_midnight(user_tz, delay_days)
     print('seconds to next local midnight: %s for user_id %s with tz %s' % (seconds_to_midnight, user_id, user_tz))
@@ -69,6 +70,8 @@ def store_task_results(user_id, task_id, results):
         db.session.add(user_app_data)
         db.session.commit()
 
+        print('wrote user_app_data.completed_tasks for userid: %s' % user_id)
+
         # calculate the next valid submission time, and store it:
         if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
             # just set it to 'now'
@@ -77,7 +80,9 @@ def store_task_results(user_id, task_id, results):
         else:
             # calculate the next task's valid submission time, and store it:
             # this takes into account the delay_days field on the next task.
+            print('getting task_delay...for task_id: %s' % task_id)
             delay_days = get_task_delay(str(int(task_id) + 1))  # returns None if task doesn't exist
+            print('after getting task_delay...')
             if delay_days == 0:
                 shifted_ts = arrow.utcnow().timestamp
                 print('setting next task time to now (delay_days is zero)')
