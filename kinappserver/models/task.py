@@ -78,14 +78,19 @@ def store_task_results(user_id, task_id, results):
             shifted_ts = arrow.utcnow().timestamp
             print('setting next task time to now (no-cooldown policy)')
         else:
+            delay_days = None
             # calculate the next task's valid submission time, and store it:
             # this takes into account the delay_days field on the next task.
             print('getting task_delay...for task_id: %s' % task_id)
-            delay_days = get_task_delay(str(int(task_id) + 1))  # returns None if task doesn't exist
+            try:
+                delay_days = get_task_delay(str(int(task_id) + 1))  # throws exception if no such task exists
+            except Exception as e:
+                print('cant find task_delay for next task_id of %s' % task_id)
+
             print('after getting task_delay...')
-            if delay_days == 0:
+            if delay_days == 0 or delay_days is None:
                 shifted_ts = arrow.utcnow().timestamp
-                print('setting next task time to now (delay_days is zero)')
+                print('setting next task time to now (delay_days is: %s)' % delay_days)
             else:
                 shift_seconds = calculate_timeshift(user_id, delay_days)
                 shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
