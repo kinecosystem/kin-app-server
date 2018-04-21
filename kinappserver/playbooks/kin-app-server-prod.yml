@@ -30,7 +30,6 @@
    stellar_network: 'TESTNET'
    stellar_kin_issuer_address: GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V
    stellar_horizon_url: https://horizon-testnet.stellar.org/
-   stellar_public_address: 'GCTH7N7X7T62JP7LBXUMZIY7ROI2U7XV42L2JNW7STCZQ5DIKXSOYOXR'
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
 

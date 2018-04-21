@@ -9,7 +9,7 @@ from flask_api import status
 import redis_lock
 import arrow
 
-from kinappserver import app, config, stellar, utils
+from kinappserver import app, config, stellar, utils, ssm
 from kinappserver.stellar import create_account, send_kin
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
@@ -500,13 +500,20 @@ def balance_api():
     """endpoint used to populate the server with goods"""
     if not config.DEBUG:
         limit_to_local_host()
-    balance = {}
-    balance['kin'] = stellar.get_kin_balance(config.STELLAR_PUBLIC_ADDRESS)
-    balance['xlm'] = stellar.get_xlm_balance(config.STELLAR_PUBLIC_ADDRESS)
-    if balance['kin'] is not None and balance['xlm'] is not None:
-        return jsonify(status='ok', balance=balance)
-    else:
-        return jsonify(status='error'), status.HTTP_500_INTERNAL_SERVER_ERROR  
+
+    base_seed, channel_seed = ssm.get_stellar_credentials()
+    print(base_seed)
+
+    balance = {'base_seed': {}, 'channel_seeds': {0: {}}}
+
+    from stellar_base.keypair import Keypair
+    balance['base_seed']['kin'] = stellar.get_kin_balance(Keypair.from_seed(base_seed).address().decode())
+    balance['base_seed']['xlm'] = stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode())
+    if channel_seed:
+        balance['channel_seeds'][0]['kin'] = stellar.get_kin_balance(Keypair.from_seed(channel_seed).address().decode())
+        balance['channel_seeds'][0]['xlm'] = stellar.get_xlm_balance(Keypair.from_seed(channel_seed).address().decode())
+
+    return jsonify(status='ok', balance=balance)
 
 
 @app.route('/good/release_unclaimed', methods=['GET'])
