@@ -61,7 +61,8 @@ def store_task_results(user_id, task_id, results):
         from kinappserver.models import UserAppData
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
         if user_app_data is None:
-            raise('cant retrieve user app data for user:%s' % user_id)
+            print('cant retrieve user app data for user:%s' % user_id)
+            raise InternalError('cant retrieve user app data for user:%s' % user_id)
         completed_tasks = json.loads(user_app_data.completed_tasks)
         completed_tasks.append(task_id)
         user_app_data.completed_tasks = json.dumps(completed_tasks)
