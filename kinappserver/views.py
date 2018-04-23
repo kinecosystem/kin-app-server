@@ -231,11 +231,11 @@ def get_transactions_api():
     detailed_txs = []
     try:
         user_id = extract_header(request)
-        txs = [{'tx_hash': tx.tx_hash, 'amount': tx.amount, 'server_received': tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
+        txs = [{'type': 'server', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': not tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
 
         # get the offer, task details
         for tx in txs:
-            details = get_offer_details(tx['tx_info']['offer_id']) if tx['server_received'] else get_task_details(tx['tx_info']['task_id'])
+            details = get_offer_details(tx['tx_info']['offer_id']) if not tx['client_received'] else get_task_details(tx['tx_info']['task_id'])
             detailed_txs.append({**tx, **details})
 
     except Exception as e:
