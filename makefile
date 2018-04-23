@@ -1,12 +1,12 @@
 install-sdk:
-	#sudo pip install kin --upgrade
-	pip install git+https://github.com/kinecosystem/kin-core-python.git
+	#sudo pip3 install kin --upgrade
+	pip3 install git+https://github.com/kinecosystem/kin-core-python.git
 
 install:
-	sudo pip install . --upgrade
+	sudo pip3 install . --upgrade
 
-freeze: 
-	sudo pip freeze
+install-travis:
+	sudo pip install . --upgrade
 
 test:
 	export LC_ALL=C

@@ -12,5 +12,5 @@ install:
 before_script:
   - export PYTHONPATH=$PYTHONPATH:$(pwd)
 script:
-  - make install-sdk; make install; make freeze; 
+  - make install-sdk; make install-travis; 
   - make test;
