@@ -174,8 +174,10 @@ def get_tasks_for_user(user_id):
         return []
     else:
         # does the user's client support this task?
-        if not can_support_task(get_user_os_type(user_id), user_app_data.app_ver, next_task):
+        os_type = get_user_os_type(user_id)
+        if not can_support_task(os_type, user_app_data.app_ver, next_task):
             # client does NOT support the next task, so return an empty array and push a notification
+            print('user %s, client os:%s client_ver:%s does not support the next task. returning empty array' % (user_id, os_type, user_app_data.app_ver))
             send_please_upgrade_push(user_id)
             return []
 
@@ -185,12 +187,13 @@ def get_tasks_for_user(user_id):
 
 def can_support_task(os_type, app_ver, task):
     """ returns true if the client with the given os_type and app_ver can correctly handle the given task"""
-    return True
-    
+    from distutils.version import LooseVersion
     if os_type == OS_ANDROID:
-        if (app_ver) >= (task.get('min_client_version_android', 0.1)):
+        print('the task min version: %s' % task.get('min_client_version_android'))
+        print('the client app version: %s' % app_ver)
+        if LooseVersion(app_ver) >= LooseVersion(task.get('min_client_version_android')):
             return True
-    elif (app_ver) >= (task.get('min_client_version_ios', 0.1)):
+    elif LooseVersion(app_ver) >= LooseVersion(task.get('min_client_version_ios')):
             return True
     return False
 
@@ -214,8 +217,8 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['tags'] = task.tags
     task_json['items'] = task.items
     task_json['start_date'] = int(shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp)
-    task_json['min_client_version_android'] = task.min_client_version_android
-    task_json['min_client_version_ios'] = task.min_client_version_ios
+    task_json['min_client_version_android'] = task.min_client_version_android or DEFAULT_MIN_CLIENT_VERSION
+    task_json['min_client_version_ios'] = task.min_client_version_ios or DEFAULT_MIN_CLIENT_VERSION
 
     return task_json
 

@@ -12,6 +12,7 @@ test:
 	export LC_ALL=C
 	python kinappserver/tests/book_and_redeem.py
 	python kinappserver/tests/balance.py
+	python kinappserver/tests/versions.py
 	python kinappserver/tests/book_and_dont_redeem.py
 	python kinappserver/tests/book_and_redeem_multiple.py
 	python kinappserver/tests/good_overallocation.py
