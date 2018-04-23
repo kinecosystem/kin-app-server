@@ -185,6 +185,8 @@ def get_tasks_for_user(user_id):
 
 def can_support_task(os_type, app_ver, task):
     """ returns true if the client with the given os_type and app_ver can correctly handle the given task"""
+    return True
+    
     if os_type == OS_ANDROID:
         if (app_ver) >= (task.get('min_client_version_android', 0.1)):
             return True
