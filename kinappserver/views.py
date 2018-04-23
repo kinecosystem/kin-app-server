@@ -211,8 +211,9 @@ def get_next_task():
     tasks = get_tasks_for_user(user_id)
     try:
         # handle unprintable chars...
-        print(tasks)
+        print('tasks returned for user %s: %s' % (user_id, tasks))
     except Exception as e:
+        print('cant print returned tasks for user %s' % user_id)
         print(e)
     return jsonify(tasks=tasks)
 
