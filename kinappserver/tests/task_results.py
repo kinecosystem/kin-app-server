@@ -89,6 +89,33 @@ class Tester(unittest.TestCase):
             }]
         }
 
+        task2 = {
+          'id': '2',
+          'title': 'do you know horses?',
+          'desc': 'horses_4_dummies',
+          'type': 'questionnaire',
+          'price': 1,
+          'min_to_complete': 2,
+          'start_date': '2013-05-11T21:23:58.970460+00:00',
+          'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
+          'provider':
+            {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
+          'items': [
+            {
+             'id': '435',
+             'text': 'what animal is this?',
+             'type': 'textimage',
+                 'results': [
+                        {'id': '235',
+                         'text': 'a horse!',
+                         'image_url': 'cdn.helllo.com/horse.jpg'},
+                            {'id': '2465436',
+                         'text': 'a cat!',
+                         'image_url': 'cdn.helllo.com/kitty.jpg'},
+                         ],
+            }]
+        }
+
 
         resp = self.app.post('/task/add',
                             data=json.dumps({
@@ -104,6 +131,20 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task2}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # set the delay_days on all the tasks to zero
+        resp = self.app.post('/task/delay_days',
+                            data=json.dumps({
+                            'days': 0}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
         userid = uuid.uuid4()
 
@@ -167,7 +208,15 @@ class Tester(unittest.TestCase):
         
         self.assertEqual(data['tasks'][0]['id'], '1')
 
-        # send task results before the next task is due (due to cooldown)
+        # set the delay_days on all the tasks to two
+        resp = self.app.post('/task/delay_days',
+                            data=json.dumps({
+                            'days': 2}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # send task results - should be accepted as there's no delay)
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '1',
@@ -177,9 +226,40 @@ class Tester(unittest.TestCase):
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        print('data: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id: %s' % data['tasks'][0]['id'])
+        print('next task start date: %s' % data['tasks'][0]['start_date'])
+
+        self.assertEqual(data['tasks'][0]['id'], '2')
+
+        # the next start date should be at least 24 hours into the future:
+        import arrow
+
+        future = arrow.get(data['tasks'][0]['start_date'])
+        now = arrow.utcnow()
+        self.assertEqual((future-now).total_seconds() / 3600 > 24, True)
+
+
+
+        # send task results before the next task is due (due to cooldown)
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id': '2',
+                            'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'results': {'2234': 'werw', '5345': '345345'},
+                            'send_push': False
+                            }),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 400)
-        sleep(8) # give the thread enough time to complete before the db connection is shutdown
+        sleep(8)  # give the thread enough time to complete before the db connection is shutdown
 
 
 if __name__ == '__main__':

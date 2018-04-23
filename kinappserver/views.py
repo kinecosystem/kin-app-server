@@ -18,7 +18,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     create_tx, update_task_time, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
-    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details
+    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days
 
 
 def limit_to_local_host():
@@ -186,6 +186,22 @@ def add_task_api():
         return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add task')
+
+
+@app.route('/task/delay_days', methods=['POST'])
+def set_delay_days_api():
+    """used to set the delay_days on all tasks"""
+    if not config.DEBUG:
+        limit_to_local_host()
+    payload = request.get_json(silent=True)
+    try:
+        delay_days = payload.get('days', None)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+
+    set_delay_days(delay_days)
+    return jsonify(status='ok')
 
 
 @app.route('/user/tasks', methods=['GET'])

@@ -73,28 +73,23 @@ def store_task_results(user_id, task_id, results):
         print('wrote user_app_data.completed_tasks for userid: %s' % user_id)
 
         # calculate the next valid submission time, and store it:
-        if config.TASK_ALLOCATION_POLICY == 'no-cooldown':
-            # just set it to 'now'
-            shifted_ts = arrow.utcnow().timestamp
-            print('setting next task time to now (no-cooldown policy)')
-        else:
-            delay_days = None
-            # calculate the next task's valid submission time, and store it:
-            # this takes into account the delay_days field on the next task.
-            print('getting task_delay...for task_id: %s' % task_id)
-            try:
-                delay_days = get_task_delay(str(int(task_id) + 1))  # throws exception if no such task exists
-            except Exception as e:
-                print('cant find task_delay for next task_id of %s' % task_id)
+        delay_days = None
+        # calculate the next task's valid submission time, and store it:
+        # this takes into account the delay_days field on the next task.
+        print('getting task_delay...for task_id: %s' % task_id)
+        try:
+            delay_days = get_task_delay(str(int(task_id) + 1))  # throws exception if no such task exists
+        except Exception as e:
+            print('cant find task_delay for next task_id of %s' % task_id)
 
-            print('after getting task_delay...')
-            if delay_days == 0 or delay_days is None:
-                shifted_ts = arrow.utcnow().timestamp
-                print('setting next task time to now (delay_days is: %s)' % delay_days)
-            else:
-                shift_seconds = calculate_timeshift(user_id, delay_days)
-                shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
-                print('setting next task time to %s seconds in the future' % shift_seconds)
+        print('after getting task_delay...')
+        if delay_days == 0 or delay_days is None:
+            shifted_ts = arrow.utcnow().timestamp
+            print('setting next task time to now (delay_days is: %s)' % delay_days)
+        else:
+            shift_seconds = calculate_timeshift(user_id, delay_days)
+            shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
+            print('setting next task time to %s seconds in the future' % shift_seconds)
 
         print('next valid submission time for user %s: in shifted_ts: %s' % (user_id, shifted_ts))
 
@@ -154,12 +149,10 @@ def get_tasks_for_user(user_id):
     """return an array of the current tasks for this user or empty array if there are
         no more tasks in the db.
 
-       if the policy is 'no-cooldown', always return the next avilable task with the time
-       set to the user's local 'now'
-
-       if the policy is 'default', always return the next availble task but take into account
-       the last time this user submitted task-results, and apply cooldown if nessecary - set
-       the next available time to the next midnight. 
+       there are 3 outcomes here:
+        - either this user has no pre-existing results -> gets the first task
+        - or the user completed all the available tasks -> gets an empty array
+        - or the user gets the next task (which is len(completed-tasks)
     """
 
     from .user import get_user_app_data, get_user_os_type
@@ -169,7 +162,7 @@ def get_tasks_for_user(user_id):
 
     previous_task_results = get_user_task_results(user_id)
 
-    # regardless of the policy: if the user has no previous task results, just give her task '0'
+    # if the user has no previous task results, just give her task '0'
     if len(previous_task_results) == 0:
         print('no previous task results, giving task 0')
         return [get_task_by_id('0', os_type, user_app_data.app_ver)]
@@ -245,6 +238,13 @@ def add_task(task_json):
         return False
     else:
         return True
+
+
+def set_delay_days(delay_days, task_id=None):
+    """sets the delay days on all the tasks or optionally on one task"""
+    where_clause = '' if not task_id else 'where task_id=\'%s\'' % task_id
+    db.engine.execute("update task set delay_days=%d %s" % (int(delay_days), where_clause))
+    return True
 
 
 def update_task_time(task_id, time_string):
