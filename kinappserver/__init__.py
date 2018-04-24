@@ -2,7 +2,6 @@ import sys
 
 from flask import Flask
 from flask_cors import CORS
-from flask_admin import Admin
 import kin
 
 from kinappserver import amqp_publisher
@@ -52,54 +51,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 db = SQLAlchemy(app)
 
-
-# TODO remove this on production
-admin = Admin(app, name='KinApp', template_mode='bootstrap3')
-from kinappserver.models import User, UserAppData, UserTaskResults, Task, Transaction, Offer, Order, Good
-from flask_admin.contrib import sqla
-
-class UserAdmin(sqla.ModelView):
-    column_display_pk = True
-
-class UserAppDataAdmin(sqla.ModelView):
-    column_display_pk = True
-
-class UserTaskResultsAdmin(sqla.ModelView):
-    form_columns = ['user_id', 'task_id']
-    column_display_pk = True
-
-class TaskAdmin(sqla.ModelView):
-    column_display_pk = True
-
-class OfferAdmin(sqla.ModelView):
-    column_display_pk = True
-    form_columns = ['offer_id']
-
-class OrderAdmin(sqla.ModelView):
-    column_display_pk = True
-    form_columns = ['order_id']
-
-class TransactionAdmin(sqla.ModelView):
-    column_display_pk = True
-    form_columns = ['tx_hash']
-
-class GoodAdmin(sqla.ModelView):
-    column_display_pk = True
-    form_columns = ['sid']
-
-if False: #config.DEBUG:
-    print('enabling admin UI...')
-    admin.add_view(UserAdmin(User, db.session))
-    admin.add_view(UserAppDataAdmin(UserAppData, db.session))
-    admin.add_view(UserTaskResultsAdmin(UserTaskResults, db.session))
-    admin.add_view(TaskAdmin(Task, db.session))
-    admin.add_view(TransactionAdmin(Transaction, db.session))
-    admin.add_view(OfferAdmin(Offer, db.session))
-    admin.add_view(OrderAdmin(Order, db.session))
-    admin.add_view(GoodAdmin(Good, db.session))
-else:
-    print('NOT enabling admin UI')
-
 import kinappserver.views
 import redis
 
@@ -110,3 +61,11 @@ app.amqp_publisher = amqp_publisher
 # sanity for configuration
 if not config.DEBUG:
     app.redis.setex('temp-key', 1, 'temp-value')
+
+# useful prints:
+state = 'enabled' if config.PHONE_VERIFICATION_ENABLED else 'disabled'
+print('phone verification: %s' % state)
+state = 'enabled' if config.AUTHENTICATION_TOKEN_ENABLED else 'disabled'
+print('authentication token: %s' % state)
+state = 'enabled' if config.P2P_TRANSFERS_ENABLED else 'disabled'
+print('p2p transfers feature enabled: %s' % state)

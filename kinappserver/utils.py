@@ -55,6 +55,18 @@ def seconds_to_local_nth_midnight(tz_shift, delay_days):
     return int((tomorrow_dt - local_time_dt).total_seconds())
 
 
+def get_global_config():
+    """return a dict with global flags for the clients"""
+    d = {}
+    d['phone_verification_enabled'] = config.PHONE_VERIFICATION_ENABLED
+    d['auth_token_enabled'] = config.AUTHENTICATION_TOKEN_ENABLED
+    d['p2p_enabled'] = config.P2P_TRANSFERS_ENABLED
+    d['p2p_min_kin'] = config.P2P_MIN_KIN_AMOUNT
+    d['p2p_max_kin'] = config.P2P_MAX_KIN_AMOUNT
+    d['p2p_min_tasks'] = config.P2P_MIN_TASKS
+    return d
+
+
 class InvalidUsage(Exception):
     status_code = 400
 

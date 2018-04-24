@@ -11,7 +11,7 @@ import arrow
 
 from kinappserver import app, config, stellar, utils, ssm
 from kinappserver.stellar import create_account, send_kin
-from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER
+from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, get_global_config
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     store_task_results, add_task, get_tasks_for_user, is_onboarded, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
@@ -118,7 +118,11 @@ def send_engagement_push_api():
 
 @app.route('/user/app-launch', methods=['POST'])
 def app_launch():
-    """called whenever the app is launched"""
+    """called whenever the app is launched
+
+        updates the user's last-login time,
+        also forwards some config items to the client
+    """
     payload = request.get_json(silent=True)
     app_ver, user_id = None, None
     try:
@@ -129,7 +133,7 @@ def app_launch():
         raise InvalidUsage('bad-request')
 
     update_user_app_version(user_id, app_ver)
-    return jsonify(status='ok')
+    return jsonify(status='ok', config=get_global_config())
 
 
 @app.route('/user/update-token', methods=['POST'])
