@@ -1,7 +1,7 @@
 import uuid
 
 from kinappserver import amqp_publisher, config
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, increment_metric
 
 
 
@@ -33,12 +33,14 @@ def send_please_upgrade_push(user_id):
     os_type, token = get_user_push_data(user_id)
     if token:
         if os_type == OS_ANDROID:
+            increment_metric('pleaseupgrade-android')
             return  # not supported yet
             # print('sending please-upgrade push message to GCM user %s' % user_id)
             # send_gcm(token, gcm_payload(push_type, push_id, {'title': '', 'body': "Please upgrade the app to get the next task"}))
         else:
+            increment_metric('pleaseupgrade-ios')
             print('sending please-upgrade push message to APNS user %s' % user_id)
-            send_apns(token, apns_payload("", "Please upgrade tha app to get the next task", push_type, push_id))
+            send_apns(token, apns_payload("", "Please upgrade the app to get the next task", push_type, push_id))
 
         return
 
