@@ -41,8 +41,9 @@ def send_please_upgrade_push(user_id):
             increment_metric('pleaseupgrade-ios')
             print('sending please-upgrade push message to APNS user %s' % user_id)
             send_apns(token, apns_payload("", "Please upgrade the app to get the next task", push_type, push_id))
-
-        return
+    else:
+        print('not sending please-upgrade push to user_id %s: no token' % user_id)
+    return
 
 
 def apns_payload(title, body, push_type, push_id, sound='default'):
