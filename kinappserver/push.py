@@ -1,7 +1,8 @@
 import uuid
 
 from kinappserver import amqp_publisher, config
-from kinappserver.utils import InvalidUsage
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID
+
 
 
 def generate_push_id():
@@ -26,7 +27,20 @@ def engagement_payload_gcm(push_type):
 
 def send_please_upgrade_push(user_id):
     """sends a push to the given userid to please upgrade"""
-    return
+    push_id = generate_push_id()
+    push_type = 'please_upgrade'
+    from kinappserver.models import get_user_push_data
+    os_type, token = get_user_push_data(user_id)
+    if token:
+        if os_type == OS_ANDROID:
+            return  # not supported yet
+            # print('sending please-upgrade push message to GCM user %s' % user_id)
+            # send_gcm(token, gcm_payload(push_type, push_id, {'title': '', 'body': "Please upgrade the app to get the next task"}))
+        else:
+            print('sending please-upgrade push message to APNS user %s' % user_id)
+            send_apns(token, apns_payload("", "Please upgrade tha app to get the next task", push_type, push_id))
+
+        return
 
 
 def apns_payload(title, body, push_type, push_id, sound='default'):
