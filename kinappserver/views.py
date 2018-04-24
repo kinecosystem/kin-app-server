@@ -19,6 +19,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days
+from kinappserver.push import send_please_upgrade_push
 
 
 def limit_to_local_host():
@@ -35,7 +36,6 @@ def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
-
 
 @app.errorhandler(InternalError)
 def handle_internal_error(error):
@@ -87,6 +87,19 @@ def send_gcm_push_tx_completed():
         print('exception in send_gcm_push_tx_completed: %s' % e)
         raise InvalidUsage('bad-request')
     send_push_tx_completed(user_id, 'tx_hash', 2, 'task_id')
+    return jsonify(status='ok')
+
+
+@app.route('/send-please-upgrade', methods=['POST'])
+def send_please_upgrade_api():
+    # TODO DELETE ME
+    """temp endpoint for testing the please upgrade push"""
+    try:
+        user_id = extract_header(request)
+    except Exception as e:
+        print('exception in send_please_upgrade_api: %s' % e)
+        raise InvalidUsage('bad-request')
+    send_please_upgrade_push(user_id)
     return jsonify(status='ok')
 
 
