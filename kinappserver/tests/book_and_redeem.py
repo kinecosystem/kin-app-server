@@ -48,6 +48,9 @@ class Tester(unittest.TestCase):
                     {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
                 }
 
+
+        print('listing all orders: %s' % models.list_all_order_data())
+
         # add an offer
         resp = self.app.post('/offer/add',
                             data=json.dumps({
@@ -286,6 +289,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(json.loads(resp.data)['inventory'], {offer['id']: {'total': 4, 'unallocated': 0}})
 
+        print('listing all orders: %s' % models.list_all_order_data())
 
 if __name__ == '__main__':
     unittest.main()

@@ -88,6 +88,7 @@ def delete_order(order_id):
     """delete an order"""
     try:
         deleted_count = Order.query.filter_by(order_id=order_id).delete()
+        db.session.commit()
         if deleted_count != 1:
             # should never happen
             raise InternalError('deleted %s orders while trying to delete order-id:%s' % (deleted_count, order_id))
