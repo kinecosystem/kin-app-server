@@ -489,6 +489,7 @@ def purchase_api():
             if not success:
                 raise InvalidUsage('cant redeem with tx_hash:%s' % tx_hash)
             increment_metric('offers_redeemed')
+            print('redeemed order by user_id: %s' % user_id)
             return jsonify(status='ok', goods=goods)
         else:
             return jsonify(status='error', reason='already processing tx_hash')

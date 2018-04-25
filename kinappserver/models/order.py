@@ -88,6 +88,7 @@ def delete_order(order_id):
     """delete an order"""
     try:
         deleted_count = Order.query.filter_by(order_id=order_id).delete()
+        db.session.commit()
         if deleted_count != 1:
             # should never happen
             raise InternalError('deleted %s orders while trying to delete order-id:%s' % (deleted_count, order_id))
@@ -153,7 +154,7 @@ def process_order(user_id, tx_hash):
         return False, None
 
     # tx matched! document the tx in the db with a tx object
-    create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id': str(order.offer_id)})
+    create_tx(tx_hash, user_id, order.address, True, order.kin_amount, {'offer_id': str(order.offer_id), 'order_id': order.order_id})
 
     # prevent doomsday scenario: ensure that the user's expected balance matches his actual balance
     expected_balance = expected_user_kin_balance(user_id)
