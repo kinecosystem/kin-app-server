@@ -133,7 +133,7 @@ def get_order_by_order_id(order_id):
 def process_order(user_id, tx_hash):
     """release the goods to the user, provided that they've been payed for"""
     # extract the tx_data from the blockchain
-    goods  = []
+    goods = []
     res, tx_data = stellar.extract_tx_payment_data(tx_hash)
     if not res:
         print('could not extract tx_data for tx_hash: %s' % tx_hash)
