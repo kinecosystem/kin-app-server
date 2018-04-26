@@ -18,7 +18,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     create_tx, update_task_time, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
-    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days
+    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days, add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated
 from kinappserver.push import send_please_upgrade_push
 
 
@@ -137,6 +137,47 @@ def app_launch():
     return jsonify(status='ok', config=get_global_config())
 
 
+@app.route('/user/contact', methods=['POST'])
+def get_address_by_phone_api():
+    """trys to match the given contact info against a user"""
+    if not config.P2P_TRANSFERS_ENABLED:
+        # this api is disabled, clients should not have asked for it
+        print('/user/contact api is disabled by server config')
+        raise InvalidUsage('api-disabled')
+
+    payload = request.get_json(silent=True)
+    try:
+        user_id = extract_header(request)
+        phone_number = payload.get('phone_number', None)
+        if None in (user_id, phone_number):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    address = get_address_by_phone(phone_number)
+    if not address:
+        return jsonify(status='error', reason='no_match'), status.HTTP_404_NOT_FOUND
+    return jsonify(status='ok', address=address)
+
+
+@app.route('/user/phone', methods=['POST'])
+def set_user_phone_number_api():
+    """updates a user's phone number in the database """
+    payload = request.get_json(silent=True)
+    try:
+        user_id = extract_header(request)
+        token = payload.get('number', None)
+        if None in (user_id, token):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    print('updating phone number for user %s' % user_id)
+    set_user_phone_number(user_id, token)
+    return jsonify(status='ok')
+
+
 @app.route('/user/update-token', methods=['POST'])
 def update_token():
     """updates a user's token in the database """
@@ -171,6 +212,9 @@ def quest_answers():
         # TODO more input checks here
     except Exception as e:
         raise InvalidUsage('bad-request')
+
+    if user_deactivated(user_id):
+        raise InvalidUsage('user-deactivated')
 
     if not store_task_results(user_id, task_id, results):
         # should never happen: the client sent the results too soon
@@ -448,6 +492,10 @@ def book_offer_api():
             raise InvalidUsage('invalid payload')
     except Exception as e:
         raise InvalidUsage('bad-request')
+
+    if user_deactivated(user_id):
+        raise InvalidUsage('user-deactivated')
+
     order_id, error_code = create_order(user_id, offer_id)
     if order_id:
         increment_metric('offers_booked')
@@ -591,3 +639,32 @@ def send_engagemnt_api():
             send_engagement_push(None, scheme, token, utils.OS_ANDROID)
 
     return jsonify(status='ok')
+
+
+@app.route('/user/transaction/p2p/add', methods=['POST'])
+def report_p2p_tx_api():
+    """endpoint used by the client to report successful p2p txs"""
+
+    if not config.P2P_TRANSFERS_ENABLED:
+        # this api is disabled, clients should not have asked for it
+        print('/user/transaction/p2p/add api is disabled by server config')
+        raise InvalidUsage('api-disabled')
+
+    payload = request.get_json(silent=True)
+    try:
+        # TODO Should we verify the tx against the blockchain?
+        # TODO this api needs to be secured with auth token
+        sender_id = extract_header(request)
+        tx_hash = payload.get('tx_hash', None)
+        destination_address = payload.get('destination_address', None)
+        amount = payload.get('amount', None)
+        if None in (tx_hash, sender_id, destination_address, amount):
+            raise InvalidUsage('invalid params')
+
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if add_p2p_tx(tx_hash, sender_id, destination_address, amount):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to add p2ptx')
