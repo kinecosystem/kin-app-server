@@ -37,6 +37,7 @@ def handle_invalid_usage(error):
     response.status_code = error.status_code
     return response
 
+
 @app.errorhandler(InternalError)
 def handle_internal_error(error):
     # converts exceptions to responses
@@ -79,7 +80,7 @@ def update_task_time_endpoint():
 
 @app.route('/send-tx-completed', methods=['POST'])
 def send_gcm_push_tx_completed():
-    #TODO DELETE ME
+    # TODO DELETE ME
     """temp endpoint for testing the tx-completed push"""
     try:
         user_id = extract_header(request)
@@ -105,7 +106,7 @@ def send_please_upgrade_api():
 
 @app.route('/send_engagement_push', methods=['POST'])
 def send_engagement_push_api():
-    #TODO DELETE ME
+    # TODO DELETE ME
     """temp endpoint for testing the engagement push"""
     try:
         user_id = extract_header(request)
@@ -167,7 +168,7 @@ def quest_answers():
         if None in (user_id, task_id, address, results):
             print('failed input checks on /user/task/results')
             raise InvalidUsage('bad-request')
-        #TODO more input checks here
+        # TODO more input checks here
     except Exception as e:
         raise InvalidUsage('bad-request')
 
@@ -353,7 +354,7 @@ def register_api():
         device_id = payload.get('device_id', None)
         app_ver = payload.get('app_ver', None)
         # TODO more input check on the values
-        if None in (user_id, os, device_model, time_zone, app_ver): # token is optional, device-id is required but may be None
+        if None in (user_id, os, device_model, time_zone, app_ver):  # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
         if os not in (utils.OS_ANDROID, utils.OS_IOS):
             raise InvalidUsage('bad-request')
@@ -378,7 +379,7 @@ def reward_store_and_push(public_address, task_id, send_push, user_id, memo):
 
 def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo):
     """transfer the correct amount of kins for the task to the given address
-    
+
        this function runs in the background and sends a push message to the client to
        indicate that the money was indeed transferred.
     """
@@ -473,12 +474,12 @@ def get_offers_api():
 def purchase_api():
     """process the given tx_hash and return the payed-for goods"""
 
-    #TODO: at some point we should try to listen in on incoming tx_hashes
+    # TODO: at some point we should try to listen in on incoming tx_hashes
     # for our account(s). this should hasten the process of redeeming offers.
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
-        tx_hash =  payload.get('tx_hash', None)
+        tx_hash = payload.get('tx_hash', None)
         if None in (user_id, tx_hash):
             raise InvalidUsage('invalid param')
     except Exception as e:
@@ -556,7 +557,7 @@ def release_unclaimed_api():
     """endpoint used to get the current balance"""
     if not config.DEBUG:
         limit_to_local_host()
-    released=release_unclaimed_goods()
+    released = release_unclaimed_goods()
     increment_metric('unclaimed_released', released)
     return jsonify(status='ok', released=released)
 
