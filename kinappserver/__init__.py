@@ -68,4 +68,4 @@ print('phone verification: %s' % state)
 state = 'enabled' if config.AUTHENTICATION_TOKEN_ENABLED else 'disabled'
 print('authentication token: %s' % state)
 state = 'enabled' if config.P2P_TRANSFERS_ENABLED else 'disabled'
-print('p2p transfers feature enabled: %s' % state)
+print('p2p transfers: %s' % state)
