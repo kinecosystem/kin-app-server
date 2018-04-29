@@ -4,6 +4,7 @@ from sqlalchemy_utils import UUIDType
 from kinappserver import db
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID
 from kinappserver.push import send_gcm, send_apns, engagement_payload_apns, engagement_payload_gcm
+from uuid import uuid4
 
 DEFAULT_TIME_ZONE = -4
 
@@ -21,10 +22,15 @@ class User(db.Model):
     device_id = db.Column(db.String(40), primary_key=False, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
     onboarded = db.Column(db.Boolean, unique=False, default=False)
+    public_address = db.Column(db.String(60), primary_key=False, nullable=True)
+    phone_number = db.Column(db.String(60), primary_key=False, nullable=True)
+    deactivated = db.Column(db.Boolean, unique=False, default=False)
+    auth_token = db.Column(UUIDType(binary=False), primary_key=False, nullable=True)
 
     def __repr__(self):
         return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s,' \
-               ' onboarded: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone, self.device_id, self.onboarded)
+               ' onboarded: %s, public_address: %s, phone_number: %s, deactivated: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
+                                                                                           self.device_id, self.onboarded, self.public_address, self.phone_number, self.deactivated)
 
 
 def get_user(user_id):
@@ -48,10 +54,11 @@ def is_onboarded(user_id):
         return None
 
 
-def set_onboarded(user_id, onboarded):
+def set_onboarded(user_id, onboarded, public_address):
     """set the onbarded field of the user in the db"""
     user = get_user(user_id)
     user.onboarded = onboarded
+    user.public_address = public_address
     db.session.add(user)
     db.session.commit()
 
@@ -77,6 +84,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user.push_token = push_token
     user.time_zone = parse_timezone(time_zone)
     user.device_id = device_id
+    user.auth_token = uuid4()
     db.session.add(user)
     db.session.commit()
 
@@ -103,7 +111,8 @@ def list_all_users():
     users = User.query.order_by(User.user_id).all()
     for user in users:
         response[str(user.user_id)] = {'sid': user.sid, 'os': user.os_type, 'push_token': user.push_token,
-                                       'time_zone': user.time_zone, 'device_id': user.device_id, 'device_model': user.device_model, 'onboarded': user.onboarded}
+                                       'time_zone': user.time_zone, 'device_id': user.device_id, 'device_model': user.device_model, 'onboarded': user.onboarded,
+                                       'phone_num': user.phone_number, 'auth_token': user.auth_token, 'deactivated': user.deactivated}
     return response
 
 

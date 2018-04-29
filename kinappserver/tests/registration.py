@@ -50,6 +50,7 @@ class Tester(unittest.TestCase):
         assert(users[userid]['time_zone'] == int('5'))
         assert(users[userid]['push_token'] == 'fake_token')
         assert(users[userid]['sid'] == 1)
+        assert(users[userid]['auth_token'] is not '' and not None)
 
 
         # reuse device-id but not userid, should succeed

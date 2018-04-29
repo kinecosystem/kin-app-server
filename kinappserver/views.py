@@ -318,7 +318,7 @@ def onboard_user():
                 print('creating account with address %s and amount %s' % (public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE))
                 tx_id = create_account(public_address, config.STELLAR_INITIAL_ACCOUNT_BALANCE)
                 if tx_id:
-                    set_onboarded(user_id, True)
+                    set_onboarded(user_id, True, public_address)
                 else:
                     raise InternalError('failed to create account at %s' % public_address)
             except Exception as e:
