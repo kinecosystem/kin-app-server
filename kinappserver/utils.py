@@ -65,7 +65,7 @@ def get_global_config():
     d['p2p_max_kin'] = config.P2P_MAX_KIN_AMOUNT
     d['p2p_min_tasks'] = config.P2P_MIN_TASKS
     if config.TOS_URL is not '':
-        d['tos'] = config.URL
+        d['tos'] = config.TOS_URL
     return d
 
 
