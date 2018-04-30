@@ -4,7 +4,7 @@ from sqlalchemy_utils import UUIDType
 from kinappserver import db
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID
 from kinappserver.push import send_gcm, send_apns, engagement_payload_apns, engagement_payload_gcm
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 DEFAULT_TIME_ZONE = -4
 
@@ -334,7 +334,7 @@ def get_userid_by_address(address):
             return user.user_id  # can be None
     except Exception as e:
         print('cant get user userid by address. Exception: %s' % e)
-    raise InvalidUsage('cant get user_id by address')
+        raise
 
 
 def get_address_by_userid(user_id):
@@ -347,7 +347,7 @@ def get_address_by_userid(user_id):
             return user.public_address  # can be None
     except Exception as e:
         print('cant get address by user_id. Exception: %s' % e)
-        raise InvalidUsage('cant get user address by user_id')
+        raise
 
 
 def set_user_phone_number(user_id, number):
@@ -356,19 +356,21 @@ def set_user_phone_number(user_id, number):
         user = get_user(user_id)
         # allow (and ignore) re-submissions of the SAME number, but reject new numbers
         if user.phone_number is not None:
-
-            # does this number belong to another user? if so, de-activate the old user.
-            deactivate_by_phone_number(number)
-
             if user.phone_number == number:
-                return
+                return  # all good, do nothing
             else:
-                raise InvalidUsage('trying to overwrite an existing phone number')
-        user.phone_number = number
-        db.session.add(user)
-        db.session.commit()
+                raise InvalidUsage('trying to overwrite an existing phone number with a different one')
+        else:
+            user.phone_number = number
+            db.session.add(user)
+            db.session.commit()
+
+        # does this number belong to another user? if so, de-activate the old user.
+        deactivate_by_phone_number(number, user_id)
+
     except Exception as e:
         print('cant add phone number to user_id: %s. Exception: %s' % (user_id, e))
+        raise
 
 
 def get_address_by_phone(phone_number):
@@ -384,10 +386,10 @@ def get_address_by_phone(phone_number):
             return user.public_address  # can be None
     except Exception as e:
         print('cant get user address by phone. Exception: %s' % e)
-    raise InvalidUsage('cant get address by phone')
+        raise
 
 
-def deactivate_by_phone_number(user_id, phone_number):
+def deactivate_by_phone_number(phone_number, user_id):
     """deactivate any user except user_id with this phone_number"""
-    results = db.engine.execute("update public.user set deactivate=true where phone_number=%s and user_id!=%s" % (phone_number, user_id))
-    print('deactivated %s users with phone_number:%s' % (len(results), phone_number))
+    results = db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id!='%s'" % (phone_number, UUID(user_id)))
+    print('deactivated previous users with phone_number:%s' % phone_number)
