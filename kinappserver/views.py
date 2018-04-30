@@ -413,7 +413,7 @@ def register_api():
         else:
             print('created user with user_id %s' % user_id)
             increment_metric('user_registered')
-            return jsonify(status='ok')
+            return jsonify(status='ok', config=get_global_config())
 
 
 def reward_store_and_push(public_address, task_id, send_push, user_id, memo):
