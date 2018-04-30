@@ -214,7 +214,7 @@ def quest_answers():
         raise InvalidUsage('bad-request')
 
     if user_deactivated(user_id):
-        raise InvalidUsage('user-deactivated')
+        return jsonify(status='error', reason='user_deactivated'), status.HTTP_400_BAD_REQUEST
 
     if not store_task_results(user_id, task_id, results):
         # should never happen: the client sent the results too soon
@@ -271,6 +271,11 @@ def get_next_task():
     """returns the current task for the user with the given id"""
     user_id = extract_header(request)
     tasks = get_tasks_for_user(user_id)
+
+    if user_deactivated(user_id):
+        print('user %s is deactivated. returning empty task array' % user_id)
+        return jsonify(tasks=[], reason='user_deactivated')
+
     try:
         # handle unprintable chars...
         print('tasks returned for user %s: %s' % (user_id, tasks))
@@ -492,9 +497,6 @@ def book_offer_api():
             raise InvalidUsage('invalid payload')
     except Exception as e:
         raise InvalidUsage('bad-request')
-
-    if user_deactivated(user_id):
-        raise InvalidUsage('user-deactivated')
 
     order_id, error_code = create_order(user_id, offer_id)
     if order_id:

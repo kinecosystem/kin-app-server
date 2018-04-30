@@ -106,69 +106,62 @@ class Tester(unittest.TestCase):
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
 
-        # add an offer and have user 1 attempt to book it - it should fail - as he is deactivated
-        offerid = '0'
-        offer = {'id': offerid,
-                 'type': 'gift-card',
-                 'type_image_url': "https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png",
-                 'domain': 'music',
-                 'title': 'offer_title',
-                 'desc': 'offer_desc',
-                 'image_url': 'image_url',
-                 'price': 2,
-                 'address': 'GCORIYYEQP3ANHFT6XHMBY7VB3RH53WB5KZZHGCEXYRWCEJQZUXPGWQM',
-                 'provider':
-                     {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
-                 }
+        task0 = {
+          'id': '0',
+          'title': 'do you know horses?',
+          'desc': 'horses_4_dummies',
+          'type': 'questionnaire',
+          'price': 1,
+          'min_to_complete': 2,
+          'start_date': '2013-05-11T21:23:58.970460+00:00',
+          'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
+          'provider':
+            {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
+          'items': [
+            {
+             'id': '435',
+             'text': 'what animal is this?',
+             'type': 'textimage',
+                 'results': [
+                        {'id': '235',
+                         'text': 'a horse!',
+                         'image_url': 'cdn.helllo.com/horse.jpg'},
+                            {'id': '2465436',
+                         'text': 'a cat!',
+                         'image_url': 'cdn.helllo.com/kitty.jpg'},
+                         ],
+            }]
+        }
 
-        # add an offer
-        resp = self.app.post('/offer/add',
-                             data=json.dumps({
-                                 'offer': offer}),
-                             headers={},
-                             content_type='application/json')
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task0}),
+                            headers={},
+                            content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # enable the offer
-        resp = self.app.post('/offer/set_active',
-                             data=json.dumps({
-                                 'id': offerid,
-                                 'is_active': True}),
-                             headers={},
-                             content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # create a good instance for the offer (1)
-        resp = self.app.post('/good/add',
-                             data=json.dumps({
-                                 'offer_id': offerid,
-                                 'good_type': 'code',
-                                 'value': 'abcd'}),
-                             headers={},
-                             content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # create an order with userid1 - should fail as userid1 is deactivated
-        resp = self.app.post('/offer/book',
-                             data=json.dumps({
-                                 'id': offerid}),
-                             headers={USER_ID_HEADER: str(userid)},
-                             content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
+        # get the user's current tasks - there should be none.
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
         data = json.loads(resp.data)
-        print('book results: %s' % data)
-        self.assertEqual(data['message'], 'user-deactivated')
-
-        # create an order with userid2 - should succeed
-        resp = self.app.post('/offer/book',
-                             data=json.dumps({
-                                 'id': offerid}),
-                             headers={USER_ID_HEADER: str(userid2)},
-                             content_type='application/json')
+        print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        print('book results: %s' % data)
+        self.assertEqual(data['tasks'], [])
+        self.assertEqual(data['reason'], 'user_deactivated')
 
+        # send task results - should fail - user deactivated
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id': '0',
+                            'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'results': {'2234': 'werw', '5345': '345345'},
+                            'send_push': False
+                            }),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
+        print('post task results response: %s' % json.loads(resp.data))
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(data['reason'], 'user_deactivated')
 
 if __name__ == '__main__':
     unittest.main()
