@@ -148,13 +148,24 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # create the first order with userid1 - should fail as userid1 is deactivated
+        # create an order with userid1 - should fail as userid1 is deactivated
         resp = self.app.post('/offer/book',
                              data=json.dumps({
                                  'id': offerid}),
                              headers={USER_ID_HEADER: str(userid)},
                              content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        print('book results: %s' % data)
+        self.assertEqual(data['message'], 'user-deactivated')
+
+        # create an order with userid2 - should succeed
+        resp = self.app.post('/offer/book',
+                             data=json.dumps({
+                                 'id': offerid}),
+                             headers={USER_ID_HEADER: str(userid2)},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print('book results: %s' % data)
 
