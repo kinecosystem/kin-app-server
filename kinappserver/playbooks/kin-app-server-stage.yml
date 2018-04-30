@@ -33,6 +33,7 @@
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: False
+   phone_verification_required: False
    authentication_token_enabled: False
    p2p_transfers_enabled: False
    p2p_min_tasks: 0
