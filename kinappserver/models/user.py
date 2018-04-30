@@ -22,7 +22,7 @@ class User(db.Model):
     device_id = db.Column(db.String(40), primary_key=False, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
     onboarded = db.Column(db.Boolean, unique=False, default=False)
-    public_address = db.Column(db.String(60), primary_key=False, nullable=True)
+    public_address = db.Column(db.String(60), primary_key=False, unique=True, nullable=True)
     phone_number = db.Column(db.String(60), primary_key=False, nullable=True)
     deactivated = db.Column(db.Boolean, unique=False, default=False)
     auth_token = db.Column(UUIDType(binary=False), primary_key=False, nullable=True)
@@ -38,6 +38,17 @@ def get_user(user_id):
     if not user:
         raise InvalidUsage('no such user_id')
     return user
+
+
+def user_deactivated(user_id):
+    """returns true if the user_id is deactivated"""
+    # TODO cacahe the results?
+    try:
+        user = get_user(user_id)
+    except Exception as e:
+        return False
+    else:
+        return user.deactivated
 
 
 def user_exists(user_id):
@@ -311,3 +322,72 @@ def get_tokens_for_push(scheme):
     else:
         print('unknown scheme')
         return None
+
+
+def get_userid_by_address(address):
+    """return the userid associated with the given address or return None"""
+    try:
+        user = User.query.filter_by(public_address=address).first()
+        if user is None:
+            return None
+        else:
+            return user.user_id  # can be None
+    except Exception as e:
+        print('cant get user userid by address. Exception: %s' % e)
+    raise InvalidUsage('cant get user_id by address')
+
+
+def get_address_by_userid(user_id):
+    """return the address associated with the given user_id or return None"""
+    try:
+        user = User.query.filter_by(user_id=user_id).first()
+        if user is None:
+            return None
+        else:
+            return user.public_address  # can be None
+    except Exception as e:
+        print('cant get address by user_id. Exception: %s' % e)
+        raise InvalidUsage('cant get user address by user_id')
+
+
+def set_user_phone_number(user_id, number):
+    """sets a phone number to the user's entry"""
+    try:
+        user = get_user(user_id)
+        # allow (and ignore) re-submissions of the SAME number, but reject new numbers
+        if user.phone_number is not None:
+
+            # does this number belong to another user? if so, de-activate the old user.
+            deactivate_by_phone_number(number)
+
+            if user.phone_number == number:
+                return
+            else:
+                raise InvalidUsage('trying to overwrite an existing phone number')
+        user.phone_number = number
+        db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        print('cant add phone number to user_id: %s. Exception: %s' % (user_id, e))
+
+
+def get_address_by_phone(phone_number):
+    """"attempt to find a public address by phone number
+
+    return None if no phone number exists or if the address wasn't set
+    """
+    try:
+        user = User.query.filter_by(phone_number=phone_number).first()
+        if user is None:
+            return None
+        else:
+            return user.public_address  # can be None
+    except Exception as e:
+        print('cant get user address by phone. Exception: %s' % e)
+    raise InvalidUsage('cant get address by phone')
+
+
+def deactivate_by_phone_number(user_id, phone_number):
+    """deactivate any user except user_id with this phone_number"""
+    results = db.engine.execute("update public.user set deactivate=true where phone_number=%s and user_id!=%s" % (phone_number, user_id))
+    print('deactivated %s users with phone_number:%s' % (len(results), phone_number))

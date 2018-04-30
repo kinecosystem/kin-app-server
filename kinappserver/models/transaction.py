@@ -10,7 +10,7 @@ from kinappserver import db, stellar
 
 class Transaction(db.Model):
     """
-    kin transactions
+    kin transactions: from and to the server
     """
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     tx_hash = db.Column(db.String(100), nullable=False, primary_key=True)
