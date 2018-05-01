@@ -11,7 +11,7 @@ import arrow
 
 from kinappserver import app, config, stellar, utils, ssm
 from kinappserver.stellar import create_account, send_kin
-from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, get_global_config
+from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, get_global_config, extract_phone_number_from_firebase_id_token
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     store_task_results, add_task, get_tasks_for_user, is_onboarded, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
@@ -160,26 +160,57 @@ def get_address_by_phone_api():
     return jsonify(status='ok', address=address)
 
 
-@app.route('/user/phone', methods=['POST'])
+@app.route('/user/firebase/update-id-token', methods=['POST'])
 def set_user_phone_number_api():
-    """updates a user's phone number in the database """
+    """get the firebase id token and extract the phone number from it"""
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)
-        token = payload.get('number', None)
+        token = payload.get('token', None)
+        unverified_phone_number = payload.get('phone_number', None)  # only used in tests
+        if None in (user_id, token, unverified_phone_number):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    if not config.DEBUG:
+        print('extracting verified phone number fom firebase id token...')
+        verified_number = extract_phone_number_from_firebase_id_token(token)
+        if verified_number is None:
+            print('bad id-token: %s', token)
+            return jsonify(status='error', reason='bad_token')
+        phone = verified_number
+    else:
+        # for tests, you can use the unverified number
+        print('using un-verified phone number')
+        phone = unverified_phone_number
+
+    print('updating phone number for user %s' % user_id)
+    set_user_phone_number(user_id, phone)
+
+    return jsonify(status='ok')
+
+
+@app.route('/user/update-token', methods=['POST'])
+def update_token_api():
+    """updates a user's token in the database """
+    payload = request.get_json(silent=True)
+    try:
+        user_id = extract_header(request)
+        token = payload.get('token', None)
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
 
-    print('updating phone number for user %s' % user_id)
-    set_user_phone_number(user_id, token)
+    print('updating token for user %s' % user_id)
+    update_user_token(user_id, token)
     return jsonify(status='ok')
 
 
-@app.route('/user/update-token', methods=['POST'])
-def update_token():
+@app.route('/user/push/update-token', methods=['POST'])
+def push_update_token_api():
     """updates a user's token in the database """
     payload = request.get_json(silent=True)
     try:

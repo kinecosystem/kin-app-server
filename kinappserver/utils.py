@@ -69,6 +69,18 @@ def get_global_config():
     return d
 
 
+def extract_phone_number_from_firebase_id_token(id_token):
+    """get the phone number from a firebase id-token"""
+    phone_number = None
+    from firebase_admin import auth
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        phone_number = decoded_token['phone_number']
+    except Exception as e:
+        print('failed to decode the firebase token: %s' % e)
+    return phone_number
+
+
 class InvalidUsage(Exception):
     status_code = 400
 
@@ -99,3 +111,5 @@ class InternalError(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
+
+

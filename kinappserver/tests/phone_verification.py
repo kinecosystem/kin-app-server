@@ -67,18 +67,20 @@ class Tester(unittest.TestCase):
 
         # user updates his phone number to the server after client-side verification
         phone_num = '+9720528802120'
-        resp = self.app.post('/user/phone',
+        resp = self.app.post('/user/firebase/update-id-token',
                     data=json.dumps({
-                        'number': phone_num}),
+                        'token': 'fake-token',
+                        'phone_number': phone_num}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         # user re-updates his number to the same number, should work.
         phone_num = '+9720528802120'
-        resp = self.app.post('/user/phone',
+        resp = self.app.post('/user/firebase/update-id-token',
                     data=json.dumps({
-                        'number': phone_num}),
+                        'token': 'fake-token',
+                        'phone_number': phone_num}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -88,9 +90,10 @@ class Tester(unittest.TestCase):
         # different user updates his number to the same number, should work - and deactivate the previous user
         print('user 2 updates to the same number as user 1...')
         phone_num = '+9720528802120'
-        resp = self.app.post('/user/phone',
+        resp = self.app.post('/user/firebase/update-id-token',
                     data=json.dumps({
-                        'number': phone_num}),
+                        'token': 'fake-token',
+                        'phone_number': phone_num}),
                     headers={USER_ID_HEADER: str(userid2)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -99,9 +102,10 @@ class Tester(unittest.TestCase):
 
         # user2 re-updates his phone number to a different number. should fail
         phone_num = '+9720528802121'
-        resp = self.app.post('/user/phone',
+        resp = self.app.post('/user/firebase/update-id-token',
                     data=json.dumps({
-                        'number': phone_num}),
+                        'token': 'fake-token',
+                        'phone_number': phone_num}),
                     headers={USER_ID_HEADER: str(userid2)},
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
