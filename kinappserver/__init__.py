@@ -75,6 +75,6 @@ print('p2p transfers: %s' % state)
 import firebase_admin
 from firebase_admin import credentials
 
-#cred = credentials.Certificate("path/to/serviceAccountKey.json")
-#firebase_admin.initialize_app(cred)
-#app.firebase_admin = firebase_admin
+cred = credentials.Certificate(config.FIREBASE_SERVICE_ACCOUNT_FILE)
+firebase_admin.initialize_app(cred)
+app.firebase_admin = firebase_admin

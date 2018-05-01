@@ -21,7 +21,6 @@ def get_stellar_credentials():
 
     return base_seed, channel_seed  # convert_byte_to_string_array(channel_seeds)
 
-
 def convert_byte_to_string_array(input_byte):
     """converts the input (a bytestring to a string array without using eval"""
     # this is used to convert the decrypted seed channels bytestring to an array
