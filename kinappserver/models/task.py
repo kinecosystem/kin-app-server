@@ -160,14 +160,14 @@ def get_tasks_for_user(user_id):
 
     from .user import get_user_app_data, get_user_os_type
 
-    previous_task_results = get_user_task_results(user_id)
+    user_app_data = get_user_app_data(user_id)
 
     # if the user has no previous task results, just give her task '0'
-    if len(previous_task_results) == 0:
+    if len(user_app_data.completed_tasks) == 0:
         print('no previous task results, giving task 0')
         return [get_task_by_id('0')]
 
-    user_app_data = get_user_app_data(user_id)
+
     next_task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), get_next_task_results_ts(user_id))
 
     if next_task is None:  # no more tasks atm...

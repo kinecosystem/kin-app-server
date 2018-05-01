@@ -12,6 +12,7 @@ test:
 	export LC_ALL=C
 	python kinappserver/tests/book_and_redeem.py
 	python kinappserver/tests/phone_verification.py
+	python kinappserver/tests/phone_verification_2.py
 	python kinappserver/tests/three_redeems_in_a_row.py
 	python kinappserver/tests/balance.py
 	python kinappserver/tests/versions.py

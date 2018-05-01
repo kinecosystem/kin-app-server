@@ -389,7 +389,30 @@ def get_address_by_phone(phone_number):
         raise
 
 
+#def deactivate_by_phone_number(phone_number, user_id):
+#    """deactivate any user except user_id with this phone_number"""
+#    results = db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id!='%s'" % (phone_number, UUID(user_id)))
+#    print('deactivated previous users with phone_number:%s' % phone_number)
+
+
 def deactivate_by_phone_number(phone_number, user_id):
     """deactivate any user except user_id with this phone_number"""
-    results = db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id!='%s'" % (phone_number, UUID(user_id)))
-    print('deactivated previous users with phone_number:%s' % phone_number)
+    try:
+        # find candidates to de-activate (except user_id)
+        users = User.query.filter(User.phone_number == phone_number).filter(User.user_id != user_id).all()
+        if users is []:
+            return None  # nothing to do
+        else:
+            user_ids_to_deactivate = [user.user_id for user in users]
+            print('deactivating user_ids: %s:' % user_ids_to_deactivate)
+            # there should only ever be 1 at most, so log warning
+            if len(user_ids_to_deactivate) > 1:
+                print('warning: too many user_ids to deactivate were found: %s' % user_ids_to_deactivate)
+
+            for user_id_to_deactivate in user_ids_to_deactivate:
+                # deactivate and copy task_history
+                db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id='%s'" % (phone_number, user_id_to_deactivate))
+                db.engine.execute("update public.user_app_data set completed_tasks=(select completed_tasks from public.user_app_data where user_id='%s' ) where user_id='%s'" % (user_id_to_deactivate, UUID(user_id)))
+    except Exception as e:
+        print('cant deactivate_by_phone_number. Exception: %s' % e)
+        raise

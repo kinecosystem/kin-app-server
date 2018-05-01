@@ -61,9 +61,9 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
         data = json.loads(resp.data)
         print('data: %s' % data)
+        self.assertEqual(data['config']['phone_verification_enabled'], True)
 
         # user updates his phone number to the server after client-side verification
         phone_num = '+9720528802120'
