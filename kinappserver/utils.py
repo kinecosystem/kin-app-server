@@ -3,7 +3,7 @@ from uuid import uuid4
 from datadog import statsd
 from flask import config
 
-from kinappserver import config
+from kinappserver import config, app
 
 ERROR_ORDERS_COOLDOWN = -1
 ERROR_NO_GOODS = -2
@@ -72,9 +72,8 @@ def get_global_config():
 def extract_phone_number_from_firebase_id_token(id_token):
     """get the phone number from a firebase id-token"""
     phone_number = None
-    from firebase_admin import auth
     try:
-        decoded_token = auth.verify_id_token(id_token)
+        decoded_token = app.firebase_admin.auth.verify_id_token(id_token)
         phone_number = decoded_token['phone_number']
     except Exception as e:
         print('failed to decode the firebase token: %s' % e)

@@ -69,3 +69,12 @@ state = 'enabled' if config.AUTHENTICATION_TOKEN_ENABLED else 'disabled'
 print('authentication token: %s' % state)
 state = 'enabled' if config.P2P_TRANSFERS_ENABLED else 'disabled'
 print('p2p transfers: %s' % state)
+
+
+# init the firebase admin stuff
+import firebase_admin
+from firebase_admin import credentials
+
+#cred = credentials.Certificate("path/to/serviceAccountKey.json")
+#firebase_admin.initialize_app(cred)
+#app.firebase_admin = firebase_admin

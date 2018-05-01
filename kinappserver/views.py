@@ -174,12 +174,13 @@ def set_user_phone_number_api():
         print(e)
         raise InvalidUsage('bad-request')
     if not config.DEBUG:
-        print('extracting verified phone number fom firebase id token...')
-        verified_number = extract_phone_number_from_firebase_id_token(token)
-        if verified_number is None:
-            print('bad id-token: %s', token)
-            return jsonify(status='error', reason='bad_token')
-        phone = verified_number
+        #print('extracting verified phone number fom firebase id token...')
+        #verified_number = extract_phone_number_from_firebase_id_token(token)
+        #if verified_number is None:
+        #    print('bad id-token: %s', token)
+        #    return jsonify(status='error', reason='bad_token')
+        #phone = verified_number
+        phone = unverified_phone_number
     else:
         # for tests, you can use the unverified number
         print('using un-verified phone number')
