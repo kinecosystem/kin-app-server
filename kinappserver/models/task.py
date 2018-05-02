@@ -311,7 +311,9 @@ def handle_task_results_resubmission(user_id, task_id):
         continue as usual (meaning, save the results and compensate the user. however, we must also ensure
         that the user isn't already in the process of being compensated to prevent double-payments
     """
-    from kinappserver.models import get_memo_for_user_id
+    #from kinappserver.models import get_memo_for_user_id
     # first case: detect a previously payed-for task:
-    memo = get_memo_for_user_id(user_id, task_id)
-    return memo
+    # TODO get memeo for all the users with the same phone number and not just by user_id
+    #memo, user_id = get_memo_for_user_id(user_id, task_id)
+    #return memo
+    pass

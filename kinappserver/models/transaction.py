@@ -75,8 +75,8 @@ def get_current_user_kin_balance(user_id):
         return stellar.get_kin_balance(user_outgoing_txs[0].remote_address)
 
 
-def get_memo_for_user_id(user_id, task_id):
-    """"return the memo of the transactions or None"""
-    prep_stat = "select tx_info->>'memo' from public.transaction where tx_info->>'task_id' LIKE '%s' and user_id='%s'" % (task_id, user_id)
-    results = db.engine.execute(prep_stat)
-    return results.fetchone()[0]
+#def get_memo_for_user_id(user_id, task_id):
+#    """"return the memo of the transactions or None"""
+#    prep_stat = "select tx_info->>'memo' from public.transaction where tx_info->>'task_id' LIKE '%s' and user_id='%s'" % (task_id, user_id)
+#    results = db.engine.execute(prep_stat)
+#    return results.fetchone()[0]

@@ -389,12 +389,6 @@ def get_address_by_phone(phone_number):
         raise
 
 
-#def deactivate_by_phone_number(phone_number, user_id):
-#    """deactivate any user except user_id with this phone_number"""
-#    results = db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id!='%s'" % (phone_number, UUID(user_id)))
-#    print('deactivated previous users with phone_number:%s' % phone_number)
-
-
 def deactivate_by_phone_number(phone_number, user_id):
     """deactivate any active user with the given phone number except the one with user_id
 
