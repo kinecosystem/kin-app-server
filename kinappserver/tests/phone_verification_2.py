@@ -220,10 +220,36 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['tasks'][0]['id'], '2')
 
-        # send task results - should succeed
+        # send task results - should fail for task id 0
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '0',
+                            'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'results': {'2234': 'werw', '5345': '345345'},
+                            'send_push': False
+                            }),
+                            headers={USER_ID_HEADER: str(userid2)},
+                            content_type='application/json')
+        print('post task results response: %s' % json.loads(resp.data))
+        self.assertEqual(resp.status_code, 400)
+
+        # should fail for task id 1
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id': '1',
+                            'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'results': {'2234': 'werw', '5345': '345345'},
+                            'send_push': False
+                            }),
+                            headers={USER_ID_HEADER: str(userid2)},
+                            content_type='application/json')
+        print('post task results response: %s' % json.loads(resp.data))
+        self.assertEqual(resp.status_code, 400)
+
+        # should succeed for task id 2
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id': '2',
                             'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
                             'results': {'2234': 'werw', '5345': '345345'},
                             'send_push': False
