@@ -250,6 +250,7 @@ def quest_answers():
 
     #memo = handle_task_results_resubmission(user_id, task_id)
     #if memo:
+    #    # this task was already submitted - and compensated, so just re-return the memo to the user.
     #    return jsonify(status='ok', memo=str(memo))
 
     if not store_task_results(user_id, task_id, results):

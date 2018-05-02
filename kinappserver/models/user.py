@@ -399,7 +399,7 @@ def deactivate_by_phone_number(phone_number, user_id):
     """deactivate any user except user_id with this phone_number"""
     try:
         # find candidates to de-activate (except user_id)
-        users = User.query.filter(User.phone_number == phone_number).filter(User.user_id != user_id).all()
+        users = User.query.filter(User.phone_number == phone_number).filter(User.user_id != user_id).filter(User.deactivated == False).all()
         if users is []:
             return None  # nothing to do
         else:

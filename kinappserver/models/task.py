@@ -295,3 +295,23 @@ def get_task_details(task_id):
     if not task:
         raise InvalidUsage('no task with id %s exists' % task_id)
     return {'title': task.title, 'desc': task.desc, 'provider': task.provider_data}
+
+
+def handle_task_results_resubmission(user_id, task_id):
+    """
+    This function handles cases where users attempt to re-submit previously submitted results
+
+    there are 2 main cases:
+        - the user is re-submitting results of a task for which she was already compensated
+        - the user is re-submitting results of a task for which she was NOT already compensated.
+
+        the first case is easy: just retrieve the transaction and send the memo back to the user.
+
+        the second case is more complicated: ideally we want to erase the previous results and just
+        continue as usual (meaning, save the results and compensate the user. however, we must also ensure
+        that the user isn't already in the process of being compensated to prevent double-payments
+    """
+    from kinappserver.models import get_memo_for_user_id
+    # first case: detect a previously payed-for task:
+    memo = get_memo_for_user_id(user_id, task_id)
+    return memo
