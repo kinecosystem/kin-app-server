@@ -25,7 +25,9 @@ def get_stellar_credentials():
 def write_service_account():
     """"creates a service-account file if one does not exist already"""
     import os
-    if not os.path.exists(config.FIREBASE_SERVICE_ACCOUNT_FILE):
+    if os.path.exists(config.FIREBASE_SERVICE_ACCOUNT_FILE):
+        return config.FIREBASE_SERVICE_ACCOUNT_FILE
+    else:
         env = os.environ.get('ENV', 'test')
         service_account_json = get_ssm_parameter('/config/' + env + '/firebase/service-account', config.KMS_KEY_AWS_REGION)
 
