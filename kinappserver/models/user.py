@@ -396,7 +396,11 @@ def get_address_by_phone(phone_number):
 
 
 def deactivate_by_phone_number(phone_number, user_id):
-    """deactivate any user except user_id with this phone_number"""
+    """deactivate any active user with the given phone number except the one with user_id
+
+    this function deactivates the previous active user with the given phone number AND
+    also duplicates his history into the new user.
+    """
     try:
         # find candidates to de-activate (except user_id)
         users = User.query.filter(User.phone_number == phone_number).filter(User.user_id != user_id).filter(User.deactivated == False).all()
@@ -413,6 +417,11 @@ def deactivate_by_phone_number(phone_number, user_id):
                 # deactivate and copy task_history
                 db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id='%s'" % (phone_number, user_id_to_deactivate))
                 db.engine.execute("update public.user_app_data set completed_tasks=(select completed_tasks from public.user_app_data where user_id='%s' ) where user_id='%s'" % (user_id_to_deactivate, UUID(user_id)))
+
+                # also delete the new user's history and plant the old user's history instead
+                db.engine.execute("delete from public.user_task_results where user_id='%s'" % UUID(user_id))
+                db.engine.execute("update public.user_task_results set user_id='%s' where user_id='%s'" % (UUID(user_id), user_id_to_deactivate))
+
     except Exception as e:
         print('cant deactivate_by_phone_number. Exception: %s' % e)
         raise
