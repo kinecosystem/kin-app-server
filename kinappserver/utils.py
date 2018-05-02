@@ -21,8 +21,8 @@ MAX_TXS_PER_USER = 50
 
 def generate_memo():
     # generate a unique-ish id for txs, this goes into the memo field of txs
-    env = config.DEPLOYMENT_ENV[0:1] # either 's(tage)', 't(est)' or 'p(rod)'
-    return KINIT_MEMO_PREFIX + env + str(uuid4().hex[:ORDER_ID_LENGTH]) # generate a memo string and send it to the client
+    env = config.DEPLOYMENT_ENV[0:1]  # either 's(tage)', 't(est)' or 'p(rod)'
+    return KINIT_MEMO_PREFIX + env + str(uuid4().hex[:ORDER_ID_LENGTH])  # generate a memo string and send it to the client
 
 
 def increment_metric(metric_name, count=1):
@@ -111,5 +111,3 @@ class InternalError(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
-
-

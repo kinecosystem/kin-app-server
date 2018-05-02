@@ -41,7 +41,7 @@ def convert_byte_to_string_array(input_byte):
     """converts the input (a bytestring to a string array without using eval"""
     # this is used to convert the decrypted seed channels bytestring to an array
     # return json.loads('['+input_byte.decode("utf-8") +']')
-    return json.loads('['+ input_byte +']')
+    return json.loads('[' + input_byte + ']')
 
 
 def get_ssm_parameter(param_name, kms_key_region):
