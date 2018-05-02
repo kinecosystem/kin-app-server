@@ -73,7 +73,8 @@ def extract_phone_number_from_firebase_id_token(id_token):
     """get the phone number from a firebase id-token"""
     phone_number = None
     try:
-        decoded_token = app.firebase_admin.auth.verify_id_token(id_token)
+        from firebase_admin import auth
+        decoded_token = auth.verify_id_token(id_token)
         phone_number = decoded_token['phone_number']
     except Exception as e:
         print('failed to decode the firebase token: %s' % e)

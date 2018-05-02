@@ -174,13 +174,13 @@ def set_user_phone_number_api():
         print(e)
         raise InvalidUsage('bad-request')
     if not config.DEBUG:
-        #print('extracting verified phone number fom firebase id token...')
-        #verified_number = extract_phone_number_from_firebase_id_token(token)
-        #if verified_number is None:
-        #    print('bad id-token: %s', token)
-        #    return jsonify(status='error', reason='bad_token')
-        #phone = verified_number
-        phone = unverified_phone_number
+
+        print('extracting verified phone number fom firebase id token...')
+        verified_number = extract_phone_number_from_firebase_id_token(token)
+        if verified_number is None:
+            print('bad id-token: %s' % token)
+            return jsonify(status='error', reason='bad_token')
+        phone = verified_number
     else:
         # for tests, you can use the unverified number
         print('using un-verified phone number')
@@ -247,6 +247,10 @@ def quest_answers():
 
     if user_deactivated(user_id):
         return jsonify(status='error', reason='user_deactivated'), status.HTTP_400_BAD_REQUEST
+
+    #memo = handle_task_results_resubmission(user_id, task_id)
+    #if memo:
+    #    return jsonify(status='ok', memo=str(memo))
 
     if not store_task_results(user_id, task_id, results):
         # should never happen: the client sent the results too soon

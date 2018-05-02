@@ -70,11 +70,12 @@ print('authentication token: %s' % state)
 state = 'enabled' if config.P2P_TRANSFERS_ENABLED else 'disabled'
 print('p2p transfers: %s' % state)
 
+# get the firebase service-account from ssm
+service_account_file_path = ssm.write_service_account()
 
 # init the firebase admin stuff
 import firebase_admin
 from firebase_admin import credentials
-
-cred = credentials.Certificate(config.FIREBASE_SERVICE_ACCOUNT_FILE)
+cred = credentials.Certificate(service_account_file_path)
 firebase_admin.initialize_app(cred)
 app.firebase_admin = firebase_admin

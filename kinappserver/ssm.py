@@ -21,6 +21,22 @@ def get_stellar_credentials():
 
     return base_seed, channel_seed  # convert_byte_to_string_array(channel_seeds)
 
+
+def write_service_account():
+    """"creates a service-account file if one does not exist already"""
+    import os
+    if not os.path.exists(config.FIREBASE_SERVICE_ACCOUNT_FILE):
+        env = os.environ.get('ENV', 'test')
+        service_account_json = get_ssm_parameter('/config/' + env + '/firebase/service-account', config.KMS_KEY_AWS_REGION)
+
+        # travis is a special case - has a unique path:
+        is_travis = os.environ.get('TRAVIS', 0)
+        path = config.FIREBASE_SERVICE_ACCOUNT_FILE if not is_travis else '/home/travis/build/kinecosystem/kin-app-server/kinappserver/service-account.json'
+        with open(path, 'w+') as the_file:
+            the_file.write(service_account_json)
+        return path
+
+
 def convert_byte_to_string_array(input_byte):
     """converts the input (a bytestring to a string array without using eval"""
     # this is used to convert the decrypted seed channels bytestring to an array
