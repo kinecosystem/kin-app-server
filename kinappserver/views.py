@@ -18,7 +18,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     create_tx, update_task_time, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
-    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days, add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated
+    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
+    add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated, get_pa_for_users
 from kinappserver.push import send_please_upgrade_push
 
 
@@ -228,6 +229,17 @@ def add_task_api():
         return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add task')
+
+@app.route('/pa/populate', methods=['POST'])
+def get_pa_api():
+    """used to add tasks to the db"""
+    # TODO REMOVE ME
+    if not config.DEBUG:
+        limit_to_local_host()
+
+    get_pa_for_users()
+
+    return jsonify(status='ok')
 
 
 @app.route('/task/delay_days', methods=['POST'])

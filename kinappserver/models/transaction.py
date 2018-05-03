@@ -75,6 +75,14 @@ def get_current_user_kin_balance(user_id):
         return stellar.get_kin_balance(user_outgoing_txs[0].remote_address)
 
 
+def get_pa_from_transactions(user_id):
+    """Get a user's pa from her transactions"""
+    #TODO DELETE ME
+    user_outgoing_txs = Transaction.query.filter(Transaction.user_id == user_id).filter(Transaction.incoming_tx == False).all()
+    for tx in user_outgoing_txs:
+        return tx.remote_address
+    return None
+
 #def get_memo_for_user_id(user_id, task_id):
 #    """"return the memo of the transactions or None"""
 #    prep_stat = "select tx_info->>'memo' from public.transaction where tx_info->>'task_id' LIKE '%s' and user_id='%s'" % (task_id, user_id)
