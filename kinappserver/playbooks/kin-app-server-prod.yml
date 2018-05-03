@@ -1,7 +1,6 @@
 - hosts: all
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
-  serial: "50%"
   roles:
     - franklinkim.environment
     - Datadog.datadog

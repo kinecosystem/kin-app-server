@@ -61,62 +61,6 @@ def get_health():
     return jsonify(status='ok')
 
 
-@app.route('/update-task-time', methods=['POST'])
-def update_task_time_endpoint():
-    """temp endpoint for setting a task time TODO DELETE ME"""
-    payload = request.get_json(silent=True)
-    try:
-        task_id = str(payload.get('task_id', None))
-        time_string = str(payload.get('time_string', None))
-        if None in (task_id, time_string):
-            raise InvalidUsage('bad-request')
-    except Exception as e:
-        print('exception: %s' % e)
-        raise InvalidUsage('bad-request')
-
-    update_task_time(task_id, time_string)
-    return jsonify(status='ok')
-
-
-@app.route('/send-tx-completed', methods=['POST'])
-def send_gcm_push_tx_completed():
-    # TODO DELETE ME
-    """temp endpoint for testing the tx-completed push"""
-    try:
-        user_id = extract_header(request)
-    except Exception as e:
-        print('exception in send_gcm_push_tx_completed: %s' % e)
-        raise InvalidUsage('bad-request')
-    send_push_tx_completed(user_id, 'tx_hash', 2, 'task_id')
-    return jsonify(status='ok')
-
-
-@app.route('/send-please-upgrade', methods=['POST'])
-def send_please_upgrade_api():
-    # TODO DELETE ME
-    """temp endpoint for testing the please upgrade push"""
-    try:
-        user_id = extract_header(request)
-    except Exception as e:
-        print('exception in send_please_upgrade_api: %s' % e)
-        raise InvalidUsage('bad-request')
-    send_please_upgrade_push(user_id)
-    return jsonify(status='ok')
-
-
-@app.route('/send_engagement_push', methods=['POST'])
-def send_engagement_push_api():
-    # TODO DELETE ME
-    """temp endpoint for testing the engagement push"""
-    try:
-        user_id = extract_header(request)
-    except Exception as e:
-        print('exception in send_engagement_push: %s' % e)
-        raise InvalidUsage('bad-request')
-    send_engagement_push(user_id, 'engage-recent')
-    return jsonify(status='ok')
-
-
 @app.route('/user/app-launch', methods=['POST'])
 def app_launch():
     """called whenever the app is launched
