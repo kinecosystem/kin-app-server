@@ -71,7 +71,6 @@ def app_launch():
     payload = request.get_json(silent=True)
     app_ver, user_id = None, None
     try:
-        print('payload in app-launch: %s' % payload)
         user_id = extract_header(request)
         app_ver = payload.get('app_ver', None)
     except Exception as e:
