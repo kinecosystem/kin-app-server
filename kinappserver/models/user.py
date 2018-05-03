@@ -410,7 +410,9 @@ def deactivate_by_phone_number(phone_number, user_id):
             for user_id_to_deactivate in user_ids_to_deactivate:
                 # deactivate and copy task_history
                 db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id='%s'" % (phone_number, user_id_to_deactivate))
-                db.engine.execute("update public.user_app_data set completed_tasks=(select completed_tasks from public.user_app_data where user_id='%s' ) where user_id='%s'" % (user_id_to_deactivate, UUID(user_id)))
+                #db.engine.execute("update public.user_app_data set completed_tasks=(select completed_tasks from public.user_app_data where user_id='%s' ) where user_id='%s'" % (user_id_to_deactivate, UUID(user_id)))
+                db.engine.execute("update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(user_id)))
+
 
                 # also delete the new user's history and plant the old user's history instead
                 db.engine.execute("delete from public.user_task_results where user_id='%s'" % UUID(user_id))

@@ -173,6 +173,15 @@ class Tester(unittest.TestCase):
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
+        # get user 1s current tasks - expecting task_id 2.
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        print('data: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['tasks'][0]['id'], '2')
+        next_submission_time = data['tasks'][0]['start_date']
+
         # different user updates his number to the same number, should work - and deactivate the previous user
         print('user 2 updates to the same number as user 1...')
         phone_num = '+9720528802120'
@@ -213,12 +222,14 @@ class Tester(unittest.TestCase):
         self.assertEqual(data['reason'], 'user_deactivated')
 
         # get user 2s current tasks - it should be '2', because the task history was migrated when the user was deactivated
+        # and the start time should be the same as was for user 1 pre-migration
         headers = {USER_ID_HEADER: userid2}
         resp = self.app.get('/user/tasks', headers=headers)
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['tasks'][0]['id'], '2')
+        self.assertEqual(data['tasks'][0]['start_date'], next_submission_time)
 
         # send task results - should fail for task id 0
         resp = self.app.post('/user/task/results',
