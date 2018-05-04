@@ -610,11 +610,12 @@ def send_engagemnt_api():
     if not config.DEBUG:
         limit_to_local_host()
 
-    scheme = request.args.get('scheme')
+    args = request.args
+    scheme = args.get('scheme')
     if scheme is None:
         raise InvalidUsage('invalid param')
 
-    dry_run = request.args.get('dryrun', True) == 'True'
+    dry_run = args.get('dryrun', 'True') == 'True'
 
     tokens = get_tokens_for_push(scheme)
     if tokens is None:

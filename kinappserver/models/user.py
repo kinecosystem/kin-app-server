@@ -245,7 +245,9 @@ def get_next_task_results_ts(user_id):
 def get_tokens_for_push(scheme):
     """get push tokens for a scheme"""
     from datetime import datetime, timedelta
+    import arrow
     from kinappserver.models import get_tasks_for_user
+    now = arrow.utcnow().shift(seconds=60).timestamp  # add a small timeshift to account for calculation time
     tokens = {OS_IOS: [], OS_ANDROID: []}
 
     if scheme == 'engage-recent':
@@ -256,12 +258,19 @@ def get_tokens_for_push(scheme):
         today = datetime.date(datetime.today())
         four_days_ago = datetime.date(datetime.today() + timedelta(days=-4))
 
-        all_pushable_users = User.query.filter(User.push_token != None).all()
+        all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
         for user in all_pushable_users:
             try:
 
-                if get_tasks_for_user(user.user_id) == []:
+                #filter out users with no tasks AND ALSO users with future tasks:
+                tasks = get_tasks_for_user(user.user_id)
+                if tasks == []:
                     print('skipping user %s - no active task' % user.user_id)
+                    continue
+
+                next_task_ts = tasks[0]['start_date']
+                if tasks[0]['start_date'] > now:
+                    print('skipping user %s - next task is due at %s, now: %s' % (user.user_id, next_task_ts, now))
                     continue
 
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
@@ -293,12 +302,18 @@ def get_tokens_for_push(scheme):
         # (3) last login was sometimes in the last 4 days
         seven_days_ago = datetime.date(datetime.today() + timedelta(days=-7))
 
-        all_pushable_users = User.query.filter(User.push_token != None).all()
+        all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
         for user in all_pushable_users:
             try:
 
-                if get_tasks_for_user(user.user_id) == []:
+                tasks = get_tasks_for_user(user.user_id)
+                if tasks == []:
                     print('skipping user %s - no active task' % user.user_id)
+                    continue
+
+                next_task_ts = tasks[0]['start_date']
+                if tasks[0]['start_date'] > now:
+                    print('skipping user %s - next task is due at %s, now: %s' % (user.user_id, next_task_ts, now))
                     continue
 
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
