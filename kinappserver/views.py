@@ -15,12 +15,11 @@ from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, in
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     store_task_results, add_task, get_tasks_for_user, is_onboarded, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
-    create_tx, update_task_time, get_reward_for_task, add_offer, \
+    create_tx, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
-    add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated, get_pa_for_users
-from kinappserver.push import send_please_upgrade_push
+    add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated, get_pa_for_users, handle_task_results_resubmission, reject_premature_results
 
 
 def limit_to_local_host():
@@ -192,19 +191,36 @@ def quest_answers():
     if user_deactivated(user_id):
         return jsonify(status='error', reason='user_deactivated'), status.HTTP_400_BAD_REQUEST
 
-    #memo = handle_task_results_resubmission(user_id, task_id)
-    #if memo:
-    #    # this task was already submitted - and compensated, so just re-return the memo to the user.
-    #    return jsonify(status='ok', memo=str(memo))
-
-    if not store_task_results(user_id, task_id, results):
+    if reject_premature_results(user_id):
         # should never happen: the client sent the results too soon
         print('rejecting user %s task %s results' % (user_id, task_id))
         increment_metric('premature_task_results')
         return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_400_BAD_REQUEST
+
+    memo, compensated_user_id = handle_task_results_resubmission(user_id, task_id)
+    if memo:
+        print('detected resubmission of previously payed-for task by user_id: %s. memo:%s' % (compensated_user_id, memo))
+        # this task was already submitted - and compensated, so just re-return the memo to the user.
+        return jsonify(status='ok', memo=str(memo))
+
+    # the following function handles task-results resubmission:
+
+    # there are a few possible scenarios here:
+    # the user already submitted these results and did get kins for them.
+    # the user already submitted these results *as a different user* and get kins for them:
+    # - in both these cases, simply find the memo, and return it to the user.
+
+    # this case isn't handled (yet):
+    # another set of cases is where the user DID NOT get compensated for the results.
+    # in this case, we want to pay the user, but first to ensure she isn't already in the
+    # process of being compensated (perhaps by another server).
+
+    # this should never fail for application-level reasons:
+    if not store_task_results(user_id, task_id, results):
+            raise InternalError('cant save results for userid %s' % user_id)
     try:
         memo = utils.generate_memo()
-        reward_store_and_push(address, task_id, send_push, user_id, memo)
+        reward_and_push(address, task_id, send_push, user_id, memo)
     except Exception as e:
         print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
@@ -413,7 +429,7 @@ def register_api():
             return jsonify(status='ok', config=get_global_config())
 
 
-def reward_store_and_push(public_address, task_id, send_push, user_id, memo):
+def reward_and_push(public_address, task_id, send_push, user_id, memo):
     """create a thread to perform this function in the background"""
     Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo)).start()
 

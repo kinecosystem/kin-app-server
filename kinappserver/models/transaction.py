@@ -45,6 +45,8 @@ def create_tx(tx_hash, user_id, remote_address, incoming_tx, amount, tx_info):
         db.session.commit()
     except Exception as e:
         print('cant add tx to db with id %s' % tx_hash)
+    else:
+        print('created tx with txinfo: %s' % tx.tx_info)
 
 
 def count_transactions_by_minutes_ago(minutes_ago=1):
@@ -83,8 +85,20 @@ def get_pa_from_transactions(user_id):
         return tx.remote_address
     return None
 
-#def get_memo_for_user_id(user_id, task_id):
-#    """"return the memo of the transactions or None"""
-#    prep_stat = "select tx_info->>'memo' from public.transaction where tx_info->>'task_id' LIKE '%s' and user_id='%s'" % (task_id, user_id)
-#    results = db.engine.execute(prep_stat)
-#    return results.fetchone()[0]
+
+def get_memo_for_user_ids(user_ids, task_id):
+    """"return the memo of the transaction or None for the given list of user_ids and task_id
+
+    this function tries to find the memo of for the tx that relates to the given task_id and
+    given user_ids. only one memo is returned along with its associated user_id. or (None, None).
+    """
+    user_ids = "\',\'".join(user_ids)
+    prep_stat = "select (user_id, tx_info->>'memo') from public.transaction where user_id in ('%s') and tx_info->>'task_id' LIKE '%s' fetch first 1 rows only" % (user_ids, task_id)
+    print('getting memo statement: %s' % prep_stat)
+    results = db.engine.execute(prep_stat)
+    row = results.fetchone()
+    if row is None:
+        return None, None
+    else:
+        comma_index = row[0].find(',') # ugh. its actually a concatenated string
+        return row[0][comma_index+1:], row[0][:comma_index-1]  # (memo, user_id)

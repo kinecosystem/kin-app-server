@@ -47,9 +47,7 @@ def calculate_timeshift(user_id, delay_days=1):
 def store_task_results(user_id, task_id, results):
     """store the results provided by the user"""
     # reject hackers trying to send task results too soon
-    if reject_premature_results(user_id):
-        print('rejecting premature results for user %s' % user_id)
-        return False
+
 
     try:
         # store the results
@@ -263,16 +261,6 @@ def set_delay_days(delay_days, task_id=None):
     return True
 
 
-def update_task_time(task_id, time_string):
-    """debug function used to update existing tasks's time in the db"""
-    task = Task.query.filter_by(task_id=task_id).first()
-    if not task:
-        raise InternalError('no such task_id')
-    task.start_date = time_string
-    db.session.add(task)
-    db.session.commit()
-
-
 def get_reward_for_task(task_id):
     """return the amount of kin reward associated with this task"""
     task = Task.query.filter_by(task_id=task_id).first()
@@ -311,9 +299,10 @@ def handle_task_results_resubmission(user_id, task_id):
         continue as usual (meaning, save the results and compensate the user. however, we must also ensure
         that the user isn't already in the process of being compensated to prevent double-payments
     """
-    #from kinappserver.models import get_memo_for_user_id
-    # first case: detect a previously payed-for task:
-    # TODO get memeo for all the users with the same phone number and not just by user_id
-    #memo, user_id = get_memo_for_user_id(user_id, task_id)
-    #return memo
-    pass
+    from kinappserver.models import get_memo_for_user_ids
+
+    from .user import get_associated_user_ids
+    associated_user_ids = get_associated_user_ids(user_id)
+
+    memo, user_id = get_memo_for_user_ids(associated_user_ids, task_id)
+    return memo, user_id

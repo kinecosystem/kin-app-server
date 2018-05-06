@@ -425,7 +425,6 @@ def deactivate_by_phone_number(phone_number, user_id):
             for user_id_to_deactivate in user_ids_to_deactivate:
                 # deactivate and copy task_history
                 db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id='%s'" % (phone_number, user_id_to_deactivate))
-                #db.engine.execute("update public.user_app_data set completed_tasks=(select completed_tasks from public.user_app_data where user_id='%s' ) where user_id='%s'" % (user_id_to_deactivate, UUID(user_id)))
                 db.engine.execute("update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(user_id)))
 
 
@@ -447,3 +446,15 @@ def get_pa_for_users():
         if pa:
             print('about to set address %s to userid: %s' % (pa, user.user_id))
             db.engine.execute("update public.user set public_address='%s' where user_id='%s'" % (pa, user.user_id))
+
+
+def get_associated_user_ids(user_id):
+    """get a list of all the user_ids associated with the given user_id through phone-identification.
+    the list also includes the original user_id.
+    """
+    user = get_user(user_id)
+    if user.phone_number is None:
+        return [user_id]
+    else:
+        users = User.query.filter(User.phone_number == user.phone_number).all()
+        return [str(user.user_id) for user in users]
