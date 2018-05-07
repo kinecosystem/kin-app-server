@@ -100,5 +100,5 @@ def get_memo_for_user_ids(user_ids, task_id):
     if row is None:
         return None, None
     else:
-        comma_index = row[0].find(',') # ugh. its actually a concatenated string
+        comma_index = row[0].find(',')  # ugh. its actually a concatenated string
         return row[0][comma_index+1:], row[0][:comma_index-1]  # (memo, user_id)

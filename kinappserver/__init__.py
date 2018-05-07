@@ -46,6 +46,12 @@ if channel_seed:
 
 
 
+# SQLAlchemy timeouts
+app.config['SQLALCHEMY_POOL_SIZE'] = 100
+app.config['SQLALCHEMY_POOL_TIMEOUT'] = 5
+app.config['SQLALCHEMY_MAX_OVERFLOW'] = 100
+app.config['SQLALCHEMY_POOL_RECYCLE'] = 60*5
+
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
