@@ -1,0 +1,5 @@
+- hosts: all
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: true
+  roles:
+    - kin-app-server-restart-only

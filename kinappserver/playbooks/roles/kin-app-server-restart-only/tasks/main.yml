@@ -1,0 +1,4 @@
+- name: restart supervisor
+  supervisorctl:
+    name: kinappserver
+    state: restarted  
