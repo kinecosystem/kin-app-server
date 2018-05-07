@@ -57,6 +57,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 db = SQLAlchemy(app)
 
+import logging
+
+logging.basicConfig()
+logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
+logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+logging.getLogger('sqlalchemy.pool').setLevel(logging.DEBUG)
+
 import kinappserver.views
 import redis
 
