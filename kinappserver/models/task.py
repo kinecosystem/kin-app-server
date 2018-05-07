@@ -5,7 +5,7 @@ import json
 
 from kinappserver import db, config
 from kinappserver.push import send_please_upgrade_push
-from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, DEFAULT_MIN_CLIENT_VERSION
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, DEFAULT_MIN_CLIENT_VERSION, test_image
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
 
 
@@ -227,6 +227,24 @@ def add_task(task_json):
         for item in task_json['items']:
             if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating']:
                 raise InvalidUsage('cant add task with invalid item-type')
+
+        skip_image_test = task_json.get('skip_image_test', False)
+        if not skip_image_test:
+            print('testing accessibility of task urls (this can take a few seconds...)')
+        # ensure all urls are accessible:
+        image_url = task_json['provider'].get('image_url')
+        if image_url:
+            if not test_image(image_url):
+                print('image url - %s - could not be verified' % image_url)
+
+        # test image_url within item results
+        items = task_json['items']
+        for item in items:
+            for res in item['results']:
+                image_url = res.get('image_url')
+                if image_url is not None and not test_image(image_url):
+                    print('failed to verify image_url: %s' % image_url)
+        print('done testing accessibility of task urls')
 
         task = Task()
         task.delay_days = task_json.get('delay_days', 1)  # default is 1

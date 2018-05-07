@@ -42,6 +42,7 @@ class Tester(unittest.TestCase):
                  'title': 'offer_title',
                  'desc': 'offer_desc',
                  'image_url': 'image_url',
+                 'skip_image_test': True,
                  'price': 2,
                  'address': 'GCORIYYEQP3ANHFT6XHMBY7VB3RH53WB5KZZHGCEXYRWCEJQZUXPGWQM',
                  'provider': 

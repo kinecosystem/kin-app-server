@@ -2,6 +2,9 @@ from uuid import uuid4
 
 from datadog import statsd
 from flask import config
+import os
+import requests
+
 
 from kinappserver import config, app
 
@@ -111,3 +114,43 @@ class InternalError(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
+
+
+def test_url(url):
+    """returns true iff the given url is accessible"""
+    try:
+        requests.get(url).raise_for_status()
+    except Exception as e:
+        print(e)
+        print('could not get url: %s' % url)
+        return False
+    else:
+        return True
+
+
+def test_image(url):
+    """ensures that the given url is accessible for both android and ios
+
+    returns True if all's well, False otherwise
+    """
+    fail_flag = False
+    split_path = os.path.split(url)
+    # android:
+    for resolution in ('hdpi', 'mdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi'):
+        processed_url = split_path[0] + '/android/' + resolution + '/' + split_path[1]
+        if not test_url(processed_url):
+            print('could not verify file at %s' % processed_url)
+            fail_flag = True
+
+    # ios
+    dot_index = split_path[1].find('.')
+    for resolution in ('', '@2x', '@3x'):
+        processed_url = split_path[0] + '/ios/' + split_path[1][:dot_index] + resolution + split_path[1][dot_index:]
+        if not test_url(processed_url):
+            print('could not verify file at %s' % processed_url)
+            fail_flag = True
+
+    if fail_flag:
+        print('could not fully verify image %s' % url)
+        return False
+    return True

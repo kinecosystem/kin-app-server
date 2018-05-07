@@ -43,6 +43,7 @@ class Tester(unittest.TestCase):
                   'image_url': 'image_url',
                   'price': 800,
                   'address': 'the address',
+                  'skip_image_test': True,
                   'provider': 
                     {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
                 }

@@ -44,7 +44,8 @@ class Tester(unittest.TestCase):
                  'image_url': 'image_url',
                  'price': 2,
                  'address': 'GCORIYYEQP3ANHFT6XHMBY7VB3RH53WB5KZZHGCEXYRWCEJQZUXPGWQM',
-                 'provider': 
+                 'skip_image_test': True,
+                 'provider':
                     {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
                 }
 

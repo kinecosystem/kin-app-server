@@ -41,7 +41,7 @@ class Tester(unittest.TestCase):
                   'start_date': '2013-05-11T21:23:58.970460+00:00',
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider': 
-                    {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
+                    {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
                   'items': [
                     {
                      'id': '435', 
@@ -50,10 +50,10 @@ class Tester(unittest.TestCase):
                          'results': [
                                 {'id': '235',
                                  'text': 'a horse!', 
-                                 'image_url': 'cdn.helllo.com/horse.jpg'},
+                                 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
                                     {'id': '2465436',
                                  'text': 'a cat!', 
-                                 'image_url': 'cdn.helllo.com/kitty.jpg'},
+                                 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
                                  ],
                     }]
             }

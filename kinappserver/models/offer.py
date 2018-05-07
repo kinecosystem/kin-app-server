@@ -1,5 +1,5 @@
 from kinappserver import db
-from kinappserver.utils import InvalidUsage
+from kinappserver.utils import InvalidUsage, test_image
 
 
 class Offer(db.Model):
@@ -64,6 +64,35 @@ def set_offer_active(offer_id, is_active):
 
 def add_offer(offer_json, set_active=False):
     """adds an offer to the db"""
+
+    skip_image_test = offer_json.get('skip_image_test', False)
+    if not skip_image_test:
+        print('testing accessibility of offer urls (this can take a few seconds...)')
+        # ensure all urls are accessible:
+        fail_flag = False
+        image_url = offer_json['type_image_url']
+        if image_url:
+            if not test_image(image_url):
+                print('offer type_image_url - %s - could not be verified' % image_url)
+                fail_flag = True
+
+        image_url = offer_json['image_url']
+        if image_url:
+            if not test_image(image_url):
+                print('offer image_url - %s - could not be verified' % image_url)
+                fail_flag = True
+
+        image_url = offer_json['provider']['image_url']
+        if image_url:
+            if not test_image(image_url):
+                print('offer provider image_url - %s - could not be verified' % image_url)
+                fail_flag = True
+
+        if fail_flag:
+            print('could not ensure accessibility of all urls. refusing to add offer')
+            return False
+        print('done testing accessibility of offer urls')
+
     try:
         offer = Offer()
         offer.offer_id = str(offer_json['id'])

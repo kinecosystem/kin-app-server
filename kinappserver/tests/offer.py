@@ -36,11 +36,11 @@ class Tester(unittest.TestCase):
                   'domain': 'music',
                   'title': 'offer_title',
                   'desc': 'offer_desc',
-                  'image_url': 'image_url',
+                  'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
                   'price': 800,
                   'address': 'the address',
                   'provider': 
-                    {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
+                    {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
                 }
 
 
@@ -50,6 +50,9 @@ class Tester(unittest.TestCase):
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        # no need to test images on this test.
+        offer['skip_image_test'] = True
 
         # re-try to add the same offer - should fail
         resp = self.app.post('/offer/add',
