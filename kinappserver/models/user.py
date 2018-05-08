@@ -381,6 +381,7 @@ def set_user_phone_number(user_id, number):
             db.session.commit()
 
         # does this number belong to another user? if so, de-activate the old user.
+
         deactivate_by_phone_number(number, user_id)
 
     except Exception as e:
@@ -424,8 +425,20 @@ def deactivate_by_phone_number(phone_number, user_id):
 
             for user_id_to_deactivate in user_ids_to_deactivate:
                 # deactivate and copy task_history
+
+                #connection = db.session.connection()
+                #try:
+                #    rescount = connection.execute("select resource_id,count(resource_id) as total FROM resourcestats")
+                #    # do something
+                #finally:
+                #    connection.close()
+
                 db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id='%s'" % (phone_number, user_id_to_deactivate))
                 db.engine.execute("update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(user_id)))
+
+
+                #db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id='%s'; update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (phone_number, user_id_to_deactivate, user_id_to_deactivate, UUID(user_id)))
+
 
 
                 # also delete the new user's history and plant the old user's history instead

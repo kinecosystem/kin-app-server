@@ -6,7 +6,8 @@ import os
 import requests
 
 
-from kinappserver import config, app
+from kinappserver import config
+
 
 ERROR_ORDERS_COOLDOWN = -1
 ERROR_NO_GOODS = -2
@@ -154,3 +155,18 @@ def test_image(url):
         print('could not fully verify image %s' % url)
         return False
     return True
+
+
+def sqlalchemy_pool_status():
+    """returns and prints a dict with various db stats"""
+    from kinappserver import db
+    from sqlalchemy.pool import QueuePool
+    pool_size = QueuePool.size(db.engine.pool)
+    checkedin = QueuePool.checkedin(db.engine.pool)
+    overflow = QueuePool.overflow(db.engine.pool)
+    checkedout = QueuePool.checkedout(db.engine.pool)
+
+    print("Pool size: %d  Connections in pool: %d " \
+           "Current Overflow: %d Current Checked out " \
+           "connections: %d" % (pool_size, checkedin, overflow, checkedout))
+    return {'pool_size': pool_size, 'checkedin': checkedin, 'overflow': overflow, 'checkedout': checkedout}

@@ -11,7 +11,7 @@ import arrow
 
 from kinappserver import app, config, stellar, utils, ssm
 from kinappserver.stellar import create_account, send_kin
-from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, get_global_config, extract_phone_number_from_firebase_id_token
+from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, get_global_config, extract_phone_number_from_firebase_id_token, sqlalchemy_pool_status
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     store_task_results, add_task, get_tasks_for_user, is_onboarded, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
@@ -197,7 +197,11 @@ def quest_answers():
         increment_metric('premature_task_results')
         return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_400_BAD_REQUEST
 
+    sqlalchemy_pool_status()
+    print('before handle_task_results_resubmission')
     memo, compensated_user_id = handle_task_results_resubmission(user_id, task_id)
+    print('after handle_task_results_resubmission')
+    sqlalchemy_pool_status()
     if memo:
         print('detected resubmission of previously payed-for task by user_id: %s. memo:%s' % (compensated_user_id, memo))
         # this task was already submitted - and compensated, so just re-return the memo to the user.
@@ -583,10 +587,18 @@ def add_good_api():
 
 @app.route('/good/inventory', methods=['GET'])
 def inventory_api():
-    """endpoint used to populate the server with goods"""
+    """endpoint used to list the inventory"""
     if not config.DEBUG:
         limit_to_local_host()
     return jsonify(status='ok', inventory=list_inventory())
+
+
+@app.route('/stats/db', methods=['GET'])
+def dbstats_api():
+    """endpoint used to list the status of the db"""
+    if not config.DEBUG:
+        limit_to_local_host()
+    return jsonify(status='ok', stats=sqlalchemy_pool_status())
 
 
 @app.route('/balance', methods=['GET'])

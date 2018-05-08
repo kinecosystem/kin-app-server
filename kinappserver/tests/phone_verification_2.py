@@ -6,6 +6,7 @@ import testing.postgresql
 
 import kinappserver
 from kinappserver import db, models
+from time import sleep
 
 
 USER_ID_HEADER = "X-USERID"
@@ -27,6 +28,13 @@ class Tester(unittest.TestCase):
 
     def test_moving_sim_from_once_device_to_another(self):
         """test registration scenarios"""
+
+        resp = self.app.get('/status/db')
+        data = json.loads(resp.data)
+        print('db_status: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+
+
         userid = str(uuid.uuid4())
         resp = self.app.post('/user/register',
             data=json.dumps({
@@ -268,6 +276,13 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid2)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
+        self.assertEqual(resp.status_code, 200)
+
+        sleep(5)
+
+        resp = self.app.get('/status/db')
+        data = json.loads(resp.data)
+        print('db_status: %s' % data)
         self.assertEqual(resp.status_code, 200)
 
 if __name__ == '__main__':

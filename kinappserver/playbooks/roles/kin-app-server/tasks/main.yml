@@ -92,6 +92,11 @@
   run_once: true # runs every minute, on one machine of the 2
 
 - cron:
+    name: "gather periodic db-stats"
+    job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/db_stats.py"
+    # needs to run on all machines
+
+- cron:
     name: "gather periodic metrics"
     job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/metrics.py"
   run_once: true # runs every minute, on one machine of the 2
