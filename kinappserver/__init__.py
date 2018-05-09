@@ -22,16 +22,11 @@ if channel_seed is None:
     print('could not get channels seeds - aborting')
     sys.exit(-1)
 
-# TODO REMOVE LATER
-# disable channel seed
-#app.kin_sdk = kin.SDK(secret_key=base_seed,
-#                              horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
-#                              network=config.STELLAR_NETWORK,
-#                              channel_secret_keys=channel_seeds)
-
 app.kin_sdk = kin.SDK(secret_key=base_seed,
-                              horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
-                              network=config.STELLAR_NETWORK)
+                      horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
+                      network=config.STELLAR_NETWORK,
+                      channel_secret_keys=[channel_seed])
+
 
 # get (and print) the current balance for the account:
 from stellar_base.keypair import Keypair
@@ -47,14 +42,14 @@ if channel_seed:
 
 
 # SQLAlchemy timeouts
-app.config['SQLALCHEMY_POOL_SIZE'] = 100
+app.config['SQLALCHEMY_POOL_SIZE'] = 1000
 app.config['SQLALCHEMY_POOL_TIMEOUT'] = 5
 app.config['SQLALCHEMY_MAX_OVERFLOW'] = 100
 app.config['SQLALCHEMY_POOL_RECYCLE'] = 60*5
 
 if config.DEBUG:
     # run a tight boat on stage to detect leaks
-    app.config['SQLALCHEMY_POOL_SIZE'] = 100
+    app.config['SQLALCHEMY_POOL_SIZE'] = 1000
     app.config['SQLALCHEMY_MAX_OVERFLOW'] = 100
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
