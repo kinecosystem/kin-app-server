@@ -196,16 +196,6 @@ def quest_answers():
         increment_metric('premature_task_results')
         return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_400_BAD_REQUEST
 
-    sqlalchemy_pool_status()
-    print('before handle_task_results_resubmission')
-    memo, compensated_user_id = handle_task_results_resubmission(user_id, task_id)
-    print('after handle_task_results_resubmission')
-    sqlalchemy_pool_status()
-    if memo:
-        print('detected resubmission of previously payed-for task by user_id: %s. memo:%s' % (compensated_user_id, memo))
-        # this task was already submitted - and compensated, so just re-return the memo to the user.
-        return jsonify(status='ok', memo=str(memo))
-
     # the following function handles task-results resubmission:
 
     # there are a few possible scenarios here:
@@ -217,6 +207,14 @@ def quest_answers():
     # another set of cases is where the user DID NOT get compensated for the results.
     # in this case, we want to pay the user, but first to ensure she isn't already in the
     # process of being compensated (perhaps by another server).
+
+    memo, compensated_user_id = handle_task_results_resubmission(user_id, task_id)
+    if memo:
+        print('detected resubmission of previously payed-for task by user_id: %s. memo:%s' % (compensated_user_id, memo))
+        # this task was already submitted - and compensated, so just re-return the memo to the user.
+        return jsonify(status='ok', memo=str(memo))
+
+
 
     # this should never fail for application-level reasons:
     if not store_task_results(user_id, task_id, results):
@@ -456,9 +454,9 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
         print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
     finally:  # TODO dont do this if we fail with the tx
+        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
         if send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
-        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
 
 
 @app.route('/offer/add', methods=['POST'])

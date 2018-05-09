@@ -202,7 +202,7 @@ class Tester(unittest.TestCase):
 
         userid2 = uuid.uuid4()
 
-        sleep(5)
+        sleep(10) # give it time to process
 
         # register an android with a token
         resp = self.app.post('/user/register',
@@ -239,7 +239,7 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid2)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200) # resubmission of results, should be detected and return okay.
 
 
 

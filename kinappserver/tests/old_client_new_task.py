@@ -101,7 +101,7 @@ class Tester(unittest.TestCase):
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
           'price': 1,
-            'skip_image_test': True,
+          'skip_image_test': True,
           'min_to_complete': 2,
           'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],

@@ -41,6 +41,7 @@ class Tester(unittest.TestCase):
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
           'price': 1,
+          'skip_image_test': True,
           'min_to_complete': 2,
           'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
@@ -69,6 +70,7 @@ class Tester(unittest.TestCase):
           'type': 'questionnaire',
           'price': 1,
           'min_to_complete': 2,
+          'skip_image_test': True,
           'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
           'provider': 
@@ -96,6 +98,7 @@ class Tester(unittest.TestCase):
           'type': 'questionnaire',
           'price': 1,
           'min_to_complete': 2,
+           'skip_image_test': True,
           'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
           'provider':
@@ -188,7 +191,7 @@ class Tester(unittest.TestCase):
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
-        sleep(5) # give the tx time to happen
+        sleep(10) # give the tx time to happen
 
         # send same results again
         resp = self.app.post('/user/task/results',
