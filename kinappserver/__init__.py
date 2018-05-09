@@ -54,8 +54,8 @@ app.config['SQLALCHEMY_POOL_RECYCLE'] = 60*5
 
 if config.DEBUG:
     # run a tight boat on stage to detect leaks
-    app.config['SQLALCHEMY_POOL_SIZE'] = 5
-    app.config['SQLALCHEMY_MAX_OVERFLOW'] = 0
+    app.config['SQLALCHEMY_POOL_SIZE'] = 100
+    app.config['SQLALCHEMY_MAX_OVERFLOW'] = 100
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
