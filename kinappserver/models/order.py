@@ -162,7 +162,7 @@ def process_order(user_id, tx_hash):
     if actual_balance is None:
         print('doomsday: cant get user balance, so skipping check')
         increment_metric('doomsday-skipped')
-    elif abs(expected_balance - actual_balance) > 100:
+    elif abs(expected_balance - actual_balance) > 10000:
         print('doomsday detected and rejected: userid: %s, expected %s, actual: %s' % (user_id, expected_balance, actual_balance))
         increment_metric('doomsday-rejected')
         return False, None
