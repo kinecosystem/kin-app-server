@@ -228,23 +228,30 @@ def add_task(task_json):
             if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating']:
                 raise InvalidUsage('cant add task with invalid item-type')
 
+        fail_flag = False
         skip_image_test = task_json.get('skip_image_test', False)
         if not skip_image_test:
             print('testing accessibility of task urls (this can take a few seconds...)')
-        # ensure all urls are accessible:
-        image_url = task_json['provider'].get('image_url')
-        if image_url:
-            if not test_image(image_url):
-                print('image url - %s - could not be verified' % image_url)
+            # ensure all urls are accessible:
+            image_url = task_json['provider'].get('image_url')
+            if image_url:
+                if not test_image(image_url):
+                    print('image url - %s - could not be verified' % image_url)
+                    fail_flag = True
 
-        # test image_url within item results
-        items = task_json['items']
-        for item in items:
-            for res in item['results']:
-                image_url = res.get('image_url')
-                if image_url is not None and not test_image(image_url):
-                    print('failed to verify image_url: %s' % image_url)
-        print('done testing accessibility of task urls')
+            # test image_url within item results
+            items = task_json['items']
+            for item in items:
+                for res in item['results']:
+                    image_url = res.get('image_url')
+                    if image_url is not None and not test_image(image_url):
+                        print('failed to verify image_url: %s' % image_url)
+                        fail_flag = True
+            print('done testing accessibility of task urls')
+
+        if fail_flag:
+            print('cant verify the images - aborting')
+            raise InvalidUsage('cant verify images')
 
         task = Task()
         task.delay_days = task_json.get('delay_days', 1)  # default is 1

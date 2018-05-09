@@ -29,7 +29,7 @@ class Tester(unittest.TestCase):
     def test_moving_sim_from_once_device_to_another(self):
         """test registration scenarios"""
 
-        resp = self.app.get('/status/db')
+        resp = self.app.get('/stats/db')
         data = json.loads(resp.data)
         print('db_status: %s' % data)
         self.assertEqual(resp.status_code, 200)
@@ -81,6 +81,7 @@ class Tester(unittest.TestCase):
             'type': 'questionnaire',
             'price': 1,
             'delay_days': 0,
+            'skip_image_test': True,
             'min_to_complete': 2,
             'start_date': '2013-05-11T21:23:58.970460+00:00',
             'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
@@ -280,7 +281,7 @@ class Tester(unittest.TestCase):
 
         sleep(5)
 
-        resp = self.app.get('/status/db')
+        resp = self.app.get('/stats/db')
         data = json.loads(resp.data)
         print('db_status: %s' % data)
         self.assertEqual(resp.status_code, 200)
