@@ -19,7 +19,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
-    add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated, get_pa_for_users, handle_task_results_resubmission, reject_premature_results
+    add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated, get_pa_for_users,\
+    handle_task_results_resubmission, reject_premature_results, fix_user_data
 
 
 def limit_to_local_host():
@@ -688,3 +689,16 @@ def report_p2p_tx_api():
         return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add p2ptx')
+
+
+@app.route('/users/fix', methods=['GET'])
+def fix_users_api():
+    """endpoint used to list problems with user data and fix it"""
+    if not config.DEBUG:
+        limit_to_local_host()
+    print('fixing user data...')
+    missing_txs = fix_user_data()
+    print('found %s items to fix' % len(missing_txs))
+    # sort results by date (4th item in each tuple)
+    missing_txs.sort(key=lambda tup: tup[3])
+    return jsonify(status='ok', missing_txs=missing_txs)
