@@ -216,7 +216,7 @@ def send_engagement_push(user_id, push_type, token=None, os_type=None):
     return True
 
 
-def send_compensated_push(user_id, amount):
+def send_compensated_push(user_id, amount, task_title):
 
     os_type, token = get_user_push_data(user_id)
 
@@ -225,9 +225,9 @@ def send_compensated_push(user_id, amount):
         return False
 
     if os_type == OS_IOS:
-        send_apns(token, compensated_payload_apns(amount))
+        send_apns(token, compensated_payload_apns(amount, task_title))
     else:
-        send_gcm(token, compensated_payload_gcm(amount))
+        send_gcm(token, compensated_payload_gcm(amount, task_title))
     return True
 
 

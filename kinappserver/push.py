@@ -25,15 +25,15 @@ def engagement_payload_gcm(push_type):
         raise InvalidUsage('no such push type: %s' % push_type)
 
 
-def compensated_payload_apns(amount):
+def compensated_payload_apns(amount, task_title):
     push_id = generate_push_id()
     # TODO report push_id
-    return apns_payload("", "We transferred %s Kins to your account" % amount, 'compensation', push_id)
+    return apns_payload("", "You have been awarded %s KIN for completing task \"%s\"" % (amount, task_title), 'engage-recent', push_id)
 
 
-def compensated_payload_gcm(amount):
+def compensated_payload_gcm(amount, task_title):
     push_id = generate_push_id()
-    return gcm_payload('compensation', push_id, {'title': 'Kins added to your balance', 'body': "We transferred %s Kins to your account" % amount})
+    return gcm_payload('engage-recent', push_id, {'title': '', 'body': "You have been awarded %s KIN for completing task \"%s\"" % (amount, task_title)})
 
 
 def send_please_upgrade_push(user_id):

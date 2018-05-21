@@ -130,9 +130,10 @@ class Tester(unittest.TestCase):
 
         # user 2 updates his phone number to the server after client-side verification
         phone_num = '+9720528802120'
-        resp = self.app.post('/user/phone',
+        resp = self.app.post('/user/firebase/update-id-token',
                     data=json.dumps({
-                        'number': phone_num}),
+                        'token': phone_num,
+                        'phone_number': phone_num}),
                     headers={USER_ID_HEADER: str(userid2)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -151,7 +152,7 @@ class Tester(unittest.TestCase):
         # user1 sends money to user2
 
         # user1 reports tx to the server
-        resp = self.app.post('user/transaction/p2p/add',
+        resp = self.app.post('user/transaction/p2p',
                     data=json.dumps({
                         'tx_hash': '3425f5a096ba5aaec49e9ee8912d84a8e11010f785fae6964c9ab85872193cb4',
                         'destination_address': data['address'],
@@ -161,6 +162,12 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         self.assertEqual(data['status'], 'ok')
+
+        # get user p2p tx history - should have 1 item
+        resp = self.app.get('/user/p2p/transactions', headers={USER_ID_HEADER: str(userid1)})
+        self.assertEqual(resp.status_code, 200)
+        print('txs: %s' % json.loads(resp.data))
+        self.assertEqual(len(json.loads(resp.data)['txs']), 1)
 
 
 if __name__ == '__main__':

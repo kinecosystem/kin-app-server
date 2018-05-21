@@ -20,7 +20,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
     add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated, get_pa_for_users,\
-    handle_task_results_resubmission, reject_premature_results, fix_user_data, get_address_by_userid, send_compensated_push
+    handle_task_results_resubmission, reject_premature_results, fix_user_data, get_address_by_userid, send_compensated_push,\
+    list_p2p_transactions_for_user_id
 
 
 def limit_to_local_host():
@@ -83,7 +84,7 @@ def app_launch():
 
 @app.route('/user/contact', methods=['POST'])
 def get_address_by_phone_api():
-    """trys to match the given contact info against a user"""
+    """tries to match the given contact info against a user"""
     if not config.P2P_TRANSFERS_ENABLED:
         # this api is disabled, clients should not have asked for it
         print('/user/contact api is disabled by server config')
@@ -248,6 +249,7 @@ def add_task_api():
     else:
         raise InvalidUsage('failed to add task')
 
+
 @app.route('/pa/populate', methods=['POST'])
 def get_pa_api():
     """used to add tasks to the db"""
@@ -309,10 +311,13 @@ def get_transactions_api():
     detailed_txs = []
     try:
         user_id = extract_header(request)
-        txs = [{'type': 'server', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': not tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
+        server_txs = [{'type': 'server', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': not tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
+
+        #TODO fix this
+        #p2p_txs = [{'type': 'server', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': not tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_p2p_transactions_for_user_id(user_id, MAX_TXS_PER_USER)]
 
         # get the offer, task details
-        for tx in txs:
+        for tx in server_txs:
             details = get_offer_details(tx['tx_info']['offer_id']) if not tx['client_received'] else get_task_details(tx['tx_info']['task_id'])
             detailed_txs.append({**tx, **details})
 
@@ -662,7 +667,7 @@ def send_engagemnt_api():
     return jsonify(status='ok')
 
 
-@app.route('/user/transaction/p2p/add', methods=['POST'])
+@app.route('/user/transaction/p2p', methods=['POST'])
 def report_p2p_tx_api():
     """endpoint used by the client to report successful p2p txs"""
 
@@ -696,19 +701,23 @@ def fix_users_api():
     """endpoint used to list problems with user data"""
     if not config.DEBUG:
         limit_to_local_host()
-    print('fixing user data...')
+    print('scanning user data...')
     missing_txs = fix_user_data()
     print('found %s items to fix' % len(missing_txs))
     # sort results by date (4th item in each tuple)
     missing_txs.sort(key=lambda tup: tup[3])
     return jsonify(status='ok', missing_txs=missing_txs)
 
+
 @app.route('/user/compensate', methods=['POST'])
 def compensate_user_api():
-    """endpoint used to manually compensate users"""
-    from datetime import datetime
+    """endpoint used to manually compensate users for missing txs"""
     if not config.DEBUG:
         limit_to_local_host()
+
+    # for security reasons, I'm disabling this api.
+    # remove the 'return' line to re-enable it.
+    return
 
     payload = request.get_json(silent=True)
     user_id = payload.get('user_id', None)
@@ -738,6 +747,7 @@ def compensate_user_api():
     else:
         print('compensated user %s with %s kins for task_id %s' % (user_id, kin_amount, task_id))
         # also send push to the user
-        send_compensated_push(user_id, kin_amount)
+        task_title = get_task_details(task_id)['title']
+        send_compensated_push(user_id, kin_amount, task_title)
 
         return jsonify(status='ok', tx_hash=tx_hash)
