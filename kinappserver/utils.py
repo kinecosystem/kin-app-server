@@ -23,9 +23,12 @@ DEFAULT_MIN_CLIENT_VERSION = '0.1'
 MAX_TXS_PER_USER = 50
 
 
-def generate_memo():
+def generate_memo(is_manual=False):
     # generate a unique-ish id for txs, this goes into the memo field of txs
     env = config.DEPLOYMENT_ENV[0:1]  # either 's(tage)', 't(est)' or 'p(rod)'
+    if is_manual:
+        # indicates that the memo was generate for a manual transaction
+        env = 'm'
     return KINIT_MEMO_PREFIX + env + str(uuid4().hex[:ORDER_ID_LENGTH])  # generate a memo string and send it to the client
 
 

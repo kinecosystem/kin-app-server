@@ -165,6 +165,17 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        from stellar_base.keypair import Keypair
+        from stellar_base.address import Address
+        kp = Keypair.random()
+        resp = self.app.post('/user/onboard',
+            data=json.dumps({
+                            'public_address': kp.address().decode()}),
+            headers={USER_ID_HEADER: str(userid)},
+            content_type='application/json')
+        print(json.loads(resp.data))
+        self.assertEqual(resp.status_code, 200)
+
         sleep(1)
 
         # get the user's current tasks
@@ -191,12 +202,24 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-        sleep(8) # give the thread enough time to complete before the db connection is shutdown
+        sleep(15) # give the thread enough time to complete before the db connection is shutdown
 
         # fix user data
-        resp = self.app.get('/users/fix', headers=headers)
+        resp = self.app.get('/users/get_missing_txs', headers=headers)
         data = json.loads(resp.data)
         print('data: %s' % data)
+
+        # manually compensate user
+        resp = self.app.post('/user/compensate',
+                             data=json.dumps({
+                                 'task_id': '1',
+                                 'user_id': str(userid),
+                                 'kin_amount': 1,
+                                 'date': 'Sun, 13 May 2018 04:07:30 GMT'
+                             }),
+                             content_type='application/json')
+        print('post compensation response: %s' % json.loads(resp.data))
+        self.assertEqual(resp.status_code, 200)
 
 
 

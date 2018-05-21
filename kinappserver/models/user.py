@@ -3,7 +3,7 @@ from sqlalchemy_utils import UUIDType
 
 from kinappserver import db
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID
-from kinappserver.push import send_gcm, send_apns, engagement_payload_apns, engagement_payload_gcm
+from kinappserver.push import send_gcm, send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm
 from uuid import uuid4, UUID
 
 DEFAULT_TIME_ZONE = -4
@@ -213,7 +213,22 @@ def send_engagement_push(user_id, push_type, token=None, os_type=None):
         send_apns(token, engagement_payload_apns(push_type))
     else:
         send_gcm(token, engagement_payload_gcm(push_type))
-    return True 
+    return True
+
+
+def send_compensated_push(user_id, amount):
+
+    os_type, token = get_user_push_data(user_id)
+
+    if token is None:
+        print('cant push to user %s: no push token' % user_id)
+        return False
+
+    if os_type == OS_IOS:
+        send_apns(token, compensated_payload_apns(amount))
+    else:
+        send_gcm(token, compensated_payload_gcm(amount))
+    return True
 
 
 def store_next_task_results_ts(user_id, timestamp_str):

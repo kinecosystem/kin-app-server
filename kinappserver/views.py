@@ -20,7 +20,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
     add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated, get_pa_for_users,\
-    handle_task_results_resubmission, reject_premature_results, fix_user_data
+    handle_task_results_resubmission, reject_premature_results, fix_user_data, get_address_by_userid, send_compensated_push
 
 
 def limit_to_local_host():
@@ -691,9 +691,9 @@ def report_p2p_tx_api():
         raise InvalidUsage('failed to add p2ptx')
 
 
-@app.route('/users/fix', methods=['GET'])
+@app.route('/users/get_missing_txs', methods=['GET'])
 def fix_users_api():
-    """endpoint used to list problems with user data and fix it"""
+    """endpoint used to list problems with user data"""
     if not config.DEBUG:
         limit_to_local_host()
     print('fixing user data...')
@@ -702,3 +702,42 @@ def fix_users_api():
     # sort results by date (4th item in each tuple)
     missing_txs.sort(key=lambda tup: tup[3])
     return jsonify(status='ok', missing_txs=missing_txs)
+
+@app.route('/user/compensate', methods=['POST'])
+def compensate_user_api():
+    """endpoint used to manually compensate users"""
+    from datetime import datetime
+    if not config.DEBUG:
+        limit_to_local_host()
+
+    payload = request.get_json(silent=True)
+    user_id = payload.get('user_id', None)
+    kin_amount = int(payload.get('kin_amount', None))
+    task_id = payload.get('task_id', None)
+    memo = utils.generate_memo(is_manual=True)
+    if None in (user_id, kin_amount, task_id):
+        raise InvalidUsage('invalid param')
+    public_address = get_address_by_userid(user_id)
+    if not public_address:
+        print('cant compensate user %s - no public address' % user_id)
+        return jsonify(status='error', reason='no_public_address')
+
+    user_tx_task_ids = [tx.tx_info.get('task_id', '-1') for tx in list_user_transactions(user_id)]
+    if task_id in user_tx_task_ids:
+        print('refusing to compensate user %s for task %s - already received funds!' % (user_id, task_id))
+        return jsonify(status='error', reason='already_compensated')
+
+    print('calling send_kin: %s, %s' % (public_address, kin_amount))
+    try:
+        tx_hash = send_kin(public_address, kin_amount, memo)
+        create_tx(tx_hash, user_id, public_address, False, kin_amount, {'task_id': task_id, 'memo': memo})
+    except Exception as e:
+        print('error attempting to compensate user %s for task %s' % (user_id, task_id))
+        print(e)
+        return jsonify(status='error', reason='internal_error')
+    else:
+        print('compensated user %s with %s kins for task_id %s' % (user_id, kin_amount, task_id))
+        # also send push to the user
+        send_compensated_push(user_id, kin_amount)
+
+        return jsonify(status='ok', tx_hash=tx_hash)

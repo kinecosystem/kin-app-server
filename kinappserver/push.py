@@ -25,6 +25,17 @@ def engagement_payload_gcm(push_type):
         raise InvalidUsage('no such push type: %s' % push_type)
 
 
+def compensated_payload_apns(amount):
+    push_id = generate_push_id()
+    # TODO report push_id
+    return apns_payload("", "We transferred %s Kins to your account" % amount, 'compensation', push_id)
+
+
+def compensated_payload_gcm(amount):
+    push_id = generate_push_id()
+    return gcm_payload('compensation', push_id, {'title': 'Kins added to your balance', 'body': "We transferred %s Kins to your account" % amount})
+
+
 def send_please_upgrade_push(user_id):
     """sends a push to the given userid to please upgrade"""
     push_id = generate_push_id()
