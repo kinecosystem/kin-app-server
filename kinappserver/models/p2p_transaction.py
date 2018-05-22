@@ -27,8 +27,10 @@ class P2PTransaction(db.Model):
 
 def list_p2p_transactions_for_user_id(user_id, max_txs=None):
     """returns all p2p txs by this user - or the last x tx if max_txs was passed"""
-    txs = P2PTransaction.query.filter(P2PTransaction.user_id == user_id).order_by(desc(P2PTransaction.update_at)).all()
-    # trim the amount of txs
+    sender_txs = P2PTransaction.query.filter(P2PTransaction.sender_user_id == user_id).order_by(desc(P2PTransaction.update_at)).all()
+    receiver_txs = P2PTransaction.query.filter(P2PTransaction.receiver_user_id == user_id).order_by(desc(P2PTransaction.update_at)).all()
+    # join and trim the amount of txs
+    txs = receiver_txs + sender_txs
     txs = txs[:max_txs] if max_txs and max_txs > len(txs) else txs
     return txs
 

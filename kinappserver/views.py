@@ -216,8 +216,6 @@ def quest_answers():
         # this task was already submitted - and compensated, so just re-return the memo to the user.
         return jsonify(status='ok', memo=str(memo))
 
-
-
     # this should never fail for application-level reasons:
     if not store_task_results(user_id, task_id, results):
             raise InternalError('cant save results for userid %s' % user_id)
@@ -252,7 +250,7 @@ def add_task_api():
 
 @app.route('/pa/populate', methods=['POST'])
 def get_pa_api():
-    """used to add tasks to the db"""
+    """used to populate user tables with public addresses"""
     # TODO REMOVE ME
     if not config.DEBUG:
         limit_to_local_host()
@@ -313,17 +311,28 @@ def get_transactions_api():
         user_id = extract_header(request)
         server_txs = [{'type': 'server', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': not tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
 
-        #TODO fix this
-        #p2p_txs = [{'type': 'server', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': not tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_p2p_transactions_for_user_id(user_id, MAX_TXS_PER_USER)]
-
         # get the offer, task details
         for tx in server_txs:
             details = get_offer_details(tx['tx_info']['offer_id']) if not tx['client_received'] else get_task_details(tx['tx_info']['task_id'])
             detailed_txs.append({**tx, **details})
 
+        # get p2p details
+        p2p_txs = [{'title': 'some title', 'description': 'some description', 'provider': 'some provider',
+                    'type': 'p2p', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': str(tx.receiver_user_id).lower() == str(user_id), 'tx_info': '', 'date': arrow.get(tx.update_at).timestamp} for tx in list_p2p_transactions_for_user_id(user_id, MAX_TXS_PER_USER)]
+
+        # merge txs:
+        detailed_txs = detailed_txs + p2p_txs
+
+        # sort by date
+        print(detailed_txs)
+        detailed_txs = sorted(detailed_txs, key=lambda k: k['date'])
+        if len(detailed_txs) > MAX_TXS_PER_USER:
+            detailed_txs = detailed_txs[:MAX_TXS_PER_USER]
+
     except Exception as e:
         print('cant get txs for user')
         print(e)
+        return jsonify(status='error', txs=[])
 
     return jsonify(status='ok', txs=detailed_txs)
 
