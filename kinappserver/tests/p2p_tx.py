@@ -106,6 +106,20 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        userid3 = uuid4()
+        resp = self.app.post('/user/register',
+                             data=json.dumps({
+                                 'user_id': str(userid3),
+                                 'os': 'android',
+                                 'device_model': 'samsung8',
+                                 'device_id': '234234',
+                                 'time_zone': '05:00',
+                                 'token': 'fake_token',
+                                 'app_ver': '1.0'}),
+                             headers={},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         # onboard user 2 to set address in server
         kp = Keypair.random()
         address2 = kp.address().decode()
@@ -113,6 +127,17 @@ class Tester(unittest.TestCase):
             data=json.dumps({
                             'public_address': address2}),
             headers={USER_ID_HEADER: str(userid2)},
+            content_type='application/json')
+        print(json.loads(resp.data))
+        self.assertEqual(resp.status_code, 200)
+
+        # onboard user 3 to set address in server
+        kp = Keypair.random()
+        address3 = kp.address().decode()
+        resp = self.app.post('/user/onboard',
+            data=json.dumps({
+                            'public_address': address3}),
+            headers={USER_ID_HEADER: str(userid3)},
             content_type='application/json')
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
@@ -128,8 +153,18 @@ class Tester(unittest.TestCase):
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
+        # user 1 updates his phone number to the server after client-side verification
+        phone_num = '+972527702891'
+        resp = self.app.post('/user/firebase/update-id-token',
+                    data=json.dumps({
+                        'token': phone_num,
+                        'phone_number': phone_num}),
+                    headers={USER_ID_HEADER: str(userid1)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         # user 2 updates his phone number to the server after client-side verification
-        phone_num = '+9720528802120'
+        phone_num = '+972528802120'
         resp = self.app.post('/user/firebase/update-id-token',
                     data=json.dumps({
                         'token': phone_num,
@@ -138,7 +173,18 @@ class Tester(unittest.TestCase):
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # user1 tries to get user2's address by contact info
+        # user 3 updates his phone number to the server after client-side verification
+        phone_num2 = '+9720528802121'
+        resp = self.app.post('/user/firebase/update-id-token',
+                    data=json.dumps({
+                        'token': phone_num,
+                        'phone_number': phone_num2}),
+                    headers={USER_ID_HEADER: str(userid3)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # user1 tries to get user2's address by contact info (exact match)
+        print('trying to perform exact match of phone number....')
         resp = self.app.post('/user/contact',
                     data=json.dumps({
                         'phone_number': phone_num}),
@@ -149,13 +195,37 @@ class Tester(unittest.TestCase):
         self.assertEqual(data['status'], 'ok')
         self.assertEqual(data['address'], address2)
 
+        # user1 tries to get user2's address by contact info (local number)
+        print('trying to perform local match of phone number....')
+        resp = self.app.post('/user/contact',
+                             data=json.dumps({
+                                 'phone_number': '0528802120'}),
+                             headers={USER_ID_HEADER: str(userid1)},
+                             content_type='application/json')
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['address'], address2)
+
+        # user1 tries to get user3's address by contact info (local number with leading zero after 972)
+        print('trying to perform local match of phone number....')
+        resp = self.app.post('/user/contact',
+                             data=json.dumps({
+                                 'phone_number': '0528802121'}),
+                             headers={USER_ID_HEADER: str(userid1)},
+                             content_type='application/json')
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['address'], address3)
+
         # user1 sends money to user2
 
         # user1 reports tx to the server
         resp = self.app.post('user/transaction/p2p',
                     data=json.dumps({
                         'tx_hash': '3425f5a096ba5aaec49e9ee8912d84a8e11010f785fae6964c9ab85872193cb4',
-                        'destination_address': data['address'],
+                        'destination_address': address2,
                         'amount': 1}),
                     headers={USER_ID_HEADER: str(userid1)},
                     content_type='application/json')
@@ -174,7 +244,6 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         print('txs: %s' % json.loads(resp.data))
         self.assertEqual(len(json.loads(resp.data)['txs']), 1)
-
 
 
 if __name__ == '__main__':

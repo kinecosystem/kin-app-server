@@ -11,12 +11,12 @@ class P2PTransaction(db.Model):
     """
     p2p transactions: between users
     """
-    sender_user_id = db.Column('sender_user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), unique=True, nullable=False)
-    receiver_user_id = db.Column('receiver_user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), unique=True, nullable=False)
+    sender_user_id = db.Column('sender_user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), unique=False, nullable=False)
+    receiver_user_id = db.Column('receiver_user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), unique=False, nullable=False)
     tx_hash = db.Column(db.String(100), nullable=False, primary_key=True)
     amount = db.Column(db.Integer(), nullable=False, primary_key=False)
-    sender_address = db.Column(db.String(60), db.ForeignKey("user.public_address"), nullable=False, unique=True)
-    receiver_address = db.Column(db.String(60), db.ForeignKey("user.public_address"), nullable=False, unique=True)
+    sender_address = db.Column(db.String(60), db.ForeignKey("user.public_address"), nullable=False, unique=False)
+    receiver_address = db.Column(db.String(60), db.ForeignKey("user.public_address"), nullable=False, unique=False)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):

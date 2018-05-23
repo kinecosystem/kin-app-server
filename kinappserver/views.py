@@ -19,9 +19,9 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
-    add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated, get_pa_for_users,\
+    add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, fix_user_data, get_address_by_userid, send_compensated_push,\
-    list_p2p_transactions_for_user_id, nuke_user_data
+    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token
 
 
 def limit_to_local_host():
@@ -99,10 +99,30 @@ def get_address_by_phone_api():
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
-    address = get_address_by_phone(phone_number)
+    address = match_phone_number_to_address(phone_number, user_id)
     if not address:
         return jsonify(status='error', reason='no_match'), status.HTTP_404_NOT_FOUND
+    print('translated contact request into address: %s' % address)
     return jsonify(status='ok', address=address)
+
+
+@app.route('/user/auth/ack', methods=['POST'])
+def ack_auth_token_api():
+    """endpoint used by clients to ack their auth-token"""
+    payload = request.get_json(silent=True)
+    try:
+        user_id = extract_header(request)
+        token = payload.get('token', None)
+        if None in (user_id, token):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    if ack_auth_token(user_id, token):
+        return jsonify(status='ok')
+    else:
+        return jsonify(status='error', reason='wrong-token'), status.HTTP_400_BAD_REQUEST
 
 
 @app.route('/user/firebase/update-id-token', methods=['POST'])
@@ -151,6 +171,10 @@ def update_token_api():
 
     print('updating token for user %s' % user_id)
     update_user_token(user_id, token)
+
+    # send auth token now that we have push token #TODO really do it here?
+    send_push_auth_token(user_id)
+
     return jsonify(status='ok')
 
 
@@ -169,6 +193,10 @@ def push_update_token_api():
 
     print('updating token for user %s' % user_id)
     update_user_token(user_id, token)
+
+    # send auth token now that we have push token #TODO really do it here?
+    send_push_auth_token(user_id)
+
     return jsonify(status='ok')
 
 
@@ -442,6 +470,7 @@ def register_api():
         else:
             print('created user with user_id %s' % user_id)
             increment_metric('user_registered')
+
             return jsonify(status='ok', config=get_global_config())
 
 

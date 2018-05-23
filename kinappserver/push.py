@@ -25,6 +25,12 @@ def engagement_payload_gcm(push_type):
         raise InvalidUsage('no such push type: %s' % push_type)
 
 
+def auth_push_apns(push_id, auth_token, user_id):
+    payload_dict = {'aps': {"content-available": 1, "sound": ""}, 'kin': {'push_type': 'auth', 'push_id': push_id, 'auth_data': {'auth_token': auth_token, 'user_id': user_id}}}
+    print('the apns payload: %s' % payload_dict)
+    return payload_dict
+
+
 def compensated_payload_apns(amount, task_title):
     push_id = generate_push_id()
     # TODO report push_id
@@ -61,7 +67,7 @@ def apns_payload(title, body, push_type, push_id, sound='default'):
     """generate an apns payload"""
     payload_dict = {'aps': {'alert': {'title': title, 'body': body}, 'sound': sound}, 'kin': {'push_type': push_type, 'push_id': push_id}}
 
-    print('the payload: %s' % payload_dict)
+    print('the apns payload: %s' % payload_dict)
     return payload_dict
 
 
@@ -75,8 +81,14 @@ def gcm_payload(push_type, push_id, message_dict):
 
 
 def send_gcm(token, payload):
+    if config.DEPLOYMENT_ENV == 'test':
+        print('skipping push on test env')
+        return
     amqp_publisher.send_gcm("eshu-key", payload, [token], False, config.GCM_TTL_SECS)
 
 
 def send_apns(token, payload):
+    if config.DEPLOYMENT_ENV == 'test':
+        print('skipping push on test env')
+        return
     amqp_publisher.send_apns("eshu-key", payload, [token])

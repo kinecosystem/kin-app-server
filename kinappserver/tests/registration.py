@@ -142,5 +142,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
         print(json.loads(resp.data))
 
+        models.print_auth_tokens()
+
 if __name__ == '__main__':
     unittest.main()

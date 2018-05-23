@@ -37,5 +37,5 @@
    authentication_token_enabled: False
    p2p_transfers_enabled: True
    p2p_min_tasks: 1
-   p2p_min_kin_amount: 1000
-   p2p_max_kin_amount: 12500
+   p2p_min_kin_amount: 500
+   p2p_max_kin_amount: 3000

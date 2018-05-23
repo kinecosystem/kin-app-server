@@ -2,9 +2,10 @@
 from sqlalchemy_utils import UUIDType
 
 from kinappserver import db
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number
 from kinappserver.push import send_gcm, send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm
 from uuid import uuid4, UUID
+from .push_auth_token import get_token_obj_by_user_id
 
 DEFAULT_TIME_ZONE = -4
 
@@ -107,6 +108,9 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     db.session.add(user_app_data)
     db.session.commit()
 
+    # create an auth token for this user
+    get_token_obj_by_user_id(user_id)
+
 
 def update_user_token(user_id, push_token):
     """updates the user's token with a new one"""
@@ -197,6 +201,26 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('tx_completed', generate_push_id(), {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id})
         send_gcm(token, payload)
+    return True
+
+
+def send_push_auth_token(user_id):
+    """send a message indicating that the tx has been successfully completed"""
+    from .push_auth_token import get_token_by_user_id
+    os_type, token = get_user_push_data(user_id)
+    auth_token = get_token_by_user_id(user_id)
+    if token is None:
+        print('cant push to user %s: no push token' % user_id)
+        return False
+    if os_type == OS_IOS:
+        from kinappserver.push import auth_push_apns, generate_push_id
+        send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)))
+        print('sent apnds auth token to user %s' % user_id)
+    else:
+        from kinappserver.push import gcm_payload, generate_push_id
+        payload = gcm_payload('auth_token', generate_push_id(), {'type': 'auth_token', 'user_id': str(user_id), 'token': str(auth_token)})
+        send_gcm(token, payload)
+        print('sent gcm auth token to user %s' % user_id)
     return True
 
 
@@ -416,6 +440,18 @@ def get_active_user_id_by_phone(phone_number):
         raise
 
 
+def get_phone_number_by_user_id(user_id):
+    try:
+        user = User.query.filter_by(user_id=user_id).filter_by(deactivated=False).first()
+        if user is None:
+            return None
+        else:
+            return user.phone_number  # can be None
+    except Exception as e:
+        print('cant get user phone by user_id. Exception: %s' % e)
+        raise
+
+
 def get_all_user_id_by_phone(phone_number):
     try:
         users = User.query.filter_by(phone_number=phone_number).all()
@@ -425,13 +461,49 @@ def get_all_user_id_by_phone(phone_number):
         raise
 
 
-def get_address_by_phone(phone_number):
-    """"attempt to find a public address by phone number
+def match_phone_number_to_address(phone_number, sender_user_id):
+    """get the address associated with this phone number"""
+    # get the sender's phone number:
+    sender_phone_number = get_phone_number_by_user_id(sender_user_id)
+    if not sender_phone_number:
+        # should never happen while phone v. is active
+        print('should never happen: cant get user\'s phone number. user_id: %s' % sender_user_id)
+    parsed_address = get_address_by_phone_number(parse_phone_number(phone_number, sender_phone_number))
+
+    if parsed_address is None:
+        # special handling for Israeli numbers: perhaps the number was stored in the db with a leading zero.
+        # in the db: +9720527702891
+        # from the client: 0527702891
+        massaged_number = '+972' + phone_number
+        parsed_address = get_address_by_phone_number(massaged_number)
+        if parsed_address:
+            print('match_phone_number_to_address: applied special israeli-number logic to parse number: %s' % massaged_number)
+
+    return parsed_address
+
+
+def get_address_by_phone_number(phone_number):
+    try:
+        user = User.query.filter(User.phone_number==phone_number).filter_by(deactivated=False).first()
+        if user is None:
+            print('cant find user for phone number: %s' % phone_number)
+            return None
+        else:
+            return user.public_address  # can be None
+    except Exception as e:
+        print('cant get user address by phone. Exception: %s' % e)
+        raise
+
+
+### not in use ###
+def get_address_by_phone_numbers(phone_numbers):
+    """"attempt to find a public address by a list of phone numbers
 
     return None if no phone number exists or if the address wasn't set
+    if more than one matches, just get one
     """
     try:
-        user = User.query.filter_by(phone_number=phone_number).first()
+        user = User.query.filter(User.phone_number.in_(phone_numbers)).filter_by(deactivated=False).first()
         if user is None:
             return None
         else:
@@ -439,6 +511,7 @@ def get_address_by_phone(phone_number):
     except Exception as e:
         print('cant get user address by phone. Exception: %s' % e)
         raise
+
 
 
 def deactivate_by_phone_number(phone_number, user_id):

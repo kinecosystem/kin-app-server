@@ -4,6 +4,7 @@ from datadog import statsd
 from flask import config
 import os
 import requests
+import phonenumbers
 
 
 from kinappserver import config
@@ -173,3 +174,48 @@ def sqlalchemy_pool_status():
            "Current Overflow: %d Current Checked out " \
            "connections: %d" % (pool_size, checkedin, overflow, checkedout))
     return {'pool_size': pool_size, 'checkedin': checkedin, 'overflow': overflow, 'checkedout': checkedout}
+
+
+def parse_phone_number(number_to_parse, sender_number):
+    """try to convert a raw input phone number into e.164"""
+    #  first, try to parse the number as-is:
+    parsed_number = parse_phone_number_naively(number_to_parse)
+    if parsed_number:
+        print('parse_phone_number: naively parsed phone number %s' % parsed_number)
+        return parsed_number
+
+    # try to parse with the sender's number as a clue
+    if sender_number:
+        parsed_number = parse_phone_number_by_sender_country_code(sender_number, number_to_parse)
+        if parsed_number:
+            print('parse_phone_number: parsed phone number %s by sender_number' % parsed_number)
+            return parsed_number
+
+    # give up, just return the original number:
+    print('parse_phone_number: failed to parse phone number %s. returning raw number' % parsed_number)
+    return number_to_parse
+
+
+def parse_phone_number_naively(number_to_parse):
+    """naively attempt to format a number into e.164. should fail (return None) for local numbers"""
+    try:
+        formatted_sent_number = phonenumbers.parse(number_to_parse, None)
+    except phonenumbers.NumberParseException as e:
+        print('parse_phone_number_naively: cant parse number:%s' % number_to_parse)
+        return None
+    else:
+        return phonenumbers.format_number(formatted_sent_number, phonenumbers.PhoneNumberFormat.E164)
+
+
+def parse_phone_number_by_sender_country_code(sender_number, number_to_parse):
+    """this function attempts to format the given 'sent_number' into a phone_number,
+    based on the the 'sender_number''s country code"""
+    try:
+        formatted_sender_number = phonenumbers.parse(sender_number, None)
+        country_code = formatted_sender_number.country_code
+        formatted_sent_number = phonenumbers.parse(number_to_parse, phonenumbers.region_code_for_country_code(country_code))
+    except phonenumbers.NumberParseException as e:
+            print('parse_phone_number_by_sender_country_code: cant parse number:%s with sender\'s country code' % (number_to_parse,sender_number))
+            return None
+    else:
+        return phonenumbers.format_number(formatted_sent_number, phonenumbers.PhoneNumberFormat.E164)
