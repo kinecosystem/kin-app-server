@@ -325,7 +325,7 @@ def get_transactions_api():
 
         # sort by date
         print(detailed_txs)
-        detailed_txs = sorted(detailed_txs, key=lambda k: k['date'])
+        detailed_txs = sorted(detailed_txs, key=lambda k: k['date'], reverse=True)
         if len(detailed_txs) > MAX_TXS_PER_USER:
             detailed_txs = detailed_txs[:MAX_TXS_PER_USER]
 
@@ -476,7 +476,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
 
 @app.route('/offer/add', methods=['POST'])
 def add_offer_api():
-    """endpoint used to populate the server with offers"""
+    """internal endpoint used to populate the server with offers"""
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -494,7 +494,7 @@ def add_offer_api():
 
 @app.route('/offer/set_active', methods=['POST'])
 def set_active_api():
-    """enables/disables an offer"""
+    """internal endpoint used to enables/disables an offer"""
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -578,7 +578,7 @@ def purchase_api():
 
 @app.route('/good/add', methods=['POST'])
 def add_good_api():
-    """endpoint used to populate the server with goods"""
+    """internal endpoint used to populate the server with goods"""
     if not config.DEBUG:
         limit_to_local_host()
     payload = request.get_json(silent=True)
@@ -599,7 +599,7 @@ def add_good_api():
 
 @app.route('/good/inventory', methods=['GET'])
 def inventory_api():
-    """endpoint used to list the inventory"""
+    """internal endpoint used to list the goods inventory"""
     if not config.DEBUG:
         limit_to_local_host()
     return jsonify(status='ok', inventory=list_inventory())
@@ -607,7 +607,7 @@ def inventory_api():
 
 @app.route('/stats/db', methods=['GET'])
 def dbstats_api():
-    """endpoint used to list the status of the db"""
+    """internal endpoint used to retrieve the number of db connections"""
     if not config.DEBUG:
         limit_to_local_host()
     return jsonify(status='ok', stats=sqlalchemy_pool_status())
@@ -615,7 +615,7 @@ def dbstats_api():
 
 @app.route('/balance', methods=['GET'])
 def balance_api():
-    """endpoint used to populate the server with goods"""
+    """endpoint used to get the current balance of the seed and channels"""
     if not config.DEBUG:
         limit_to_local_host()
 
@@ -628,7 +628,7 @@ def balance_api():
     balance['base_seed']['kin'] = stellar.get_kin_balance(Keypair.from_seed(base_seed).address().decode())
     balance['base_seed']['xlm'] = stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode())
     if channel_seed:
-        balance['channel_seeds'][0]['kin'] = stellar.get_kin_balance(Keypair.from_seed(channel_seed).address().decode())
+        # seeds only need to carry XLMs
         balance['channel_seeds'][0]['xlm'] = stellar.get_xlm_balance(Keypair.from_seed(channel_seed).address().decode())
 
     return jsonify(status='ok', balance=balance)
@@ -636,7 +636,7 @@ def balance_api():
 
 @app.route('/good/release_unclaimed', methods=['GET'])
 def release_unclaimed_api():
-    """endpoint used to get the current balance"""
+    """endpoint used to release goods that were booked but never redeemed"""
     if not config.DEBUG:
         limit_to_local_host()
     released = release_unclaimed_goods()
@@ -705,9 +705,9 @@ def report_p2p_tx_api():
         raise InvalidUsage('failed to add p2ptx')
 
 
-@app.route('/users/get_missing_txs', methods=['GET'])
+@app.route('/users/missing_txs', methods=['GET'])
 def fix_users_api():
-    """endpoint used to list problems with user data"""
+    """internal endpoint used to list problems with user data"""
     if not config.DEBUG:
         limit_to_local_host()
     print('scanning user data...')
@@ -720,7 +720,7 @@ def fix_users_api():
 
 @app.route('/user/compensate', methods=['POST'])
 def compensate_user_api():
-    """endpoint used to manually compensate users for missing txs"""
+    """internal endpoint used to manually compensate users for missing txs"""
     if not config.DEBUG:
         limit_to_local_host()
 
