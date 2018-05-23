@@ -404,6 +404,27 @@ def set_user_phone_number(user_id, number):
         raise
 
 
+def get_active_user_id_by_phone(phone_number):
+    try:
+        user = User.query.filter_by(phone_number=phone_number).filter_by(deactivated=False).first()
+        if user is None:
+            return None
+        else:
+            return user.user_id  # can be None
+    except Exception as e:
+        print('cant get user address by phone. Exception: %s' % e)
+        raise
+
+
+def get_all_user_id_by_phone(phone_number):
+    try:
+        users = User.query.filter_by(phone_number=phone_number).all()
+        return [user.user_id for user in users]
+    except Exception as e:
+        print('cant get user(s) address by phone. Exception: %s' % e)
+        raise
+
+
 def get_address_by_phone(phone_number):
     """"attempt to find a public address by phone number
 
@@ -535,3 +556,19 @@ def fix_user_data():
     return missing_txs
 
 
+def nuke_user_data(phone_number, nuke_all = False):
+    """nuke user's data by phone number. by default only nuke the active user"""
+    # find the active user with this number:
+    if nuke_all:
+        print('nuking all users with the phone number: %s' % phone_number)
+        user_ids = get_all_user_id_by_phone(phone_number)
+    else:
+        # only the active user
+        print('nuking the active user with the phone number: %s' % phone_number)
+        user_ids = [get_active_user_id_by_phone(phone_number)]
+    for user_id in user_ids:
+        db.engine.execute("delete from good where tx_hash in (select tx_hash from transaction where user_id='%s')" % (user_id))
+        db.engine.execute("delete from public.transaction where user_id='%s'" % (user_id))
+        db.engine.execute("delete from public.user_task_results where user_id='%s'" % (user_id))
+        db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\'' % (user_id))
+    return user_ids if len(user_ids)>0 else None

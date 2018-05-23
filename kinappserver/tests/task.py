@@ -47,6 +47,7 @@ class Tester(unittest.TestCase):
                     {
                      'id': '435', 
                      'text': 'what animal is this?',
+                     'image_url': '',
                      'type': 'textimage',
                          'results': [
                                 {'id': '235',

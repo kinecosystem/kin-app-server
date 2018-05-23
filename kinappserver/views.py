@@ -21,7 +21,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
     add_p2p_tx, set_user_phone_number, get_address_by_phone, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, fix_user_data, get_address_by_userid, send_compensated_push,\
-    list_p2p_transactions_for_user_id
+    list_p2p_transactions_for_user_id, nuke_user_data
 
 
 def limit_to_local_host():
@@ -760,3 +760,28 @@ def compensate_user_api():
         send_compensated_push(user_id, kin_amount, task_title)
 
         return jsonify(status='ok', tx_hash=tx_hash)
+
+
+@app.route('/user/nuke-data', methods=['POST'])
+def nuke_user_api():
+    """internal endpoint used to nuke a user's task and tx data. use with care"""
+    if not config.DEBUG:
+        limit_to_local_host()
+
+    try:
+        payload = request.get_json(silent=True)
+        phone_number = payload.get('phone_number', None)
+        nuke_all = payload.get('nuke_all', False) == True
+        if None in (phone_number,):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    user_ids = nuke_user_data(phone_number, nuke_all)
+    if user_ids is None:
+        print('could not find any user with this number: %s' % phone_number)
+        return jsonify(status='error', reason='no_user')
+    else:
+        print('nuked users with phone number: %s and user_ids %s' % (phone_number, user_ids))
+        return jsonify(status='ok', user_id=user_ids)

@@ -292,5 +292,30 @@ class Tester(unittest.TestCase):
 
         print('listing all orders: %s' % models.list_all_order_data())
 
+        # user updates his phone number to the server after client-side verification
+        phone_num = '+9720528802120'
+        resp = self.app.post('/user/firebase/update-id-token',
+                    data=json.dumps({
+                        'token': 'fake-token',
+                        'phone_number': phone_num}),
+                    headers={USER_ID_HEADER: str(userid2)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.post('/user/nuke-data',
+                             data=json.dumps({
+                                 'phone_number': phone_num}),
+                            headers={USER_ID_HEADER: str(userid2)},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.post('/user/nuke-data',
+                             data=json.dumps({
+                                 'phone_number': phone_num,
+                                    'nuke_all': True}),
+                            headers={USER_ID_HEADER: str(userid2)},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
 if __name__ == '__main__':
     unittest.main()
