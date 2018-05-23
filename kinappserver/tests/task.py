@@ -38,7 +38,7 @@ class Tester(unittest.TestCase):
                   'type': 'questionnaire',
                   'price': 2000,
                   'min_to_complete': 2,
-                  'skip_image_test': True,
+                  'skip_image_test': False,
                   'start_date': '2013-05-11T21:23:58.970460+00:00',
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider': 
@@ -47,7 +47,7 @@ class Tester(unittest.TestCase):
                     {
                      'id': '435', 
                      'text': 'what animal is this?',
-                     'image_url': '',
+                     'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
                      'type': 'textimage',
                          'results': [
                                 {'id': '235',

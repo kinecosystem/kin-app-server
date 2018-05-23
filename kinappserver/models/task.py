@@ -242,10 +242,14 @@ def add_task(task_json):
             # test image_url within item results
             items = task_json['items']
             for item in items:
+                image_url = item.get('image_url', None)
+                if image_url is not None and not test_image(image_url):
+                    print('failed to verify task image_url: %s' % image_url)
+                    fail_flag = True
                 for res in item['results']:
                     image_url = res.get('image_url')
                     if image_url is not None and not test_image(image_url):
-                        print('failed to verify image_url: %s' % image_url)
+                        print('failed to verify task result image_url: %s' % image_url)
                         fail_flag = True
             print('done testing accessibility of task urls')
 
