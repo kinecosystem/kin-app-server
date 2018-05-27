@@ -92,3 +92,16 @@ def print_auth_tokens():
     push_auth_tokens = PushAuthToken.query.all()
     for token in push_auth_tokens:
         print(token)
+
+def should_send_auth_token(user_id):
+    """determines whether a user should be sent an auth push token"""
+    token_obj = get_token_obj_by_user_id(user_id)
+    if token_obj.send_date is None:
+        # always send to a user that hasn't been sent yet
+        return True
+
+    #now = arrow.utcnow()
+    #elif now - arrow.get(token_obj.send_date).total_days > 1:
+    #return True
+
+    return False
