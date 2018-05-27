@@ -304,7 +304,7 @@ def get_tokens_for_push(scheme):
                 #filter out users with no tasks AND ALSO users with future tasks:
                 tasks = get_tasks_for_user(user.user_id)
                 if tasks == []:
-                    print('skipping user %s - no active task' % user.user_id)
+                    print('skipping user %s - no active task, now: %s' % (user.user_id, now))
                     continue
 
                 next_task_ts = tasks[0]['start_date']
@@ -316,13 +316,13 @@ def get_tokens_for_push(scheme):
                 last_active_date = datetime.date(last_active)
 
                 if today == last_active_date:
-                    print('skipping user %s: was active today' % user.user_id)
+                    print('skipping user %s: was active today. now: %s' % (user.user_id, now))
                     continue
                 if last_active_date < four_days_ago:
-                    print('skipping user %s: last active more than 4 days ago' % user.user_id)
+                    print('skipping user %s: last active more than 4 days ago. now: %s' % (user.user_id, now))
                     continue
 
-                print('adding user %s with last_active: %s' % (user.user_id, last_active_date))
+                print('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
                 if user.os_type == OS_IOS:
                     tokens[OS_IOS].append(user.push_token)
                 else:
@@ -347,7 +347,7 @@ def get_tokens_for_push(scheme):
 
                 tasks = get_tasks_for_user(user.user_id)
                 if tasks == []:
-                    print('skipping user %s - no active task' % user.user_id)
+                    print('skipping user %s - no active task, now: %s' % (user.user_id, now))
                     continue
 
                 next_task_ts = tasks[0]['start_date']
@@ -359,10 +359,10 @@ def get_tokens_for_push(scheme):
                 last_active_date = datetime.date(last_active)
 
                 if seven_days_ago != last_active_date:
-                    print('skipping user %s: last active not seven days ago' % user.user_id)
+                    print('skipping user %s: last active not seven days ago, now: %s' % (user.user_id, now))
                     continue
             
-                print('adding user %s with last_active: %s' % (user.user_id, last_active_date))
+                print('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
                 if user.os_type == OS_IOS:
                     tokens[OS_IOS].append(user.push_token)
                 else:
