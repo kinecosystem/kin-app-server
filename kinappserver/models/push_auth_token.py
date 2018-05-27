@@ -74,7 +74,7 @@ def ack_auth_token(user_id, token):
 def set_ack_date(user_id):
     """update the ack_date for this user_id's token"""
     push_auth_token = get_token_obj_by_user_id(user_id)
-    push_auth_token.ack_date = arrow.utcnow().timestamp
+    push_auth_token.ack_date = arrow.utcnow()
 
     db.session.add(push_auth_token)
     db.session.commit()
@@ -95,6 +95,7 @@ def print_auth_tokens():
 
 def should_send_auth_token(user_id):
     """determines whether a user should be sent an auth push token"""
+    return True
     token_obj = get_token_obj_by_user_id(user_id)
     if token_obj.send_date is None:
         # always send to a user that hasn't been sent yet
