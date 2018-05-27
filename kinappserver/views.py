@@ -79,6 +79,11 @@ def app_launch():
         raise InvalidUsage('bad-request')
 
     update_user_app_version(user_id, app_ver)
+
+    # send auth token now that we have push token
+    # todo only do this once a day or so
+    send_push_auth_token(user_id)
+
     return jsonify(status='ok', config=get_global_config())
 
 
