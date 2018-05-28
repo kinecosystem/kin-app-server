@@ -75,6 +75,7 @@ def set_ack_date(user_id):
     """update the ack_date for this user_id's token"""
     push_auth_token = get_token_obj_by_user_id(user_id)
     push_auth_token.ack_date = arrow.utcnow()
+    push_auth_token.authenticated = True
 
     db.session.add(push_auth_token)
     db.session.commit()
@@ -108,3 +109,9 @@ def should_send_auth_token(user_id):
         return True
 
     return False
+
+
+def is_user_authenticated(user_id):
+    """returns True if the user is currently authenticated"""
+    token_obj = get_token_obj_by_user_id(user_id)
+    return token_obj.authenticated
