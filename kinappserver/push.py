@@ -41,6 +41,26 @@ def compensated_payload_gcm(amount, task_title):
     return gcm_payload('engage-recent', push_id, {'title': '', 'body': "You have been awarded %s KIN for completing task \"%s\"" % (amount, task_title)})
 
 
+def send_p2p_push(user_id, amount):
+    """sends a push to the given userid to inform of p2p tx"""
+    push_id = generate_push_id()
+    push_type = 'engage-recent'
+    from kinappserver.models import get_user_push_data
+    os_type, token = get_user_push_data(user_id)
+    if token:
+        if os_type == OS_ANDROID:
+            increment_metric('p2p-tx-push-gcm')
+            print('sending p2p-tx push message to GCM user %s' % user_id)
+            send_gcm(token, gcm_payload(push_type, push_id, {'title': '', 'body': "A friend just sent you %sKIN!" % amount}))
+        else:
+            increment_metric('p2p-tx-push-ios')
+            print('sending p2p-tx push message to APNS user %s' % user_id)
+            send_apns(token, apns_payload("", "A friend just sent you %sKIN!" % amount, push_type, push_id))
+    else:
+        print('not sending p2p-tx push to user_id %s: no token' % user_id)
+    return
+
+
 def send_please_upgrade_push(user_id):
     """sends a push to the given userid to please upgrade"""
     push_id = generate_push_id()

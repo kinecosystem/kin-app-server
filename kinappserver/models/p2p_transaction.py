@@ -61,6 +61,9 @@ def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
             print('cant create p2p tx - cant get one of the following: receiver_user_id: %s, sender_address: %s' % (receiver_user_id, sender_address))
             return False
         create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, receiver_address, amount)
+        print('sending p2p-tx push message to user_id %s' % receiver_user_id)
+        from ..push import send_p2p_push
+        send_p2p_push(receiver_user_id, amount)
     except Exception as e:
         print('failed to create a new p2p tx. exception: %s' % e)
         return False
