@@ -50,7 +50,7 @@ def create_token(user_id):
 def set_send_date(user_id):
     """update the send_date for this user_id's token"""
     push_auth_token = get_token_obj_by_user_id(user_id)
-    push_auth_token.send_date = arrow.utcnow().timestamp
+    push_auth_token.send_date = arrow.utcnow()
 
     db.session.add(push_auth_token)
     db.session.commit()
