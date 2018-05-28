@@ -5,7 +5,7 @@ metrics:
   endpoint: localhost:8125
   captureInterval: 10s
   tags:
-    - "service:kin-app-eshu-backend"
+    - "service:kin-app-eshu-backend-{{env|lower}}"
 
 events:
   backoff:
