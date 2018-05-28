@@ -39,3 +39,6 @@ P2P_MAX_KIN_AMOUNT = 12500
 
 TOS_URL = ''
 FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/kin-app-server/service-account.json'
+
+
+AUTH_TOKEN_SEND_INTERVAL_DAYS = 1

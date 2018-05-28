@@ -1,6 +1,6 @@
 import arrow
 
-from kinappserver import db
+from kinappserver import db, config
 from kinappserver.utils import InternalError
 from sqlalchemy_utils import UUIDType, ArrowType
 import uuid
@@ -81,7 +81,7 @@ def set_ack_date(user_id):
 
 
 def get_token_by_user_id(user_id):
-    """return the token uuid iteself for this user_id"""
+    """return the token uuid itself for this user_id"""
     push_auth_token = get_token_obj_by_user_id(user_id)
     if push_auth_token:
         return push_auth_token.auth_token
@@ -92,6 +92,8 @@ def print_auth_tokens():
     push_auth_tokens = PushAuthToken.query.all()
     for token in push_auth_tokens:
         print(token)
+    return {str(token.user_id): str(token.auth_token) for token in push_auth_tokens}
+
 
 def should_send_auth_token(user_id):
     """determines whether a user should be sent an auth push token"""
@@ -101,8 +103,8 @@ def should_send_auth_token(user_id):
         # always send to a user that hasn't been sent yet
         return True
 
-    #now = arrow.utcnow()
-    #elif now - arrow.get(token_obj.send_date).total_days > 1:
-    #return True
+    # resend if more than AUTH_TOKEN_SEND_INTERVAL_DAYS passed
+    elif (arrow.utcnow() - token_obj.send_date).total_seconds > 60*60*24*config.AUTH_TOKEN_SEND_INTERVAL_DAYS:
+        return True
 
     return False

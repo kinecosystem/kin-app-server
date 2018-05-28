@@ -2,10 +2,10 @@
 from sqlalchemy_utils import UUIDType
 
 from kinappserver import db
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric
 from kinappserver.push import send_gcm, send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm
 from uuid import uuid4, UUID
-from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token
+from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
 
 DEFAULT_TIME_ZONE = -4
 
@@ -223,6 +223,12 @@ def send_push_auth_token(user_id):
         payload = gcm_payload('auth_token', generate_push_id(), {'type': 'auth_token', 'user_id': str(user_id), 'token': str(auth_token)})
         send_gcm(token, payload)
         print('sent gcm auth token to user %s' % user_id)
+
+    if not set_send_date(user_id):
+        print('could not set the send-date for auth-token for user_id: %s' % user_id)
+
+    increment_metric('auth-token-sent')
+
     return True
 
 

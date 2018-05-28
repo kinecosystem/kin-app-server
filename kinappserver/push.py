@@ -4,7 +4,6 @@ from kinappserver import amqp_publisher, config
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, increment_metric
 
 
-
 def generate_push_id():
     return uuid.uuid4().hex
 
