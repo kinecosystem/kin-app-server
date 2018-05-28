@@ -27,3 +27,8 @@
     dest=/opt/eshu/eshu-backend
     force=yes
     mode=0770
+
+- name: restart supervisor
+  supervisorctl:
+    name: eshu-backend
+    state: restarted
