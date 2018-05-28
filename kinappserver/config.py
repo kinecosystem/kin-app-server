@@ -42,3 +42,4 @@ FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/kin-app-server/service-account.json'
 
 
 AUTH_TOKEN_SEND_INTERVAL_DAYS = 1
+AUTH_TOKEN_ENFORCED = False
