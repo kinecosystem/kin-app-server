@@ -104,7 +104,7 @@ def should_send_auth_token(user_id):
         return True
 
     # resend if more than AUTH_TOKEN_SEND_INTERVAL_DAYS passed
-    elif (arrow.utcnow() - token_obj.send_date).total_seconds > 60*60*24*config.AUTH_TOKEN_SEND_INTERVAL_DAYS:
+    elif (arrow.utcnow() - token_obj.send_date).total_seconds() > 60*60*24*int(config.AUTH_TOKEN_SEND_INTERVAL_DAYS):
         return True
 
     return False
