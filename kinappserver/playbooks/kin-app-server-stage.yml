@@ -41,3 +41,4 @@
    p2p_max_kin_amount: 3000
    auth_token_send_interval_days: 1
    auth_token_enforced: False
+   auth_token_enabled: True

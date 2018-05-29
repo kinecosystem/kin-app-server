@@ -80,8 +80,7 @@ def app_launch():
 
     update_user_app_version(user_id, app_ver)
 
-    # send auth token now that we have push token
-    # todo only do this once a day or so
+    # send auth token if needed
     send_push_auth_token(user_id)
 
     return jsonify(status='ok', config=get_global_config())
@@ -178,7 +177,7 @@ def update_token_api():
     print('updating token for user %s' % user_id)
     update_user_token(user_id, token)
 
-    # send auth token now that we have push token #TODO really do it here?
+    # send auth token now that we have push token
     send_push_auth_token(user_id)
 
     return jsonify(status='ok')
@@ -200,7 +199,7 @@ def push_update_token_api():
     print('updating token for user %s' % user_id)
     update_user_token(user_id, token)
 
-    # send auth token now that we have push token #TODO really do it here?
+    # send auth token now that we have push token
     send_push_auth_token(user_id)
 
     return jsonify(status='ok')
