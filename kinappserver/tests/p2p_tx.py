@@ -153,6 +153,12 @@ class Tester(unittest.TestCase):
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
+        # get user1 p2p tx history - should have 0 item
+        resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid1)})
+        self.assertEqual(resp.status_code, 200)
+        #print('txs: %s' % json.loads(resp.data).encode('utf-8'))
+        self.assertEqual(len(json.loads(resp.data)['txs']), 0)
+
         # user 1 updates his phone number to the server after client-side verification
         phone_num = '+972527702891'
         resp = self.app.post('/user/firebase/update-id-token',

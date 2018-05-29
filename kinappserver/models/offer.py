@@ -149,5 +149,7 @@ def get_offer_details(offer_id):
     """return a dict with some of the given offerid's metadata"""
     offer = Offer.query.filter_by(offer_id=offer_id).first()
     if not offer:
-        raise InvalidUsage('no offer with id %s exists' % offer_id)
+        print('cant find offer with id %s. using default text' % offer_id)
+        return {'title': 'unknown offer', 'desc': '', 'provider': {}}
+
     return {'title': offer.title, 'desc': offer.desc, 'provider': offer.provider_data}
