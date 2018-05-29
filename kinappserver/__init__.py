@@ -22,6 +22,8 @@ if channel_seed is None:
     print('could not get channels seeds - aborting')
     sys.exit(-1)
 
+print('using kin-stellar sdk version: %s' % kin.version.__version__)
+
 app.kin_sdk = kin.SDK(secret_key=base_seed,
                       horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                       network=config.STELLAR_NETWORK,
@@ -78,10 +80,13 @@ if not config.DEBUG:
 # useful prints:
 state = 'enabled' if config.PHONE_VERIFICATION_ENABLED else 'disabled'
 print('phone verification: %s' % state)
-state = 'enabled' if config.AUTHENTICATION_TOKEN_ENABLED else 'disabled'
-print('authentication token: %s' % state)
+state = 'enabled' if config.AUTH_TOKEN_ENABLED else 'disabled'
+print('auth token enabled: %s' % state)
+state = 'enabled' if config.AUTH_TOKEN_ENFORCED else 'disabled'
+print('auth token enforced: %s' % state)
 state = 'enabled' if config.P2P_TRANSFERS_ENABLED else 'disabled'
 print('p2p transfers: %s' % state)
+
 
 # get the firebase service-account from ssm
 service_account_file_path = ssm.write_service_account()
