@@ -236,13 +236,13 @@ class Tester(unittest.TestCase):
         # get user1 p2p tx history - should have 1 item
         resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid1)})
         self.assertEqual(resp.status_code, 200)
-        print('txs: %s' % json.loads(resp.data))
+        #print('txs: %s' % json.loads(resp.data).encode('utf-8'))
         self.assertEqual(len(json.loads(resp.data)['txs']), 1)
 
         # get user2 p2p tx history - should have 1 item
         resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid2)})
         self.assertEqual(resp.status_code, 200)
-        print('txs: %s' % json.loads(resp.data))
+        #print('txs: %s' % json.loads(resp.data).encode('utf-8'))
         self.assertEqual(len(json.loads(resp.data)['txs']), 1)
 
 
