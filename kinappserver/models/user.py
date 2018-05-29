@@ -590,13 +590,13 @@ def get_associated_user_ids(user_id):
         return [str(user.user_id) for user in users]
 
 
-def fix_user_data():
+def find_missing_txs():
     users = User.query.all()
     missing_txs = []
     num_missing_txs_by_user = {}
     for user in users:
         missing_txs_count = 0
-        print('checking user %s: ' % user.user_id)
+        #print('checking user %s: ' % user.user_id)
 
         user_app_data = get_user_app_data(user.user_id)
         completed_tasks = user_app_data.completed_tasks
@@ -604,13 +604,14 @@ def fix_user_data():
         # get the task results
         from .task import get_user_task_results
         user_task_results_ids_dict = {result.task_id: result.update_at for result in get_user_task_results(user.user_id)}
-        import json
-        for task_id in json.loads(completed_tasks):
-            if task_id not in user_task_results_ids_dict.keys():
-                print('cant find task results for task id (%s) for userid (%s)' % (task_id, user.user_id))
-            else:
-                #  print('found task results for task_id %s for user_id (%s)' % (task_id, user.user_id))
-                pass
+        #import json
+        #for task_id in json.loads(completed_tasks):
+        #    if task_id not in user_task_results_ids_dict.keys():
+        #        print('cant find task results for task id (%s) for userid (%s)' % (task_id, user.user_id))
+        #        pass
+        #    else:
+        #        #  print('found task results for task_id %s for user_id (%s)' % (task_id, user.user_id))
+        #        pass
 
         from .transaction import list_user_transactions
         user_txs = list_user_transactions(user.user_id)
@@ -624,7 +625,7 @@ def fix_user_data():
             if task_id not in tx_task_ids:
                 from .task import get_reward_for_task
                 reward = get_reward_for_task(task_id)
-                print('cant find tx for task_id %s for user_id %s' % (task_id, user.user_id))
+                #print('cant find tx for task_id %s for user_id %s' % (task_id, user.user_id))
                 missing_txs.append((user.user_id, task_id, reward, user_task_results_ids_dict[task_id]))
                 missing_txs_count = missing_txs_count + 1
             else:
@@ -633,7 +634,7 @@ def fix_user_data():
         if missing_txs_count > 0:
             num_missing_txs_by_user[user.user_id] = missing_txs_count
 
-    print(num_missing_txs_by_user)
+    print('users with missing txs: %s ' % num_missing_txs_by_user)
     return missing_txs
 
 
