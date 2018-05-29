@@ -47,6 +47,15 @@ def create_token(user_id):
         return push_auth_token
 
 
+def refresh_token(user_id):
+    """regenerate the token"""
+    push_auth_token = get_token_obj_by_user_id(user_id)
+    push_auth_token.auth_token = uuid.uuid4()
+
+    db.session.add(push_auth_token)
+    db.session.commit()
+
+
 def set_send_date(user_id):
     """update the send_date for this user_id's token"""
     push_auth_token = get_token_obj_by_user_id(user_id)
@@ -106,8 +115,10 @@ def should_send_auth_token(user_id):
         # always send to a user that hasn't been sent yet
         return True
 
-    # resend if more than AUTH_TOKEN_SEND_INTERVAL_DAYS passed
+    # if more than AUTH_TOKEN_SEND_INTERVAL_DAYS passed, resend and refresh the token
     elif (arrow.utcnow() - token_obj.send_date).total_seconds() > 60*60*24*int(config.AUTH_TOKEN_SEND_INTERVAL_DAYS):
+        print('refreshing auth token for user %s' % user_id)
+        refresh_token()
         return True
 
     return False
