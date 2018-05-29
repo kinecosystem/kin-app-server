@@ -632,7 +632,7 @@ def find_missing_txs():
                 #  print('found tx for task id (%s) for user_id (%s)' % (task_id, user.user_id))
                 pass
         if missing_txs_count > 0:
-            num_missing_txs_by_user[user.user_id] = missing_txs_count
+            num_missing_txs_by_user[str(user.user_id)] = missing_txs_count
 
     print('users with missing txs: %s ' % num_missing_txs_by_user)
     return missing_txs
