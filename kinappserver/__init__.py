@@ -13,21 +13,24 @@ CORS(app)
 from flask_sqlalchemy import SQLAlchemy
 from kinappserver import config, ssm, stellar
 
-base_seed, channel_seed = ssm.get_stellar_credentials()
+base_seed, channel_seeds = ssm.get_stellar_credentials()
 if not base_seed:
     print('could not get base seed - aborting')
     sys.exit(-1)
 
-if channel_seed is None:
+if channel_seeds is None:
     print('could not get channels seeds - aborting')
     sys.exit(-1)
+
+
+print('channel seeds: %s' % channel_seeds)
 
 print('using kin-stellar sdk version: %s' % kin.version.__version__)
 
 app.kin_sdk = kin.SDK(secret_key=base_seed,
                       horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                       network=config.STELLAR_NETWORK,
-                      channel_secret_keys=[channel_seed])
+                      channel_secret_keys=channel_seeds)
 
 
 # get (and print) the current balance for the account:
@@ -36,10 +39,9 @@ print('the current KIN balance on the base-seed: %s' % stellar.get_kin_balance(K
 # get (and print) the current balance for the account:
 print('the current XLM balance on the base-seed: %s' % stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode()))
 
-if channel_seed:
-    print('the current KIN balance on the channel: %s' % stellar.get_kin_balance(Keypair.from_seed(channel_seed).address().decode()))
-    # get (and print) the current balance for the account:
-    print('the current XLM balance on the channel: %s' % stellar.get_xlm_balance(Keypair.from_seed(channel_seed).address().decode()))
+
+for channel in channel_seeds:
+    print('the current XLM balance on channel (%s): %s' % (channel, stellar.get_xlm_balance(Keypair.from_seed(channel).address().decode())))
 
 
 

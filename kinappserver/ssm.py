@@ -10,16 +10,17 @@ def get_stellar_credentials():
     # get credentials from ssm. the base_seed is required, the channel-seeds are optional
     env = os.environ.get('ENV', 'test')
     base_seed = get_ssm_parameter('/config/' + env + '/stellar/base-seed', config.KMS_KEY_AWS_REGION)
-    channel_seed = get_ssm_parameter('/config/' + env + '/stellar/channel-seeds', config.KMS_KEY_AWS_REGION)
+    channel_seeds = get_ssm_parameter('/config/' + env + '/stellar/channel-seeds', config.KMS_KEY_AWS_REGION)
+    print('channel seeds: %s' % channel_seeds)
 
     if base_seed is None:
         print('cant get base_seed, aborting')
         return None, None
 
-    if not channel_seed:
+    if not channel_seeds:
         return base_seed, []
 
-    return base_seed, channel_seed  # convert_byte_to_string_array(channel_seeds)
+    return base_seed, convert_string_to_string_array(channel_seeds)
 
 
 def write_service_account():
@@ -39,11 +40,12 @@ def write_service_account():
         return path
 
 
-def convert_byte_to_string_array(input_byte):
+def convert_string_to_string_array(input):
     """converts the input (a bytestring to a string array without using eval"""
     # this is used to convert the decrypted seed channels bytestring to an array
-    # return json.loads('['+input_byte.decode("utf-8") +']')
-    return json.loads('[' + input_byte + ']')
+    #return json.loads('[' + input_byte + ']')
+    return json.loads('[' + str(input) + ']')
+
 
 
 def get_ssm_parameter(param_name, kms_key_region):
