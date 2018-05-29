@@ -580,7 +580,7 @@ def get_offers_api():
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
-        print('offers %s' % get_offers_for_user(user_id))
+        #print('offers %s' % get_offers_for_user(user_id))
     return jsonify(offers=get_offers_for_user(user_id))
 
 
@@ -750,7 +750,6 @@ def fix_users_api():
     """internal endpoint used to list problems with user data"""
     if not config.DEBUG:
         limit_to_local_host()
-    print('scanning user data...')
     missing_txs = find_missing_txs()
     print('found %s items to fix' % len(missing_txs))
     # sort results by date (4th item in each tuple)
