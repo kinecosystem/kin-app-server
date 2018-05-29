@@ -76,7 +76,6 @@ def send_gcm(routing_key, payload, tokens, dry_run, ttl):
         publish(routing_key, dumps(message))
 
 
-
 def internal_send_apns(routing_key, payload, tokens, is_voip):
     global ESHU_CONFIG
     for token in tokens:
@@ -90,7 +89,7 @@ def internal_send_apns(routing_key, payload, tokens, is_voip):
         publish(routing_key, message)
 
 
-def publish(routing_key, payload):
+def publish(routing_key, payload, retry=True):
     """Publish the given payload."""
     global inited
     if not inited:
@@ -102,9 +101,20 @@ def publish(routing_key, payload):
         _channels_manager = ChannelsManager()
 
     channel = _channels_manager.get_channel()
-    # Publish a message to the queue.
-    channel.publish(payload, routing_key)
-    _channels_manager.release_channel(channel)
+
+    try:
+        # Publish a message to the queue.
+        channel.publish(payload, routing_key)
+    except Exception as e:
+        print('amqp_publisher: failed to publish message to amqp. exception: %s' % e)
+        _channels_manager.release_channel(channel)
+        print('amqp_publisher: attempting to re-establish connection...')
+        _channels_manager.establish_connection()
+        if retry:
+            print('amqp_publisher: attempting to re-send message...')
+            publish(routing_key, payload, retry=False)
+    else:
+        _channels_manager.release_channel(channel)
 
 
 class Channel():
@@ -176,18 +186,21 @@ class ChannelsManager():
             return
         else:
             # create/recreate the connection and overwrite the channels
-            self._connection = Connection(ESHU_CONFIG['ADDRESS'],
-                                          ESHU_CONFIG['USER'],
-                                          ESHU_CONFIG['PASSWORD'],
-                                          virtual_host=ESHU_CONFIG['VIRTUAL_HOST'],
-                                          heartbeat=ESHU_CONFIG['HEARTBEAT'])
-            # clear previous channels if they exist
-            for channel in self._channels:
-                channel.close()
-            # create new channels
-            self._channels = []
-            for i in range(CHANNEL_POOL_SIZE):
-                self._channels.append(Channel(self._connection, i))
+            self.establish_connection()
+
+    def establish_connection(self):
+        self._connection = Connection(ESHU_CONFIG['ADDRESS'],
+                                      ESHU_CONFIG['USER'],
+                                      ESHU_CONFIG['PASSWORD'],
+                                      virtual_host=ESHU_CONFIG['VIRTUAL_HOST'],
+                                      heartbeat=ESHU_CONFIG['HEARTBEAT'])
+        # clear previous channels if they exist
+        for channel in self._channels:
+            channel.close()
+        # create new channels
+        self._channels = []
+        for i in range(CHANNEL_POOL_SIZE):
+            self._channels.append(Channel(self._connection, i))
 
     def get_channel(self):
         """Acquire a channel from the pool. Blocks if none are available."""
@@ -219,6 +232,8 @@ class ChannelsManager():
 
 
 if __name__ == '__main__':
+    pass
+    ## sample code ##
     eshu = {
         'USER': 'admin',
         'PASSWORD': 'admin',
