@@ -460,6 +460,11 @@ def get_phone_number_by_user_id(user_id):
         raise
 
 
+def is_user_phone_verified(user_id):
+    """return true iff the user passed phone-verification"""
+    return get_phone_number_by_user_id(user_id) is not None
+
+
 def get_all_user_id_by_phone(phone_number):
     try:
         users = User.query.filter_by(phone_number=phone_number).all()

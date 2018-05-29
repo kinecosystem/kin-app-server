@@ -21,7 +21,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
-    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated
+    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified
 
 
 def limit_to_local_host():
@@ -221,6 +221,10 @@ def quest_answers():
         # TODO more input checks here
     except Exception as e:
         raise InvalidUsage('bad-request')
+
+    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        print('blocking user (%s) results - didnt pass phone_verification' % user_id)
+        return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
 
     if user_deactivated(user_id):
         return jsonify(status='error', reason='user_deactivated'), status.HTTP_400_BAD_REQUEST
