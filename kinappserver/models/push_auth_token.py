@@ -63,6 +63,7 @@ def set_send_date(user_id):
 
     db.session.add(push_auth_token)
     db.session.commit()
+    return True
 
 
 def ack_auth_token(user_id, token):
