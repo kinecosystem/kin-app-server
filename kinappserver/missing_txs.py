@@ -11,7 +11,7 @@ def report_missing_txs():
 
     import socket
     hostname = socket.gethostbyname(socket.gethostname())
-    response = requests.get(URL_PREFIX + '/user/missing_txs')
+    response = requests.get(URL_PREFIX + '/users/missing_txs')
     missing_txs = json.loads(response.text)['missing_txs']
     statsd.gauge('kinitapp.%s.%s.%s' % (os.environ['ENV'], hostname, 'missing-txs'), len(missing_txs))
 

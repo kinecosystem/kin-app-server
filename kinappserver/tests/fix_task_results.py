@@ -205,7 +205,7 @@ class Tester(unittest.TestCase):
         sleep(15) # give the thread enough time to complete before the db connection is shutdown
 
         # fix user data
-        resp = self.app.get('/users/get_missing_txs', headers=headers)
+        resp = self.app.get('/users/missing_txs', headers=headers)
         data = json.loads(resp.data)
         print('data: %s' % data)
 
