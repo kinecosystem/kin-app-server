@@ -11,7 +11,6 @@ def get_stellar_credentials():
     env = os.environ.get('ENV', 'test')
     base_seed = get_ssm_parameter('/config/' + env + '/stellar/base-seed', config.KMS_KEY_AWS_REGION)
     channel_seeds = get_ssm_parameter('/config/' + env + '/stellar/channel-seeds', config.KMS_KEY_AWS_REGION)
-    print('channel seeds: %s' % channel_seeds)
 
     if base_seed is None:
         print('cant get base_seed, aborting')
@@ -41,9 +40,15 @@ def write_service_account():
 
 
 def convert_string_to_string_array(input):
-    """converts the input (a bytestring to a string array without using eval"""
-    # this is used to convert the decrypted seed channels bytestring to an array
-    #return json.loads('[' + input_byte + ']')
+    """converts the input from ssm to a python string array
+
+    used for the channel seeds, which sign txs
+    """
+
+    # to add new channels, use this aws command (just plug in the secret keys and kms key
+    #  aws ssm put-parameter --name /config/prod/stellar/channel-seeds --value "\"secret_key1\",\"secret_key2\",\"secret_key3\",\"secret_key4\",\"secret_key5\",\"secret_key6\"" --type SecureString --key-id <kms arn> --overwrite
+
+    # this is used to convert the decrypted seed channels string to an array
     return json.loads('[' + str(input) + ']')
 
 

@@ -22,9 +22,6 @@ if channel_seeds is None:
     print('could not get channels seeds - aborting')
     sys.exit(-1)
 
-
-print('channel seeds: %s' % channel_seeds)
-
 print('using kin-stellar sdk version: %s' % kin.version.__version__)
 
 app.kin_sdk = kin.SDK(secret_key=base_seed,

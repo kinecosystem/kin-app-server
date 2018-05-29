@@ -659,17 +659,17 @@ def balance_api():
         limit_to_local_host()
 
     base_seed, channel_seeds = ssm.get_stellar_credentials()
-    print('channel seeds: %s' % channel_seeds)
-
-    balance = {'base_seed': {}, 'channel_seeds': {0: {}}}
+    balance = {'base_seed': {}, 'channel_seeds': {}}
 
     from stellar_base.keypair import Keypair
     balance['base_seed']['kin'] = stellar.get_kin_balance(Keypair.from_seed(base_seed).address().decode())
     balance['base_seed']['xlm'] = stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode())
-    #todo print xlm balance for each seed
-    #if channel_seed:
-    #    # seeds only need to carry XLMs
-    #   balance['channel_seeds'][0]['xlm'] = stellar.get_xlm_balance(Keypair.from_seed(channel_seed).address().decode())
+    index = 0
+    for channel in channel_seeds:
+        # seeds only need to carry XLMs
+        balance['channel_seeds'][index] = {'xlm': 0}
+        balance['channel_seeds'][index]['xlm'] = stellar.get_xlm_balance(Keypair.from_seed(channel).address().decode())
+        index = index + 1
 
     return jsonify(status='ok', balance=balance)
 
