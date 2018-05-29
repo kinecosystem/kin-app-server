@@ -633,8 +633,6 @@ def find_missing_txs():
                 pass
         if missing_txs_count > 0:
             num_missing_txs_by_user[str(user.user_id)] = missing_txs_count
-
-    print('users with missing txs: %s ' % num_missing_txs_by_user)
     return missing_txs
 
 

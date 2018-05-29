@@ -750,7 +750,7 @@ def fix_users_api():
     if not config.DEBUG:
         limit_to_local_host()
     missing_txs = find_missing_txs()
-    print('found %s items to fix' % len(missing_txs))
+    print('missing_txs: found %s items' % len(missing_txs))
     # sort results by date (4th item in each tuple)
     missing_txs.sort(key=lambda tup: tup[3])
     return jsonify(status='ok', missing_txs=missing_txs)
