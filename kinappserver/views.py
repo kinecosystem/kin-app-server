@@ -355,7 +355,7 @@ def get_transactions_api():
 
         # get p2p details
         p2p_txs = [{'title': '\u1F389 Kin from a friend'.encode('utf-8'), 'description': 'a friend sent you %sKIN' % tx.amount, 'provider': {'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/poll_logo_kin.png', 'name': 'friend'},
-                    'type': 'p2p', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': str(tx.receiver_user_id).lower() == str(user_id), 'tx_info': '', 'date': arrow.get(tx.update_at).timestamp} for tx in list_p2p_transactions_for_user_id(user_id, MAX_TXS_PER_USER)]
+                    'type': 'p2p', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': str(tx.receiver_user_id).lower() == str(user_id), 'tx_info': {}, 'date': arrow.get(tx.update_at).timestamp} for tx in list_p2p_transactions_for_user_id(user_id, MAX_TXS_PER_USER)]
 
         # merge txs:
         detailed_txs = detailed_txs + p2p_txs
