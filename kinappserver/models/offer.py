@@ -138,14 +138,15 @@ def get_offers_for_user(user_id):
         else:
             print('filtering out un-redeemable offer-id: %s' % offer.offer_id)
 
+    # the client shows offers by the order they are listed, so make sure p2p (if it exists) is first
+    redeemable_offers = sorted(redeemable_offers, key=lambda k: k.offer_type != 'p2p', reverse=False)
+
+    # convert to json
     offers_json_array = []
     for offer in redeemable_offers:
         offers_json_array.append(offer_to_json(offer))
 
-    # sort offers by offer_id
-    offers_json_array = sorted(offers_json_array, key=lambda k: k['id'], reverse=True)
-
-    # print('offers for user %s: %s' % (user_id, offers_json_array))
+    print('offers for user %s: %s' % (user_id, offers_json_array))
     return offers_json_array
 
 
