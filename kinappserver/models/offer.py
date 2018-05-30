@@ -141,6 +141,10 @@ def get_offers_for_user(user_id):
     offers_json_array = []
     for offer in redeemable_offers:
         offers_json_array.append(offer_to_json(offer))
+
+    # sort offers by offer_id
+    offers_json_array = sorted(offers_json_array, key=lambda k: k['id'], reverse=True)
+
     # print('offers for user %s: %s' % (user_id, offers_json_array))
     return offers_json_array
 
