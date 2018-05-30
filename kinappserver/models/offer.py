@@ -1,5 +1,5 @@
 from kinappserver import db
-from kinappserver.utils import InvalidUsage, test_image
+from kinappserver.utils import InvalidUsage, test_image, OS_ANDROID, OS_IOS
 
 
 class Offer(db.Model):
@@ -127,6 +127,7 @@ def get_cost_and_address(offer_id):
 
 def get_offers_for_user(user_id):
     """return the list of active offers for this user"""
+    from distutils.version import LooseVersion
     offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
     
     # filter out offers with no goods
@@ -137,6 +138,30 @@ def get_offers_for_user(user_id):
             redeemable_offers.append(offer)
         else:
             print('filtering out un-redeemable offer-id: %s' % offer.offer_id)
+
+    # filter out p2p for users with client versions that do not support it
+    from .user import get_user_app_data, get_user_os_type
+    filter_p2p = False
+    os_type = get_user_os_type(user_id)
+    client_version = get_user_app_data(user_id).app_ver
+    if os_type == OS_IOS and LooseVersion(client_version) < LooseVersion('0.11.0'):
+        print('filter out p2p for old ios client %s' % client_version)
+        filter_p2p = True
+    if os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion('0.7.4'):
+        print('filter out p2p for old android client version %s' % client_version)
+        filter_p2p = True
+
+    # filter the first p2p item if one exists:
+    if filter_p2p:
+        item_to_remove = None
+
+        # find the first item to remove
+        for offer in redeemable_offers:
+            if offer.offer_type == 'p2p':
+                item_to_remove = offer
+
+        # ...and remove it
+        redeemable_offers.remove(item_to_remove)
 
     # the client shows offers by the order they are listed, so make sure p2p (if it exists) is first
     redeemable_offers = sorted(redeemable_offers, key=lambda k: k.offer_type != 'p2p', reverse=False)
