@@ -161,7 +161,8 @@ def get_offers_for_user(user_id):
                 item_to_remove = offer
 
         # ...and remove it
-        redeemable_offers.remove(item_to_remove)
+        if item_to_remove is not None:
+            redeemable_offers.remove(item_to_remove)
 
     # the client shows offers by the order they are listed, so make sure p2p (if it exists) is first
     redeemable_offers = sorted(redeemable_offers, key=lambda k: k.offer_type != 'p2p', reverse=False)
