@@ -119,7 +119,7 @@ def should_send_auth_token(user_id):
     # if more than AUTH_TOKEN_SEND_INTERVAL_DAYS passed, resend and refresh the token
     elif (arrow.utcnow() - token_obj.send_date).total_seconds() > 60*60*24*int(config.AUTH_TOKEN_SEND_INTERVAL_DAYS):
         print('refreshing auth token for user %s' % user_id)
-        refresh_token()
+        refresh_token(user_id)
         return True
 
     return False
