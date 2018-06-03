@@ -73,10 +73,36 @@ def send_please_upgrade_push(user_id):
             return  # not supported yet
             # print('sending please-upgrade push message to GCM user %s' % user_id)
             # send_gcm(token, gcm_payload(push_type, push_id, {'title': '', 'body': "Please upgrade the app to get the next task"}))
+
         else:
             increment_metric('pleaseupgrade-ios')
             print('sending please-upgrade push message to APNS user %s' % user_id)
             send_apns(token, apns_payload("", "Please upgrade the app to get the next task", push_type, push_id))
+    else:
+        print('not sending please-upgrade push to user_id %s: no token' % user_id)
+    return
+
+
+def send_please_upgrade_push_2(user_ids):
+    for user_id in user_ids:
+        send_please_upgrade_push_2_inner(user_id)
+
+
+def send_please_upgrade_push_2_inner(user_id):
+    """sends a push to the given userid to please upgrade"""
+    push_id = generate_push_id()
+    push_type = 'please_upgrade'
+    from kinappserver.models import get_user_push_data
+    os_type, token = get_user_push_data(user_id)
+    if token:
+        if os_type == OS_ANDROID:
+            increment_metric('pleaseupgrade-android')
+            print('sending please-upgrade push message to GCM user %s' % user_id)
+            send_gcm(token, gcm_payload('engage-recent', push_id, {'title': 'Kinit is getting an upgrade!', 'body': "Install the latest version before June 10th to keep enjoying the experience."}))
+        else:
+            increment_metric('pleaseupgrade-ios')
+            print('sending please-upgrade push message to APNS user %s' % user_id)
+            send_apns(token, apns_payload("Kinit is getting an upgrade!", "Install the latest version before June 10th to keep enjoying the experience.", push_type, push_id))
     else:
         print('not sending please-upgrade push to user_id %s: no token' % user_id)
     return

@@ -297,6 +297,26 @@ def get_pa_api():
     return jsonify(status='ok')
 
 
+@app.route('/push/please_upgrade', methods=['POST'])
+def push_please_upgrade_api():
+    """used to populate user tables with public addresses"""
+    # TODO REMOVE ME
+    if not config.DEBUG:
+        limit_to_local_host()
+
+    payload = request.get_json(silent=True)
+    try:
+        user_ids = payload.get('user_ids', None)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+
+    from .push import send_please_upgrade_push_2
+    send_please_upgrade_push_2(user_ids)
+
+    return jsonify(status='ok')
+
+
 @app.route('/task/delay_days', methods=['POST'])
 def set_delay_days_api():
     """used to set the delay_days on all tasks"""
