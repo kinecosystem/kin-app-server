@@ -1,4 +1,4 @@
-from kinappserver import db
+from kinappserver import db, config
 from kinappserver.utils import InvalidUsage, test_image, OS_ANDROID, OS_IOS
 
 
@@ -144,10 +144,13 @@ def get_offers_for_user(user_id):
     filter_p2p = False
     os_type = get_user_os_type(user_id)
     client_version = get_user_app_data(user_id).app_ver
-    if os_type == OS_IOS and LooseVersion(client_version) < LooseVersion('0.11.0'):
+    if not config.P2P_TRANSFERS_ENABLED:
+        print('filter out p2p for all users as per config flag')
+        filter_p2p = True
+    elif os_type == OS_IOS and LooseVersion(client_version) < LooseVersion('0.11.0'):
         print('filter out p2p for old ios client %s' % client_version)
         filter_p2p = True
-    if os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion('0.7.4'):
+    elif os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion('0.7.4'):
         print('filter out p2p for old android client version %s' % client_version)
         filter_p2p = True
 
