@@ -36,8 +36,8 @@
    phone_verification_required: False
    p2p_transfers_enabled: True
    p2p_min_tasks: 4
-   p2p_min_kin_amount: 1000
-   p2p_max_kin_amount: 12500
+   p2p_min_kin_amount: 500
+   p2p_max_kin_amount: 3000
    auth_token_send_interval_days: 1
    auth_token_enforced: False
    auth_token_enabled: True
