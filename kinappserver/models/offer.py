@@ -142,17 +142,27 @@ def get_offers_for_user(user_id):
     # filter out p2p for users with client versions that do not support it
     from .user import get_user_app_data, get_user_os_type
     filter_p2p = False
-    os_type = get_user_os_type(user_id)
-    client_version = get_user_app_data(user_id).app_ver
+
     if not config.P2P_TRANSFERS_ENABLED:
         print('filter out p2p for all users as per config flag')
         filter_p2p = True
-    elif os_type == OS_IOS and LooseVersion(client_version) < LooseVersion('0.11.0'):
-        print('filter out p2p for old ios client %s' % client_version)
-        filter_p2p = True
-    elif os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion('0.7.4'):
-        print('filter out p2p for old android client version %s' % client_version)
-        filter_p2p = True
+    else:
+        try:
+            os_type = get_user_os_type(user_id)
+        except Exception as e:
+            # race condition - the user's OS hasn't been written into the db yet, so
+            # just dont show the p2p offer. yes its an ugly patch
+            print('filter p2p - cant get user os_type')
+            filter_p2p = True
+        else:
+            # try to get the user's version:
+            client_version = get_user_app_data(user_id).app_ver
+            if os_type == OS_IOS and LooseVersion(client_version) < LooseVersion('0.11.0'):
+                print('filter out p2p for old ios client %s' % client_version)
+                filter_p2p = True
+            elif os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion('0.7.4'):
+                print('filter out p2p for old android client version %s' % client_version)
+                filter_p2p = True
 
     # filter the first p2p item if one exists:
     if filter_p2p:
