@@ -2,7 +2,7 @@
 
 from sqlalchemy_utils import UUIDType
 from sqlalchemy import desc
-
+import arrow
 
 from kinappserver import db
 
@@ -51,8 +51,25 @@ def create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, rec
         print('cant add p2ptx to db with id %s. e:%s' % (tx_hash, e))
 
 
+def format_p2p_tx_dict(tx_hash, amount, format_for_receiver):
+    """create a dict with the tx data as it would be sent/returned to the client"""
+    tx_dict = {
+         'title': 'Kin from a friend' if format_for_receiver else 'Kin to a friend',
+         'description': 'a friend sent you %sKIN' % amount,
+         'provider': {'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/poll_logo_kin.png', 'name': 'friend'},
+         'type': 'p2p',
+         'tx_hash': tx_hash,
+         'amount': amount,
+         'client_received': format_for_receiver,
+         'tx_info': {'memo': 'na', 'task_id': '-1'},
+         'date': arrow.utcnow().timestamp}
+    return tx_dict
+
+
 def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
-    """create a new p2p tx based on reports from the client"""
+    """create a new p2p tx based on reports from the client
+    return True/False and (if successful, a dict with the tx data
+    """
     try:
         from kinappserver.models import get_userid_by_address, get_address_by_userid
         receiver_user_id = get_userid_by_address(receiver_address)
@@ -61,11 +78,13 @@ def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
             print('cant create p2p tx - cant get one of the following: receiver_user_id: %s, sender_address: %s' % (receiver_user_id, sender_address))
             return False
         create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, receiver_address, amount)
+        # create a json object that mimics the one in the /transactions api
+
         print('sending p2p-tx push message to user_id %s' % receiver_user_id)
         from ..push import send_p2p_push
         send_p2p_push(receiver_user_id, amount)
     except Exception as e:
         print('failed to create a new p2p tx. exception: %s' % e)
-        return False
+        return False, None
     else:
-        return True
+        return True, format_p2p_tx_dict(tx_hash, amount, False)

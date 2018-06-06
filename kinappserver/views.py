@@ -770,8 +770,10 @@ def report_p2p_tx_api():
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
-    if add_p2p_tx(tx_hash, sender_id, destination_address, amount):
-        return jsonify(status='ok')
+    res, tx_dict = add_p2p_tx(tx_hash, sender_id, destination_address, amount)
+    if res:
+        # send back the dict with the tx details
+        return jsonify(status='ok', tx=tx_dict)
     else:
         raise InvalidUsage('failed to add p2ptx')
 
