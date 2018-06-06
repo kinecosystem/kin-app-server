@@ -31,6 +31,10 @@ class Good(db.Model):
 
 def create_good(offer_id, good_type, value):
     """creates a new good-instance for the given offer_id with the given value"""
+    if not offer_id:
+        print('refusing to create good with offer_id: %s' % offer_id)
+        return False
+
     try:
         now = arrow.utcnow()
         good = Good()

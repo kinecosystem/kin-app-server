@@ -21,7 +21,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
-    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified
+    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds
 
 
 def limit_to_local_host():
@@ -855,3 +855,64 @@ def nuke_user_api():
     else:
         print('nuked users with phone number: %s and user_ids %s' % (phone_number, user_ids))
         return jsonify(status='ok', user_id=user_ids)
+
+
+@app.route('/blackhawk/creds/init', methods=['POST'])
+def init_bh_creds_api():
+    """internal endpoint used to init blackhawk credentials"""
+    if not config.DEBUG:
+        limit_to_local_host()
+
+    try:
+        payload = request.get_json(silent=True)
+        username = payload.get('username', None)
+        password = payload.get('password', None)
+        account_id = payload.get('account_id', None)
+        digital_signature = payload.get('digital_signature', None)
+        if None in (username, password, digital_signature, account_id):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    init_bh_creds(account_id, username, password, digital_signature)
+
+    return jsonify(status='ok')
+
+
+@app.route('/blackhawk/creds/refresh-token', methods=['POST'])
+def refresh_bh_token_api():
+    """refresh the blackhawk auth token. called by cron every 6 days"""
+    if not config.DEBUG:
+        limit_to_local_host()
+
+    from .blackhawk import refresh_bh_auth_token
+    refresh_bh_auth_token()
+
+    return jsonify(status='ok')
+
+
+@app.route('/blackhawk/account/balance', methods=['GET'])
+def get_bh_balance():
+    """returns the current balance of the bh account"""
+    if not config.DEBUG:
+        limit_to_local_host()
+
+    from .blackhawk import get_account_balance
+    return jsonify(status='ok', balance=get_account_balance())
+
+
+@app.route('/blackhawk/cards/replenish', methods=['POST'])
+def replenish_bh_cards_endpoint():
+    """buy additional cards from blackhawk if below threshold"""
+    if not config.DEBUG:
+        limit_to_local_host()
+
+    # buys cards if needed
+    from .blackhawk import replenish_bh_cards
+    retval = replenish_bh_cards()
+    if retval > 0:
+        return jsonify(status='ok', unprocessed_orders=retval)
+    else:
+        return jsonify(status='error')
+
