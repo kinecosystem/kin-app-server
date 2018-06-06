@@ -98,11 +98,11 @@ def send_please_upgrade_push_2_inner(user_id):
         if os_type == OS_ANDROID:
             increment_metric('pleaseupgrade-android')
             print('sending please-upgrade push message to GCM user %s' % user_id)
-            send_gcm(token, gcm_payload('engage-recent', push_id, {'title': 'Kinit is getting an upgrade!', 'body': "Install the latest version before June 10th to keep enjoying the experience."}))
+            send_gcm(token, gcm_payload('engage-recent', push_id, {'title': 'Kinit is getting an upgrade!', 'body': "Upgrade before June 13th to keep enjoying Kinit"}))
         else:
             increment_metric('pleaseupgrade-ios')
             print('sending please-upgrade push message to APNS user %s' % user_id)
-            send_apns(token, apns_payload("Kinit is getting an upgrade!", "Install the latest version before June 10th to keep enjoying the experience.", push_type, push_id))
+            send_apns(token, apns_payload("Kinit is getting an upgrade!", "Upgrade before June 13th to keep enjoying Kinit", push_type, push_id))
     else:
         print('not sending please-upgrade push to user_id %s: no token' % user_id)
     return
