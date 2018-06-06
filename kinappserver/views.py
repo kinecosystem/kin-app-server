@@ -153,7 +153,7 @@ def set_user_phone_number_api():
     else:
         # for tests, you can use the unverified number
         print('using un-verified phone number')
-        phone = unverified_phone_number
+        phone = unverified_phone_number.strip().replace('-', '')
 
     print('updating phone number for user %s' % user_id)
     set_user_phone_number(user_id, phone)
