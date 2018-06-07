@@ -32,8 +32,8 @@ def report_bh_balance():
         print('cant collect balance')
         pass
 
-        metric = 'bh-account-balance'
-        statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric), balance)
+    metric = 'bh-account-balance'
+    statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric), balance)
 
 
 report_inventory()
