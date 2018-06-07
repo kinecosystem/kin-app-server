@@ -55,7 +55,7 @@ def send_p2p_push(user_id, amount, tx_dict):
         else:
             increment_metric('p2p-tx-push-ios')
             print('sending p2p-tx push message to APNS user %s' % user_id)
-            send_apns(token, apns_payload("", "A friend just sent you %sKIN!" % amount, push_type, push_id, extra_payload_dict={'tx': tx_dict}))
+            send_apns(token, apns_payload("", "A friend just sent you %sKIN!" % amount, 'p2p_received', push_id, 'default', {'tx': tx_dict}))
     else:
         print('not sending p2p-tx push to user_id %s: no token' % user_id)
     return
@@ -112,7 +112,7 @@ def apns_payload(title, body, push_type, push_id, sound='default', extra_payload
     """generate an apns payload"""
     payload_dict = {'aps': {'alert': {'title': title, 'body': body}, 'sound': sound}, 'kin': {'push_type': push_type, 'push_id': push_id}}
     if extra_payload_dict:
-        payload_dict['aps']['kin'].update(extra_payload_dict)
+        payload_dict['kin'].update(extra_payload_dict)
 
     print('the apns payload: %s' % payload_dict)
     return payload_dict

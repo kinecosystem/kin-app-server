@@ -42,3 +42,5 @@
    auth_token_enforced: False
    auth_token_enabled: True
    min_goods_threshold_for_offer_0_amazon: 10
+   blackhawk_purchases_enabled: True
+

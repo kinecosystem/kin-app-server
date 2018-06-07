@@ -2,19 +2,14 @@
 # all logic concerning the offline generation of gift cards (egift in BH terminology)
 import json
 import requests
-from kinappserver.models import create_bh_card, list_unprocessed_orders, set_processed_orders, create_good, get_bh_creds, replace_bh_token, list_inventory
+from kinappserver.models import create_bh_card, list_unprocessed_orders, set_processed_orders, \
+    create_good, get_bh_creds, replace_bh_token, list_inventory, get_bh_offers
 from kinappserver import config
 from kinappserver.utils import increment_metric
 import urllib.parse
 
 HEADERS = {'Content-Type': 'application/x-www-form-urlencoded'}
 API_BASE_URI = 'https://api.omnicard.com/2.x'
-# move this to sql table?
-BLACKHAWK_AMAZON_MERCHANT_CODE = 810
-BLACKHAWK_AMAZON_DENOMINATION = 5
-BLACKHAWK_AMAZON_MERCHANT_TEMPLATE_ID = 1803
-BLACKHAWK_AMAZON_ORDER_SIZE = 1
-BLACKHAWK_CRITICAL_BALANCE_THRESHOLD = 7
 
 
 def parse_bh_response_message(resp):
@@ -208,7 +203,6 @@ def track_orders():
         print('track_orders: no bh auth token')
         return -1
 
-
     orders_dict = list_unprocessed_orders()
     unprocessed_orders = 0
 
@@ -249,13 +243,14 @@ def track_orders():
 
 def merchant_code_to_offer_id(merchant_code, card_id, order_id):
     """convert the merchant_code from blackhawk into an offer id in our db"""
-    # TODO convert this to sql lookup table?
-    # this is a blackhawk bug: they return the templateid instead of the merchantid. should be: str(BLACKHAWK_AMAZON_MERCHANT_CODE) and not as shown below
-    if str(merchant_code) == str(BLACKHAWK_AMAZON_MERCHANT_TEMPLATE_ID):
-        return '0'
-    else:
-        print('ERROR: unknown merchant_code %s - cant convert card id %s in order %s' % (merchant_code, card_id, order_id))
-        return None
+    for offer in get_bh_offers():
+        # compare against the merchant template id, as that's what the api actually returns and not
+        # the merchant code
+        if offer.merchant_termplate_id == merchant_code:
+            return offer.offer_id
+
+    print('ERROR: unknown merchant_code %s - cant convert card id %s in order %s' % (merchant_code, card_id, order_id))
+    return None
 
 
 def refresh_bh_auth_token():
@@ -288,7 +283,7 @@ def replenish_bh_cards():
     still being processed by blackhawk.
     """
 
-    # TODO once we have differnet kind of orders, we need to distinguish between them
+    # TODO once we have different kind of orders, we need to distinguish between them
     # TODO this code basically assumes that blackhawk is used for only for amazon codes
     
     # start by converting previously-unprocessed orders into goods
@@ -312,21 +307,21 @@ def replenish_bh_cards():
         print('track_orders: something went wrong trying to get the balance. exception: %s', e)
         return False
     else:
-        if int(float(balance)) < BLACKHAWK_CRITICAL_BALANCE_THRESHOLD:
-            print('replenish_bh_cards: balance is critically low (%s), refusing to continue' % balance)
+        if int(float(balance)) < config.BLACKHAWK_CRITICAL_BALANCE_THRESHOLD:
+            print('replenish_bh_cards: balance is critically low (%s, threshold: %s), refusing to continue' % (balance, config.BLACKHAWK_CRITICAL_BALANCE_THRESHOLD))
             return False
-    
-    ## OFFER ZERO - AMAZON ###
-    amazon_codes_left = inventory['0']['unallocated']
-    if amazon_codes_left < config.MIN_GOODS_THRESHOLD_FOR_OFFER_0_AMAZON:
-        print('detected shortage in amazon codes (%s left, threshold: %s). ordering more from blackhawk' % (amazon_codes_left, config.MIN_GOODS_THRESHOLD_FOR_OFFER_0_AMAZON))
-        if not order_gift_cards(BLACKHAWK_AMAZON_MERCHANT_CODE,
-                                BLACKHAWK_AMAZON_MERCHANT_TEMPLATE_ID,
-                                BLACKHAWK_AMAZON_DENOMINATION,
-                                BLACKHAWK_AMAZON_ORDER_SIZE):
-            return True
-    else:
-        print('no need to replenish Amazon cards. (available: %s, threshold: %s)' % (amazon_codes_left, config.MIN_GOODS_THRESHOLD_FOR_OFFER_0_AMAZON))
+
+    # go over all the bh offers and see if any need ordering
+    for offer in get_bh_offers():
+        goods_left = inventory[offer.offer_id]['unallocated']
+        if goods_left < offer.minimum_threshold:
+            print('detected shortage in offer_id %s (%s left, threshold: %s). ordering more from blackhawk' % (offer.offer_id, goods_left, offer.minimum_threshold))
+            if not order_gift_cards(offer.merchant_code,
+                                    offer.merchant_termplate_id,
+                                    offer.denomination,
+                                    offer.batch_size):
+                return True
+        else:
+            print('no need to replenish cards for offer_id %s. (available: %s, threshold: %s)' % (offer.offer_id, goods_left, offer.minimum_threshold))
 
     return True
-

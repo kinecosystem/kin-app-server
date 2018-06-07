@@ -4,7 +4,7 @@ from kinappserver import db
 
 
 class BlackhawkCreds(db.Model):
-    """the BlackhawkCreds class stores info needed to connect to the OmniCode API.
+    """the BlackhawkCreds class stores info needed to connect to the OmniCodes API.
 
     most creds are static, but the auth_token needs to be replaced every 7 days.
     """

@@ -21,7 +21,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
-    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds
+    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer
 
 
 def limit_to_local_host():
@@ -882,16 +882,29 @@ def init_bh_creds_api():
     return jsonify(status='ok')
 
 
-@app.route('/blackhawk/creds/refresh-token', methods=['POST'])
-def refresh_bh_token_api():
-    """refresh the blackhawk auth token. called by cron every 6 days"""
+@app.route('/blackhawk/offers/add', methods=['POST'])
+def add_bh_offer_api():
+    """Adds a blackhawk offer to the db. the offer_id must already exist in the offers table"""
     if not config.DEBUG:
         limit_to_local_host()
 
-    from .blackhawk import refresh_bh_auth_token
-    refresh_bh_auth_token()
+    try:
+        payload = request.get_json(silent=True)
+        offer_id = payload.get('offer_id', None)
+        merchant_id = payload.get('merchant_code', None)
+        merchant_template_id = payload.get('merchant_termplate_id', None)
+        batch_size = payload.get('batch_size', None)
+        minimum_threshold = payload.get('minimum_threshold', None)
+        if None in (offer_id, merchant_id, merchant_template_id, batch_size, minimum_threshold):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
 
-    return jsonify(status='ok')
+    if create_bh_offer(offer_id, merchant_id, merchant_template_id, batch_size, minimum_threshold):
+        return jsonify(status='ok')
+    else:
+        return jsonify(status='error')
 
 
 @app.route('/blackhawk/account/balance', methods=['GET'])
@@ -909,6 +922,10 @@ def replenish_bh_cards_endpoint():
     """buy additional cards from blackhawk if below threshold"""
     if not config.DEBUG:
         limit_to_local_host()
+
+    if not config.BLACKHAWK_PURCHASES_ENABLED:
+        print('blackhawk purchases disabled by config. ignoring cron')
+        return jsonify(status='ok')
 
     # buys cards if needed
     from .blackhawk import replenish_bh_cards
