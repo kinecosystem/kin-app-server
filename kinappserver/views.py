@@ -798,7 +798,7 @@ def compensate_user_api():
 
     # for security reasons, I'm disabling this api.
     # remove the 'return' line to re-enable it.
-    return
+    #return
 
     payload = request.get_json(silent=True)
     user_id = payload.get('user_id', None)
