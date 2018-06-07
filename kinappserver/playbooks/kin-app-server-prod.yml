@@ -42,5 +42,5 @@
    auth_token_enforced: False
    auth_token_enabled: True
    blackhawk_purchases_enabled: True
-   blackhawk_critical_balance_threshold: 50
+   blackhawk_critical_balance_threshold: 10 # no cards will be ordered when we reach this threshold
 
