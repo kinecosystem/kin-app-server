@@ -41,7 +41,7 @@ def compensated_payload_gcm(amount, task_title):
     return gcm_payload('engage-recent', push_id, {'title': '', 'body': "You have been awarded %s KIN for completing task \"%s\"" % (amount, task_title)})
 
 
-def send_p2p_push(user_id, amount):
+def send_p2p_push(user_id, amount, tx_dict):
     """sends a push to the given userid to inform of p2p tx"""
     push_id = generate_push_id()
     push_type = 'engage-recent'
@@ -55,7 +55,7 @@ def send_p2p_push(user_id, amount):
         else:
             increment_metric('p2p-tx-push-ios')
             print('sending p2p-tx push message to APNS user %s' % user_id)
-            send_apns(token, apns_payload("", "A friend just sent you %sKIN!" % amount, push_type, push_id))
+            send_apns(token, apns_payload("", "A friend just sent you %sKIN!" % amount, push_type, push_id, extra_payload_dict={'tx': tx_dict}))
     else:
         print('not sending p2p-tx push to user_id %s: no token' % user_id)
     return
@@ -108,9 +108,11 @@ def send_please_upgrade_push_2_inner(user_id):
     return
 
 
-def apns_payload(title, body, push_type, push_id, sound='default'):
+def apns_payload(title, body, push_type, push_id, sound='default', extra_payload_dict=None):
     """generate an apns payload"""
     payload_dict = {'aps': {'alert': {'title': title, 'body': body}, 'sound': sound}, 'kin': {'push_type': push_type, 'push_id': push_id}}
+    if extra_payload_dict:
+        payload_dict['aps']['kin'].update(extra_payload_dict)
 
     print('the apns payload: %s' % payload_dict)
     return payload_dict

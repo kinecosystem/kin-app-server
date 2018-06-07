@@ -82,7 +82,7 @@ def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
 
         print('sending p2p-tx push message to user_id %s' % receiver_user_id)
         from ..push import send_p2p_push
-        send_p2p_push(receiver_user_id, amount)
+        send_p2p_push(receiver_user_id, amount, format_p2p_tx_dict(tx_hash, amount, True))
     except Exception as e:
         print('failed to create a new p2p tx. exception: %s' % e)
         return False, None
