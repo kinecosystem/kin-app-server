@@ -219,3 +219,13 @@ def parse_phone_number_by_sender_country_code(sender_number, number_to_parse):
             return None
     else:
         return phonenumbers.format_number(formatted_sent_number, phonenumbers.PhoneNumberFormat.E164)
+
+
+def print_creation_statement():
+    """prints out db creation statement. useful"""
+    from sqlalchemy.schema import CreateTable
+    from sqlalchemy.dialects import postgresql
+    from .models import BlackhawkCard, BlackhawkOffer, BlackhawkCreds
+    print(CreateTable(BlackhawkCard.__table__).compile(dialect=postgresql.dialect()))
+    print(CreateTable(BlackhawkCreds.__table__).compile(dialect=postgresql.dialect()))
+    print(CreateTable(BlackhawkOffer.__table__).compile(dialect=postgresql.dialect()))

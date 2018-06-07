@@ -111,4 +111,9 @@
     hour: 15
     minute: 0
     job: "/opt/kin-app-server/kinappserver/cron/send_engagement_push.sh"
+  run_once: true # runs every date at 15 gmt
+
+- cron:
+    name: "replenish blackhawk cards"
+    job: "/opt/kin-app-server/kinappserver/cron/replenish_blackhawk_cards.sh"
   run_once: true # runs every minute, on one machine of the 2

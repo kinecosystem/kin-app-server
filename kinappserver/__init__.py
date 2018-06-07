@@ -85,6 +85,7 @@ state = 'enabled' if config.AUTH_TOKEN_ENFORCED else 'disabled'
 print('auth token enforced: %s' % state)
 state = 'enabled' if config.P2P_TRANSFERS_ENABLED else 'disabled'
 print('p2p transfers: %s' % state)
+print('replenish blackhawk cards enabled: %s' % config.BLACKHAWK_PURCHASES_ENABLED)
 
 
 # get the firebase service-account from ssm
@@ -96,3 +97,8 @@ from firebase_admin import credentials
 cred = credentials.Certificate(service_account_file_path)
 firebase_admin.initialize_app(cred)
 app.firebase_admin = firebase_admin
+
+
+# uncomment to print db creation statements
+#from .utils import print_creation_statement
+#print_creation_statement()

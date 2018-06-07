@@ -877,7 +877,9 @@ def init_bh_creds_api():
         print(e)
         raise InvalidUsage('bad-request')
 
+    from .blackhawk import refresh_bh_auth_token
     init_bh_creds(account_id, username, password, digital_signature)
+    refresh_bh_auth_token()
 
     return jsonify(status='ok')
 
@@ -889,22 +891,24 @@ def add_bh_offer_api():
         limit_to_local_host()
 
     try:
+
         payload = request.get_json(silent=True)
         offer_id = payload.get('offer_id', None)
-        merchant_id = payload.get('merchant_code', None)
-        merchant_template_id = payload.get('merchant_termplate_id', None)
+        merchant_code = payload.get('merchant_code', None)
+        merchant_template_id = payload.get('merchant_template_id', None)
         batch_size = payload.get('batch_size', None)
+        denomination = payload.get('denomination', None)
         minimum_threshold = payload.get('minimum_threshold', None)
-        if None in (offer_id, merchant_id, merchant_template_id, batch_size, minimum_threshold):
+        if None in (offer_id, merchant_code, merchant_template_id, batch_size, denomination, minimum_threshold):
             raise InvalidUsage('bad-request')
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
 
-    if create_bh_offer(offer_id, merchant_id, merchant_template_id, batch_size, minimum_threshold):
+    if create_bh_offer(offer_id, merchant_code, merchant_template_id, batch_size, denomination, minimum_threshold):
         return jsonify(status='ok')
     else:
-        return jsonify(status='error')
+        raise InvalidUsage('failed to add blackhawk offer')
 
 
 @app.route('/blackhawk/account/balance', methods=['GET'])

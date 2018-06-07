@@ -33,36 +33,25 @@ class Tester(unittest.TestCase):
 
         # get merchant list and merchant data
 
-        #merchants_data = blackhawk.get_merchants_api('8488ed4948746238e314bfc5eee4a1fa')
+        #merchants_data = blackhawk.get_merchants_api('e67f735488d784131542ffa0091dd810')
         #merchants_data = str(merchants_data).encode('utf-8').strip()
         #print(merchants_data)
 
 
-        #merchant_data = blackhawk.get_merchant_api('8488ed4948746238e314bfc5eee4a1fa', 810)
+        #merchant_data = blackhawk.get_merchant_api('e67f735488d784131542ffa0091dd810', 810)
         #merchant_data = str(merchant_data).encode('utf-8').strip()
         #print(merchant_data)
 
         resp = self.app.post('/blackhawk/creds/init',
                             data=json.dumps({
-                                'account_id': 14334,
+                                'account_id': '14334',
                                 'username': 'kinitapp@kik.com',
-                                'password': 'Kinitapp1!',
+                                'password': '<PASSWORD HERE>',
                                 'digital_signature': 'Kinit App'
                             }),
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        resp = self.app.post('/blackhawk/creds/refresh-token',
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        resp = self.app.get('/blackhawk/account/balance',
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-        print(json.loads(resp.data))
 
         offer = { 'id': '0',
                   'type': 'gift-card',
@@ -85,6 +74,17 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+
+        # add an instance of goods
+        resp = self.app.post('/good/add',
+                    data=json.dumps({
+                    'offer_id': offer['id'],
+                    'good_type': 'code',
+                    'value': 'abcd'}),
+                    headers={},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         # enable offer 0
         resp = self.app.post('/offer/set_active',
                             data=json.dumps({
@@ -95,11 +95,14 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # add an instance of goods
-        resp = self.app.post('/good/add',
+        resp = self.app.post('/blackhawk/offers/add',
                     data=json.dumps({
                     'offer_id': offer['id'],
-                    'good_type': 'code',
-                    'value': 'abcd'}),
+                    'merchant_code': '810',
+                    'merchant_template_id': '1803',
+                    'batch_size': 1,
+                    'minimum_threshold': 2,
+                    'denomination': 5}),
                     headers={},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)

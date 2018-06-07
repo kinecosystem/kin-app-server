@@ -23,6 +23,7 @@ def parse_bh_response_message(resp):
             response = resp.json()['response']
             if response['status'] != 1000:
                 print('error: blackhawk response status != 1000')
+                print('response: %s' % response)
                 return None
             return response['message']
         except Exception as e:
@@ -203,6 +204,7 @@ def track_orders():
         print('track_orders: no bh auth token')
         return -1
 
+
     orders_dict = list_unprocessed_orders()
     unprocessed_orders = 0
 
@@ -222,7 +224,7 @@ def track_orders():
                     increment_metric('bh_card_processing_failure')
                     continue
                 print('card info: %s' % card)
-                code = card['code']
+                code = card['activation_account_number'] # the actual redemption code is called 'activation_account_number'
                 merchant_code = card['merchant_code']
                 card_id = card['id']
                 order_id = card['order']['id']
@@ -246,7 +248,7 @@ def merchant_code_to_offer_id(merchant_code, card_id, order_id):
     for offer in get_bh_offers():
         # compare against the merchant template id, as that's what the api actually returns and not
         # the merchant code
-        if offer.merchant_termplate_id == merchant_code:
+        if offer.merchant_template_id == merchant_code:
             return offer.offer_id
 
     print('ERROR: unknown merchant_code %s - cant convert card id %s in order %s' % (merchant_code, card_id, order_id))
@@ -271,6 +273,9 @@ def refresh_bh_auth_token():
 
     if replace_bh_token(new_token):
         print('replaced bh auth token in the db to: %s' % new_token)
+    else:
+        print('failed to replace bh token in db')
+        return False
 
     return True
 
@@ -315,13 +320,13 @@ def replenish_bh_cards():
     for offer in get_bh_offers():
         goods_left = inventory[offer.offer_id]['unallocated']
         if goods_left < offer.minimum_threshold:
-            print('detected shortage in offer_id %s (%s left, threshold: %s). ordering more from blackhawk' % (offer.offer_id, goods_left, offer.minimum_threshold))
+            print('detected shortage in blackhawk offer_id %s (%s left, threshold: %s). ordering more from blackhawk' % (offer.offer_id, goods_left, offer.minimum_threshold))
             if not order_gift_cards(offer.merchant_code,
-                                    offer.merchant_termplate_id,
+                                    offer.merchant_template_id,
                                     offer.denomination,
                                     offer.batch_size):
                 return True
         else:
-            print('no need to replenish cards for offer_id %s. (available: %s, threshold: %s)' % (offer.offer_id, goods_left, offer.minimum_threshold))
+            print('no need to replenish cards for blackhawk offer_id %s. (available: %s, threshold: %s)' % (offer.offer_id, goods_left, offer.minimum_threshold))
 
     return True

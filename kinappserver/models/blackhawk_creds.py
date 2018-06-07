@@ -8,7 +8,7 @@ class BlackhawkCreds(db.Model):
 
     most creds are static, but the auth_token needs to be replaced every 7 days.
     """
-    account_id = db.Column(db.Integer(), primary_key=True)
+    account_id = db.Column(db.String(40), primary_key=True)
     auth_token = db.Column(db.String(40), primary_key=False, nullable=True)
     username = db.Column(db.String(40), primary_key=False, nullable=True)
     password = db.Column(db.String(40), primary_key=False, nullable=True)
@@ -16,7 +16,7 @@ class BlackhawkCreds(db.Model):
     token_generation_time = db.Column(db.DateTime(timezone=True))
 
     def __repr__(self):
-        return '<token: %s, token_generation_time: %s>' % (self.auth_token, self.token_generation_time)
+        return '<token: %s, token_generation_time: %s, account_id: %s>' % (self.auth_token, self.token_generation_time, self.account_id)
 
 
 def replace_bh_token(new_token):

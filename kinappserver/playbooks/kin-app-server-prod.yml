@@ -41,6 +41,6 @@
    auth_token_send_interval_days: 1
    auth_token_enforced: False
    auth_token_enabled: True
-   min_goods_threshold_for_offer_0_amazon: 10
    blackhawk_purchases_enabled: True
+   blackhawk_critical_balance_threshold: 50
 
