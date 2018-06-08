@@ -224,7 +224,7 @@ def track_orders():
                     increment_metric('bh_card_processing_failure')
                     continue
                 print('card info: %s' % card)
-                code = card['activation_account_number'] # the actual redemption code is called 'activation_account_number'
+                code = card['redemption_details']['activation_account_number']  # the actual redemption code is called 'activation_account_number'
                 merchant_code = card['merchant_code']
                 card_id = card['id']
                 order_id = card['order']['id']
