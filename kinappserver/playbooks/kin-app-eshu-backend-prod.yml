@@ -9,7 +9,7 @@
 
   vars:
     git_rev: e153ed6
-    datadog_api_key: "7d29689e7460c08f21128628adf11afd"
+    datadog_api_key: "cb6389daa2808d1c275f1f69bfff63e5"
     datadog_config:
       tags: "service:kin-app-eshu-backend"
     env: PROD

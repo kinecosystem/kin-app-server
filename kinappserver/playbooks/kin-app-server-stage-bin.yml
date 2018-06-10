@@ -8,7 +8,7 @@
    deployment_env: stage
    environment_config:
      ENV: stage
-   datadog_api_key: "7d29689e7460c08f21128628adf11afd"
+   datadog_api_key: "cb6389daa2808d1c275f1f69bfff63e5"
    debug: True
    nginx_domain: stage.kinitapp.com
    db_connstr: 'postgresql://kinappstageuser:password@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage'
