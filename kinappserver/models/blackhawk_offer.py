@@ -7,14 +7,15 @@ from kinappserver.utils import InternalError
 class BlackhawkOffer(db.Model):
     """the BlackhawkOffer class represent a single offer from the OmniCodes API.
 
-    Offers can be bought into cards
+    Offers can be bought into cards with money. The merchant code and merchant template id
+    are listed using Blackhawk's API requests get_merchants_api and get_merchant_api.
     """
     offer_id = db.Column('offer_id', db.String(40), db.ForeignKey("offer.offer_id"), primary_key=True, nullable=False)
-    merchant_code = db.Column(db.String(40), nullable=False)
-    merchant_template_id = db.Column(db.String(40), nullable=False)
-    batch_size = db.Column(db.Integer, default=1, nullable=False)
-    denomination = db.Column(db.Integer, nullable=False)
-    minimum_threshold = db.Column(db.Integer, nullable=False)
+    merchant_code = db.Column(db.String(40), nullable=False)  # used to identify a card provider
+    merchant_template_id = db.Column(db.String(40), nullable=False)  # used to identify a specific card offered by the provider
+    batch_size = db.Column(db.Integer, default=1, nullable=False)  # how many cards should be ordered at once in an order
+    denomination = db.Column(db.Integer, nullable=False)  # the USD value loaded onto each ordered card
+    minimum_threshold = db.Column(db.Integer, nullable=False)  # the threshold below a new batch should be ordered
     updated_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):

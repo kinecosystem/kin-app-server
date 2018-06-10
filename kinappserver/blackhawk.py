@@ -1,5 +1,18 @@
 # blackhawk logic be here:
 # all logic concerning the offline generation of gift cards (egift in BH terminology)
+
+# blackhawk offers an api that lets us buy egifts - codes - from various vendors. this code is run
+# periodically by cron to determine whether we need to generate more codes.
+# each item in the blackhawk_offer table correlates to an entry in the offers table. Once the number
+# of unallocated goods for a certain offer goes below a threshold, the code below requests another batch
+# from blackhawk. it can take up-to 4 minutes until the cards are actually ready ('processed'), which is why this
+# process is done off-line. once the cards are ready, a 'good' entry is written in to the Good table.
+#
+# the blackhawk api specifies how to generate an order: first you must 'create' it, then 'add cards' to it
+# and finally 'complete' it (and then wait for it to be processed.
+
+# blackhawk/omnicode client portal url: https://clients.omnicard.com/
+
 import json
 import requests
 from kinappserver.models import create_bh_card, list_unprocessed_orders, set_processed_orders, \
@@ -19,7 +32,6 @@ def parse_bh_response_message(resp):
         return None
     else:
         try:
-            #print(resp.json())
             response = resp.json()['response']
             if response['status'] != 1000:
                 print('error: blackhawk response status != 1000')
@@ -33,6 +45,7 @@ def parse_bh_response_message(resp):
 
 
 def escape_payload(payload_dict):
+    """used to convert a python dict to the format accepted by blackhawk's servers"""
     payload = ''
     for key in payload_dict.keys():
         payload = (payload + '&') if payload is not '' else ''
@@ -41,13 +54,14 @@ def escape_payload(payload_dict):
 
 
 def generate_auth_token_api(username, password):
-    """get an ephemral auth token from BH"""
+    """get an ephemeral auth token from BH"""
     resp = requests.post('%s/apiUsers/auth.json' % API_BASE_URI, headers=HEADERS,
                          data=escape_payload({'data[username]': username, 'data[password]': password}))
     return parse_bh_response_message(resp)
 
 
 def get_order_status_api(token, order_id):
+    """gor the given order_id, returns the order status (like 'processed' or 'verified')"""
     resp = requests.post('%s/orders/getOrder.json' % API_BASE_URI, headers=HEADERS,
                          data=escape_payload({'data[token]': token, 'data[order_id]': order_id}))
     message = parse_bh_response_message(resp)
@@ -287,9 +301,6 @@ def replenish_bh_cards():
     this function will not order additional cards as long as there are some cards
     still being processed by blackhawk.
     """
-
-    # TODO once we have different kind of orders, we need to distinguish between them
-    # TODO this code basically assumes that blackhawk is used for only for amazon codes
     
     # start by converting previously-unprocessed orders into goods
     yet_unprocessed_orders = track_orders()
@@ -297,7 +308,9 @@ def replenish_bh_cards():
         print('could not determine the number of yet unprocessed orders - bailing')
         return False
 
-    #print('replenish_bh_cards: there are currently %s yet-unprocessed blackhawk orders' % yet_unprocessed_orders)
+    # TODO: at the moment, we only generate a new order (for any card) if there are no pending yet-unprocessed orders.
+    # TODO this may create a bottleneck once we have multiple blackhawk offers configured. in the future, we may want
+    # TODO to change that.
     if yet_unprocessed_orders > 0:
         print('replenish_bh_cards: not making additional blackhawk orders while there are %s unprocessed orders' % yet_unprocessed_orders)
         return True

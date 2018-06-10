@@ -1,6 +1,6 @@
+"""This is a manual test for the blackhawk code. it should not be run automatically as it costs money to generate the amazon giftcards"""
 import simplejson as json
 import unittest
-import uuid
 import time
 
 import testing.postgresql
