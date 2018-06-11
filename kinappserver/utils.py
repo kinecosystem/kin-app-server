@@ -229,3 +229,4 @@ def print_creation_statement():
     print(CreateTable(BlackhawkCard.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(BlackhawkCreds.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(BlackhawkOffer.__table__).compile(dialect=postgresql.dialect()))
+

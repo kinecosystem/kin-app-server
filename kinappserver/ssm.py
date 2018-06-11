@@ -52,7 +52,6 @@ def convert_string_to_string_array(input):
     return json.loads('[' + str(input) + ']')
 
 
-
 def get_ssm_parameter(param_name, kms_key_region):
     """retreives an encrpyetd value from AWSs ssm or None"""
     try:
@@ -64,3 +63,10 @@ def get_ssm_parameter(param_name, kms_key_region):
         print('cant get secure value: %s from ssm' % param_name)
         print(e)
         return None
+
+
+def get_security_password():
+    """returns the kinit security password from ssm"""
+    env = os.environ.get('ENV', 'test')
+    password =  get_ssm_parameter('/config/' + env + '/misc/password', config.KMS_KEY_AWS_REGION)
+    return password

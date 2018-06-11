@@ -11,7 +11,8 @@ import arrow
 
 from kinappserver import app, config, stellar, utils, ssm
 from kinappserver.stellar import create_account, send_kin
-from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, get_global_config, extract_phone_number_from_firebase_id_token, sqlalchemy_pool_status
+from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, get_global_config, extract_phone_number_from_firebase_id_token,\
+    sqlalchemy_pool_status
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     store_task_results, add_task, get_tasks_for_user, is_onboarded, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
@@ -28,6 +29,14 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
 def limit_to_local_host():
     """aborts non-local requests for sensitive APIs (nginx specific). allow on DEBUG"""
     if config.DEBUG or request.headers.get('X-Forwarded-For', None) is None:
+        pass
+    else:
+        abort(403)  # Forbidden
+
+
+def limit_to_password():
+    """ensure the request came with the expected security password"""
+    if request.headers.get('X-Password', '') == ssm.get_security_password():
         pass
     else:
         abort(403)  # Forbidden
@@ -947,8 +956,7 @@ def replenish_bh_cards_endpoint():
 @app.route('/task/results', methods=['POST'])
 def get_task_endpoint():
     """returns the current balance of the bh account"""
-    if not config.DEBUG:
-        limit_to_local_host()
+    limit_to_password()
 
     try:
         payload = request.get_json(silent=True)
