@@ -21,7 +21,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
-    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer
+    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
+    get_task_results
 
 
 def limit_to_local_host():
@@ -798,7 +799,7 @@ def compensate_user_api():
 
     # for security reasons, I'm disabling this api.
     # remove the 'return' line to re-enable it.
-    #return
+    return
 
     payload = request.get_json(silent=True)
     user_id = payload.get('user_id', None)
@@ -891,7 +892,6 @@ def add_bh_offer_api():
         limit_to_local_host()
 
     try:
-
         payload = request.get_json(silent=True)
         offer_id = payload.get('offer_id', None)
         merchant_code = payload.get('merchant_code', None)
@@ -917,6 +917,10 @@ def get_bh_balance():
     if not config.DEBUG:
         limit_to_local_host()
 
+    if not config.BLACKHAWK_PURCHASES_ENABLED:
+        print('blackhawk purchases disabled by config. ignoring cron')
+        return jsonify(status='ok', balance=-1)
+
     from .blackhawk import get_account_balance
     return jsonify(status='ok', balance=get_account_balance())
 
@@ -939,3 +943,20 @@ def replenish_bh_cards_endpoint():
     else:
         return jsonify(status='error')
 
+
+@app.route('/task/results', methods=['POST'])
+def get_task_endpoint():
+    """returns the current balance of the bh account"""
+    if not config.DEBUG:
+        limit_to_local_host()
+
+    try:
+        payload = request.get_json(silent=True)
+        task_id = payload.get('task_id', None)
+        if task_id is None:
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    return jsonify(status='ok', results=get_task_results(task_id))

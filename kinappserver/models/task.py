@@ -115,6 +115,17 @@ def list_all_users_results_data():
     return response
 
 
+def get_task_results(task_id):
+    """returns all the results for the task with the given id"""
+    results = UserTaskResults.query.filter_by(task_id=task_id).order_by(UserTaskResults.user_id).all()
+    # format the results as json
+    results_dict = {}
+    for entry in results:
+        results_dict[str(entry.user_id)] = entry.results
+    print('results: %s' % results_dict)
+    return results_dict
+
+
 class Task(db.Model):
     """the Task class represent a single task"""
     task_id = db.Column(db.String(40), nullable=False, primary_key=True)
@@ -336,3 +347,5 @@ def handle_task_results_resubmission(user_id, task_id):
 
     memo, user_id = get_memo_for_user_ids(associated_user_ids, task_id)
     return memo, user_id
+
+

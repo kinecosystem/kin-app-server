@@ -73,6 +73,10 @@ def get_order_status_api(token, order_id):
 def get_account_balance_api(token, account_id):
     """gets the balance on the account (one account is assumed)"""
     accounts = get_accounts_data_api(token)
+    if accounts is None:
+        print('no blackhawk account configured - cant get balance')
+        return None
+
     for account in accounts:
         if str(account['account']['id']) == str(account_id):
             return account['account']['balance']
