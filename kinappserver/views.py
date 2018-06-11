@@ -11,8 +11,8 @@ import arrow
 
 from kinappserver import app, config, stellar, utils, ssm
 from kinappserver.stellar import create_account, send_kin
-from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, get_global_config, extract_phone_number_from_firebase_id_token,\
-    sqlalchemy_pool_status
+from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
+    sqlalchemy_pool_status, get_global_config
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     store_task_results, add_task, get_tasks_for_user, is_onboarded, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
@@ -23,7 +23,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results
+    get_task_results, get_user_config
 
 
 def limit_to_local_host():
@@ -93,7 +93,7 @@ def app_launch():
     # send auth token if needed
     send_push_auth_token(user_id)
 
-    return jsonify(status='ok', config=get_global_config())
+    return jsonify(status='ok', config=get_user_config(user_id))
 
 
 @app.route('/user/contact', methods=['POST'])
@@ -517,6 +517,7 @@ def register_api():
             print('created user with user_id %s' % user_id)
             increment_metric('user_registered')
 
+            # return global config - the user doesn't have user-specific config (yet)
             return jsonify(status='ok', config=get_global_config())
 
 

@@ -1,8 +1,8 @@
 """The User model"""
 from sqlalchemy_utils import UUIDType
 
-from kinappserver import db
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric
+from kinappserver import db, config
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, get_global_config
 from kinappserver.push import send_gcm, send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_please_upgrade_push_2
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
@@ -657,3 +657,19 @@ def nuke_user_data(phone_number, nuke_all = False):
         db.engine.execute("delete from public.user_task_results where user_id='%s'" % (user_id))
         db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\'' % (user_id))
     return user_ids if len(user_ids)>0 else None
+
+
+def get_user_config(user_id):
+    """return the user-specific config based on the global config"""
+    global_config = get_global_config()
+
+    # customize the p2p tx flag
+    if config.P2P_TRANSFERS_ENABLED:
+        user_app_data = get_user_app_data(user_id)
+        if not user_app_data:
+            print('could not customize user config. disabling p2p txs for this user')
+            global_config['p2p_enabled'] = False
+        elif len(user_app_data.completed_tasks) < config.P2P_MIN_TASKS:
+            global_config['p2p_enabled'] = False
+
+    return global_config
