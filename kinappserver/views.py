@@ -23,7 +23,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config, get_user_report
+    get_task_results, get_user_config, get_user_report, generate_retarget_list
 
 
 def limit_to_local_host():
@@ -941,12 +941,14 @@ def replenish_bh_cards_endpoint():
     if not config.DEBUG:
         limit_to_local_host()
 
+    from .blackhawk import replenish_bh_cards, refresh_bh_auth_token
+    refresh_bh_auth_token()
+
     if not config.BLACKHAWK_PURCHASES_ENABLED:
         print('blackhawk purchases disabled by config. ignoring cron')
         return jsonify(status='ok')
 
     # buys cards if needed
-    from .blackhawk import replenish_bh_cards
     retval = replenish_bh_cards()
     if retval > 0:
         return jsonify(status='ok', unprocessed_orders=retval)
@@ -986,3 +988,17 @@ def user_report_endpoint():
         raise InvalidUsage('bad-request')
 
     return jsonify(report=get_user_report(user_id))
+
+
+@app.route('/auth/retarget', methods=['POST'])
+def retarget_auth_endpoint():
+    """re-send auth push tokens for users that have not answered"""
+    limit_to_local_host()
+
+    user_ids = generate_retarget_list()
+    print('re-sending auth token to %s users' % len(user_ids))
+    for user_id in user_ids:
+        print('user_id: %s' % user_id)
+        send_push_auth_token(user_id)
+
+    return jsonify(status='ok')
