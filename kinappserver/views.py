@@ -23,7 +23,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config
+    get_task_results, get_user_config, get_user_report
 
 
 def limit_to_local_host():
@@ -969,3 +969,20 @@ def get_task_endpoint():
         raise InvalidUsage('bad-request')
 
     return jsonify(status='ok', results=get_task_results(task_id))
+
+
+@app.route('/user/report', methods=['POST'])
+def user_report_endpoint():
+    """returns the current balance of the bh account"""
+    limit_to_password()
+
+    try:
+        payload = request.get_json(silent=True)
+        user_id = payload.get('user_id', None)
+        if user_id is None:
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    return jsonify(report=get_user_report(user_id))

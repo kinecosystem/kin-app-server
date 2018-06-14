@@ -673,3 +673,38 @@ def get_user_config(user_id):
             global_config['p2p_enabled'] = False
 
     return global_config
+
+
+def get_user_report(user_id):
+    """return a json with all the interesting user-data"""
+    print('getting user report for %s' % user_id)
+    user_report = {}
+    try:
+        user = get_user(user_id)
+        user_app_data = get_user_app_data(user_id)
+        from .push_auth_token import get_token_by_user_id
+        push_token_entry = get_token_obj_by_user_id(user_id)
+
+        user_report['user_id'] = str(user.user_id)
+        user_report['user_id_upper'] = str(user.user_id).upper()
+        user_report['os'] = user.os_type
+        user_report['app_ver'] = user_app_data.app_ver
+        user_report['device_model'] = user.device_model
+        user_report['push_token'] = user.push_token
+        user_report['time_zone'] = user.time_zone
+        user_report['device_id'] = user.device_id
+        user_report['created_at'] = user.created_at
+        user_report['onboarded'] = str(user.onboarded)
+        user_report['public_address'] = user.public_address
+        user_report['deactivated'] = str(user.deactivated)
+        user_report['completed_tasks'] = user_app_data.completed_tasks
+        user_report['next_task_ts'] = user_app_data.next_task_ts
+        user_report['last_app_launch'] = user_app_data.update_at
+        user_report['auth_token'] = {}
+        user_report['auth_token']['sent_date'] = str(push_token_entry.send_date)
+        user_report['auth_token']['ack_data'] = str(push_token_entry.ack_date)
+        user_report['auth_token']['authenticated'] = str(push_token_entry.authenticated)
+
+    except Exception as e:
+        print('caught exception in get_user_report')
+    return user_report
