@@ -5,7 +5,7 @@ import json
 
 from kinappserver import db, config
 from kinappserver.push import send_please_upgrade_push
-from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, DEFAULT_MIN_CLIENT_VERSION, test_image
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
 
 
@@ -133,6 +133,7 @@ class Task(db.Model):
     title = db.Column(db.String(80), nullable=False, primary_key=False)
     desc = db.Column(db.String(80), nullable=False, primary_key=False)
     price = db.Column(db.Integer(), nullable=False, primary_key=False)
+    video_url = db.Column(db.String(100), nullable=True, primary_key=False)
     min_to_complete = db.Column(db.Float(), nullable=False, primary_key=False)
     provider_data = db.Column(db.JSON)
     tags = db.Column(db.JSON)
@@ -144,8 +145,8 @@ class Task(db.Model):
     min_client_version_ios = db.Column(db.String(80), nullable=False, primary_key=False)
 
     def __repr__(self):
-        return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, min_to_complete: %s, start_date: %s, delay_days: %s, min_client_version_android: %s, min_client_version_ios %s>' % \
-               (self.task_id, self.task_type, self.title, self.desc, self.price, self.min_to_complete, self.start_data, self.delay_days, self.min_client_version_android, self.min_client_version_ios)
+        return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, video_url: %s, min_to_complete: %s, start_date: %s, delay_days: %s, min_client_version_android: %s, min_client_version_ios %s>' % \
+               (self.task_id, self.task_type, self.title, self.desc, self.price, self.video_url, self.min_to_complete, self.start_data, self.delay_days, self.min_client_version_android, self.min_client_version_ios)
 
 
 def list_all_task_data():
@@ -221,6 +222,8 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['type'] = task.task_type
     task_json['desc'] = task.desc
     task_json['price'] = task.price
+    if task.video_url is not None:
+        task_json['video_url'] = task.video_url
     task_json['min_to_complete'] = task.min_to_complete
     task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
@@ -234,13 +237,26 @@ def get_task_by_id(task_id, shifted_ts=None):
 
 def add_task(task_json):
     try:
+        print('trying to add task...')
         # sanity for task data
         for item in task_json['items']:
-            if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating']:
+            if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating', 'tip']:
+                print('invalid item type:%s ' % item['type'])
                 raise InvalidUsage('cant add task with invalid item-type')
 
         fail_flag = False
         skip_image_test = task_json.get('skip_image_test', False)
+
+        if task_json['type'] == 'video_questionnaire':
+            video_url = task_json.get('video_url', None)
+            if video_url is None:
+                print('missing video_url in video_questionnaire')
+                raise InvalidUsage('no video_url field in the video_questionnaire!')
+            elif not skip_image_test:
+                    if not test_url(video_url):
+                        print('failed to get the video url: %s' % video_url)
+                        fail_flag = True
+
         if not skip_image_test:
             print('testing accessibility of task urls (this can take a few seconds...)')
             # ensure all urls are accessible:
@@ -275,6 +291,7 @@ def add_task(task_json):
         task.title = task_json['title']
         task.desc = task_json['desc']
         task.price = int(task_json['price'])
+        task.video_url = task_json.get('video_url', None)
         task.min_to_complete = float(task_json['min_to_complete'])
         task.provider_data = task_json['provider']
         task.tags = task_json['tags']
