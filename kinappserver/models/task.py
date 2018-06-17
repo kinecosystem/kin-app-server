@@ -296,11 +296,9 @@ def add_task(task_json):
         task.provider_data = task_json['provider']
         task.tags = task_json['tags']
         task.items = task_json['items']
-        print(task_json['start_date'])
         task.start_date = arrow.get(task_json['start_date'])
         task.min_client_version_ios = task_json.get('min_client_version_ios', DEFAULT_MIN_CLIENT_VERSION)
         task.min_client_version_android = task_json.get('min_client_version_android', DEFAULT_MIN_CLIENT_VERSION)
-        print("the task: %s" % task.start_date)
         db.session.add(task)
         db.session.commit()
     except Exception as e:

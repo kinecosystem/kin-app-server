@@ -23,7 +23,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config, get_user_report, generate_retarget_list
+    get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id
 
 
 def limit_to_local_host():
@@ -263,12 +263,35 @@ def quest_answers():
         # this task was already submitted - and compensated, so just re-return the memo to the user.
         return jsonify(status='ok', memo=str(memo))
 
+    tip = 0
+    # get tipping for video_questionnaire. the next - and rather awful code -
+    # assumes that for 'video_questionnaire' tasks, the last question has 'tip_value' fields.
+    task_data = get_task_by_id(task_id)
+    if task_data['type'] == 'video_questionnaire':
+        try:
+            #  get the last item in the task - which is where the tipping data is:
+            tipping_question = task_data['items'][-1]
+            tipping_question_id = tipping_question['id']
+            tipping_question_results = tipping_question['results']
+
+            # find the answer that matches the tipping question:
+            for item in results:
+                if item['qid'] == tipping_question_id:
+                    for answer in tipping_question_results:
+                        if answer['id'] == item['aid'][0]:
+                            tip = answer['tip_value']
+                            break
+        except Exception as e:
+            print('could not get tip value for video_questionnaire. e:%s' % e)
+
+        print('tipping value %s for task_id %s' % (tip, task_id))
+
     # this should never fail for application-level reasons:
     if not store_task_results(user_id, task_id, results):
             raise InternalError('cant save results for userid %s' % user_id)
     try:
         memo = utils.generate_memo()
-        reward_and_push(address, task_id, send_push, user_id, memo)
+        reward_and_push(address, task_id, send_push, user_id, memo, tip)
     except Exception as e:
         print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
@@ -521,12 +544,12 @@ def register_api():
             return jsonify(status='ok', config=get_global_config())
 
 
-def reward_and_push(public_address, task_id, send_push, user_id, memo):
+def reward_and_push(public_address, task_id, send_push, user_id, memo, tip):
     """create a thread to perform this function in the background"""
-    Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo)).start()
+    Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo, tip)).start()
 
 
-def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo):
+def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo, tip=0):
     """transfer the correct amount of kins for the task to the given address
 
        this function runs in the background and sends a push message to the client to
@@ -537,6 +560,10 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
     if not amount:
         print('could not figure reward amount for task_id: %s' % task_id)
         raise InternalError('cant find reward for task_id %s' % task_id)
+
+    # take into account tipping: reduce the reward of the user by the amount that was tipped
+    amount = amount - tip
+
     try:
         # send the moneys
         print('calling send_kin: %s, %s' % (public_address, amount))
