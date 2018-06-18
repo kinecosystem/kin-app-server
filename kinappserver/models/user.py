@@ -75,7 +75,7 @@ def set_onboarded(user_id, onboarded, public_address):
     db.session.commit()
 
 
-def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver):
+def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver, locale, screen_h, screen_w, screen_d):
     """create a new user and commit to the database. should only fail if the user_id is duplicate"""
 
     def parse_timezone(tz):
@@ -87,9 +87,14 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
             print(e)
             return int(DEFAULT_TIME_ZONE)
 
-    if user_exists(user_id):
-            raise InvalidUsage('refusing to create user. user_id %s already exists' % user_id)
-    user = User()
+    is_new_user = False
+    try:
+        user = get_user(user_id)
+        print('user %s already exists, updating data' % user_id)
+    except Exception as e:
+        user = User()
+        is_new_user = True
+
     user.user_id = user_id
     user.os_type = os_type
     user.device_model = device_model
@@ -97,19 +102,26 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user.time_zone = parse_timezone(time_zone)
     user.device_id = device_id
     user.auth_token = uuid4()
+    #user.locale = str(locale)
+    #user.screen_h = screen_h
+    #user.screen_w = screen_w
+    #user.screen_d = screen_d
     db.session.add(user)
     db.session.commit()
 
-    user_app_data = UserAppData()
-    user_app_data.user_id = user_id
-    user_app_data.completed_tasks = '[]'
-    user_app_data.app_ver = app_ver
-    user_app_data.next_task_ts = None
-    db.session.add(user_app_data)
-    db.session.commit()
+    if is_new_user:
+        user_app_data = UserAppData()
+        user_app_data.user_id = user_id
+        user_app_data.completed_tasks = '[]'
+        user_app_data.app_ver = app_ver
+        user_app_data.next_task_ts = None
+        db.session.add(user_app_data)
+        db.session.commit()
 
-    # create an auth token for this user
-    get_token_obj_by_user_id(user_id)
+        # get/create an auth token for this user
+        get_token_obj_by_user_id(user_id)
+
+    return is_new_user
 
 
 def update_user_token(user_id, push_token):

@@ -95,7 +95,7 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # re-use userid - should fail
+        # re-use userid - should succeed
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str(userid),
@@ -106,7 +106,7 @@ class Tester(unittest.TestCase):
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 200)
         print(json.loads(resp.data))
 
         print(models.list_all_users())

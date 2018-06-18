@@ -513,6 +513,8 @@ def register_api():
     """ register a user to the system
     called once by every client until 200OK is received from the server.
     the payload may contain a optional push token.
+
+    this function may be called by the client multiple times to update fields
     """
     payload = request.get_json(silent=True)
     try:
@@ -520,12 +522,16 @@ def register_api():
         user_id = payload.get('user_id', None)
         os = payload.get('os', None)
         device_model = payload.get('device_model', None)
-        token = payload.get('token', None)
+
         time_zone = payload.get('time_zone', None)
-        print('raw time_zone: %s' % time_zone)
         device_id = payload.get('device_id', None)
         app_ver = payload.get('app_ver', None)
-        # TODO more input check on the values
+        # optionals
+        token = payload.get('token', None)
+        screen_h = payload.get('screen_h', None)
+        screen_w = payload.get('screen_w', None)
+        screen_d = payload.get('screen_d', None)
+        locale = payload.get('locale', None)
         if None in (user_id, os, device_model, time_zone, app_ver):  # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
         if os not in (utils.OS_ANDROID, utils.OS_IOS):
@@ -535,12 +541,17 @@ def register_api():
         raise InvalidUsage('bad-request')
     else:
         try:
-            create_user(user_id, os, device_model, token, time_zone, device_id, app_ver)
+            new_user_created = create_user(user_id, os, device_model, token,
+                        time_zone, device_id, app_ver,
+                        locale, screen_h, screen_w, screen_d)
         except InvalidUsage as e:
             raise InvalidUsage('duplicate-userid')
         else:
-            print('created user with user_id %s' % user_id)
-            increment_metric('user_registered')
+            if new_user_created:
+                print('created user with user_id %s' % user_id)
+                increment_metric('user_registered')
+            else:
+                print('updated userid %s data' % user_id)
 
             # return global config - the user doesn't have user-specific config (yet)
             return jsonify(status='ok', config=get_global_config())
