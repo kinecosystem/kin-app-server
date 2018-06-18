@@ -230,6 +230,7 @@ def quest_answers():
             raise InvalidUsage('bad-request')
         # TODO more input checks here
     except Exception as e:
+        print('exception in /user/task/results. e=%s' % e)
         raise InvalidUsage('bad-request')
 
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
@@ -237,6 +238,7 @@ def quest_answers():
         return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
 
     if user_deactivated(user_id):
+        print('user %s deactivated. rejecting submission' % user_id)
         return jsonify(status='error', reason='user_deactivated'), status.HTTP_400_BAD_REQUEST
 
     if reject_premature_results(user_id):
