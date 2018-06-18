@@ -1026,6 +1026,6 @@ def retarget_auth_endpoint():
     print('re-sending auth token to %s users' % len(user_ids))
     for user_id in user_ids:
         print('user_id: %s' % user_id)
-        send_push_auth_token(user_id)
+        send_push_auth_token(user_id, force_send=True)
 
     return jsonify(status='ok')

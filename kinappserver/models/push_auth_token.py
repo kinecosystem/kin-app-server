@@ -135,14 +135,10 @@ def generate_retarget_list():
     """find unresponsive users to target"""
     push_list = []
     push_auth_tokens = PushAuthToken.query.all()
-    now = arrow.utcnow()
 
     for token in push_auth_tokens:
-        if not token.send_date or token.authenticated:
-            continue
-
-        sent_minutes_ago = (now - token.send_date).total_seconds() / 60
-        if sent_minutes_ago > 5:
+        #   target anyone who has not acked but has been targeted before
+        if token.send_date and not token.authenticated:
             push_list.append(token.user_id)
 
     return push_list

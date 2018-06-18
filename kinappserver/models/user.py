@@ -204,10 +204,10 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
     return True
 
 
-def send_push_auth_token(user_id):
+def send_push_auth_token(user_id, force_send=False):
     """send a message indicating that the tx has been successfully completed"""
     from .push_auth_token import get_token_by_user_id
-    if not should_send_auth_token(user_id):
+    if not force_send and not should_send_auth_token(user_id):
         return True
     os_type, token = get_user_push_data(user_id)
     auth_token = get_token_by_user_id(user_id)
