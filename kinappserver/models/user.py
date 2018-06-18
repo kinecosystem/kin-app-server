@@ -690,6 +690,7 @@ def get_user_report(user_id):
         user_report['os'] = user.os_type
         user_report['app_ver'] = user_app_data.app_ver
         user_report['device_model'] = user.device_model
+        user_report['phone_number'] = user.phone_number
         user_report['push_token'] = user.push_token
         user_report['time_zone'] = user.time_zone
         user_report['device_id'] = user.device_id
