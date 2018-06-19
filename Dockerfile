@@ -20,13 +20,15 @@ RUN apk add --no-cache \
     pip3 install git+https://github.com/kinecosystem/kin-core-python.git && \
     rm -r /root/.cache
 
-# Copy the base uWSGI ini file to enable default dynamic uwsgi process number
-COPY wsgi.ini /etc/uwsgi/
-
 
 # Add the kinappserver app
 COPY setup.py /app/
 COPY kinappserver /app/kinappserver/
-WORKDIR /app/kinappserver
+WORKDIR /app/
+RUN pip3 install . --upgrade
 
-CMD ["uwsgi --socket 0.0.0.0:8000 --protocol=http --ini wsgi.ini --enable-threads"]
+RUN apk add --update uwsgi-python
+
+RUN mkdir /opt/kin-app-server -p
+
+CMD ["uwsgi --plugin /usr/lib/uwsgi/python3_plugin.so --socket 0.0.0.0:8000 --protocol=http --wsgi-file /app/kinappserver/wsgi.py --enable-threads"]
