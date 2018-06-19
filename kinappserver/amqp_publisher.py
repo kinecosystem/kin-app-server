@@ -33,10 +33,11 @@ ESHU_CONFIG = {'QUEUE_NAME': '',
                'PASSWORD': '',
                'VIRTUAL_HOST': '',
                'HEARTBEAT': '',
-               'APP_ID': ''}
+               'APP_ID': '',
+               'TTL': ''}
 
 
-def init_config(address, queue_name, exchange_name, virtual_host, user, password, heartbeat, app_id):
+def init_config(address, queue_name, exchange_name, virtual_host, user, password, heartbeat, app_id, ttl):
     global ESHU_CONFIG, inited
     ESHU_CONFIG['ADDRESS'] = address
     ESHU_CONFIG['QUEUE_NAME'] = queue_name
@@ -46,17 +47,18 @@ def init_config(address, queue_name, exchange_name, virtual_host, user, password
     ESHU_CONFIG['PASSWORD'] = password
     ESHU_CONFIG['HEARTBEAT'] = heartbeat
     ESHU_CONFIG['APP_ID'] = app_id
+    ESHU_CONFIG['TTL'] = ttl
     inited = True
 
 
 def send_apns_voip(routing_key, payload, tokens):
     """Send the given payload to the given tokens - as voip apns."""
-    internal_send_apns(routing_key, payload, tokens, True)
+    internal_send_apns(routing_key, payload, tokens, True, ESHU_CONFIG['TTL'])
 
 
 def send_apns(routing_key, payload, tokens):
     """Send the given payload to the given tokens - as apns."""
-    internal_send_apns(routing_key, payload, tokens, False)
+    internal_send_apns(routing_key, payload, tokens, False, ESHU_CONFIG['TTL'])
 
 
 def send_gcm(routing_key, payload, tokens, dry_run, ttl):
@@ -76,11 +78,12 @@ def send_gcm(routing_key, payload, tokens, dry_run, ttl):
         publish(routing_key, dumps(message))
 
 
-def internal_send_apns(routing_key, payload, tokens, is_voip):
+def internal_send_apns(routing_key, payload, tokens, is_voip, ttl):
     global ESHU_CONFIG
     for token in tokens:
         message = dumps({'app_id': ESHU_CONFIG['APP_ID'],
             'data': {
+                'ttl': ttl,
                 'apns': {
                     'device_token': token,
                     'voip': is_voip,

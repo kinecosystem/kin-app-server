@@ -17,7 +17,7 @@ def get_activity_for_user(user_id):
                    'device': {'ip': HARDCODED_CLIENT_IP},
                    #'response': {'callback': 'stage.kinitapp.com/truex_cb?activity_id=%s' % activity_id,
                    #             'max_activities': 1},
-                   'placement': {'key': PARTNER_KEY}, 'partner_config_hash': PARTNER_KEY, 'bid_floor': 0}
+                   'placement': {'key': PARTNER_KEY}}
 
         response = requests.post(TRUEX_GET_ACTIVITY_URL, json=payload)
         print(response.json())
@@ -34,9 +34,9 @@ def get_activity_for_user2(user_id):
     try:
         payload = {'user.uid': str(user_id),
                    'device.ip': HARDCODED_CLIENT_IP,
-                   'placement.key': PARTNER_KEY,
-                   'placement.bid_floor': '0'}
+                   'placement.key': PARTNER_KEY}
         response = requests.get(TRUEX_GET_ACTIVITY_URL, params=payload)
+        print(response.url)
         response.raise_for_status()
     except Exception as e:
         print('faild to get activity from truex: %s' % e)
@@ -79,9 +79,9 @@ def generate_truex_url(user_id, kp_version, client_request_id):
 
 
 if __name__ == '__main__':
-    #get_activity_for_user2('9e2f2783-6741-4dd1-a862-6dc0e908bd86')
-    resp = requests.get(generate_truex_url('9e2f2783-4431-4dd1-a862-6dc0e908bd86', '2', str(int(time.time()))))
-    print(resp.url)
-    resp.raise_for_status()
-    print(resp)
-    print(resp.json())
+    get_activity_for_user2('9e2f2783-6741-4dd1-a862-6dc0e908bd86')
+    ##resp = requests.get(generate_truex_url('9e2f2783-4431-4dd1-a862-6dc0e908bd86', '2', str(int(time.time()))))
+    #print(resp.url)
+    #resp.raise_for_status()
+    #print(resp)
+    #print(resp.json())
