@@ -4,7 +4,7 @@ import arrow
 import json
 
 from kinappserver import db, config
-from kinappserver.push import send_please_upgrade_push
+#from kinappserver.push import send_please_upgrade_push
 from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
 
@@ -188,7 +188,7 @@ def get_tasks_for_user(user_id):
         if not can_support_task(os_type, user_app_data.app_ver, next_task):
             # client does NOT support the next task, so return an empty array and push a notification
             print('user %s, client os:%s client_ver:%s does not support the next task. returning empty array' % (user_id, os_type, user_app_data.app_ver))
-            send_please_upgrade_push(user_id)
+            # send_please_upgrade_push(user_id) #TOOD disabled this push for beta.
             return []
 
         else:
