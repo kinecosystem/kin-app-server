@@ -131,7 +131,7 @@ def send_gcm(token, payload):
     if config.DEPLOYMENT_ENV == 'test':
         print('skipping push on test env')
         return
-    amqp_publisher.send_gcm("eshu-key", payload, [token], False, config.GCM_TTL_SECS)
+    amqp_publisher.send_gcm("eshu-key", payload, [token], False, config.PUSH_TTL_SECS)
 
 
 def send_apns(token, payload):
