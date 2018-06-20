@@ -27,11 +27,12 @@ class User(db.Model):
     phone_number = db.Column(db.String(60), primary_key=False, nullable=True)
     deactivated = db.Column(db.Boolean, unique=False, default=False)
     auth_token = db.Column(UUIDType(binary=False), primary_key=False, nullable=True)
+    package_id = db.Column(db.String(60), primary_key=False, nullable=True)
 
     def __repr__(self):
         return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s,' \
-               ' onboarded: %s, public_address: %s, phone_number: %s, deactivated: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
-                                                                                           self.device_id, self.onboarded, self.public_address, self.phone_number, self.deactivated)
+               ' onboarded: %s, public_address: %s, phone_number: %s, package_id: %s, deactivated: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
+                                                                                           self.device_id, self.onboarded, self.public_address, self.phone_number, self.package_id, self.deactivated)
 
 
 def get_user(user_id):
@@ -75,7 +76,7 @@ def set_onboarded(user_id, onboarded, public_address):
     db.session.commit()
 
 
-def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver, locale, screen_h, screen_w, screen_d):
+def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver, locale, screen_h, screen_w, screen_d, package_id):
     """create a new user and commit to the database. should only fail if the user_id is duplicate"""
 
     def parse_timezone(tz):
@@ -106,6 +107,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     #user.screen_h = screen_h
     #user.screen_w = screen_w
     #user.screen_d = screen_d
+    user.package_id = package_id
     db.session.add(user)
     db.session.commit()
 

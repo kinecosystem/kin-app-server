@@ -532,6 +532,7 @@ def register_api():
         screen_w = payload.get('screen_w', None)
         screen_d = payload.get('screen_d', None)
         locale = payload.get('locale', None)
+        package_id = payload.get('package_id', None)
         if None in (user_id, os, device_model, time_zone, app_ver):  # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
         if os not in (utils.OS_ANDROID, utils.OS_IOS):
@@ -543,7 +544,7 @@ def register_api():
         try:
             new_user_created = create_user(user_id, os, device_model, token,
                         time_zone, device_id, app_ver,
-                        locale, screen_h, screen_w, screen_d)
+                        locale, screen_h, screen_w, screen_d, package_id)
         except InvalidUsage as e:
             raise InvalidUsage('duplicate-userid')
         else:

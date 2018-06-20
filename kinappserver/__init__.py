@@ -76,6 +76,8 @@ app.amqp_publisher = amqp_publisher
 if not config.DEBUG:
     app.redis.setex('temp-key', 1, 'temp-value')
 
+config.TRUEX_PARTNER_HASH = ssm.get_truex_hash()
+
 # useful prints:
 state = 'enabled' if config.PHONE_VERIFICATION_ENABLED else 'disabled'
 print('phone verification: %s' % state)

@@ -6,6 +6,11 @@ import boto3
 from kinappserver import config
 
 
+def get_truex_hash():
+    env = os.environ.get('ENV', 'test')
+    return get_ssm_parameter('/config/' + env + '/truex/partner_hash', config.KMS_KEY_AWS_REGION)
+
+
 def get_stellar_credentials():
     # get credentials from ssm. the base_seed is required, the channel-seeds are optional
     env = os.environ.get('ENV', 'test')
