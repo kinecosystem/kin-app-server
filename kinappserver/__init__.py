@@ -40,7 +40,15 @@ print('the current XLM balance on the base-seed: %s' % stellar.get_xlm_balance(K
 for channel in channel_seeds:
     print('the current XLM balance on channel (%s): %s' % (channel, stellar.get_xlm_balance(Keypair.from_seed(channel).address().decode())))
 
+# create an sqlalchemy engine with "autocommit" to tell sqlalchemy NOT to use un-needed transactions.
+# see this: http://oddbird.net/2014/06/14/sqlalchemy-postgres-autocommit/
+# and this: https://github.com/mitsuhiko/flask-sqlalchemy/pull/67
+class MySQLAlchemy(SQLAlchemy):
+    def apply_driver_hacks(self, app, info, options):
+        options['isolation_level'] = 'AUTOCOMMIT'
+        super(MySQLAlchemy, self).apply_driver_hacks(app, info, options)
 
+app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 
 # SQLAlchemy timeouts
 app.config['SQLALCHEMY_POOL_SIZE'] = 1000
@@ -53,10 +61,15 @@ if config.DEBUG:
     app.config['SQLALCHEMY_POOL_SIZE'] = 1000
     app.config['SQLALCHEMY_MAX_OVERFLOW'] = 100
 
-app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
-db = SQLAlchemy(app)
+
+if config.DEPLOYMENT_ENV in ['prod', 'stage']:
+    print('starting sqlalchemy in autocommit mode')
+    db = MySQLAlchemy(app)
+else:
+    db = SQLAlchemy(app)
 
 #SQLAlchemy logging
 #import logging
