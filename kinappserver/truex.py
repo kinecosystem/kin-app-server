@@ -13,17 +13,24 @@ TRUEX_GET_ACTIVITY_URL = 'http://get.truex.com/v2'
 HARDCODED_CLIENT_IP = '188.64.206.239'
 
 
-def get_activity(user_id, client_request_id):
+def get_activity(user_id, client_request_id=None):
     """generate a single activity from truex for the given user_id"""
     try:
-        requests.get(generate_truex_url(user_id, client_request_id))
-        requests.raise_for_status()
+        if not client_request_id: #TODO do we even need this?
+            client_request_id = str(int(time.time()))
+        resp = requests.get(generate_truex_url(user_id, client_request_id))
+        resp.raise_for_status()
     except Exception as e:
         print('failed to get an activity from truex: %s' % e)
-        return False
+        return False, None
     else:
         # process the response:
-        pass
+        activities = resp.json()
+        if len(activities) == 0:
+            print('no activities returned for userid %s' % user_id)
+            return True, None
+
+        return True, activities[0]
 
 
 def generate_truex_url(user_id, client_request_id):
@@ -92,11 +99,3 @@ def verify_truex(request):
         return False
 
     return True
-
-
-if __name__ == '__main__':
-    resp = requests.get(generate_truex_url('9e2f2783-4431-4dd1-a862-6dc0e908bd86', str(int(time.time()))))
-    print(resp.url)
-    resp.raise_for_status()
-    print(resp)
-    print(resp.json())

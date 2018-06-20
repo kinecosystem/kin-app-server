@@ -3,7 +3,7 @@ from sqlalchemy_utils import UUIDType
 
 from kinappserver import db, config
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, get_global_config
-from kinappserver.push import send_gcm, send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_please_upgrade_push_2
+from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_please_upgrade_push_2
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
 
@@ -214,7 +214,7 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
     else:
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('tx_completed', generate_push_id(), {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id})
-        send_gcm(token, payload)
+        push_send_gcm(token, payload)
     return True
 
 
@@ -230,12 +230,12 @@ def send_push_auth_token(user_id, force_send=False):
         return False
     if os_type == OS_IOS:
         from kinappserver.push import auth_push_apns, generate_push_id
-        send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)))
+        push_send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)))
         print('sent apnds auth token to user %s' % user_id)
     else:
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('auth_token', generate_push_id(), {'type': 'auth_token', 'user_id': str(user_id), 'token': str(auth_token)})
-        send_gcm(token, payload)
+        push_send_gcm(token, payload)
         print('sent gcm auth token to user %s' % user_id)
 
     if not set_send_date(user_id):
@@ -256,9 +256,9 @@ def send_engagement_push(user_id, push_type, token=None, os_type=None):
         return False
 
     if os_type == OS_IOS:
-        send_apns(token, engagement_payload_apns(push_type))
+        push_send_apns(token, engagement_payload_apns(push_type))
     else:
-        send_gcm(token, engagement_payload_gcm(push_type))
+        push_send_gcm(token, engagement_payload_gcm(push_type))
     return True
 
 
@@ -271,9 +271,9 @@ def send_compensated_push(user_id, amount, task_title):
         return False
 
     if os_type == OS_IOS:
-        send_apns(token, compensated_payload_apns(amount, task_title))
+        push_send_apns(token, compensated_payload_apns(amount, task_title))
     else:
-        send_gcm(token, compensated_payload_gcm(amount, task_title))
+        push_send_gcm(token, compensated_payload_gcm(amount, task_title))
     return True
 
 
@@ -719,6 +719,7 @@ def get_user_report(user_id):
         user_report['auth_token']['sent_date'] = str(push_token_entry.send_date)
         user_report['auth_token']['ack_data'] = str(push_token_entry.ack_date)
         user_report['auth_token']['authenticated'] = str(push_token_entry.authenticated)
+        user_report['package_id'] = str(user.package_id)
 
     except Exception as e:
         print('caught exception in get_user_report')

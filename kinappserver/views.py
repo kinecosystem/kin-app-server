@@ -23,7 +23,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id
+    get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity
 
 
 def limit_to_local_host():
@@ -365,6 +365,7 @@ def set_delay_days_api():
         raise InvalidUsage('bad-request')
 
     set_delay_days(delay_days)
+    print('set delay days to %s' % delay_days)
     return jsonify(status='ok')
 
 
@@ -1043,3 +1044,23 @@ def retarget_auth_endpoint():
         send_push_auth_token(user_id, force_send=True)
 
     return jsonify(status='ok')
+
+
+@app.route('/truex/activity', methods=['GET'])
+def truex_activity_endpoint():
+    """returns a truex activity for the requesting user, provided this user is allowed to get one now:
+       meaning that her current task is of type truex and the submission time was met"""
+    try:
+        user_id = extract_header(request)
+        if user_id is None:
+            raise InvalidUsage('no user_id')
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+
+    status, activity = get_truex_activity(user_id)
+    if not status:
+        print('userid %s failed to get a truex activity' % user_id)
+        raise InvalidUsage('user failed to get an activity')
+    return jsonify(status='ok', activity=activity)
+

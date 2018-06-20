@@ -48,3 +48,52 @@ apps:
             topic: com.kik.kinit-beta
             circuitBreaker:
               tripFailures: 10
+
+      - id: kinapp-prod
+      numConsumers: 2
+      amqpURI: amqp://admin:admin@eshu-rabbit-prod.kinitapp.com:5672/kinapp
+
+      queue:
+        exchangeName: eshu-exchange
+        exchangeType: direct
+        queueName: eshu-queue
+        bindingKey: eshu-key
+        queueArgs:
+          x-dead-letter-exchange: eshu-exchange.dead
+          x-max-priority: 2
+
+      dispatcher:
+        checkAppName: false
+
+      feedback:
+        numProducers: 1
+        cacheSize: 100
+        queue:
+          exchangeName: eshu-feedback-exchange
+          exchangeType: direct
+          bindingKey: eshu-feedback-key
+          reliable: true
+
+      providers:
+        enabled:
+          #- gcm - disabled for this ip. gcm is served on the other id
+          - apns
+        all:
+          gcm:
+            senderId: "{{ lookup('aws_ssm', '/config/prod/eshu/gcm-sender-id' )}}"
+            apiKey: "{{ lookup('aws_ssm', '/config/prod/eshu/gcm-api-key' )}}"
+            sandbox: false
+            dryRun: false
+            requestReceipts: false
+            monitorConnection: true
+            sendTimeout: 20
+            debug: true
+            circuitBreaker:
+              tripFailures: 10
+          apns:
+            certFile: certs/Kinit-AppStore.p12 # needs to be manually deployed
+            password:
+            sandbox: false
+            topic: com.kik.kinit
+            circuitBreaker:
+              tripFailures: 10

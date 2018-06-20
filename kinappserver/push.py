@@ -1,6 +1,6 @@
 import uuid
 
-from kinappserver import amqp_publisher, config
+from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, increment_metric
 
 
@@ -127,15 +127,19 @@ def gcm_payload(push_type, push_id, message_dict):
     return payload
 
 
-def send_gcm(token, payload):
+def push_send_gcm(token, payload):
     if config.DEPLOYMENT_ENV == 'test':
         print('skipping push on test env')
         return
-    amqp_publisher.send_gcm("eshu-key", payload, [token], False, config.PUSH_TTL_SECS)
+    app.amqp_publisher_beta.send_gcm("eshu-key", payload, [token], False, config.PUSH_TTL_SECS)
+    # GCM is only sent over 'beta'
 
 
-def send_apns(token, payload):
+def push_send_apns(token, payload, env='beta'):
     if config.DEPLOYMENT_ENV == 'test':
         print('skipping push on test env')
         return
-    amqp_publisher.send_apns("eshu-key", payload, [token])
+    if env == 'beta':
+        app.amqp_publisher_beta.send_apns("eshu-key", payload, [token])
+    else:
+        app.amqp_publisher_prod.send_apns("eshu-key", payload, [token])

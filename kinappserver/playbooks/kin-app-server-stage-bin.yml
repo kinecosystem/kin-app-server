@@ -19,7 +19,8 @@
    eshu_exchange: eshu-exchange
    eshu_queue: eshu-queue
    eshu_virtual_host: kinapp
-   eshu_appid: kinapp
+   eshu_appid_beta: kinapp
+   eshu_appid_prod: kinapp-prod
    eshu_rabbit_address: 10.0.1.20
    stellar_timeout_sec: 10
    stellar_initial_account_balance: 10

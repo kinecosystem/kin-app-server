@@ -9,6 +9,9 @@ from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
 
 
+TASK_TYPE_TRUEX = 'truex'
+
+
 class UserTaskResults(db.Model):
     """
     the user task results
@@ -75,14 +78,12 @@ def store_task_results(user_id, task_id, results):
         delay_days = None
         # calculate the next task's valid submission time, and store it:
         # this takes into account the delay_days field on the next task.
-        print('getting task_delay...for task_id: %s' % task_id)
         try:
             delay_days = get_task_delay(str(int(task_id) + 1))  # throws exception if no such task exists
         except Exception as e:
             print('cant find task_delay for next task_id of %s' % task_id)
 
-        print('after getting task_delay...')
-        if delay_days == 0 or delay_days is None:
+        if int(delay_days) == 0 or delay_days is None:
             shifted_ts = arrow.utcnow().timestamp
             print('setting next task time to now (delay_days is: %s)' % delay_days)
         else:
@@ -90,14 +91,13 @@ def store_task_results(user_id, task_id, results):
             shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
             print('setting next task time to %s seconds in the future' % shift_seconds)
 
-        print('next valid submission time for user %s: in shifted_ts: %s' % (user_id, shifted_ts))
+        print('next valid submission time for user %s, (previous task id %s) in shifted_ts: %s' % (user_id, task_id, shifted_ts))
 
         store_next_task_results_ts(user_id, shifted_ts)
 
         return True
     except Exception as e:
-        print('exception in store_task_results:')
-        print(e)
+        print('exception in store_task_results: %s', e)
         raise InvalidUsage('cant store_task_results')
 
 
@@ -199,12 +199,11 @@ def can_support_task(os_type, app_ver, task):
     """ returns true if the client with the given os_type and app_ver can correctly handle the given task"""
     from distutils.version import LooseVersion
     if os_type == OS_ANDROID:
-        print('the task min version: %s' % task.get('min_client_version_android'))
-        print('the client app version: %s' % app_ver)
         if LooseVersion(app_ver) >= LooseVersion(task.get('min_client_version_android')):
             return True
     elif LooseVersion(app_ver) >= LooseVersion(task.get('min_client_version_ios')):
             return True
+    print('can_support_task: task min version: %s, the client app version: %s' % (task.get('min_client_version_android'), app_ver))
     return False
 
 
@@ -364,3 +363,32 @@ def handle_task_results_resubmission(user_id, task_id):
     return memo, user_id
 
 
+def get_truex_activity(user_id):
+    """returns a truex activity for the user if she is allowed one now"""
+
+    tasks = []
+
+    # is the next task of type 'truex'?
+    try:
+        tasks = get_tasks_for_user(user_id)
+    except Exception as e:
+        print('cant get activity - no such user %s' % user_id)
+
+    if tasks == []:
+        print('cant get activity: no next task')
+        return False, None
+
+    if tasks[0]['type'] != TASK_TYPE_TRUEX:
+        print('cant get activity: user\'s next task isnt truex')
+        return False, None
+
+    # is the user eligible for a task now?
+    now = arrow.utcnow()
+    next_task_ts = get_next_task_results_ts(user_id)
+    if next_task_ts and now < arrow.get(next_task_ts):
+        print('cant get truex activity: now: %s user\'s tx: %s' % (now, arrow.get(next_task_ts)))
+        return False, None
+
+    # get truex activity for user:
+    from kinappserver.truex import get_activity
+    return get_activity(user_id) # returns status, activity

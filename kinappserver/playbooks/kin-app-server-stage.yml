@@ -23,7 +23,8 @@
    eshu_exchange: eshu-exchange
    eshu_queue: eshu-queue
    eshu_virtual_host: kinapp
-   eshu_appid: kinapp
+   eshu_appid_beta: kinapp
+   eshu_appid_prod: kinapp-prod
    eshu_rabbit_address: 10.0.1.20
    stellar_timeout_sec: 10
    stellar_initial_account_balance: 10
@@ -32,7 +33,7 @@
    stellar_horizon_url: https://horizon-testnet.stellar.org/
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
-   phone_verification_enabled: False
+   phone_verification_enabled: True
    phone_verification_required: False
    p2p_transfers_enabled: True
    p2p_min_tasks: 2
