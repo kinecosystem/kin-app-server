@@ -265,11 +265,11 @@ def quest_answers():
         # this task was already submitted - and compensated, so just re-return the memo to the user.
         return jsonify(status='ok', memo=str(memo))
 
+    #  if the last item in the task is of type tip, then figure out how much tip was given:
+    #  TODO move to a function
     tip = 0
-    # get tipping for video_questionnaire. the next - and rather awful code -
-    # assumes that for 'video_questionnaire' tasks, the last question has 'tip_value' fields.
     task_data = get_task_by_id(task_id)
-    if task_data['type'] == 'video_questionnaire':
+    if task_data['items'][-1]['type'] == 'tip':
         try:
             #  get the last item in the task - which is where the tipping data is:
             tipping_question = task_data['items'][-1]
