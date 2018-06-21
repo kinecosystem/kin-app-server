@@ -8,6 +8,7 @@ from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
 
 DEFAULT_TIME_ZONE = -4
+KINIT_IOS_PACKAGE_ID_PROD = 'com.kik.kinit'  # AKA bundle id
 
 
 class User(db.Model):
@@ -194,18 +195,26 @@ def get_user_os_type(user_id):
     return User.query.filter_by(user_id=user_id).one().os_type
 
 
+def package_id_to_push_env(package_id):
+    if package_id == KINIT_IOS_PACKAGE_ID_PROD:
+        # only ios clients use prod atm
+        return 'prod'
+    return 'beta'
+
+
 def get_user_push_data(user_id):
-    """returns the os_type and the token for the given user_id"""
+    """returns the os_type, token and push_env for the given user_id"""
     user = User.query.filter_by(user_id=user_id).first()
     if not user:
         return None, None
     else:
-        return user.os_type, user.push_token
+        push_env = package_id_to_push_env(user.package_id)
+        return user.os_type, user.push_token, push_env
 
 
 def send_push_tx_completed(user_id, tx_hash, amount, task_id):
     """send a message indicating that the tx has been successfully completed"""
-    os_type, token = get_user_push_data(user_id)
+    os_type, token, push_env = get_user_push_data(user_id)
     if token is None:
         print('cant push to user %s: no push token' % user_id)
         return False
@@ -214,7 +223,7 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
     else:
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('tx_completed', generate_push_id(), {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id})
-        push_send_gcm(token, payload)
+        push_send_gcm(token, payload, push_env)
     return True
 
 
@@ -223,19 +232,19 @@ def send_push_auth_token(user_id, force_send=False):
     from .push_auth_token import get_token_by_user_id
     if not force_send and not should_send_auth_token(user_id):
         return True
-    os_type, token = get_user_push_data(user_id)
+    os_type, token, push_env = get_user_push_data(user_id)
     auth_token = get_token_by_user_id(user_id)
     if token is None:
         print('cant push to user %s: no push token' % user_id)
         return False
     if os_type == OS_IOS:
         from kinappserver.push import auth_push_apns, generate_push_id
-        push_send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)))
+        push_send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)), push_env)
         print('sent apnds auth token to user %s' % user_id)
     else:
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('auth_token', generate_push_id(), {'type': 'auth_token', 'user_id': str(user_id), 'token': str(auth_token)})
-        push_send_gcm(token, payload)
+        push_send_gcm(token, payload, push_env)
         print('sent gcm auth token to user %s' % user_id)
 
     if not set_send_date(user_id):
@@ -249,31 +258,31 @@ def send_push_auth_token(user_id, force_send=False):
 def send_engagement_push(user_id, push_type, token=None, os_type=None):
     """sends an engagement push message to the user with the given user_id"""
     if None in (token, os_type):
-        os_type, token = get_user_push_data(user_id)
+        os_type, token, push_env = get_user_push_data(user_id)
 
     if token is None:
         print('cant push to user %s: no push token' % user_id)
         return False
 
     if os_type == OS_IOS:
-        push_send_apns(token, engagement_payload_apns(push_type))
+        push_send_apns(token, engagement_payload_apns(push_type), push_env)
     else:
-        push_send_gcm(token, engagement_payload_gcm(push_type))
+        push_send_gcm(token, engagement_payload_gcm(push_type), push_env)
     return True
 
 
 def send_compensated_push(user_id, amount, task_title):
 
-    os_type, token = get_user_push_data(user_id)
+    os_type, token, push_env = get_user_push_data(user_id)
 
     if token is None:
         print('cant push to user %s: no push token' % user_id)
         return False
 
     if os_type == OS_IOS:
-        push_send_apns(token, compensated_payload_apns(amount, task_title))
+        push_send_apns(token, compensated_payload_apns(amount, task_title), push_env)
     else:
-        push_send_gcm(token, compensated_payload_gcm(amount, task_title))
+        push_send_gcm(token, compensated_payload_gcm(amount, task_title), push_env)
     return True
 
 

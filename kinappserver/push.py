@@ -46,16 +46,16 @@ def send_p2p_push(user_id, amount, tx_dict):
     push_id = generate_push_id()
     push_type = 'engage-recent'
     from kinappserver.models import get_user_push_data
-    os_type, token = get_user_push_data(user_id)
+    os_type, token, push_env = get_user_push_data(user_id)
     if token:
         if os_type == OS_ANDROID:
             increment_metric('p2p-tx-push-gcm')
             print('sending p2p-tx push message to GCM user %s' % user_id)
-            send_gcm(token, gcm_payload(push_type, push_id, {'title': '', 'body': "A friend just sent you %sKIN!" % amount}))
+            push_send_gcm(token, gcm_payload(push_type, push_id, {'title': '', 'body': "A friend just sent you %sKIN!" % amount}), push_env)
         else:
             increment_metric('p2p-tx-push-ios')
             print('sending p2p-tx push message to APNS user %s' % user_id)
-            send_apns(token, apns_payload("", "A friend just sent you %sKIN!" % amount, 'p2p_received', push_id, 'default', {'tx': tx_dict}))
+            push_send_apns(token, apns_payload("", "A friend just sent you %sKIN!" % amount, 'p2p_received', push_id, 'default', {'tx': tx_dict}), push_env)
     else:
         print('not sending p2p-tx push to user_id %s: no token' % user_id)
     return
@@ -66,7 +66,7 @@ def send_please_upgrade_push(user_id):
     push_id = generate_push_id()
     push_type = 'please_upgrade'
     from kinappserver.models import get_user_push_data
-    os_type, token = get_user_push_data(user_id)
+    os_type, token, push_env = get_user_push_data(user_id)
     if token:
         if os_type == OS_ANDROID:
             increment_metric('pleaseupgrade-android')
@@ -77,7 +77,7 @@ def send_please_upgrade_push(user_id):
         else:
             increment_metric('pleaseupgrade-ios')
             print('sending please-upgrade push message to APNS user %s' % user_id)
-            send_apns(token, apns_payload("", "Please upgrade the app to get the next task", push_type, push_id))
+            push_send_apns(token, apns_payload("", "Please upgrade the app to get the next task", push_type, push_id), push_env)
     else:
         print('not sending please-upgrade push to user_id %s: no token' % user_id)
     return
@@ -93,16 +93,16 @@ def send_please_upgrade_push_2_inner(user_id):
     push_id = generate_push_id()
     push_type = 'please_upgrade'
     from kinappserver.models import get_user_push_data
-    os_type, token = get_user_push_data(user_id)
+    os_type, token, push_env = get_user_push_data(user_id)
     if token:
         if os_type == OS_ANDROID:
             increment_metric('pleaseupgrade-android')
             print('sending please-upgrade push message to GCM user %s' % user_id)
-            send_gcm(token, gcm_payload('engage-recent', push_id, {'title': 'Kinit is getting an upgrade!', 'body': "Upgrade before June 13th to keep enjoying Kinit"}))
+            push_send_gcm(token, gcm_payload('engage-recent', push_id, {'title': 'Kinit is getting an upgrade!', 'body': "Upgrade before June 13th to keep enjoying Kinit"}), push_env)
         else:
             increment_metric('pleaseupgrade-ios')
             print('sending please-upgrade push message to APNS user %s' % user_id)
-            send_apns(token, apns_payload("Kinit is getting an upgrade!", "Upgrade before June 13th to keep enjoying Kinit", push_type, push_id))
+            push_send_apns(token, apns_payload("Kinit is getting an upgrade!", "Upgrade before June 13th to keep enjoying Kinit", push_type, push_id), push_env)
     else:
         print('not sending please-upgrade push to user_id %s: no token' % user_id)
     return
@@ -127,19 +127,23 @@ def gcm_payload(push_type, push_id, message_dict):
     return payload
 
 
-def push_send_gcm(token, payload):
+def push_send_gcm(token, payload, push_env):
     if config.DEPLOYMENT_ENV == 'test':
         print('skipping push on test env')
         return
+
+    if push_env != 'beta':
+        print('error: cant send gcm over push env: %s. only beta is currently supported' % push_env)
+        return
+
     app.amqp_publisher_beta.send_gcm("eshu-key", payload, [token], False, config.PUSH_TTL_SECS)
-    # GCM is only sent over 'beta'
 
 
-def push_send_apns(token, payload, env='beta'):
+def push_send_apns(token, payload, push_env):
     if config.DEPLOYMENT_ENV == 'test':
         print('skipping push on test env')
         return
-    if env == 'beta':
+    if push_env == 'beta':
         app.amqp_publisher_beta.send_apns("eshu-key", payload, [token])
     else:
         app.amqp_publisher_prod.send_apns("eshu-key", payload, [token])
