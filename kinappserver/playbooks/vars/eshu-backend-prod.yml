@@ -94,6 +94,6 @@ apps:
             certFile: certs/Kinit-AppStore.p12 # needs to be manually deployed
             password:
             sandbox: false
-            topic: com.kik.kinit
+            topic:
             circuitBreaker:
               tripFailures: 10
