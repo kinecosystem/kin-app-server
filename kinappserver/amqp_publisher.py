@@ -8,7 +8,7 @@ messages.
 
 Implementation details:
 - The pool is initialized upon the first call to publish().
-- The size of the pool is configurable via the CHANNEL_POOL_SIZE const.
+- The size of the pool is configurable via the CHANNEL_POOL_SIZE parameter.
 - Ideally, the pool can be torn-down with the tear_down() function.
 - If the connection is lost, the pool should re-establish one and recreate the
 channels.
@@ -21,118 +21,136 @@ from time import sleep
 from datetime import datetime
 from amqpstorm import Connection
 
-CHANNEL_POOL_SIZE = 10
-WAIT_BLOCKED = 1
-_channels_manager = None
 
-inited = False
-ESHU_CONFIG = {'QUEUE_NAME': '',
-               'EXCHANGE_NAME': '',
-               'ADDRESS': '',
-               'USER': '',
-               'PASSWORD': '',
-               'VIRTUAL_HOST': '',
-               'HEARTBEAT': '',
-               'APP_ID': '',
-               'TTL': ''}
+class AmqpPublisher:
+    WAIT_BLOCKED = 1
 
+    # member variables:
+    _channels_manager = None
+    inited = False
+    ESHU_CONFIG = None
 
-def init_config(address, queue_name, exchange_name, virtual_host, user, password, heartbeat, app_id, ttl):
-    global ESHU_CONFIG, inited
-    ESHU_CONFIG['ADDRESS'] = address
-    ESHU_CONFIG['QUEUE_NAME'] = queue_name
-    ESHU_CONFIG['EXCHANGE_NAME'] = exchange_name
-    ESHU_CONFIG['VIRTUAL_HOST'] = virtual_host
-    ESHU_CONFIG['USER'] = user
-    ESHU_CONFIG['PASSWORD'] = password
-    ESHU_CONFIG['HEARTBEAT'] = heartbeat
-    ESHU_CONFIG['APP_ID'] = app_id
-    ESHU_CONFIG['TTL'] = ttl
-    inited = True
+    def __init__(self):
+        """Ctor for the top level object - the publisher."""
+        self.ESHU_CONFIG = {'QUEUE_NAME': '',
+                       'EXCHANGE_NAME': '',
+                       'ADDRESS': '',
+                       'USER': '',
+                       'PASSWORD': '',
+                       'VIRTUAL_HOST': '',
+                       'HEARTBEAT': '',
+                       'APP_ID': '',
+                       'TTL': '',
+                       'CHANNEL_POOL_SIZE': 10}
+        self._channels_manager = None
+        self._inited = False
 
+    def get_config(self):
+        return self.ESHU_CONFIG
 
-def send_apns_voip(routing_key, payload, tokens):
-    """Send the given payload to the given tokens - as voip apns."""
-    internal_send_apns(routing_key, payload, tokens, True, ESHU_CONFIG['TTL'])
+    def init_config(self, env, address, queue_name, exchange_name, virtual_host, user, password, heartbeat, app_id, ttl):
+        if self.inited:
+            print('refusing to re-init config')
+            return False
 
+        if env == '':
+            print('cant init publisher: no env provided')
+            return False
+        else:
+            print('initing publisher with %s env' % env)
 
-def send_apns(routing_key, payload, tokens):
-    """Send the given payload to the given tokens - as apns."""
-    internal_send_apns(routing_key, payload, tokens, False, ESHU_CONFIG['TTL'])
+        self.ESHU_CONFIG['ADDRESS'] = address
+        self.ESHU_CONFIG['QUEUE_NAME'] = queue_name + '-' + env
+        self.ESHU_CONFIG['EXCHANGE_NAME'] = exchange_name + '-' + env
+        self.ESHU_CONFIG['VIRTUAL_HOST'] = virtual_host
+        self.ESHU_CONFIG['USER'] = user
+        self.ESHU_CONFIG['PASSWORD'] = password
+        self.ESHU_CONFIG['HEARTBEAT'] = heartbeat
+        self.ESHU_CONFIG['APP_ID'] = app_id + '-' + env
+        self.ESHU_CONFIG['TTL'] = ttl
+        self.inited = True
+        return True
 
+    def send_apns_voip(self, routing_key, payload, tokens):
+        """Send the given payload to the given tokens - as voip apns."""
+        self.internal_send_apns(routing_key, payload, tokens, True, self.ESHU_CONFIG['TTL'])
 
-def send_gcm(routing_key, payload, tokens, dry_run, ttl):
-    """Send a gcm message to the given tokens with the given payload, ttl"""
-    global ESHU_CONFIG
-    for token in tokens:
-        message = {'app_id': ESHU_CONFIG['APP_ID'],
-                   'data': {
-                        'gcm': {
-                                'to': token,
-                                'dry_run': dry_run,
-                                'time_to_live': ttl,
-                                'data': payload
-                               }
+    def send_apns(self, routing_key, payload, tokens):
+        """Send the given payload to the given tokens - as apns."""
+        self.internal_send_apns(routing_key, payload, tokens, False, self.ESHU_CONFIG['TTL'])
+
+    def send_gcm(self, routing_key, payload, tokens, dry_run, ttl):
+        """Send a gcm message to the given tokens with the given payload, ttl"""
+        for token in tokens:
+            message = {'app_id': self.ESHU_CONFIG['APP_ID'],
+                       'data': {
+                            'gcm': {
+                                    'to': token,
+                                    'dry_run': dry_run,
+                                    'time_to_live': ttl,
+                                    'data': payload
+                                   }
+                            }
                         }
-                    }
-        publish(routing_key, dumps(message))
+            self.publish(routing_key, dumps(message))
+
+    def internal_send_apns(self, routing_key, payload, tokens, is_voip, ttl):
+        for token in tokens:
+            message = dumps({'app_id': self.ESHU_CONFIG['APP_ID'],
+                'data': {
+                    'ttl': ttl,
+                    'apns': {
+                        'device_token': token,
+                        'voip': is_voip,
+                        'data': payload
+                    }}})
+            self.publish(routing_key, message)
+
+    def publish(self, routing_key, payload, retry=True):
+        """Publish the given payload."""
+        if not self.inited:
+            print('cant publish payload: lib not yet inited')
+            return
+
+        if self._channels_manager is None:
+            self._channels_manager = ChannelsManager(self.ESHU_CONFIG)
+
+        channel = self._channels_manager.get_channel()
+
+        try:
+            # Publish a message to the queue.
+            channel.publish(payload, routing_key)
+        except Exception as e:
+            print('amqp_publisher: failed to publish message to amqp. exception: %s' % e)
+            self._channels_manager.release_channel(channel)
+            print('amqp_publisher: attempting to re-establish connection...')
+            self._channels_manager.establish_connection()
+            if retry:
+                print('amqp_publisher: attempting to re-send message...')
+                self.publish(routing_key, payload, retry=False)
+        else:
+            self._channels_manager.release_channel(channel)
 
 
-def internal_send_apns(routing_key, payload, tokens, is_voip, ttl):
-    global ESHU_CONFIG
-    for token in tokens:
-        message = dumps({'app_id': ESHU_CONFIG['APP_ID'],
-            'data': {
-                'ttl': ttl,
-                'apns': {
-                    'device_token': token,
-                    'voip': is_voip,
-                    'data': payload
-                }}})
-        publish(routing_key, message)
-
-
-def publish(routing_key, payload, retry=True):
-    """Publish the given payload."""
-    global inited
-    if not inited:
-        print('cant publish payload: lib not yet inited')
-        return
-
-    global _channels_manager
-    if _channels_manager is None:
-        _channels_manager = ChannelsManager()
-
-    channel = _channels_manager.get_channel()
-
-    try:
-        # Publish a message to the queue.
-        channel.publish(payload, routing_key)
-    except Exception as e:
-        print('amqp_publisher: failed to publish message to amqp. exception: %s' % e)
-        _channels_manager.release_channel(channel)
-        print('amqp_publisher: attempting to re-establish connection...')
-        _channels_manager.establish_connection()
-        if retry:
-            print('amqp_publisher: attempting to re-send message...')
-            publish(routing_key, payload, retry=False)
-    else:
-        _channels_manager.release_channel(channel)
-
-
-class Channel():
+class Channel:
     """Channel object."""
 
     _busy = False
-    _channel = None
     _index = -1
+    _exchange_name = None
+    _channel = None
+    _config = None
+    _app_id = None
 
-    def __init__(self, connection, index):
+    def __init__(self, connection, index, exchange_name, app_id):
         """Ctor for this channel."""
+        self._index = index
+        self._exchange_name = exchange_name
+        self._busy = False
+        self._app_id = app_id
         self._channel = connection.channel()
         #self._channel.queue.declare(ESHU_CONFIG['QUEUE_NAME'], durable=True)
         self._channel.confirm_deliveries()
-        self._index = index
 
     def acquire(self):
         """Acquire this channel."""
@@ -155,29 +173,35 @@ class Channel():
         #    continue
 
         # Set a bunch of message-level properties
-        props = {'app_id': ESHU_CONFIG['APP_ID'], 'content_encoding': 'UTF-8', 'content_type': 'text/plain', 'timestamp': datetime.utcnow()}
+        props = {'app_id': self._app_id, 'content_encoding': 'UTF-8', 'content_type': 'text/plain', 'timestamp': datetime.utcnow()}
 
-        self._channel.basic.publish(body=payload, routing_key=routing_key, exchange=ESHU_CONFIG['EXCHANGE_NAME'], properties=props)
+        self._channel.basic.publish(body=payload, routing_key=routing_key, exchange=self._exchange_name, properties=props)
 
     def close(self):
         """Close the channel."""
         self._channel.close()
 
 
-class ChannelsManager():
+class ChannelsManager:
     """Manages AMQP channels over a single connection."""
 
     IDLE = 0.01
     _channels = []
     _connection = None
     _lock = RLock()
+    _config = None
 
-    def __init__(self):
+    def __init__(self, config):
         """Init the connection and channels."""
+        self._config = config
+        self._channels = []
+        self._connection = None
+        self._lock = RLock()
+
         self.init_pool()
 
     def init_pool(self):
-        """Set up aconnection and channels if the connection is closed/doesn't exist.
+        """Set up a connection and channels if the connection is closed/doesn't exist.
 
         Does nothing if the connection is already up.
         """
@@ -192,18 +216,19 @@ class ChannelsManager():
             self.establish_connection()
 
     def establish_connection(self):
-        self._connection = Connection(ESHU_CONFIG['ADDRESS'],
-                                      ESHU_CONFIG['USER'],
-                                      ESHU_CONFIG['PASSWORD'],
-                                      virtual_host=ESHU_CONFIG['VIRTUAL_HOST'],
-                                      heartbeat=ESHU_CONFIG['HEARTBEAT'])
+        self._connection = Connection(self._config['ADDRESS'],
+                                      self._config['USER'],
+                                      self._config['PASSWORD'],
+                                      virtual_host=self._config['VIRTUAL_HOST'],
+                                      heartbeat=self._config['HEARTBEAT'])
         # clear previous channels if they exist
         for channel in self._channels:
             channel.close()
         # create new channels
         self._channels = []
-        for i in range(CHANNEL_POOL_SIZE):
-            self._channels.append(Channel(self._connection, i))
+        for i in range(self._config['CHANNEL_POOL_SIZE']):
+            print('creating an amqpl channel...')
+            self._channels.append(Channel(self._connection, i, self._config['EXCHANGE_NAME'], self._config['APP_ID']))
 
     def get_channel(self):
         """Acquire a channel from the pool. Blocks if none are available."""
@@ -232,36 +257,3 @@ class ChannelsManager():
         for channel in self._channels:
             channel.close()
         self._connection.close()
-
-
-if __name__ == '__main__':
-    pass
-    ## sample code ##
-    eshu = {
-        'USER': 'admin',
-        'PASSWORD': 'admin',
-        'ADDRESS': '10.0.1.20',
-        'VIRTUAL_HOST': 'kinapp',
-        'QUEUE_NAME': 'eshu-queue',
-        'EXCHANGE_NAME': 'eshu-exchange',
-        'RELIABLE': True,
-        'HEARTBEAT': 30,
-        'APP_ID': 'kinapp'}
-
-    gcm_payload = {"rguid": "task:1:1:engagement",
-               "rounds_notification": {"notification_view_data": {
-                   "epoc_time": 1458457811000,
-                   "rguid": "task:1:1:engagement",
-                   "type": "generic",
-                   "type_data": {
-                       "body": "Invite your closest friends to Rounds",
-                       "notif_priority": "DEFAULT",
-                       "sound": True,
-                       "subtype": "NO_CALLS_FIRST_ITER",
-                       "tap_action": {"data": "FRIENDS_TAB", "type": "OPEN_TAB"},
-                       "title": "Have fun together!",
-                       "visibility": "PUBLIC"}}}}
-
-    init_config(eshu['ADDRESS'], eshu['QUEUE_NAME'], eshu['EXCHANGE_NAME'], eshu['VIRTUAL_HOST'], eshu['USER'], eshu['PASSWORD'], eshu['HEARTBEAT'], eshu['APP_ID'])
-    for i in range(0, 1):
-        send_gcm('eshu-key', gcm_payload, ['eRl3aOnvwt0:APA91bGF7CQOZB9lqNJnei0syRlpJrlOekDoS30F8bEooWWLsUkdPRUq6prZatgSfXDPXVLqaGeXNqApZgN4XKzLtXhQsq9EFSVNPoRH27Agux-S5D2EkIDNPa7-7EDGjLKymuPOT0O4'], False, ttl=DEFAULT_GCM_TTL)

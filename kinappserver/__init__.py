@@ -4,8 +4,7 @@ from flask import Flask
 from flask_cors import CORS
 import kin
 
-from kinappserver import amqp_publisher
-
+from kinappserver.amqp_publisher import AmqpPublisher
 
 app = Flask(__name__)
 CORS(app)
@@ -84,12 +83,20 @@ import redis
 #redis:
 app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0)
 
-#push: init the amqplib: two instances, one for beta and one for prod
-amqp_publisher.init_config(config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE, config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD, config.ESHU_HEARTBEAT, config.ESHU_APPID_BETA, config.PUSH_TTL_SECS)
-app.amqp_publisher_beta = amqp_publisher
+#push: init the amqplib: two instances, one for beta and one for release
+app.amqp_publisher_beta = AmqpPublisher()
+app.amqp_publisher_release = AmqpPublisher()
+if not app.amqp_publisher_beta.init_config('beta', config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE,
+                                  config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD,
+                                  config.ESHU_HEARTBEAT, config.ESHU_APPID, config.PUSH_TTL_SECS):
+    print('could not init beta amqppublisher')
+    sys.exit(-1)
 
-amqp_publisher.init_config(config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE, config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD, config.ESHU_HEARTBEAT, config.ESHU_APPID_PROD, config.PUSH_TTL_SECS)
-app.amqp_publisher_prod = amqp_publisher
+if not app.amqp_publisher_release.init_config('release', config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE,
+                                  config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD,
+                                  config.ESHU_HEARTBEAT, config.ESHU_APPID, config.PUSH_TTL_SECS):
+    print('could not init release amqppublisher')
+    sys.exit(-1)
 
 # sanity for configuration
 if not config.DEBUG:

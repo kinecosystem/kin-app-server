@@ -136,7 +136,7 @@ def push_send_gcm(token, payload, push_env):
         print('error: cant send gcm over push env: %s. only beta is currently supported' % push_env)
         return
 
-    app.amqp_publisher_beta.send_gcm("eshu-key", payload, [token], False, config.PUSH_TTL_SECS)
+    app.amqp_publisher_beta.send_gcm("eshu-key-beta", payload, [token], False, config.PUSH_TTL_SECS)
 
 
 def push_send_apns(token, payload, push_env):
@@ -144,8 +144,8 @@ def push_send_apns(token, payload, push_env):
         print('skipping push on test env')
         return
     if push_env == 'beta':
-        print('sending with beta apns publisher')
-        app.amqp_publisher_beta.send_apns("eshu-key", payload, [token])
+        print('pushing on apns beta channel')
+        app.amqp_publisher_beta.send_apns("eshu-key-beta", payload, [token])
     else:
-        print('sending with prod apns publisher')
-        app.amqp_publisher_prod.send_apns("eshu-key", payload, [token])
+        print('pushing on apns release channel')
+        app.amqp_publisher_release.send_apns("eshu-key-release", payload, [token])

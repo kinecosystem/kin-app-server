@@ -1,16 +1,16 @@
 apps:
 
-    - id: kinapp
+    - id: kinapp-beta # ios beta and android (both beta and release)
       numConsumers: 2
       amqpURI: amqp://admin:admin@10.0.1.20:5672/kinapp
 
       queue:
-        exchangeName: eshu-exchange
+        exchangeName: eshu-exchange-beta
         exchangeType: direct
-        queueName: eshu-queue
-        bindingKey: eshu-key
+        queueName: eshu-queue-beta
+        bindingKey: eshu-key-beta
         queueArgs:
-          x-dead-letter-exchange: eshu-exchange.dead
+          x-dead-letter-exchange: eshu-exchange-beta.dead
           x-max-priority: 2
 
       dispatcher:
@@ -49,17 +49,17 @@ apps:
             circuitBreaker:
               tripFailures: 10
 
-    - id: kinapp-prod # used only for ios-prod at the moment
+    - id: kinapp-release # used only for ios-release at the moment
       numConsumers: 2
       amqpURI: amqp://admin:admin@10.0.1.20:5672/kinapp
 
       queue:
-        exchangeName: eshu-exchange
+        exchangeName: eshu-exchange-release
         exchangeType: direct
-        queueName: eshu-queue
-        bindingKey: eshu-key
+        queueName: eshu-queue-release
+        bindingKey: eshu-key-release
         queueArgs:
-          x-dead-letter-exchange: eshu-exchange.dead
+          x-dead-letter-exchange: eshu-release-exchange.dead
           x-max-priority: 2
 
       dispatcher:
@@ -76,20 +76,8 @@ apps:
 
       providers:
         enabled:
-          #- gcm # disabled for this id. gcm is served in the other id
           - apns
         all:
-          gcm:
-            senderId: "{{ lookup('aws_ssm', '/config/stage/eshu/gcm-sender-id' )}}"
-            apiKey: "{{ lookup('aws_ssm', '/config/stage/eshu/gcm-api-key' )}}"
-            sandbox: false
-            dryRun: false
-            requestReceipts: false
-            monitorConnection: true
-            sendTimeout: 20
-            debug: true
-            circuitBreaker:
-              tripFailures: 10
           apns:
             certFile: certs/Kinit-AppStore.p12 # needs to be manually deployed
             password:

@@ -43,7 +43,7 @@ class Tester(unittest.TestCase):
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider': 
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
-                  'items': []
+                  'items': [{'type': 'text'}]
             }
 
         task1 = {  'id': 1,
@@ -57,7 +57,7 @@ class Tester(unittest.TestCase):
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider':
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
-                  'items': []
+                  'items': [{'type': 'text'}]
             }
 
 
@@ -72,7 +72,7 @@ class Tester(unittest.TestCase):
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider':
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
-                  'items': []
+                  'items': [{'type': 'text'}]
             }
 
 
