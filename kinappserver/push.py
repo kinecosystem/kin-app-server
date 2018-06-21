@@ -144,6 +144,8 @@ def push_send_apns(token, payload, push_env):
         print('skipping push on test env')
         return
     if push_env == 'beta':
+        print('sending with beta apns publisher')
         app.amqp_publisher_beta.send_apns("eshu-key", payload, [token])
     else:
+        print('sending with prod apns publisher')
         app.amqp_publisher_prod.send_apns("eshu-key", payload, [token])
