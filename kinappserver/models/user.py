@@ -8,7 +8,7 @@ from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
 
 DEFAULT_TIME_ZONE = -4
-KINIT_IOS_PACKAGE_ID_PROD = 'com.kik.kinit'  # AKA bundle id
+KINIT_IOS_PACKAGE_ID_PROD = 'org.kinecosystem.kinit'  # AKA bundle id
 
 
 class User(db.Model):
