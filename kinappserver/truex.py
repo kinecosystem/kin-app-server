@@ -84,7 +84,7 @@ def sign_truex_attrs(attrs):
     return b64encode(hmac.new(str(config.truex_partner_secret), gen_signature, sha1).digest())
 
 
-def verify_truex(request):
+def verify_sig(request):
     """verifies that the given request was indeed signed by Truex"""
     signature = request.get('sig')
 

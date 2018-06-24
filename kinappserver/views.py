@@ -8,6 +8,7 @@ from flask import request, jsonify, abort
 from flask_api import status
 import redis_lock
 import arrow
+import redis
 
 from kinappserver import app, config, stellar, utils, ssm
 from kinappserver.stellar import create_account, send_kin
@@ -1063,4 +1064,76 @@ def truex_activity_endpoint():
         print('userid %s failed to get a truex activity' % user_id)
         raise InvalidUsage('user failed to get an activity')
     return jsonify(status='ok', activity=activity)
+
+
+TRUEX_CALLBACK_RECOVERABLE_ERROR = 0
+TRUEX_CALLBACK_PROCESSED = 1
+TRUEX_CALLBACK_BAD_SIG = 2
+TRUEX_CALLBACK_DUP_ENGAGEMENT_ID = 3
+TRUEX_UNIQUENESS_TTL_SEC = 60*60*24*10 # 10 days
+
+TRUEX_SERVERS_ADRESSES = ['8.3.218.160', '8.3.218.161', '8.3.218.162', '8.3.218.163', '8.3.218.164', '8.3.218.165',
+                          '8.3.218.166', '8.3.218.167', '8.3.218.168', '8.3.218.169', '8.3.218.170', '8.3.218.171',
+                          '8.3.218.172', '8.3.218.173', '8.3.218.174', '8.3.218.175', '8.3.218.176', '8.3.218.177',
+                          '8.3.218.178', '8.3.218.179', '8.3.218.181', '8.3.218.182', '8.3.218.183', '8.3.218.184',
+                          '8.3.218.185', '8.3.218.186', '8.3.218.187', '8.3.218.188', '8.3.218.189', '8.3.218.190',
+                          '184.73.184.219', '184.73.184.220', '184.73.184.224', '184.73.184.229', '184.73.184.233',
+                          '174.129.192.205', '174.129.193.108', '174.129.195.123', '174.129.195.144', '174.129.34.246',
+                          '184.73.195.45', '184.73.195.48', '184.73.195.50', '184.73.195.87', '204.236.224.121', '204.236.224.129',
+                          '204.236.224.49', '204.236.225.149', '204.236.225.17', '204.236.225.63', '50.16.244.72', '50.16.245.107',
+                          '50.16.245.109', '50.16.245.111', '50.16.245.33']
+
+
+@app.route('/truex/callback', methods=['GET'])
+def truex_callback_endpoint():
+    """called by truex whenever an activity was completed.
+
+    This endpoint triggers the sequence that leads to the user
+    getting payed for his truex task.
+
+    -this request can only arrive from a set of specific ips
+    and contains a signature that must be authenticated before the request is processed,
+    as per Truex's API doc.
+
+    in addition, the request contains an engagement_id which must be checked for uniqueness
+    to prevent over-crediting our users.
+
+    the request must return an appropriate response code, as follows:
+        0  – Recoverable failure (request will be retried)
+        1  – Callback successfully processed
+        2  – Invalid signature (this will notify  true[ X ]  for investigation)
+        3  – Invalid user or duplicate engagement_id (request will not be retried)
+
+    """
+    try:
+
+        args = request.args
+        eng_id = args.get('engagement_id')
+
+        # ensure acl:
+        remote_ip = request.headers.get('X-Forwarded-For', None)
+        if remote_ip not in TRUEX_SERVERS_ADRESSES:
+            # just return whatever. this isn't from truex
+            print('truex_callback_endpoint: got request from %s, which isn\'t in the acl. ignoring request' % remote_ip)
+            return TRUEX_CALLBACK_RECOVERABLE_ERROR
+
+        # validate sig
+        from .truex import verify_sig
+        if not verify_sig(request):
+            return TRUEX_CALLBACK_BAD_SIG
+
+        # ensure eng_id uniqueness with ttl
+        if not app.redis.set('truex-%s' % eng_id, 1, nx=True, ex=TRUEX_UNIQUENESS_TTL_SEC):
+            # dup eng_id
+            print('truex_callback_endpoint: detected duplicate eng-id. ignoring request')
+            return TRUEX_CALLBACK_DUP_ENGAGEMENT_ID
+
+        # okay. pay the user
+
+        # process request
+    except Exception as e:
+        print('unhandled exception in truex process')
+        return TRUEX_CALLBACK_RECOVERABLE_ERROR
+
+    return TRUEX_CALLBACK_PROCESSED
 
