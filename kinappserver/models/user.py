@@ -765,5 +765,5 @@ def get_user_report(user_id):
         user_report['package_id'] = str(user.package_id)
 
     except Exception as e:
-        print('caught exception in get_user_report')
+        print('caught exception in get_user_report:%s' % e)
     return user_report
