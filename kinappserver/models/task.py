@@ -83,7 +83,7 @@ def store_task_results(user_id, task_id, results):
         except Exception as e:
             print('cant find task_delay for next task_id of %s' % task_id)
 
-        if int(delay_days) == 0 or delay_days is None:
+        if delay_days is None or int(delay_days) == 0:
             shifted_ts = arrow.utcnow().timestamp
             print('setting next task time to now (delay_days is: %s)' % delay_days)
         else:
