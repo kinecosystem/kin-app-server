@@ -24,7 +24,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo, get_next_task_memo, populate_memo
+    get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo, get_next_task_memo
 
 
 def limit_to_local_host():
@@ -854,7 +854,7 @@ def compensate_user_api():
 
     # for security reasons, I'm disabling this api.
     # remove the 'return' line to re-enable it.
-    # return
+    return
 
     payload = request.get_json(silent=True)
     user_id = payload.get('user_id', None)
@@ -884,8 +884,8 @@ def compensate_user_api():
     else:
         print('compensated user %s with %s kins for task_id %s' % (user_id, kin_amount, task_id))
         # also send push to the user
-        #task_title = get_task_details(task_id)['title']
-        #send_compensated_push(user_id, kin_amount, task_title)
+        task_title = get_task_details(task_id)['title']
+        send_compensated_push(user_id, kin_amount, task_title)
 
         return jsonify(status='ok', tx_hash=tx_hash)
 
@@ -1143,3 +1143,4 @@ def truex_callback_endpoint():
         return TRUEX_CALLBACK_RECOVERABLE_ERROR
 
     return TRUEX_CALLBACK_PROCESSED
+
