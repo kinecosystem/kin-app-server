@@ -179,7 +179,7 @@ def get_next_task_memo(user_id):
         next_memo = userAppData.next_task_memo
         if next_memo is None:
             # set an initial value
-            return get_and_replace_next_task_memo()
+            return get_and_replace_next_task_memo(user_id)
     except Exception as e:
         print(e)
         raise InvalidUsage('cant get next memo')
