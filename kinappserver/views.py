@@ -935,7 +935,7 @@ def init_bh_creds_api():
 
     from .blackhawk import refresh_bh_auth_token
     init_bh_creds(account_id, username, password, digital_signature)
-    refresh_bh_auth_token()
+    refresh_bh_auth_token(force=True)
 
     return jsonify(status='ok')
 

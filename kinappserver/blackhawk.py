@@ -273,7 +273,7 @@ def merchant_code_to_offer_id(merchant_code, card_id, order_id):
     return None
 
 
-def refresh_bh_auth_token():
+def refresh_bh_auth_token(force=False):
     """this function re-creates the bh auth token and saves it to the db
 
     this function will be called by cron periodically to update the token before it expires.
@@ -283,6 +283,11 @@ def refresh_bh_auth_token():
     if not creds:
         print('cant get bh creds from db. bailing')
         return False
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    if not force and (now - creds['token_generation_time']).total_seconds() < 1: # TODO FIX THIS 60*60*24*2:
+        # no need to refresh token. still quite fresh.
+        return True
 
     new_token = generate_auth_token_api(creds['username'], creds['password'])
     if not new_token:

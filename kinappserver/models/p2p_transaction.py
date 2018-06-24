@@ -22,7 +22,7 @@ class P2PTransaction(db.Model):
     def __repr__(self):
         return '<p2ptx_hash: %s, sender_user_id: %s, receiver_user_id: %s, ' \
                'amount: %s, sender_address: %s, receiver_address: %s, update_at: %s>' % (self.tx_hash, self.sender_user_id, self.receiver_user_id,
-                                                                                                                                                    self.amount, self.sender_address, self.receiver_address, self.update_at)
+                                                                                        self.amount, self.sender_address, self.receiver_address, self.update_at)
 
 
 def list_p2p_transactions_for_user_id(user_id, max_txs=None):
