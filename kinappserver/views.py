@@ -1066,10 +1066,10 @@ def truex_activity_endpoint():
     return jsonify(status='ok', activity=activity)
 
 
-TRUEX_CALLBACK_RECOVERABLE_ERROR = 0
-TRUEX_CALLBACK_PROCESSED = 1
-TRUEX_CALLBACK_BAD_SIG = 2
-TRUEX_CALLBACK_DUP_ENGAGEMENT_ID = 3
+TRUEX_CALLBACK_RECOVERABLE_ERROR = '0'
+TRUEX_CALLBACK_PROCESSED = '1'
+TRUEX_CALLBACK_BAD_SIG = '2'
+TRUEX_CALLBACK_DUP_ENGAGEMENT_ID = '3'
 TRUEX_UNIQUENESS_TTL_SEC = 60*60*24*10 # 10 days
 
 TRUEX_SERVERS_ADRESSES = ['8.3.218.160', '8.3.218.161', '8.3.218.162', '8.3.218.163', '8.3.218.164', '8.3.218.165',
@@ -1111,7 +1111,11 @@ def truex_callback_endpoint():
         eng_id = args.get('engagement_id')
 
         # ensure acl:
+
         remote_ip = request.headers.get('X-Forwarded-For', None)
+        if config.DEBUG and remote_ip is None:
+            remote_ip='50.16.245.33'
+            print('overwriting remote ip for DEBUG to %s' % remote_ip)
         if remote_ip not in TRUEX_SERVERS_ADRESSES:
             # just return whatever. this isn't from truex
             print('truex_callback_endpoint: got request from %s, which isn\'t in the acl. ignoring request' % remote_ip)
@@ -1119,7 +1123,7 @@ def truex_callback_endpoint():
 
         # validate sig
         from .truex import verify_sig
-        if not verify_sig(request):
+        if not verify_sig(args):
             return TRUEX_CALLBACK_BAD_SIG
 
         # ensure eng_id uniqueness with ttl
@@ -1132,7 +1136,7 @@ def truex_callback_endpoint():
 
         # process request
     except Exception as e:
-        print('unhandled exception in truex process')
+        print('unhandled exception in truex process. exception: %s' % e)
         return TRUEX_CALLBACK_RECOVERABLE_ERROR
 
     return TRUEX_CALLBACK_PROCESSED
