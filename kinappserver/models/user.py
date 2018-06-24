@@ -156,7 +156,7 @@ class UserAppData(db.Model):
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     completed_tasks = db.Column(db.JSON)
     next_task_ts = db.Column(db.String(40), primary_key=False, nullable=True)  # the ts for th next task, can be None
-    next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=False)  # the memo for the user's next task.
+    next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=True)  # the memo for the user's next task.
 
 
 def update_user_app_version(user_id, app_ver):
@@ -177,6 +177,9 @@ def get_next_task_memo(user_id):
     try:
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
         next_memo = userAppData.next_task_memo
+        if next_memo is None:
+            # set an initial value
+            return get_and_replace_next_task_memo()
     except Exception as e:
         print(e)
         raise InvalidUsage('cant get next memo')

@@ -391,4 +391,4 @@ def get_truex_activity(user_id):
 
     # get truex activity for user:
     from kinappserver.truex import get_activity
-    return get_activity(user_id) # returns status, activity
+    return get_activity(user_id)  # returns status, activity

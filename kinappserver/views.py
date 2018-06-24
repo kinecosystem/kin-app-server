@@ -375,6 +375,8 @@ def get_next_task():
     """returns the current task for the user with the given id"""
     user_id = extract_header(request)
     tasks = get_tasks_for_user(user_id)
+    if len(tasks) == 1:
+        tasks[0]['memo'] = get_next_task_memo(user_id)
 
     if user_deactivated(user_id):
         print('user %s is deactivated. returning empty task array' % user_id)
@@ -386,7 +388,7 @@ def get_next_task():
     except Exception as e:
         print('cant print returned tasks for user %s' % user_id)
         print(e)
-    return jsonify(tasks=tasks, memo=get_next_task_memo(user_id))
+    return jsonify(tasks=tasks)
 
 
 @app.route('/user/transactions', methods=['GET'])

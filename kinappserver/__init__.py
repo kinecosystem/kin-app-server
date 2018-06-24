@@ -128,5 +128,5 @@ app.firebase_admin = firebase_admin
 
 
 # uncomment to print db creation statements
-#from .utils import print_creation_statement
-#print_creation_statement()
+from .utils import print_creation_statement
+print_creation_statement()

@@ -91,7 +91,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print(data)
         self.assertEqual(resp.status_code, 200)
-
+        self.assertNotEqual(data['tasks'][0]['memo'], None)
         self.assertEqual(models.get_user_task_results(userid), [])
 
 
