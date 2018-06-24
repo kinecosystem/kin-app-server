@@ -24,7 +24,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity
+    get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo, get_next_task_memo
 
 
 def limit_to_local_host():
@@ -293,7 +293,7 @@ def quest_answers():
     if not store_task_results(user_id, task_id, results):
             raise InternalError('cant save results for userid %s' % user_id)
     try:
-        memo = utils.generate_memo()
+        memo = get_and_replace_next_task_memo(user_id)
         reward_and_push(address, task_id, send_push, user_id, memo, tip)
     except Exception as e:
         print('exception: %s' % e)
@@ -386,7 +386,7 @@ def get_next_task():
     except Exception as e:
         print('cant print returned tasks for user %s' % user_id)
         print(e)
-    return jsonify(tasks=tasks)
+    return jsonify(tasks=tasks, memo=get_next_task_memo(user_id))
 
 
 @app.route('/user/transactions', methods=['GET'])
@@ -1114,7 +1114,7 @@ def truex_callback_endpoint():
 
         remote_ip = request.headers.get('X-Forwarded-For', None)
         if config.DEBUG and remote_ip is None:
-            remote_ip='50.16.245.33'
+            remote_ip = '50.16.245.33' # hard-coded ip from the truex list
             print('overwriting remote ip for DEBUG to %s' % remote_ip)
         if remote_ip not in TRUEX_SERVERS_ADRESSES:
             # just return whatever. this isn't from truex
@@ -1124,6 +1124,7 @@ def truex_callback_endpoint():
         # validate sig
         from .truex import verify_sig
         if not verify_sig(args):
+            print('truex_callback_endpoint: failed to authenticate request from truex')
             return TRUEX_CALLBACK_BAD_SIG
 
         # ensure eng_id uniqueness with ttl

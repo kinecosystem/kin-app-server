@@ -2,7 +2,7 @@
 from sqlalchemy_utils import UUIDType
 
 from kinappserver import db, config
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, get_global_config
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, get_global_config, generate_memo
 from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_please_upgrade_push_2
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
@@ -118,6 +118,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
         user_app_data.completed_tasks = '[]'
         user_app_data.app_ver = app_ver
         user_app_data.next_task_ts = None
+        user_app_data.next_task_memo = generate_memo()
         db.session.add(user_app_data)
         db.session.commit()
 
@@ -155,6 +156,7 @@ class UserAppData(db.Model):
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     completed_tasks = db.Column(db.JSON)
     next_task_ts = db.Column(db.String(40), primary_key=False, nullable=True)  # the ts for th next task, can be None
+    next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=False)  # the memo for the user's next task.
 
 
 def update_user_app_version(user_id, app_ver):
@@ -167,6 +169,35 @@ def update_user_app_version(user_id, app_ver):
     except Exception as e:
         print(e)
         raise InvalidUsage('cant set user app data')
+
+
+def get_next_task_memo(user_id):
+    """returns the next memo for this user"""
+    next_memo = None
+    try:
+        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
+        next_memo = userAppData.next_task_memo
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('cant get next memo')
+    else:
+        return next_memo
+
+
+def get_and_replace_next_task_memo(user_id):
+    """return the next memo for this user and replace it with another"""
+    next_memo = None
+    try:
+        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
+        next_memo = userAppData.next_task_memo
+        userAppData.next_task_memo = generate_memo()
+        db.session.add(userAppData)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('cant set next memo')
+    else:
+        return next_memo
 
 
 def list_all_users_app_data():
