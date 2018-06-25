@@ -197,7 +197,7 @@ def update_token_api():
 
 @app.route('/user/push/update-token', methods=['POST'])
 def push_update_token_api():
-    """updates a user's token in the database """
+    """updates a user's push token in the database. also sends the auth token to the user"""
     payload = request.get_json(silent=True)
     try:
         user_id = extract_header(request)

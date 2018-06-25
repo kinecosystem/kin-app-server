@@ -117,7 +117,11 @@ def should_send_auth_token(user_id):
         # always send to a user that hasn't been sent yet
         return True
 
-    # if more than AUTH_TOKEN_SEND_INTERVAL_DAYS passed, resend and refresh the token
+    if not token_obj.authenticated:
+        # keep sending the auth push message because the user isn't authenticated
+        return True
+
+    # if more than AUTH_TOKEN_SEND_INTERVAL_DAYS passed, resend and refresh the token regardless of the current state
     elif (arrow.utcnow() - token_obj.send_date).total_seconds() > 60 * 60 * 24 * int(config.AUTH_TOKEN_SEND_INTERVAL_DAYS):
         print('refreshing auth token for user %s' % user_id)
         refresh_token(user_id)
@@ -157,7 +161,7 @@ def scan_for_deauthed_users():
             ack_date = arrow.get(token.send_date)
             sent_secs_ago = (now - send_date).total_seconds()
             ack_secs_ago = (now - ack_date).total_seconds()
-            if 5 < sent_secs_ago < 10 and ack_secs_ago < 10:
+            if 5 < sent_secs_ago < 10 and ack_secs_ago > 10:
                 print('deauth_users: marking user %s as unauthenticated. sent_secs_ago: %s' % (token.user_id, ack_secs_ago))
                 deauth_user_ids.append(token.user_id)
 
