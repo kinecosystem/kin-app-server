@@ -363,7 +363,7 @@ def handle_task_results_resubmission(user_id, task_id):
     return memo, user_id
 
 
-def get_truex_activity(user_id):
+def get_truex_activity(user_id, remote_ip):
     """returns a truex activity for the user if she is allowed one now"""
 
     tasks = []
@@ -391,4 +391,4 @@ def get_truex_activity(user_id):
 
     # get truex activity for user:
     from kinappserver.truex import get_activity
-    return get_activity(user_id)  # returns status, activity
+    return get_activity(user_id, remote_ip)  # returns status, activity

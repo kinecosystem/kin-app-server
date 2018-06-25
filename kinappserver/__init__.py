@@ -103,6 +103,7 @@ if not config.DEBUG:
     app.redis.setex('temp-key', 1, 'temp-value')
 
 config.TRUEX_PARTNER_HASH = ssm.get_truex_hash()
+config.TRUEX_CALLBACK_SECRET = ssm.get_truex_callback_secret()
 
 # useful prints:
 state = 'enabled' if config.PHONE_VERIFICATION_ENABLED else 'disabled'

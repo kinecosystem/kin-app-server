@@ -25,7 +25,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users
+    get_next_task_memo, scan_for_deauthed_users, user_exists
 
 
 def limit_to_local_host():
@@ -1055,6 +1055,7 @@ def truex_activity_endpoint():
     """returns a truex activity for the requesting user, provided this user is allowed to get one now:
        meaning that her current task is of type truex and the submission time was met"""
     try:
+        remote_ip = request.headers.get('X-Forwarded-For', None)
         user_id = extract_header(request)
         if user_id is None:
             raise InvalidUsage('no user_id')
@@ -1062,7 +1063,7 @@ def truex_activity_endpoint():
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
 
-    status, activity = get_truex_activity(user_id)
+    status, activity = get_truex_activity(user_id, remote_ip)
     if not status:
         print('userid %s failed to get a truex activity' % user_id)
         raise InvalidUsage('user failed to get an activity')
@@ -1073,7 +1074,7 @@ TRUEX_CALLBACK_RECOVERABLE_ERROR = '0'
 TRUEX_CALLBACK_PROCESSED = '1'
 TRUEX_CALLBACK_BAD_SIG = '2'
 TRUEX_CALLBACK_DUP_ENGAGEMENT_ID = '3'
-TRUEX_UNIQUENESS_TTL_SEC = 60*60*24*10 # 10 days
+TRUEX_ENG_UNIQUENESS_TTL_SEC = 60*60*24*10 # 10 days
 
 TRUEX_SERVERS_ADRESSES = ['8.3.218.160', '8.3.218.161', '8.3.218.162', '8.3.218.163', '8.3.218.164', '8.3.218.165',
                           '8.3.218.166', '8.3.218.167', '8.3.218.168', '8.3.218.169', '8.3.218.170', '8.3.218.171',
@@ -1108,17 +1109,22 @@ def truex_callback_endpoint():
         3  – Invalid user or duplicate engagement_id (request will not be retried)
 
     """
+    args = request.args
+    user_id = args.get('network_user_id')
+    eng_id = args.get('engagement_id', None)
+
+    # allow easy simulation of the callback in stage
+    if config.DEBUG and args.get('skip_callback_processing', False):
+        print('skipping truex callback processing - compensating debug user %s' % user_id)
+        compensate_truex_activity(user_id)
+        return TRUEX_CALLBACK_PROCESSED
+
     try:
-
-        args = request.args
-        eng_id = args.get('engagement_id')
-
         # ensure acl:
-
         remote_ip = request.headers.get('X-Forwarded-For', None)
         if config.DEBUG and remote_ip is None:
             remote_ip = '50.16.245.33' # hard-coded ip from the truex list
-            print('overwriting remote ip for DEBUG to %s' % remote_ip)
+            print('truex_callback_endpoint: overwriting remote ip for DEBUG to %s' % remote_ip)
         if remote_ip not in TRUEX_SERVERS_ADRESSES:
             # just return whatever. this isn't from truex
             print('truex_callback_endpoint: got request from %s, which isn\'t in the acl. ignoring request' % remote_ip)
@@ -1131,13 +1137,13 @@ def truex_callback_endpoint():
             return TRUEX_CALLBACK_BAD_SIG
 
         # ensure eng_id uniqueness with ttl
-        if not app.redis.set('truex-%s' % eng_id, 1, nx=True, ex=TRUEX_UNIQUENESS_TTL_SEC):
+        if not app.redis.set('truex-%s' % eng_id, 1, nx=True, ex=TRUEX_ENG_UNIQUENESS_TTL_SEC):
             # dup eng_id
             print('truex_callback_endpoint: detected duplicate eng-id. ignoring request')
             return TRUEX_CALLBACK_DUP_ENGAGEMENT_ID
 
         # okay. pay the user
-        user_id = args.get('network_user_id')
+
         print('paying user %s for truex activity' % user_id)
         res = compensate_truex_activity(user_id)
         if not res:
@@ -1155,6 +1161,10 @@ def compensate_truex_activity(user_id):
 
     this function has a lot of duplicate code from post_user_task_results_endpoint
     """
+    if not user_exists(user_id):
+        print('compensate_truex_activity. user_id %s does not exist. aborting')
+        return False
+
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
         print('blocking user (%s) results - didnt pass phone_verification' % user_id)
         return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST

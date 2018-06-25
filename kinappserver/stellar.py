@@ -20,7 +20,16 @@ def create_account(public_address, initial_xlm_amount):
 
 def send_kin(public_address, amount, memo=None):
     """send kins to an address"""
-    #TODO add repeating logic?
+
+    #  sanity:
+    if public_address in (None, ''):
+        print('cant send kin to address: %s' % public_address)
+        return False, None
+
+    if amount is None or amount < 1:
+        print('cant send kin amount: %s' % amount)
+        return False, None
+
     print('sending kin to address: %s' % public_address) #TODO REMOVE
     from stellar_base.asset import Asset
     try:
