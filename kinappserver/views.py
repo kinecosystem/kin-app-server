@@ -217,7 +217,7 @@ def push_update_token_api():
 
 
 @app.route('/user/task/results', methods=['POST'])
-def quest_answers():
+def post_user_task_results_endpoint():
     """receive the results for a tasks and pay the user for them"""
     payload = request.get_json(silent=True)
     try:
@@ -942,7 +942,7 @@ def init_bh_creds_api():
 
 @app.route('/blackhawk/offers/add', methods=['POST'])
 def add_bh_offer_api():
-    """Adds a blackhawk offer to the db. the offer_id must already exist in the offers table"""
+    """adds a blackhawk offer to the db. the offer_id must already exist in the offers table"""
     if not config.DEBUG:
         limit_to_local_host()
 
@@ -1002,8 +1002,8 @@ def replenish_bh_cards_endpoint():
 
 
 @app.route('/task/results', methods=['POST'])
-def get_task_endpoint():
-    """returns the current balance of the bh account"""
+def post_task_results_endpoint():
+    """an endpoint that can be used to return task results for bi"""
     limit_to_password()
 
     try:
@@ -1020,7 +1020,7 @@ def get_task_endpoint():
 
 @app.route('/user/report', methods=['POST'])
 def user_report_endpoint():
-    """returns the current balance of the bh account"""
+    """returns a summary of the user's data"""
     limit_to_password()
 
     try:
@@ -1136,7 +1136,11 @@ def truex_callback_endpoint():
             return TRUEX_CALLBACK_DUP_ENGAGEMENT_ID
 
         # okay. pay the user
-
+        user_id = args.get('network_user_id')
+        print('paying user %s for truex activity' % user_id)
+        res = compensate_truex_activity(user_id)
+        if not res:
+            print('failed to pay user %s for truex activity' % user_id)
         # process request
     except Exception as e:
         print('unhandled exception in truex process. exception: %s' % e)
@@ -1144,3 +1148,49 @@ def truex_callback_endpoint():
 
     return TRUEX_CALLBACK_PROCESSED
 
+
+def compensate_truex_activity(user_id):
+    """pay a user for her truex activity
+
+    this function has a lot of duplicate code from post_user_task_results_endpoint
+    """
+    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        print('blocking user (%s) results - didnt pass phone_verification' % user_id)
+        return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
+
+    if user_deactivated(user_id):
+        print('user %s deactivated. rejecting submission' % user_id)
+        return jsonify(status='error', reason='user_deactivated'), status.HTTP_400_BAD_REQUEST
+
+    if reject_premature_results(user_id):
+        print('compensate_truex_activity: should never happen - premature task submission')
+        return False
+
+    # get the user's current task_id
+    tasks = get_tasks_for_user(user_id)
+    if len(tasks) == 0:
+        print('compensate_truex_activity: should never happen - user doesnt have any tasks')
+        return False
+    else:
+        task_id = tasks[0]['id']
+    print('compensate_truex_activity: current task_id: %s' % task_id)
+
+    memo, compensated_user_id = handle_task_results_resubmission(user_id, task_id)
+    if memo:
+        print('compensate_truex_activity: detected resubmission of previously payed-for task by user_id: %s. memo:%s' % (compensated_user_id, memo))
+        # this task was already submitted - and compensated, so just re-return the memo to the user.
+        return True
+
+    # store some fake results as this task doesn't have any
+    if not store_task_results(user_id, task_id, [{'aid': '0', 'qid': '0'}]):
+            raise InternalError('cant save results for user_id %s' % user_id)
+    try:
+        memo = get_and_replace_next_task_memo(user_id)
+        address = get_address_by_userid(user_id)
+        reward_and_push(address, task_id, True, user_id, memo, tip=0)
+    except Exception as e:
+        print('failed to reward truex task %s at address %s for user_id %s. exception: %s' % (task_id, address, user_id, e))
+        raise(e)
+
+    increment_metric('task_completed')
+    return True
