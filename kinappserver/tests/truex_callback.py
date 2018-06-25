@@ -32,8 +32,8 @@ class Tester(unittest.TestCase):
 
     def test_truex_callback(self):
 
-        url = "/truex/callback?application_key=e8e7dbe7d7b1d16f0ab2&network_user_id=c1ee58d9-c068-44fc-8c62-400f0537e8d2&currency_amount=1&currency_label=&revenue=0.0072&placement_hash=21be84de4fa0cc0315a5563d02e293b99b67cd16&campaign_name=Kik+-+Kin+-+KF+Panda+Mobile+SVNRE&campaign_id=13255&creative_name=KF+Panda+Mobile+SVNRE&creative_id=8974&engagement_id=883635952&client_request_id=1529492319&sig=eXeHQVjiJEx%2BaCnctbZq1g08q0Y%3D"
-
+        #url = "/truex/callback?application_key=e8e7dbe7d7b1d16f0ab2&network_user_id=c1ee58d9-c068-44fc-8c62-400f0537e8d2&currency_amount=1&currency_label=&revenue=0.0072&placement_hash=21be84de4fa0cc0315a5563d02e293b99b67cd16&campaign_name=Kik+-+Kin+-+KF+Panda+Mobile+SVNRE&campaign_id=13255&creative_name=KF+Panda+Mobile+SVNRE&creative_id=8974&engagement_id=883635952&client_request_id=1529492319&sig=eXeHQVjiJEx%2BaCnctbZq1g08q0Y%3D"
+        url = '/truex/callback?application_key=e8e7dbe7d7b1d16f0ab2&network_user_id=123123125&currency_amount=1&currency_label=&revenue=0.0072&placement_hash=21be84de4fa0cc0315a5563d02e293b99b67cd16&campaign_name=Kik+-+Kin+-+KF+Panda+Mobile+SVNRE&campaign_id=13255&creative_name=KF+Panda+Mobile+SVNRE&creative_id=8974&engagement_id=883677698&client_request_id=&sig=%2F4bYGhcTgi3pWbcHa5dBOyjmxf0%3D'
         print('processing truex callback - should work')
         # get the truex activity - should fail
         resp = self.app.get(url)
