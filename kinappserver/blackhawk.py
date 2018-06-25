@@ -28,7 +28,7 @@ API_BASE_URI = 'https://api.omnicard.com/2.x'
 def parse_bh_response_message(resp):
     """generic function to get the message portion from blackhawk API or None on failure"""
     if resp.status_code != 200:
-        print('could not get auth token from blackhawk')
+        print('http request to blackhawk failed. request: %s' % resp.url)
         return None
     else:
         try:
@@ -89,7 +89,10 @@ def get_accounts_data_api(token):
     """returns info about this account from BH"""
     resp = requests.post('%s/funds/getAccounts.json' % API_BASE_URI, headers=HEADERS,
                          data=escape_payload({'data[token]': token}))
-    return parse_bh_response_message(resp)
+    account_data = parse_bh_response_message(resp)
+    if not account_data:
+        print('failed ot get account data with token: %s' % token)
+    return account_data
 
 
 def get_merchants_api(token):
