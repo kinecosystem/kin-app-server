@@ -987,11 +987,11 @@ def replenish_bh_cards_endpoint():
         limit_to_local_host()
 
     from .blackhawk import replenish_bh_cards, refresh_bh_auth_token
-    refresh_bh_auth_token()
-
     if not config.BLACKHAWK_PURCHASES_ENABLED:
         print('blackhawk purchases disabled by config. ignoring cron')
         return jsonify(status='ok')
+
+    refresh_bh_auth_token()
 
     # buys cards if needed
     retval = replenish_bh_cards()

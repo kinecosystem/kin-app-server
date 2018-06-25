@@ -288,7 +288,7 @@ def refresh_bh_auth_token(force=False):
         return False
     from datetime import datetime, timezone
     now = datetime.now(timezone.utc)
-    if not force and (now - creds['token_generation_time']).total_seconds() < 1: # TODO FIX THIS 60*60*24*2:
+    if not force and (now - creds['token_generation_time']).total_seconds() < 60*60*24*2:
         # no need to refresh token. still quite fresh.
         return True
 
