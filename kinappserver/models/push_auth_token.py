@@ -167,6 +167,9 @@ def scan_for_deauthed_users():
 
 def deauth_users(user_ids):
     """set the given user_ids list to authenticated=false"""
+    if len(user_ids) == 0:
+        return
+
     user_ids_string = ''
     for user_id in user_ids:
         user_ids_string += ("\'%s\'," % user_id)

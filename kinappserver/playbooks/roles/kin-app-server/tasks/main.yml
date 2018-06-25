@@ -119,8 +119,6 @@
   run_once: true # runs every minute, on one machine of the 2
 
 - cron:
-    name: "retarget push tokens"
-    hour: '*'
-    minute: 0
-    job: "/opt/kin-app-server/kinappserver/cron/retarget_auth_tokens.sh"
-  run_once: true # runs every hour, on one machine of the 2
+    name: "periodically de-authenticate users"
+    job: "/opt/kin-app-server/kinappserver/cron/deauth_users.sh"
+  run_once: true # runs every minute, on one machine of the 2
