@@ -18,7 +18,8 @@ class PushAuthToken(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
-        return '<user_id: %s, authenticated: %s, send_date: %s, ack_date: %s, token: %s, updated_at: %s' % (self.user_id, self.authenticated, self.send_date, self.ack_date, self.auth_token, self.updated_at)
+        return '<user_id: %s, authenticated: %s, send_date: %s, ack_date: %s, token: %s, updated_at: %s' % (
+        self.user_id, self.authenticated, self.send_date, self.ack_date, self.auth_token, self.updated_at)
 
 
 def get_token_obj_by_user_id(user_id):
@@ -117,7 +118,7 @@ def should_send_auth_token(user_id):
         return True
 
     # if more than AUTH_TOKEN_SEND_INTERVAL_DAYS passed, resend and refresh the token
-    elif (arrow.utcnow() - token_obj.send_date).total_seconds() > 60*60*24*int(config.AUTH_TOKEN_SEND_INTERVAL_DAYS):
+    elif (arrow.utcnow() - token_obj.send_date).total_seconds() > 60 * 60 * 24 * int(config.AUTH_TOKEN_SEND_INTERVAL_DAYS):
         print('refreshing auth token for user %s' % user_id)
         refresh_token(user_id)
         return True
@@ -142,3 +143,34 @@ def generate_retarget_list():
             push_list.append(token.user_id)
 
     return push_list
+
+
+def scan_for_deauthed_users():
+    """this script is called by cron every x sedonds to de-authenticate users that failed to ack the auth token"""
+    push_auth_tokens = PushAuthToken.query.all()
+    deauth_user_ids = []
+    now = arrow.utcnow()
+    for token in push_auth_tokens:
+        if token.authenticated:
+            # authenticated users have all previously been sent - and acked
+            send_date = arrow.get(token.send_date)
+            ack_date = arrow.get(token.send_date)
+            sent_secs_ago = (now - send_date).total_seconds()
+            ack_secs_ago = (now - ack_date).total_seconds()
+            if 5 < sent_secs_ago < 10 and ack_secs_ago < 10:
+                print('deauth_users: marking user %s as unauthenticated. sent_secs_ago: %s' % (token.user_id, ack_secs_ago))
+                deauth_user_ids.append(token.user_id)
+
+    deauth_users(deauth_user_ids)
+    return True
+
+
+def deauth_users(user_ids):
+    """set the given user_ids list to authenticated=false"""
+    user_ids_string = ''
+    for user_id in user_ids:
+        user_ids_string += ("\'%s\'," % user_id)
+    user_ids_string = user_ids_string[:-1]
+    prepared_string = "update push_auth_token set authenticated=false where user_id in (%s)" % (user_ids_string)
+    print('deauthing users: %s' % prepared_string)
+    db.engine.execute(prepared_string)

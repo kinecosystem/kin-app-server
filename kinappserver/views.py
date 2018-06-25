@@ -24,7 +24,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo, get_next_task_memo
+    get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
+    get_next_task_memo, scan_for_deauthed_users
 
 
 def limit_to_local_host():
@@ -1194,3 +1195,10 @@ def compensate_truex_activity(user_id):
 
     increment_metric('task_completed')
     return True
+
+
+@app.route('/users/deauth', methods=['GET'])
+def deauth_users_endpoint():
+    """disables users that were sent an auth token but did not ack it in time"""
+    scan_for_deauthed_users()
+    return jsonify(status='ok')
