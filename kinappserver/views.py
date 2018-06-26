@@ -1033,6 +1033,10 @@ def user_report_endpoint():
         print(e)
         raise InvalidUsage('bad-request')
 
+    if not user_exists(user_id):
+        print('user_report_endpoint: user_id %s does not exist. aborting')
+        return jsonify(erorr='no_such_user')
+
     return jsonify(report=get_user_report(user_id))
 
 
