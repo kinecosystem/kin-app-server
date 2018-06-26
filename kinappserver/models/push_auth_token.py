@@ -162,7 +162,7 @@ def scan_for_deauthed_users():
             sent_secs_ago = (now - send_date).total_seconds()
             ack_secs_ago = (now - ack_date).total_seconds()
             if 5 < sent_secs_ago < 10 and ack_secs_ago > 10:
-                print('deauth_users: marking user %s as unauthenticated. sent_secs_ago: %s' % (token.user_id, ack_secs_ago))
+                print('scan_for_deauthed_users: marking user %s as unauthenticated. sent_secs_ago: %s' % (token.user_id, ack_secs_ago))
                 deauth_user_ids.append(token.user_id)
 
     deauth_users(deauth_user_ids)

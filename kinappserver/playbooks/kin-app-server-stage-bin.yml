@@ -3,6 +3,7 @@
   become: true
   roles:
     - kin-app-server-bin
+    - igor_mukhin.bash_aliases
 
   vars:
    deployment_env: stage
@@ -39,3 +40,7 @@
    auth_token_enabled: True
    blackhawk_purchases_enabled: False
    blackhawk_critical_balance_threshold: 50
+   bash_aliases:
+     - { alias: 'log', command: 'cat /var/log/kinappserver.err.log' }
+     - { alias: 'tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
+     - { alias: 'sql', command: 'psql postgresql://kinappstageuser:password@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage' }
