@@ -19,7 +19,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     set_onboarded, send_push_tx_completed, send_engagement_push, \
     create_tx, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
-    create_good, list_inventory, release_unclaimed_goods, get_tokens_for_push, \
+    create_good, list_inventory, release_unclaimed_goods, get_users_for_engagement_push, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, get_pa_for_users,\
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
@@ -785,21 +785,21 @@ def send_engagemnt_api():
 
     dry_run = args.get('dryrun', 'True') == 'True'
 
-    tokens = get_tokens_for_push(scheme)
-    if tokens is None:
+    user_ids = get_users_for_engagement_push(scheme)
+    if scheme is None:
         raise InvalidUsage('invalid scheme')
 
-    print('gathered %d ios tokens and %d gcm tokens for scheme: %s, dry-run:%s' % (len(tokens[utils.OS_IOS]), len(tokens[utils.OS_ANDROID]), scheme, dry_run))
+    print('gathered %d ios user_ids and %d gcm user_ids for scheme: %s, dry-run:%s' % (len(user_ids[utils.OS_IOS]), len(user_ids[utils.OS_ANDROID]), scheme, dry_run))
 
     if dry_run:
         print('send_engagement_api - dry_run - not sending push')
     else:
-        print('sending push ios %d tokens' % len(tokens[utils.OS_IOS]))
-        for token in tokens[utils.OS_IOS]:
-            send_engagement_push(None, scheme, token, utils.OS_IOS)
-        print('sending push android %d tokens' % len(tokens[utils.OS_ANDROID]))
-        for token in tokens[utils.OS_ANDROID]:
-            send_engagement_push(None, scheme, token, utils.OS_ANDROID)
+        print('sending push ios %d tokens' % len(user_ids[utils.OS_IOS]))
+        for user_id in user_ids[utils.OS_IOS]:
+            send_engagement_push(user_id, scheme)
+        print('sending push android %d tokens' % len(user_ids[utils.OS_ANDROID]))
+        for user_id in user_ids[utils.OS_ANDROID]:
+            send_engagement_push(user_id, scheme)
 
     return jsonify(status='ok')
 

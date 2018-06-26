@@ -289,10 +289,9 @@ def send_push_auth_token(user_id, force_send=False):
     return True
 
 
-def send_engagement_push(user_id, push_type, token=None, os_type=None):
+def send_engagement_push(user_id, push_type):
     """sends an engagement push message to the user with the given user_id"""
-    if None in (token, os_type):
-        os_type, token, push_env = get_user_push_data(user_id)
+    os_type, token, push_env = get_user_push_data(user_id)
 
     if token is None:
         print('cant push to user %s: no push token' % user_id)
@@ -346,16 +345,16 @@ def get_next_task_results_ts(user_id):
         raise InvalidUsage('cant get task result ts')
 
 
-def get_tokens_for_push(scheme):
-    """get push tokens for a scheme"""
+def get_users_for_engagement_push(scheme):
+    """get user_ids for an engagement scheme"""
     from datetime import datetime, timedelta
     import arrow
     from kinappserver.models import get_tasks_for_user
     now = arrow.utcnow().shift(seconds=60).timestamp  # add a small timeshift to account for calculation time
-    tokens = {OS_IOS: [], OS_ANDROID: []}
+    user_ids = {OS_IOS: [], OS_ANDROID: []}
 
     if scheme == 'engage-recent':
-        # get all tokens that:
+        # get all user_ids that:
         # (1) have active tasks and 
         # (2) did not log in today and
         # (3) last login was sometimes in the last 4 days
@@ -365,8 +364,7 @@ def get_tokens_for_push(scheme):
         all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
         for user in all_pushable_users:
             try:
-
-                #filter out users with no tasks AND ALSO users with future tasks:
+                # filter out users with no tasks AND ALSO users with future tasks:
                 tasks = get_tasks_for_user(user.user_id)
                 if tasks == []:
                     print('skipping user %s - no active task, now: %s' % (user.user_id, now))
@@ -389,15 +387,15 @@ def get_tokens_for_push(scheme):
 
                 print('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
                 if user.os_type == OS_IOS:
-                    tokens[OS_IOS].append(user.push_token)
+                    user_ids[OS_IOS].append(user.user_id)
                 else:
-                    tokens[OS_ANDROID].append(user.push_token)
+                    user_ids[OS_ANDROID].append(user.user_id)
 
             except Exception as e:
                 print('caught exception trying to calculate push for user %s' % user.user_id)
                 print(e)
                 continue
-        return tokens
+        return user_ids
 
     elif scheme == 'engage-week':
         # get all tokens that:

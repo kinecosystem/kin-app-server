@@ -137,38 +137,38 @@ class Tester(unittest.TestCase):
         for i in range(0,10):
             user_ids.append(add_user())
 
-        tokens = models.get_tokens_for_push('engage-recent')
+        tokens = models.get_users_for_engagement_push('engage-recent')
         self.assertEqual(count_tokens(tokens), 0)
 
         # set last active to 4 days ago
-        time_active = str(datetime.utcnow()+ timedelta(days=-4))
+        time_active = str(datetime.utcnow() + timedelta(days=-4))
         set_users_last_active(time_active)
-        tokens = models.get_tokens_for_push('engage-recent')
+        tokens = models.get_users_for_engagement_push('engage-recent')
         self.assertEqual(count_tokens(tokens), 10)
 
         # set last active to 3 days ago
-        time_active = str(datetime.utcnow()+ timedelta(days=-3))
+        time_active = str(datetime.utcnow() + timedelta(days=-3))
         set_users_last_active(time_active)
-        tokens = models.get_tokens_for_push('engage-recent')
+        tokens = models.get_users_for_engagement_push('engage-recent')
         self.assertEqual(count_tokens(tokens), 10)
 
         # set last active to 5 days ago
-        time_active = str(datetime.utcnow()+ timedelta(days=-5))
+        time_active = str(datetime.utcnow() + timedelta(days=-5))
         set_users_last_active(time_active)
-        tokens = models.get_tokens_for_push('engage-recent')
+        tokens = models.get_users_for_engagement_push('engage-recent')
         self.assertEqual(count_tokens(tokens), 0)
 
         # set last active to 3 days ago
-        time_active = str(datetime.utcnow()+ timedelta(days=-2))
+        time_active = str(datetime.utcnow() + timedelta(days=-2))
         set_users_last_active(time_active)
-        tokens = models.get_tokens_for_push('engage-recent')
+        tokens = models.get_users_for_engagement_push('engage-recent')
         self.assertEqual(count_tokens(tokens), 10)
 
         # submit results by user 0 and thus put the user into cooldown
         models.store_task_results(user_ids[0], '0', '[\"0\",\"1\"]')
 
         # get tokens. user 0's token should be gone
-        tokens = models.get_tokens_for_push('engage-recent')
+        tokens = models.get_users_for_engagement_push('engage-recent')
         self.assertEqual(count_tokens(tokens), 9)
 
 
