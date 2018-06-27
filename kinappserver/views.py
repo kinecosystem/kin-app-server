@@ -394,7 +394,7 @@ def get_next_task():
 
 @app.route('/user/transactions', methods=['GET'])
 def get_transactions_api():
-    """return a list of the last 50 txs for this user
+    """return a list of the last X txs for this user
 
     each item in the list contains:
         - the tx_hash

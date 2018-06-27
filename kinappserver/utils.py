@@ -21,7 +21,7 @@ OS_IOS = 'iOS'
 
 DEFAULT_MIN_CLIENT_VERSION = '0.1'
 
-MAX_TXS_PER_USER = 50
+MAX_TXS_PER_USER = 100
 
 
 def generate_memo(is_manual=False):
