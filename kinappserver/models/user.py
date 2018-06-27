@@ -453,15 +453,15 @@ def get_users_for_engagement_push(scheme):
             
                 print('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
                 if user.os_type == OS_IOS:
-                    tokens[OS_IOS].append(user.push_token)
+                    user_ids[OS_IOS].append(user.push_token)
                 else:
-                    tokens[OS_ANDROID].append(user.push_token)
+                    user_ids[OS_ANDROID].append(user.push_token)
 
             except Exception as e:
                 print('caught exception trying to calculate push for user %s' % user.user_id)
                 print(e)
                 continue
-        return tokens
+        return user_ids
     else:
         print('unknown scheme')
         return None
