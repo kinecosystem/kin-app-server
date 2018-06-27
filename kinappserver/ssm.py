@@ -4,16 +4,19 @@ import os
 import boto3
 
 from kinappserver import config
+from kinappserver.utils import InternalError
 
 
-def get_truex_hash():
+def get_truex_creds():
     env = os.environ.get('ENV', 'test')
-    return get_ssm_parameter('/config/' + env + '/truex/partner_hash', config.KMS_KEY_AWS_REGION)
+    partner_hash = get_ssm_parameter('/config/' + env + '/truex/partner_hash', config.KMS_KEY_AWS_REGION)
+    callback_secret = get_ssm_parameter('/config/' + env + '/truex/callback_secret', config.KMS_KEY_AWS_REGION)
+    app_id = get_ssm_parameter('/config/' + env + '/truex/app_id', config.KMS_KEY_AWS_REGION)
+    if None in (app_id, partner_hash, callback_secret):
+        print('cant get truex creds')
+        raise InternalError('cant get truex creds')
 
-
-def get_truex_callback_secret():
-    env = os.environ.get('ENV', 'test')
-    return get_ssm_parameter('/config/' + env + '/truex/callback_secret', config.KMS_KEY_AWS_REGION)
+    return app_id, partner_hash, callback_secret
 
 
 def get_stellar_credentials():

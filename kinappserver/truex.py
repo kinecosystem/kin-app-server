@@ -45,7 +45,7 @@ def generate_truex_url(user_id, remote_ip, client_request_id):
         # user
         'user.uid': user_id,
         # device
-        'device.ip': remote_ip,
+        'device.ip': remote_ip if remote_ip is not None else HARDCODED_CLIENT_IP,
         'device.ua': 'Android 5.0',
         # response
         'response.max_activities': 1,
@@ -64,9 +64,6 @@ def generate_truex_url(user_id, remote_ip, client_request_id):
 
 def sign_truex_attrs(attrs):
     """signs the given attributes accoring to True[X]'s specs and returns the signature"""
-
-    url = "/truex/callback?application_key=e8e7dbe7d7b1d16f0ab2&network_user_id=c1ee58d9-c068-44fc-8c62-400f0537e8d2&currency_amount=1&currency_label=&revenue=0.0072&placement_hash=21be84de4fa0cc0315a5563d02e293b99b67cd16&campaign_name=Kik+-+Kin+-+KF+Panda+Mobile+SVNRE&campaign_id=13255&creative_name=KF+Panda+Mobile+SVNRE&creative_id=8974&engagement_id=883635952&client_request_id=1529492319&sig=eXeHQVjiJEx%2BaCnctbZq1g08q0Y%3D"
-
     attr_names = [
         'application_key',
         'network_user_id',
