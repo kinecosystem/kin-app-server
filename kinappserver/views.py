@@ -849,12 +849,7 @@ def fix_users_api():
 @app.route('/user/compensate', methods=['POST'])
 def compensate_user_api():
     """internal endpoint used to manually compensate users for missing txs"""
-    if not config.DEBUG:
-        limit_to_local_host()
-
-    # for security reasons, I'm disabling this api.
-    # remove the 'return' line to re-enable it.
-    return
+    limit_to_password()
 
     payload = request.get_json(silent=True)
     user_id = payload.get('user_id', None)
