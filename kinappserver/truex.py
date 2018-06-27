@@ -29,8 +29,11 @@ def get_activity(user_id, remote_ip, client_request_id=None):
         # process the response:
         activities = resp.json()
         if len(activities) == 0:
-            print('no activities returned for userid %s' % user_id)
-            return True, None
+            if remote_ip is not None:
+                print('no activities returned for userid %s. re-trying with hardcoded ip...' % user_id)
+                return get_activity(user_id, HARDCODED_CLIENT_IP, client_request_id)
+            else:
+                return True, None
 
         return True, activities[0]
 
@@ -45,7 +48,7 @@ def generate_truex_url(user_id, remote_ip, client_request_id):
         # user
         'user.uid': user_id,
         # device
-        'device.ip': remote_ip if remote_ip is not None else HARDCODED_CLIENT_IP,
+        'device.ip': remote_ip,
         'device.ua': 'Android 5.0',
         # response
         'response.max_activities': 1,
