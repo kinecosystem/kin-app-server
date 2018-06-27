@@ -29,11 +29,18 @@ class User(db.Model):
     deactivated = db.Column(db.Boolean, unique=False, default=False)
     auth_token = db.Column(UUIDType(binary=False), primary_key=False, nullable=True)
     package_id = db.Column(db.String(60), primary_key=False, nullable=True)
+    screen_w = db.Column(db.String(20), primary_key=False, nullable=True)
+    screen_h = db.Column(db.String(20), primary_key=False, nullable=True)
+    screen_d = db.Column(db.String(20), primary_key=False, nullable=True)
+    locale = db.Column(db.String(20), primary_key=False, nullable=True)
+    user_agent = db.Column(db.String(50), primary_key=False, nullable=True)
 
     def __repr__(self):
         return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s,' \
-               ' onboarded: %s, public_address: %s, phone_number: %s, package_id: %s, deactivated: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
-                                                                                           self.device_id, self.onboarded, self.public_address, self.phone_number, self.package_id, self.deactivated)
+               ' onboarded: %s, public_address: %s, phone_number: %s, package_id: %s, screen_w: %s, screen_h: %s,' \
+               ' screen_d: %s, locale: %s, user_agent: %s, deactivated: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
+                                                                                           self.device_id, self.onboarded, self.public_address, self.phone_number, self.package_id,
+                                                                                self.screen_w, self.screen_h, self.screen_d, self.locale, self.user_agent, self.deactivated)
 
 
 def get_user(user_id):
@@ -77,7 +84,7 @@ def set_onboarded(user_id, onboarded, public_address):
     db.session.commit()
 
 
-def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver, locale, screen_h, screen_w, screen_d, package_id):
+def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver, locale, screen_w, screen_h, screen_d, user_agent, package_id):
     """create a new user and commit to the database. should only fail if the user_id is duplicate"""
 
     def parse_timezone(tz):
@@ -104,10 +111,11 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user.time_zone = parse_timezone(time_zone)
     user.device_id = device_id
     user.auth_token = uuid4()
-    #user.locale = str(locale)
-    #user.screen_h = screen_h
-    #user.screen_w = screen_w
-    #user.screen_d = screen_d
+    user.locale = str(locale)
+    user.screen_h = screen_h
+    user.screen_w = screen_w
+    user.screen_d = screen_d
+    user.user_agent = user_agent
     user.package_id = package_id
     db.session.add(user)
     db.session.commit()
@@ -782,7 +790,11 @@ def get_user_report(user_id):
         user_report['auth_token']['ack_data'] = str(push_token_entry.ack_date)
         user_report['auth_token']['authenticated'] = str(push_token_entry.authenticated)
         user_report['package_id'] = str(user.package_id)
-
+        user_report['locale'] = user.locale
+        user_report['screen_w'] = user.screen_w
+        user_report['screen_h'] = user.screen_h
+        user_report['screen_d'] = user.screen_d
+        user_report['user_agent'] = user.user_agent
     except Exception as e:
         print('caught exception in get_user_report:%s' % e)
     return user_report
