@@ -536,7 +536,6 @@ def register_api():
         screen_h = payload.get('screen_h', None)
         screen_w = payload.get('screen_w', None)
         screen_d = payload.get('screen_d', None)
-        user_agent = payload.get('user_agent', None)
         package_id = payload.get('package_id', None)
         if None in (user_id, os, device_model, time_zone, app_ver):  # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
@@ -549,7 +548,7 @@ def register_api():
         try:
             new_user_created = create_user(user_id, os, device_model, token,
                         time_zone, device_id, app_ver,
-                        screen_w, screen_h, screen_d, user_agent, package_id)
+                        screen_w, screen_h, screen_d, package_id)
         except InvalidUsage as e:
             raise InvalidUsage('duplicate-userid')
         else:
@@ -1066,11 +1065,12 @@ def truex_activity_endpoint():
         if remote_ip is None:
             print('truex_activity_endpoint - should never happen - cant get remote ip for client')
             raise InvalidUsage('no remote_ip')
+        user_agent = request.args.get('user-agent', None)  # optional
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
 
-    status, activity = get_truex_activity(user_id, remote_ip)
+    status, activity = get_truex_activity(user_id, remote_ip, user_agent)
     if not status:
         print('userid %s failed to get a truex activity' % user_id)
         raise InvalidUsage('user failed to get an activity')

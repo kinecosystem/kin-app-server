@@ -13,12 +13,12 @@ TRUEX_GET_ACTIVITY_URL = 'https://get.truex.com/v2'
 HARDCODED_CLIENT_IP = '188.64.206.240'
 
 
-def get_activity(user_id, remote_ip, client_request_id=None):
+def get_activity(user_id, remote_ip, user_agent, window_width=None, window_height=None, screen_density=None, client_request_id=None):
     """generate a single activity from truex for the given user_id"""
     try:
         if not client_request_id: #TODO do we even need this?
             client_request_id = str(int(time.time()))
-        url = generate_truex_url(user_id, remote_ip, client_request_id)
+        url = generate_truex_url(user_id, remote_ip, client_request_id, user_agent, window_width, window_height, screen_density)
         print('truex get activity url: %s' % url)
         resp = requests.get(url)
         resp.raise_for_status()
@@ -35,14 +35,14 @@ def get_activity(user_id, remote_ip, client_request_id=None):
                 return True, canned_activity
             elif remote_ip != HARDCODED_CLIENT_IP:
                 print('no activities returned for userid %s with remote_ip %s. re-trying with hardcoded ip...' % (user_id, remote_ip))
-                return get_activity(user_id, HARDCODED_CLIENT_IP, client_request_id)
+                return get_activity(user_id, HARDCODED_CLIENT_IP, user_agent, window_width, window_height, screen_density, client_request_id)
             else:
                 return True, None
 
         return True, activities[0]
 
 
-def generate_truex_url(user_id, remote_ip, client_request_id):
+def generate_truex_url(user_id, remote_ip, client_request_id, user_agent, window_width, window_height, screen_denisty):
     data = {
         # partner information
         'placement.key': config.TRUEX_PARTNER_HASH,
@@ -53,12 +53,20 @@ def generate_truex_url(user_id, remote_ip, client_request_id):
         'user.uid': user_id,
         # device
         'device.ip': remote_ip,
-        'device.ua': 'Android 5.0',
+        'device.ua': user_agent if user_agent is not None else 'Android 5.0',
         # response
         'response.max_activities': 1,
         # request ID
         #'client_request_id': client_request_id
     }
+
+    # add optional window/screen data
+    if screen_denisty:
+        data['device.sd'] = screen_denisty
+    if screen_denisty:
+        data['adspace.width'] = window_width
+    if screen_denisty:
+        data['adspace.height'] = window_height
 
     try:
         url = TRUEX_GET_ACTIVITY_URL + '?%s' % urlencode(data)

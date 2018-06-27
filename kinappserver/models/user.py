@@ -32,7 +32,7 @@ class User(db.Model):
     screen_w = db.Column(db.String(20), primary_key=False, nullable=True)
     screen_h = db.Column(db.String(20), primary_key=False, nullable=True)
     screen_d = db.Column(db.String(20), primary_key=False, nullable=True)
-    user_agent = db.Column(db.String(200), primary_key=False, nullable=True)
+    user_agent = db.Column(db.String(200), primary_key=False, nullable=True)  # optional, and filled via get_truex_activity
 
     def __repr__(self):
         return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s,' \
@@ -83,7 +83,7 @@ def set_onboarded(user_id, onboarded, public_address):
     db.session.commit()
 
 
-def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver, screen_w, screen_h, screen_d, user_agent, package_id):
+def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver, screen_w, screen_h, screen_d, package_id):
     """create a new user and commit to the database. should only fail if the user_id is duplicate"""
 
     def parse_timezone(tz):
@@ -113,7 +113,6 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user.screen_h = screen_h
     user.screen_w = screen_w
     user.screen_d = screen_d
-    user.user_agent = user_agent
     user.package_id = package_id
     db.session.add(user)
     db.session.commit()

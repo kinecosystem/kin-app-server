@@ -119,7 +119,10 @@ class Tester(unittest.TestCase):
                             'device_id': '234234',
                             'time_zone': '05:00',
                             'token': 'fake_token',
-                            'app_ver': '1.0'}),
+                            'app_ver': '1.0',
+                            'screen_w': '375',
+                            'screen_h': '667',
+                            'screen_d': '2'}),
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)

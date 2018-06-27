@@ -363,7 +363,7 @@ def handle_task_results_resubmission(user_id, task_id):
     return memo, user_id
 
 
-def get_truex_activity(user_id, remote_ip):
+def get_truex_activity(user_id, remote_ip, user_agent):
     """returns a truex activity for the user if she is allowed one now"""
     tasks = []
 
@@ -390,4 +390,5 @@ def get_truex_activity(user_id, remote_ip):
 
     # get truex activity for user:
     from kinappserver.truex import get_activity
-    return get_activity(user_id, remote_ip)  # returns status, activity
+    #TODO should we get/convert screen size to window size? also should we bother with density?
+    return get_activity(user_id, remote_ip, user_agent)  # returns status, activity
