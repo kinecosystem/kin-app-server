@@ -32,7 +32,7 @@ class User(db.Model):
     screen_w = db.Column(db.String(20), primary_key=False, nullable=True)
     screen_h = db.Column(db.String(20), primary_key=False, nullable=True)
     screen_d = db.Column(db.String(20), primary_key=False, nullable=True)
-    user_agent = db.Column(db.String(50), primary_key=False, nullable=True)
+    user_agent = db.Column(db.String(200), primary_key=False, nullable=True)
 
     def __repr__(self):
         return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s,' \
