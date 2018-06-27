@@ -365,7 +365,6 @@ def handle_task_results_resubmission(user_id, task_id):
 
 def get_truex_activity(user_id, remote_ip):
     """returns a truex activity for the user if she is allowed one now"""
-
     tasks = []
 
     # is the next task of type 'truex'?

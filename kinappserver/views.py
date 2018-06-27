@@ -1063,6 +1063,9 @@ def truex_activity_endpoint():
         user_id = extract_header(request)
         if user_id is None:
             raise InvalidUsage('no user_id')
+        if remote_ip is None:
+            print('truex_activity_endpoint - should never happen - cant get remote ip for client')
+            raise InvalidUsage('no remote_ip')
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')

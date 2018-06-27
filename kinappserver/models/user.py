@@ -262,7 +262,7 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
 
 
 def send_push_auth_token(user_id, force_send=False):
-    """send a message indicating that the tx has been successfully completed"""
+    """send an auth token that the client should ack"""
     from .push_auth_token import get_token_by_user_id
     if not force_send and not should_send_auth_token(user_id):
         return True
@@ -285,6 +285,27 @@ def send_push_auth_token(user_id, force_send=False):
         print('could not set the send-date for auth-token for user_id: %s' % user_id)
 
     increment_metric('auth-token-sent')
+
+    return True
+
+
+def send_push_register(user_id):
+    """send a message indicating that the client should re-register"""
+    os_type, token, push_env = get_user_push_data(user_id)
+    if token is None:
+        print('cant push to user %s: no push token' % user_id)
+        return False
+    if os_type == OS_IOS:
+        from kinappserver.push import register_push_apns, generate_push_id
+        push_send_apns(token, register_push_apns(generate_push_id()), push_env)
+        print('sent apns register to user %s' % user_id)
+    else:
+        from kinappserver.push import gcm_payload, generate_push_id
+        payload = gcm_payload('register', generate_push_id(), {'type': 'register'})
+        push_send_gcm(token, payload, push_env)
+        print('sent gcm register to user %s' % user_id)
+
+    increment_metric('register-push-sent')
 
     return True
 

@@ -26,7 +26,12 @@ def engagement_payload_gcm(push_type):
 
 def auth_push_apns(push_id, auth_token, user_id):
     payload_dict = {'aps': {"content-available": 1, "sound": ""}, 'kin': {'push_type': 'auth', 'push_id': push_id, 'auth_data': {'auth_token': auth_token, 'user_id': user_id}}}
-    print('the apns payload: %s' % payload_dict)
+    print('the apns payload for auth token: %s' % payload_dict)
+    return payload_dict
+
+
+def register_push_apns(push_id):
+    payload_dict = {'aps': {"content-available": 1, "sound": ""}, 'kin': {'push_type': 'register', 'push_id': push_id}}
     return payload_dict
 
 

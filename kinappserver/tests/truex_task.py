@@ -10,6 +10,7 @@ from kinappserver import db, models
 
 
 USER_ID_HEADER = "X-USERID"
+X_FORWARD_FOR_HEADER = 'X-Forwarded-For'
 
 class Tester(unittest.TestCase):
 
@@ -143,7 +144,7 @@ class Tester(unittest.TestCase):
         print('getting the truex activity for a non truex task - should fail')
         # get the truex activity - should fail
         resp = self.app.get('/truex/activity',
-                            headers={USER_ID_HEADER: str(userid)})
+                            headers={USER_ID_HEADER: str(userid), X_FORWARD_FOR_HEADER: '188.64.206.240'})
         self.assertNotEqual(resp.status_code, 200)
 
         print('submitting the first task...')
@@ -160,8 +161,9 @@ class Tester(unittest.TestCase):
 
         print('2nd task: get the activity - should work')
         # get the truex activity - should succeed
+        # use a known 'bad' ip to force the server to retry with a canned 'good' ip
         resp = self.app.get('/truex/activity',
-                            headers={USER_ID_HEADER: str(userid)})
+                            headers={USER_ID_HEADER: str(userid), X_FORWARD_FOR_HEADER: '54.90.81.9'})  #  ami's phone ip: '188.64.206.240'
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print(data)
@@ -194,7 +196,7 @@ class Tester(unittest.TestCase):
         print('getting the truex activity prematurely - should fail')
         # get the truex activity - should fail
         resp = self.app.get('/truex/activity',
-                            headers={USER_ID_HEADER: str(userid)})
+                            headers={USER_ID_HEADER: str(userid), X_FORWARD_FOR_HEADER: '188.64.206.240'})
         self.assertNotEqual(resp.status_code, 200)
 
 
