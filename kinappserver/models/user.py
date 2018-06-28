@@ -279,7 +279,7 @@ def send_push_auth_token(user_id, force_send=False):
     if os_type == OS_IOS:
         from kinappserver.push import auth_push_apns, generate_push_id
         push_send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)), push_env)
-        print('sent apnds auth token to user %s' % user_id)
+        print('sent apns auth token to user %s' % user_id)
     else:
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('auth_token', generate_push_id(), {'type': 'auth_token', 'user_id': str(user_id), 'token': str(auth_token)})
