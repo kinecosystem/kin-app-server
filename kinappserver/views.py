@@ -1163,6 +1163,13 @@ def compensate_truex_activity(user_id):
 
     this function has a lot of duplicate code from post_user_task_results_endpoint
     """
+    import time
+    # TODO remove me!!!!!!!!!!!!!!!!!
+    if config.DEBUG:
+        print('sleeping 1 minute before giving the truex moneys')
+        time.sleep(60)
+        print('done sleeping')
+
     if not user_exists(user_id):
         print('compensate_truex_activity. user_id %s does not exist. aborting')
         return False
