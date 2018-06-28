@@ -235,6 +235,11 @@ def post_user_task_results_endpoint():
         print('exception in /user/task/results. e=%s' % e)
         raise InvalidUsage('bad-request')
 
+    if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
+        print('user %s is not authenticated. rejecting results submission request' % user_id)
+        increment_metric('rejected-on-auth')
+        return jsonify(status='error', reason='auth-failed'), status.HTTP_400_BAD_REQUEST
+
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
         print('blocking user (%s) results - didnt pass phone_verification' % user_id)
         return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
@@ -645,7 +650,7 @@ def book_offer_api():
 
     if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
         print('user %s is not authenticated. rejecting book request' % user_id)
-        increment_metric('book-rejected-on-auth')
+        increment_metric('rejected-on-auth')
         return jsonify(status='error', reason='auth-failed'), status.HTTP_400_BAD_REQUEST
 
     order_id, error_code = create_order(user_id, offer_id)
@@ -1064,6 +1069,11 @@ def truex_activity_endpoint():
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
+
+    if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
+        print('user %s is not authenticated. rejecting truex-activity request' % user_id)
+        increment_metric('rejected-on-auth')
+        return jsonify(status='error', reason='auth-failed'), status.HTTP_400_BAD_REQUEST
 
     status, activity = get_truex_activity(user_id, remote_ip, user_agent)
     if not status:
