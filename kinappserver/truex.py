@@ -3,7 +3,7 @@ import hmac
 import json
 from urllib.parse import urlencode
 import time
-from kinappserver import config
+from kinappserver import config, utils
 from base64 import b64encode
 from hashlib import sha256, sha1
 
@@ -11,6 +11,7 @@ from hashlib import sha256, sha1
 
 TRUEX_GET_ACTIVITY_URL = 'https://get.truex.com/v2'
 HARDCODED_CLIENT_IP = '188.64.206.240'
+TRUEX_USER_ID_EXPIRATION_SEC = 60*60*12 # 12 hours
 
 
 def get_activity(user_id, remote_ip, user_agent, window_width=None, window_height=None, screen_density=None, client_request_id=None):
@@ -43,6 +44,12 @@ def get_activity(user_id, remote_ip, user_agent, window_width=None, window_heigh
 
 
 def generate_truex_url(user_id, remote_ip, client_request_id, user_agent, window_width, window_height, screen_denisty):
+    #translate user_id to network_user_id
+    network_user_id = utils.redis_set_user_id(user_id, TRUEX_USER_ID_EXPIRATION_SEC)
+    if not network_user_id:
+        print('generate_truex_url: cant generate random network user_id. reverting to user_id')
+    user_id = network_user_id if network_user_id else user_id  # fallback
+
     data = {
         # partner information
         'placement.key': config.TRUEX_PARTNER_HASH,

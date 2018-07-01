@@ -1122,8 +1122,15 @@ def truex_callback_endpoint():
 
     """
     args = request.args
-    user_id = args.get('network_user_id')
+    network_user_id = args.get('network_user_id')
     eng_id = args.get('engagement_id', None)
+
+    # translate network_user_id to user_id
+    user_id = utils.redis_get_userid(network_user_id)
+    if not user_id:
+        # fallback to the network user_id
+        user_id = network_user_id
+
 
     # allow easy simulation of the callback in stage
     if config.DEBUG and args.get('skip_callback_processing', False):
@@ -1155,6 +1162,7 @@ def truex_callback_endpoint():
             return TRUEX_CALLBACK_DUP_ENGAGEMENT_ID
 
         # okay. pay the user
+        # translate truex user-string to user_id
 
         print('paying user %s for truex activity' % user_id)
         res = compensate_truex_activity(user_id)

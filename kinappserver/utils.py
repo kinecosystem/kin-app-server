@@ -23,6 +23,8 @@ DEFAULT_MIN_CLIENT_VERSION = '0.1'
 
 MAX_TXS_PER_USER = 100
 
+REDIS_USERID_PREFIX = 'userid'
+
 
 def generate_memo(is_manual=False):
     # generate a unique-ish id for txs, this goes into the memo field of txs
@@ -232,3 +234,28 @@ def print_creation_statement():
     print(CreateTable(BlackhawkCreds.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(BlackhawkOffer.__table__).compile(dialect=postgresql.dialect()))
 
+
+def random_string(length=8):
+    import random
+    return ''.join(random.choice('0123456789ABCDEF') for i in range(length))
+
+
+def redis_set_user_id(user_id, expiration):
+    """sets the given user_id into redis with a random key"""
+    from kinappserver import app
+    rand_string = random_string()
+    if not app.redis.set('%s:%s' % (REDIS_USERID_PREFIX, rand_string), str(user_id), nx=True, ex=expiration):
+        print('failed to set userid into redis')
+        raise Exception('cant set userid into redis')
+    else:
+        return rand_string
+
+
+def redis_get_userid(random_string):
+    from kinappserver import app
+    val = app.redis.get(random_string)
+    if not val:
+        print('cant find key %s in redis' % random_string)
+        return None
+    else:
+        return val
