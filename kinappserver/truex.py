@@ -3,7 +3,7 @@ import hmac
 import json
 from urllib.parse import urlencode
 import time
-from kinappserver import config, utils
+from kinappserver import config, utils, models
 from base64 import b64encode
 from hashlib import sha256, sha1
 
@@ -19,8 +19,12 @@ def get_activity(user_id, remote_ip, user_agent, window_width=None, window_heigh
     try:
         if not client_request_id: #TODO do we even need this?
             client_request_id = str(int(time.time()))
-        url = generate_truex_url(user_id, remote_ip, client_request_id, user_agent, window_width, window_height, screen_density)
-        print('truex get activity url: %s' % url)
+
+        # get the truex user_id for this user
+        network_user_id = models.get_truex_user_id(user_id)
+
+        url = generate_truex_url(network_user_id, remote_ip, client_request_id, user_agent, window_width, window_height, screen_density)
+        print('truex get activity url: %s. network_user_id: %s' % (url, network_user_id))
         resp = requests.get(url)
         resp.raise_for_status()
     except Exception as e:
@@ -32,7 +36,7 @@ def get_activity(user_id, remote_ip, user_agent, window_width=None, window_heigh
         if len(activities) == 0:
             if config.DEBUG:
                 print('DEBUG: no activities received from truex, returning a canned activity')
-                canned_activity = {'activity': [{'campaign_id': 13255, 'currency_amount': 1, 'display_text': None, 'id': 8974, 'image_url': 'https://s3.amazonaws.com/media.socialvi.be/assets/17190/gen-124x124.jpg?1362613767', 'name': 'Kik - Kin - KF Panda Mobile SVNRE', 'partner_id': 219, 'revenue_amount': '0.0072', 'session_id': 'jtGbGk5vTCO8Je8WcOEC6w', 'window_height': 540, 'window_url': 'http://serve.truex.com/engage?app.name=Kinit&campaign_id=13255&client_request_id=1529492319&creative_id=8974&currency_amount=1&env%5B%5D=flash&env%5B%5D=html&impression_signature=19b84efb65cd0e27182288dd32879dd3f3c8463e8cf1bfae011ec1991a232be2&impression_timestamp=1529492319.936121&initials=0&internal_referring_source=nvLFDGdUTEKlyGB2iPpQ5A&ip=188.64.206.239&network_user_id=c1ee58d9-c068-44fc-8c62-400f0537e8d2&placement_hash=21be84de4fa0cc0315a5563d02e293b99b67cd16&session_id=jtGbGk5vTCO8Je8WcOEC6w&timezone_offset=-2.0&user_agent=Android+5.0&vault=y6q616h7tfp2qpe00d37hr8srh8znci49d0yr7b4dax8bxaehq4xsoi193i0b4tenjbfdgs6lxtnk042qo33f5nig8fhhjd5rkywr9kdxq4z8qsdx492dqjkzpc79ukb0lavdhugs5oifkid57g43sw9pd9xv8x75b7a2z95lgg1ogdyrwv2cqq7aa0z9owryk9da3pi09p5vg6szmuzn4oq2ijk2we9hv5rg1xuu2qutlzg1pxy7m8iisrpqnm8mfzpqbst6bxrd0kzh6m9g72yjprhuqw7t30fzgz2hiuhfyi&bid_info=cikxt0o9ptky3tm9rabewwtlu78os1b56xfbkvrdkrfs0mwfkwt5sitfs0jelkkdk7zv48bt70erq9274xtrldizwz6ahu76ugbuvgdtya1pti3xqhgodmju76km4bhrzyx9cn7ww1gxxfeeaqd6y5jxxdvig8cmngyscfkw73k29lxhlm7ggsymghiibnub4m8z2a25m7s33wl56p5rrpw3279a03g6rpu0jduneoroi15cpbrmp7uk9ficy1c31p6mjgu860ws3ax96r10ewow1pcqt9qj4whb8hthnldswi62x7jch62131mgnotyysw6y1vsi5lfr84hzqdjucsb0ygwxopfm7gsm92ol9pdbxamyt12fw97wfkik7u4ct3qtpe382ovu75eurfctfho9qiezm9dfsklz862djhnk93qy5fvwgy6i', 'window_width': 960}], 'status': 'ok'}
+                canned_activity = {'activity': [{'network_user_id': 'somefakeid', 'campaign_id': 13255, 'currency_amount': 1, 'display_text': None, 'id': 8974, 'image_url': 'https://s3.amazonaws.com/media.socialvi.be/assets/17190/gen-124x124.jpg?1362613767', 'name': 'Kik - Kin - KF Panda Mobile SVNRE', 'partner_id': 219, 'revenue_amount': '0.0072', 'session_id': 'jtGbGk5vTCO8Je8WcOEC6w', 'window_height': 540, 'window_url': 'http://serve.truex.com/engage?app.name=Kinit&campaign_id=13255&client_request_id=1529492319&creative_id=8974&currency_amount=1&env%5B%5D=flash&env%5B%5D=html&impression_signature=19b84efb65cd0e27182288dd32879dd3f3c8463e8cf1bfae011ec1991a232be2&impression_timestamp=1529492319.936121&initials=0&internal_referring_source=nvLFDGdUTEKlyGB2iPpQ5A&ip=188.64.206.239&network_user_id=c1ee58d9-c068-44fc-8c62-400f0537e8d2&placement_hash=21be84de4fa0cc0315a5563d02e293b99b67cd16&session_id=jtGbGk5vTCO8Je8WcOEC6w&timezone_offset=-2.0&user_agent=Android+5.0&vault=y6q616h7tfp2qpe00d37hr8srh8znci49d0yr7b4dax8bxaehq4xsoi193i0b4tenjbfdgs6lxtnk042qo33f5nig8fhhjd5rkywr9kdxq4z8qsdx492dqjkzpc79ukb0lavdhugs5oifkid57g43sw9pd9xv8x75b7a2z95lgg1ogdyrwv2cqq7aa0z9owryk9da3pi09p5vg6szmuzn4oq2ijk2we9hv5rg1xuu2qutlzg1pxy7m8iisrpqnm8mfzpqbst6bxrd0kzh6m9g72yjprhuqw7t30fzgz2hiuhfyi&bid_info=cikxt0o9ptky3tm9rabewwtlu78os1b56xfbkvrdkrfs0mwfkwt5sitfs0jelkkdk7zv48bt70erq9274xtrldizwz6ahu76ugbuvgdtya1pti3xqhgodmju76km4bhrzyx9cn7ww1gxxfeeaqd6y5jxxdvig8cmngyscfkw73k29lxhlm7ggsymghiibnub4m8z2a25m7s33wl56p5rrpw3279a03g6rpu0jduneoroi15cpbrmp7uk9ficy1c31p6mjgu860ws3ax96r10ewow1pcqt9qj4whb8hthnldswi62x7jch62131mgnotyysw6y1vsi5lfr84hzqdjucsb0ygwxopfm7gsm92ol9pdbxamyt12fw97wfkik7u4ct3qtpe382ovu75eurfctfho9qiezm9dfsklz862djhnk93qy5fvwgy6i', 'window_width': 960}], 'status': 'ok'}
                 return True, canned_activity
             elif remote_ip != HARDCODED_CLIENT_IP:
                 print('no activities returned for userid %s with remote_ip %s. re-trying with hardcoded ip...' % (user_id, remote_ip))
@@ -40,15 +44,13 @@ def get_activity(user_id, remote_ip, user_agent, window_width=None, window_heigh
             else:
                 return True, None
 
+        # slap the network user_id onto the activity:
+        activities[0]['network_user_id'] = network_user_id
+
         return True, activities[0]
 
 
-def generate_truex_url(user_id, remote_ip, client_request_id, user_agent, window_width, window_height, screen_denisty):
-    #translate user_id to network_user_id
-    network_user_id = utils.redis_set_user_id(user_id, TRUEX_USER_ID_EXPIRATION_SEC)
-    if not network_user_id:
-        print('generate_truex_url: cant generate random network user_id. reverting to user_id')
-    user_id = network_user_id if network_user_id else user_id  # fallback
+def generate_truex_url(network_user_id, remote_ip, client_request_id, user_agent, window_width, window_height, screen_denisty):
 
     data = {
         # partner information
@@ -57,7 +59,7 @@ def generate_truex_url(user_id, remote_ip, client_request_id, user_agent, window
         # app
         'app.name': 'Kinit',
         # user
-        'user.uid': user_id,
+        'user.uid': network_user_id,
         # device
         'device.ip': remote_ip,
         'device.ua': user_agent if user_agent is not None else 'Android 5.0',

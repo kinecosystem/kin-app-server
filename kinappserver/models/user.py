@@ -33,13 +33,14 @@ class User(db.Model):
     screen_h = db.Column(db.String(20), primary_key=False, nullable=True)
     screen_d = db.Column(db.String(20), primary_key=False, nullable=True)
     user_agent = db.Column(db.String(200), primary_key=False, nullable=True)  # optional, and filled via get_truex_activity
+    truex_user_id = db.Column(UUIDType(binary=False), primary_key=False, nullable=True)
 
     def __repr__(self):
         return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s,' \
                ' onboarded: %s, public_address: %s, phone_number: %s, package_id: %s, screen_w: %s, screen_h: %s,' \
-               ' screen_d: %s, user_agent: %s, deactivated: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
+               ' screen_d: %s, user_agent: %s, deactivated: %s, truex_user_id: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
                                                                                            self.device_id, self.onboarded, self.public_address, self.phone_number, self.package_id,
-                                                                                self.screen_w, self.screen_h, self.screen_d, self.user_agent, self.deactivated)
+                                                                                self.screen_w, self.screen_h, self.screen_d, self.user_agent, self.deactivated, self.truex_user_id)
 
 
 def get_user(user_id):
@@ -109,11 +110,12 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user.push_token = push_token
     user.time_zone = parse_timezone(time_zone)
     user.device_id = device_id
-    user.auth_token = uuid4()
+    user.auth_token = uuid4() if not user.auth_token else user.auth_token
     user.screen_h = screen_h
     user.screen_w = screen_w
     user.screen_d = screen_d
     user.package_id = package_id
+    user.truex_user_id = uuid4() if not user.truex_user_id else user.truex_user_id
     db.session.add(user)
     db.session.commit()
 
@@ -131,6 +133,32 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
         get_token_obj_by_user_id(user_id)
 
     return is_new_user
+
+
+def get_truex_user_id(user_id):
+    """gets/create the truex user_id"""
+    user = get_user(user_id)
+    truex_user_id = user.truex_user_id
+    if not truex_user_id:
+        user.truex_user_id = uuid4()
+        db.session.add(user)
+        db.session.commit()
+
+    return truex_user_id
+
+
+def get_user_id_by_truex_user_id(truex_user_id):
+    """return the user_id for the given truex user id"""
+    try:
+        user = User.query.filter_by(truex_user_id=truex_user_id).first()
+        if user is None:
+            return None
+        else:
+            return user.user_id
+    except Exception as e:
+        print('cant get user_id by truex_user_id. Exception: %s' % e)
+        raise
+
 
 
 def update_user_token(user_id, push_token):
@@ -780,6 +808,7 @@ def get_user_report(user_id):
         user_report['screen_h'] = user.screen_h
         user_report['screen_d'] = user.screen_d
         user_report['user_agent'] = user.user_agent
+        user_report['truex_user_id'] = user.truex_user_id
     except Exception as e:
         print('caught exception in get_user_report:%s' % e)
     return user_report

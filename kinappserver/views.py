@@ -25,7 +25,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register
+    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id
 
 
 def limit_to_local_host():
@@ -1021,7 +1021,7 @@ def user_report_endpoint():
         raise InvalidUsage('bad-request')
 
     if not user_exists(user_id):
-        print('user_report_endpoint: user_id %s does not exist. aborting')
+        print('user_report_endpoint: user_id %s does not exist. aborting' % user_id)
         return jsonify(erorr='no_such_user')
 
     return jsonify(report=get_user_report(user_id))
@@ -1113,12 +1113,11 @@ def truex_callback_endpoint():
     network_user_id = args.get('network_user_id')
     eng_id = args.get('engagement_id', None)
 
-    # translate network_user_id to user_id
-    user_id = utils.redis_get_userid(network_user_id)
-    if not user_id:
-        # fallback to the network user_id
-        user_id = network_user_id
+    import time
+    time.sleep(60)  # TODO remove for sahi
 
+    # translate network_user_id to user_id
+    user_id = str(get_user_id_by_truex_user_id(network_user_id))
 
     # allow easy simulation of the callback in stage
     if config.DEBUG and args.get('skip_callback_processing', False):
@@ -1130,7 +1129,7 @@ def truex_callback_endpoint():
         # ensure acl:
         remote_ip = request.headers.get('X-Forwarded-For', None)
         if config.DEBUG and remote_ip is None:
-            remote_ip = '50.16.245.33' # hard-coded ip from the truex list
+            remote_ip = '50.16.245.33'  # hard-coded ip from the truex list
             print('truex_callback_endpoint: overwriting remote ip for DEBUG to %s' % remote_ip)
         if remote_ip not in TRUEX_SERVERS_ADRESSES:
             # just return whatever. this isn't from truex
@@ -1170,7 +1169,7 @@ def compensate_truex_activity(user_id):
     this function has a lot of duplicate code from post_user_task_results_endpoint
     """
     if not user_exists(user_id):
-        print('compensate_truex_activity. user_id %s does not exist. aborting')
+        print('compensate_truex_activity. user_id %s does not exist. aborting' % user_id)
         return False
 
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
