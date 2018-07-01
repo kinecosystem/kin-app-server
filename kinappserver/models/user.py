@@ -653,17 +653,6 @@ def deactivate_by_phone_number(phone_number, user_id):
         raise
 
 
-def get_pa_for_users():
-    """For all the users that dont have pa, try to get it from a past transaction"""
-    users = User.query.filter(User.public_address==None).all()
-    for user in users:
-        from .transaction import get_pa_from_transactions
-        pa = get_pa_from_transactions(user.user_id)
-        if pa:
-            print('about to set address %s to userid: %s' % (pa, user.user_id))
-            db.engine.execute("update public.user set public_address='%s' where user_id='%s'" % (pa, user.user_id))
-
-
 def get_associated_user_ids(user_id):
     """get a list of all the user_ids associated with the given user_id through phone-identification.
     the list also includes the original user_id.
