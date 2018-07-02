@@ -20,8 +20,9 @@ def report_exceptions():
     # compare against value in redis
     redis_con = redis.StrictRedis(host=REDIS_URL, port=6379, db=0)
     try:
-        previous_value = redis_con.get(redis_key, num_exceptions)
+        previous_value = int(redis_con.get(redis_key))
     except Exception as e:
+        print('cant get previous value from reids. Exception %s. defaulting to 0' % e)
         previous_value = 0
 
     # evaluate
@@ -39,4 +40,6 @@ def report_exceptions():
     statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric), found_new_exceptions)
     return True
 
+
 report_exceptions()
+
