@@ -271,9 +271,11 @@ def package_id_to_push_env(package_id):
 
 def get_user_push_data(user_id):
     """returns the os_type, token and push_env for the given user_id"""
-    user = User.query.filter_by(user_id=user_id).first()
-    if not user:
-        return None, None
+    try:
+        user = User.query.filter_by(user_id=user_id).first()
+    except Exception as e:
+        print('Error: could not get push data for user %s' % user_id)
+        return None, None, None
     else:
         push_env = package_id_to_push_env(user.package_id)
         return user.os_type, user.push_token, push_env

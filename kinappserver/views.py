@@ -1113,9 +1113,6 @@ def truex_callback_endpoint():
     network_user_id = args.get('network_user_id')
     eng_id = args.get('engagement_id', None)
 
-    import time
-    time.sleep(60)  # TODO remove for sahi
-
     # translate network_user_id to user_id
     user_id = str(get_user_id_by_truex_user_id(network_user_id))
 
