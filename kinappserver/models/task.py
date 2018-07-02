@@ -365,9 +365,6 @@ def handle_task_results_resubmission(user_id, task_id):
 
 def get_truex_activity(user_id, remote_ip, user_agent):
     """returns a truex activity for the user if she is allowed one now"""
-    if config['DEBUG']: #TODO REMVOE
-        print('returning no activity for shai on debug')
-        return None
 
     tasks = []
 
