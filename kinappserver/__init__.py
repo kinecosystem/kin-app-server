@@ -22,6 +22,8 @@ if channel_seeds is None:
     sys.exit(-1)
 
 print('using kin-stellar sdk version: %s' % kin.version.__version__)
+print('app.config: %s' % app.config)
+print('config: %s' % config)
 
 app.kin_sdk = kin.SDK(secret_key=base_seed,
                       horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
@@ -47,7 +49,8 @@ class MySQLAlchemy(SQLAlchemy):
         options['isolation_level'] = 'AUTOCOMMIT'
         super(MySQLAlchemy, self).apply_driver_hacks(app, info, options)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
+
+app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DB_CONNSTR']
 
 # SQLAlchemy timeouts
 app.config['SQLALCHEMY_POOL_SIZE'] = 1000

@@ -21,11 +21,6 @@ def create_account(public_address, initial_xlm_amount):
 def send_kin(public_address, amount, memo=None):
     """send kins to an address"""
 
-    if config.DEBUG:
-        print('adding 60 sec delay for shai')
-        import time
-        time.sleep(60)
-
     #  sanity:
     if public_address in (None, ''):
         print('cant send kin to address: %s' % public_address)
