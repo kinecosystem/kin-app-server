@@ -2,8 +2,6 @@
 
 ![](https://travis-ci.org/kinecosystem/kin-app-server.svg?branch=master)
 
-Note: this is still very much only an MVP.
-
 An internal service for the Kin App aimed at:
     - storing user data (userid, push-token, device-id etc)
     - offering spend and earn opportunities for clients
@@ -13,7 +11,7 @@ An internal service for the Kin App aimed at:
 At the moment we design for simplicity: this is a straight-forward flask webapp backed
 by a Postgress SQL server in AWS. In the future we may split the logic to frontend/backend (with a message queue) but at the moment everything is synchronous.
 
-- We intend to monitor/alert with datadog/pagerduty
+- We monitor/alert with datadog/pagerduty
 - Refer to the groundcontrol repo for ops data
 
 ## Prerequisites
@@ -110,8 +108,7 @@ go into python console and:
 
 
 ## Contributions
-we welcome contributions in the form of pull requests. At the moment there's very little code - 
-but at some point we'll have more and your input would be welcome.
+we welcome contributions in the form of pull requests. 
 
 ## StyleSheet
 We intend to loosly follow pep8 and suggest you do too. We do not intend to obey the limit on line length.
