@@ -68,7 +68,7 @@ def list_unprocessed_orders():
     cards = BlackhawkCard.query.order_by(BlackhawkCard.updated_at).filter(BlackhawkCard.processed == False).all()
     for card in cards:
         if card.order_id in orders:
-            orders[card.order_id] = orders[card.order_id].append(card.card_id)
+            orders[card.order_id].append(card.card_id)
         else:
             orders[card.order_id] = [card.card_id]
     return orders
