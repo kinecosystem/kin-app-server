@@ -16,9 +16,6 @@ TRUEX_USER_ID_EXPIRATION_SEC = 60*60*12 # 12 hours
 
 def get_activity(user_id, remote_ip, user_agent, window_width=None, window_height=None, screen_density=None, client_request_id=None):
     """generate a single activity from truex for the given user_id"""
-    print('returning no activity for shai')
-    return None #TODO remove this
-
     try:
         if not client_request_id: #TODO do we even need this?
             client_request_id = str(int(time.time()))

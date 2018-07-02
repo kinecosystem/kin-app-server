@@ -1113,11 +1113,6 @@ def truex_callback_endpoint():
     network_user_id = args.get('network_user_id')
     eng_id = args.get('engagement_id', None)
 
-    import time
-    print('sleeping 60 seconds...')
-    time.sleep(60)
-    print('done')
-
     # translate network_user_id to user_id
     user_id = str(get_user_id_by_truex_user_id(network_user_id))
 
