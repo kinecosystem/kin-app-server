@@ -375,18 +375,18 @@ def get_truex_activity(user_id, remote_ip, user_agent):
 
     if tasks == []:
         print('cant get activity: no next task')
-        return False, None
+        return None
 
     if tasks[0]['type'] != TASK_TYPE_TRUEX:
         print('cant get activity: user\'s next task isnt truex')
-        return False, None
+        return None
 
     # is the user eligible for a task now?
     now = arrow.utcnow()
     next_task_ts = get_next_task_results_ts(user_id)
     if next_task_ts and now < arrow.get(next_task_ts):
         print('cant get truex activity: now: %s user\'s tx: %s' % (now, arrow.get(next_task_ts)))
-        return False, None
+        return None
 
     # get truex activity for user:
     from kinappserver.truex import get_activity

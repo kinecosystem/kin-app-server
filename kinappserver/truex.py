@@ -16,6 +16,9 @@ TRUEX_USER_ID_EXPIRATION_SEC = 60*60*12 # 12 hours
 
 def get_activity(user_id, remote_ip, user_agent, window_width=None, window_height=None, screen_density=None, client_request_id=None):
     """generate a single activity from truex for the given user_id"""
+    print('returning no activity for shai')
+    return None #TODO remove this
+
     try:
         if not client_request_id: #TODO do we even need this?
             client_request_id = str(int(time.time()))
@@ -29,25 +32,22 @@ def get_activity(user_id, remote_ip, user_agent, window_width=None, window_heigh
         resp.raise_for_status()
     except Exception as e:
         print('failed to get an activity from truex: %s' % e)
-        return False, None
+        return None
     else:
         # process the response:
         activities = resp.json()
         if len(activities) == 0:
-            if config.DEBUG:
-                print('DEBUG: no activities received from truex, returning a canned activity')
-                canned_activity = {'activity': [{'network_user_id': 'somefakeid', 'campaign_id': 13255, 'currency_amount': 1, 'display_text': None, 'id': 8974, 'image_url': 'https://s3.amazonaws.com/media.socialvi.be/assets/17190/gen-124x124.jpg?1362613767', 'name': 'Kik - Kin - KF Panda Mobile SVNRE', 'partner_id': 219, 'revenue_amount': '0.0072', 'session_id': 'jtGbGk5vTCO8Je8WcOEC6w', 'window_height': 540, 'window_url': 'http://serve.truex.com/engage?app.name=Kinit&campaign_id=13255&client_request_id=1529492319&creative_id=8974&currency_amount=1&env%5B%5D=flash&env%5B%5D=html&impression_signature=19b84efb65cd0e27182288dd32879dd3f3c8463e8cf1bfae011ec1991a232be2&impression_timestamp=1529492319.936121&initials=0&internal_referring_source=nvLFDGdUTEKlyGB2iPpQ5A&ip=188.64.206.239&network_user_id=c1ee58d9-c068-44fc-8c62-400f0537e8d2&placement_hash=21be84de4fa0cc0315a5563d02e293b99b67cd16&session_id=jtGbGk5vTCO8Je8WcOEC6w&timezone_offset=-2.0&user_agent=Android+5.0&vault=y6q616h7tfp2qpe00d37hr8srh8znci49d0yr7b4dax8bxaehq4xsoi193i0b4tenjbfdgs6lxtnk042qo33f5nig8fhhjd5rkywr9kdxq4z8qsdx492dqjkzpc79ukb0lavdhugs5oifkid57g43sw9pd9xv8x75b7a2z95lgg1ogdyrwv2cqq7aa0z9owryk9da3pi09p5vg6szmuzn4oq2ijk2we9hv5rg1xuu2qutlzg1pxy7m8iisrpqnm8mfzpqbst6bxrd0kzh6m9g72yjprhuqw7t30fzgz2hiuhfyi&bid_info=cikxt0o9ptky3tm9rabewwtlu78os1b56xfbkvrdkrfs0mwfkwt5sitfs0jelkkdk7zv48bt70erq9274xtrldizwz6ahu76ugbuvgdtya1pti3xqhgodmju76km4bhrzyx9cn7ww1gxxfeeaqd6y5jxxdvig8cmngyscfkw73k29lxhlm7ggsymghiibnub4m8z2a25m7s33wl56p5rrpw3279a03g6rpu0jduneoroi15cpbrmp7uk9ficy1c31p6mjgu860ws3ax96r10ewow1pcqt9qj4whb8hthnldswi62x7jch62131mgnotyysw6y1vsi5lfr84hzqdjucsb0ygwxopfm7gsm92ol9pdbxamyt12fw97wfkik7u4ct3qtpe382ovu75eurfctfho9qiezm9dfsklz862djhnk93qy5fvwgy6i', 'window_width': 960}], 'status': 'ok'}
-                return True, canned_activity
-            elif remote_ip != HARDCODED_CLIENT_IP:
+            if remote_ip != HARDCODED_CLIENT_IP:
                 print('no activities returned for userid %s with remote_ip %s. re-trying with hardcoded ip...' % (user_id, remote_ip))
                 return get_activity(user_id, HARDCODED_CLIENT_IP, user_agent, window_width, window_height, screen_density, client_request_id)
             else:
-                return True, None
+                print('cant get activity for userid %s with remote_ip: %s. bummer' % (user_id, remote_ip))
+                return None
 
         # slap the network user_id onto the activity:
         activities[0]['network_user_id'] = network_user_id
 
-        return True, activities[0]
+        return activities[0]
 
 
 def generate_truex_url(network_user_id, remote_ip, client_request_id, user_agent, window_width, window_height, screen_denisty):

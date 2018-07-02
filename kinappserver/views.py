@@ -1063,10 +1063,10 @@ def truex_activity_endpoint():
         increment_metric('rejected-on-auth')
         return jsonify(status='error', reason='auth-failed'), status.HTTP_400_BAD_REQUEST
 
-    status, activity = get_truex_activity(user_id, remote_ip, user_agent)
-    if not status:
+    activity = get_truex_activity(user_id, remote_ip, user_agent)
+    if not activity:
         print('userid %s failed to get a truex activity' % user_id)
-        raise InvalidUsage('user failed to get an activity')
+        return jsonify(status='error', reason='no_activity')
     return jsonify(status='ok', activity=activity)
 
 
