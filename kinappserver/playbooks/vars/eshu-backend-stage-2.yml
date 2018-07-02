@@ -51,7 +51,7 @@ apps:
 
     - id: kinapp-release # used only for ios-release at the moment
       numConsumers: 2
-      amqpURI: amqp://admin:admin@10.0.1.20:5672/kinapp
+      amqpURI: amqp://admin:admin@10.0.1.48:5672/kinapp
 
       queue:
         exchangeName: eshu-exchange-release
