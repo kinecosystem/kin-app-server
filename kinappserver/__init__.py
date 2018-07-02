@@ -50,7 +50,7 @@ class MySQLAlchemy(SQLAlchemy):
         super(MySQLAlchemy, self).apply_driver_hacks(app, info, options)
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DB_CONNSTR']
+app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 
 # SQLAlchemy timeouts
 app.config['SQLALCHEMY_POOL_SIZE'] = 1000
