@@ -41,7 +41,7 @@
    blackhawk_purchases_enabled: False
    blackhawk_critical_balance_threshold: 50
    bash_aliases:
-     - { alias: '_env', command: 'echo "kinappserver stage"' }
+     - { alias: '_env', command: 'echo "kinappserver"' }
      - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
      - { alias: '_log', command: 'cat /var/log/kinappserver.err.log' }
      - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }

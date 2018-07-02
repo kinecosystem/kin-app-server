@@ -4,4 +4,4 @@ export AWS_ACCESS_KEY_ID=AKIAIHWY5XYTW36LU6DQ
 unset AWS_SECURITY_TOKEN
 unset AWS_SESSION_TOKEN
 
-ansible-playbook playbooks/kin-app-eshu-backend-stage.yml -i kin-app-eshu-backend-stage-2, -e 'ansible_python_interpreter=/usr/bin/python3'
+ansible-playbook playbooks/kin-app-eshu-backend-stage-2.yml -i kin-app-eshu-backend-stage-2, -e 'ansible_python_interpreter=/usr/bin/python3'
