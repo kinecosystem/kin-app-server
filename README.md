@@ -2,7 +2,7 @@
 
 ![](https://travis-ci.org/kinecosystem/kin-app-server.svg?branch=master)
 
-An internal service for the Kin App aimed at:
+An internal service for the Kinit App aimed at:
     - storing user data (userid, push-token, device-id etc)
     - offering spend and earn opportunities for clients
     - paying clients for completing tasks
