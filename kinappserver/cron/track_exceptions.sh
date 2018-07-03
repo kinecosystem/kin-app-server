@@ -1,1 +1,1 @@
-python track_exceptions.py
+python3 /opt/kin-app-server/kinappserver/track_exceptions.py

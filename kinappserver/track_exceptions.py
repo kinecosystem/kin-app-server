@@ -8,7 +8,8 @@ import redis
 def report_exceptions():
     """tracks the number of exceptions found in the log"""
     import subprocess
-    redis_key = 'track-exceptions-%s' % os.environ['ENV']
+    import socket
+    redis_key = 'track-exceptions-%s-%s' % (os.environ['ENV'], socket.gethostname())
     REDIS_URL = 'kin-app-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
     completed_process = subprocess.run("cat /var/log/kinappserver.err.log|grep Trace|wc -l", shell=True, stdout=subprocess.PIPE)
     try:

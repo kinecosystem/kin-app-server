@@ -122,3 +122,8 @@
     name: "periodically de-authenticate users"
     job: "/opt/kin-app-server/kinappserver/cron/deauth_users.sh"
   run_once: true # runs every minute, on one machine of the 2
+
+- cron:
+    name: "periodically track exceptions in the log"
+    job: "/opt/kin-app-server/kinappserver/cron/track_exceptions.sh"
+    minute: "*/5" # run every 5 minutes on all machines
