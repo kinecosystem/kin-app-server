@@ -1,0 +1,52 @@
+- hosts: all
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: true
+  roles:
+    - franklinkim.environment
+    - Datadog.datadog
+    - kin-app-server
+    - igor_mukhin.bash_aliases
+
+  vars:
+   deployment_env: stage2
+   environment_config:
+     ENV: stage2
+   datadog_config:
+     log_level: INFO
+   datadog_api_key: "cb6389daa2808d1c275f1f69bfff63e5"
+   debug: True
+   nginx_domain: stage.kinitapp.com
+   db_connstr: 'postgresql://kinappstageuser:password@kinappstage2.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage'
+   redis_endpoint: 'kin-app-server-stag2.qugi0x.0001.use1.cache.amazonaws.com'
+   redis_port: 6379
+   eshu_username: admin
+   eshu_password: admin
+   eshu_exchange: eshu-exchange
+   eshu_queue: eshu-queue
+   eshu_virtual_host: kinapp
+   eshu_appid: kinapp
+   eshu_rabbit_address: 10.0.1.48
+   stellar_timeout_sec: 10
+   stellar_initial_account_balance: 10
+   stellar_network: 'Kin Playground Network ; June 2018'
+   stellar_kin_issuer_address: GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7
+   stellar_horizon_url: https://horizon-playground.kininfrastructure.com/
+   max_simultaneous_orders_per_user: 2
+   kms_key_aws_region: 'us-east-1'
+   phone_verification_enabled: True
+   phone_verification_required: False
+   p2p_transfers_enabled: True
+   p2p_min_tasks: 2
+   p2p_min_kin_amount: 500
+   p2p_max_kin_amount: 3000
+   auth_token_send_interval_days: 1
+   auth_token_enforced: False
+   auth_token_enabled: True
+   blackhawk_purchases_enabled: False
+   blackhawk_critical_balance_threshold: 50
+   bash_aliases:
+     - { alias: '_env', command: 'echo "kinappserver"' }
+     - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
+     - { alias: '_log', command: 'cat /var/log/kinappserver.err.log' }
+     - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
+     - { alias: '_sql', command: 'psql postgresql://kinappstageuser:password@kinappstage2.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage' }
