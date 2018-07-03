@@ -113,6 +113,9 @@ if not config.DEBUG:
 
 # truex credentials
 config.TRUEX_APP_ID , config.TRUEX_PARTNER_HASH, config.TRUEX_CALLBACK_SECRET = ssm.get_truex_creds()
+if config.DEBUG:
+    print('overwriting truex creds on stage with prod values')
+    config.TRUEX_APP_ID, config.TRUEX_PARTNER_HASH, config.TRUEX_CALLBACK_SECRET = ssm.get_truex_creds(force_prod=True)
 
 # useful prints:
 state = 'enabled' if config.PHONE_VERIFICATION_ENABLED else 'disabled'

@@ -7,8 +7,13 @@ from kinappserver import config
 from kinappserver.utils import InternalError
 
 
-def get_truex_creds():
+def get_truex_creds(force_prod=False):
     env = os.environ.get('ENV', 'test')
+
+    if force_prod:
+        print('forcing prod truex creds')
+        env = 'prod'
+
     partner_hash = get_ssm_parameter('/config/' + env + '/truex/partner_hash', config.KMS_KEY_AWS_REGION)
     callback_secret = get_ssm_parameter('/config/' + env + '/truex/callback_secret', config.KMS_KEY_AWS_REGION)
     app_id = get_ssm_parameter('/config/' + env + '/truex/app_id', config.KMS_KEY_AWS_REGION)
