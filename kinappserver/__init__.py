@@ -111,9 +111,9 @@ if not app.amqp_publisher_release.init_config('release', config.ESHU_RABBIT_ADDR
 if not config.DEBUG:
     app.redis.setex('temp-key', 1, 'temp-value')
 
-# truex credentials
-if not config.DEBUG:
-    config.TRUEX_APP_ID , config.TRUEX_PARTNER_HASH, config.TRUEX_CALLBACK_SECRET = ssm.get_truex_creds()
+
+# init truex credentials
+config.TRUEX_APP_ID, config.TRUEX_PARTNER_HASH, config.TRUEX_CALLBACK_SECRET = ssm.get_truex_creds()
 
 # useful prints:
 state = 'enabled' if config.PHONE_VERIFICATION_ENABLED else 'disabled'
