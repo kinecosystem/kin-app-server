@@ -25,10 +25,16 @@ print('using kin-stellar sdk version: %s' % kin.version.__version__)
 print('app.config: %s' % app.config)
 print('config: %s' % config)
 
+# define an asset to forward to the SDK because we're using a custom issuer
+from stellar_base.asset import Asset
+kin_asset = Asset('KIN', config.STELLAR_KIN_ISSUER_ADDRESS)
+
+
 app.kin_sdk = kin.SDK(secret_key=base_seed,
                       horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
                       network=config.STELLAR_NETWORK,
-                      channel_secret_keys=channel_seeds)
+                      channel_secret_keys=channel_seeds,
+                      kin_asset=kin_asset)
 
 
 # get (and print) the current balance for the account:
