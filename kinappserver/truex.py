@@ -59,7 +59,7 @@ def generate_truex_url(network_user_id, remote_ip, client_request_id, user_agent
         'user.uid': network_user_id,
         # device
         'device.ip': remote_ip,
-        'device.ua': user_agent if user_agent is not None else 'Android 5.0',
+        'device.ua': user_agent if user_agent is not None else 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G935F Build/R16NW; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/67.0.3396.87 Mobile Safari/537.36',
         # response
         'response.max_activities': 1,
         # request ID
