@@ -1202,7 +1202,7 @@ def compensate_truex_activity(user_id):
     try:
         memo = get_and_replace_next_task_memo(user_id)
         address = get_address_by_userid(user_id)
-        reward_and_push(address, task_id, True, user_id, memo, tip=0)
+        reward_and_push(address, task_id, False, user_id, memo, tip=0)
     except Exception as e:
         print('failed to reward truex task %s at address %s for user_id %s. exception: %s' % (task_id, address, user_id, e))
         raise(e)
