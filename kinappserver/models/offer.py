@@ -177,6 +177,47 @@ def get_offers_for_user(user_id):
         if item_to_remove is not None:
             redeemable_offers.remove(item_to_remove)
 
+    # filter itunes/playstore:
+    filter_googleplaystore = False
+    filter_itunes = False
+    try:
+        os_type = get_user_os_type(user_id)
+    except Exception as e:
+        # race condition - the user's OS hasn't been written into the db yet, so
+        # just dont show the googleplay/itunes offer. yes its an ugly patch
+        print('filter googleitunes - cant get user os_type')
+        filter_googleplaystore = True
+        filter_itunes = True
+    else:
+        if os_type == OS_IOS:
+            filter_googleplaystore = True
+        else:
+            filter_itunes = True
+
+        if filter_itunes:
+            item_to_remove = None
+
+            # find the first item to remove
+            for offer in redeemable_offers:
+                if offer.offer_type == 'itunes':
+                    item_to_remove = offer
+
+            # ...and remove it
+            if item_to_remove is not None:
+                redeemable_offers.remove(item_to_remove)
+
+        if filter_googleplaystore:
+            item_to_remove = None
+
+            # find the first item to remove
+            for offer in redeemable_offers:
+                if offer.offer_type == 'googleplaystore':
+                    item_to_remove = offer
+
+            # ...and remove it
+            if item_to_remove is not None:
+                redeemable_offers.remove(item_to_remove)
+
     # the client shows offers by the order they are listed, so make sure p2p (if it exists) is first
     redeemable_offers = sorted(redeemable_offers, key=lambda k: k.offer_type != 'p2p', reverse=False)
 
