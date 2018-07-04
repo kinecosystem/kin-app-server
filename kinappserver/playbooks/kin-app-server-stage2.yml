@@ -15,7 +15,7 @@
      log_level: INFO
    datadog_api_key: "cb6389daa2808d1c275f1f69bfff63e5"
    debug: True
-   nginx_domain: stage.kinitapp.com
+   nginx_domain: stage2.kinitapp.com
    db_connstr: 'postgresql://kinappstageuser:password@kinappstage2.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage'
    redis_endpoint: 'kin-app-server-stag2.qugi0x.0001.use1.cache.amazonaws.com'
    redis_port: 6379
