@@ -227,6 +227,7 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
     task_json['items'] = task.items
+    task_json['updated'] = task.update_at
     task_json['start_date'] = int(shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp)
     task_json['min_client_version_android'] = task.min_client_version_android or DEFAULT_MIN_CLIENT_VERSION
     task_json['min_client_version_ios'] = task.min_client_version_ios or DEFAULT_MIN_CLIENT_VERSION
