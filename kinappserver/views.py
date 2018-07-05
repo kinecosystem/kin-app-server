@@ -1020,6 +1020,13 @@ def user_report_endpoint():
         print(e)
         raise InvalidUsage('bad-request')
 
+    # sanitize user_id:
+    try:
+        UUID(user_id)
+    except Exception as e:
+        print('cant generate report for user_id: %s ' % user_id)
+        raise InternalError()
+
     if not user_exists(user_id):
         print('user_report_endpoint: user_id %s does not exist. aborting' % user_id)
         return jsonify(erorr='no_such_user')
