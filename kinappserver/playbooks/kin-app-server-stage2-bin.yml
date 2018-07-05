@@ -14,7 +14,7 @@
    debug: True
    nginx_domain: stage2.kinitapp.com
    db_connstr: 'postgresql://kinappstageuser:password@kinappstage2.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage'
-   redis_endpoint: 'kin-app-server-stag2.qugi0x.0001.use1.cache.amazonaws.com'
+   redis_endpoint: 'kin-app-server-stge2.qugi0x.0001.use1.cache.amazonaws.com'
    redis_port: 6379
    eshu_username: admin
    eshu_password: admin
