@@ -55,6 +55,7 @@ class Tester(unittest.TestCase):
         offer['skip_image_test'] = True
 
         # re-try to add the same offer - should fail
+        print('trying to re-add the same offer')
         resp = self.app.post('/offer/add',
                             data=json.dumps({
                             'offer': offer}),
@@ -93,7 +94,31 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        print(models.list_all_offer_data())
+        # add an offer that's only for ios
+        offer['id'] = '4'
+        offer['price'] = 50
+        offer['min_client_version_android'] = '99.99'
+        # try to add a new offer - should succeed
+        resp = self.app.post('/offer/add',
+                            data=json.dumps({
+                            'offer': offer}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # add an offer that's only for ios
+        offer['id'] = '5'
+        offer['price'] = 50
+        offer['min_client_version_ios'] = '99.99'
+        # try to add a new offer - should succeed
+        resp = self.app.post('/offer/add',
+                            data=json.dumps({
+                            'offer': offer}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        print('all offers: %s' % models.list_all_offer_data())
 
         # create a good instance for the offer (0)
         resp = self.app.post('/good/add',
@@ -119,6 +144,26 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/good/add',
             data=json.dumps({
             'offer_id': '2',
+            'good_type': 'code',
+            'value': 'abcd'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # create a good instance for the offer (4)
+        resp = self.app.post('/good/add',
+            data=json.dumps({
+            'offer_id': '4',
+            'good_type': 'code',
+            'value': 'abcd'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # create a good instance for the offer (5)
+        resp = self.app.post('/good/add',
+            data=json.dumps({
+            'offer_id': '5',
             'good_type': 'code',
             'value': 'abcd'}),
             headers={},
@@ -194,7 +239,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['offers'], [])
         
-        # enable offer 1 and 2
+        # enable offer 1,2,4,5
         resp = self.app.post('/offer/set_active',
                     data=json.dumps({
                     'id': '1',
@@ -206,6 +251,22 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/offer/set_active',
                     data=json.dumps({
                     'id': '0',
+                    'is_active': True}),
+                    headers={},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.post('/offer/set_active',
+                    data=json.dumps({
+                    'id': '5',
+                    'is_active': True}),
+                    headers={},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.post('/offer/set_active',
+                    data=json.dumps({
+                    'id': '4',
                     'is_active': True}),
                     headers={},
                     content_type='application/json')
@@ -247,7 +308,7 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # get the user's current offers - should have 2 offers
+        # get the user's current offers - should have 3 offers
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)

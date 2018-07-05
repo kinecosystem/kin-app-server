@@ -240,7 +240,7 @@ def add_task(task_json):
         print('trying to add task...')
         # sanity for task data
         for item in task_json['items']:
-            if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating', 'tip']:
+            if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating', 'tip', 'dual_image']:
                 print('invalid item type:%s ' % item['type'])
                 raise InvalidUsage('cant add task with invalid item-type')
 
