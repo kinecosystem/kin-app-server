@@ -29,7 +29,7 @@ def report_exceptions():
     # evaluate
     if previous_value < num_exceptions:
         print('detected new exceptions. previous value: %s current: %s' % (previous_value, num_exceptions))
-        found_new_exceptions = 1
+        found_new_exceptions = 2 # datadog treshold set to '1'
     elif previous_value >= num_exceptions:
         found_new_exceptions = 0
 
