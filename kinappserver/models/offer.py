@@ -208,6 +208,7 @@ def get_offers_for_user(user_id):
                     offers_to_remove.append(offer)
         # 3. clean up offers list
         for offer in offers_to_remove:
+            print('get_offers_for_user: removing offer_id %s' % offer.offer_id)
             redeemable_offers.remove(offer)
 
 

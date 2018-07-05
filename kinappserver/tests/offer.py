@@ -96,7 +96,7 @@ class Tester(unittest.TestCase):
 
         # add an offer that's only for ios
         offer['id'] = '4'
-        offer['price'] = 50
+        offer['price'] = 2500
         offer['min_client_version_android'] = '99.99'
         # try to add a new offer - should succeed
         resp = self.app.post('/offer/add',
@@ -106,9 +106,9 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # add an offer that's only for ios
+        # add an offer that's only for android
         offer['id'] = '5'
-        offer['price'] = 50
+        offer['price'] = 2000
         offer.pop('min_client_version_android')
         offer['min_client_version_ios'] = '99.99'
         # try to add a new offer - should succeed
@@ -191,7 +191,7 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str(ios_userid),
-                            'os': 'android',
+                            'os': 'iOS',
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '05:00',
@@ -304,17 +304,18 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # get the user's current offers - should have 3 offers - check that the price is ascending
+        # get the user's current offers - should have 4 offers - check that the price is ascending
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
 
-        self.assertEqual(len(data['offers']), 3)
+        self.assertEqual(len(data['offers']), 4)
 
         self.assertEqual((data['offers'][0]['price']), 50)
         self.assertEqual((data['offers'][1]['price']), 100)
         self.assertEqual((data['offers'][2]['price']), 800)
+        self.assertEqual((data['offers'][3]['price']), 2000) # android task
 
         resp = self.app.post('/offer/set_active',
             data=json.dumps({
@@ -331,7 +332,7 @@ class Tester(unittest.TestCase):
         print(data)
         self.assertEqual(resp.status_code, 200)
 
-        self.assertEqual(len(data['offers']), 3)
+        self.assertEqual(len(data['offers']), 4)
 
         # get the ios user's current offers - should have 3 offers
         headers = {USER_ID_HEADER: ios_userid}
@@ -340,7 +341,12 @@ class Tester(unittest.TestCase):
         print(data)
         self.assertEqual(resp.status_code, 200)
 
-        self.assertEqual(len(data['offers']), 3)
+        self.assertEqual(len(data['offers']), 4)
+
+        self.assertEqual((data['offers'][0]['price']), 50)
+        self.assertEqual((data['offers'][1]['price']), 100)
+        self.assertEqual((data['offers'][2]['price']), 800)
+        self.assertEqual((data['offers'][3]['price']), 2500) # ios task
 
 
 
