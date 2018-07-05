@@ -16,6 +16,7 @@ CORS(app)
 from flask_sqlalchemy import SQLAlchemy
 from kinappserver import config, ssm, stellar
 
+# get seeds, channels from aws ssm:
 base_seed, channel_seeds = ssm.get_stellar_credentials()
 if not base_seed:
     print('could not get base seed - aborting')
@@ -25,32 +26,26 @@ if channel_seeds is None:
     print('could not get channels seeds - aborting')
     sys.exit(-1)
 
+# init sdk:
 print('using kin-stellar sdk version: %s' % kin.version.__version__)
-print('app.config: %s' % app.config)
-print('config: %s' % config)
-
-# define an asset to forward to the SDK because we're using a custom issuer
+print("stellar horizon: %s" % config.STELLAR_HORIZON_URL)
+# define an asset to forward to the SDK because sometimes we're using a custom issuer
 from stellar_base.asset import Asset
 kin_asset = Asset('KIN', config.STELLAR_KIN_ISSUER_ADDRESS)
 
-#TODO make this pretty:
-print("stellar horizon: %s" % config.STELLAR_HORIZON_URL)
 if config.STELLAR_NETWORK != 'TESTNET':
     print('starting the sdk in a private network')
-    NETWORKS['CUSTOM'] = config.STELLAR_NETWORK
-
-    app.kin_sdk = kin.SDK(secret_key=base_seed,
-                          horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
-                          network='CUSTOM',
-                          channel_secret_keys=channel_seeds,
-                          kin_asset=kin_asset)
+    network = 'CUSTOM'
+    NETWORKS[network] = config.STELLAR_NETWORK
 else:
     print('starting the sdk on the public testnet')
-    app.kin_sdk = kin.SDK(secret_key=base_seed,
-                          horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
-                          network=config.STELLAR_NETWORK,
-                          channel_secret_keys=channel_seeds,
-                          kin_asset=kin_asset)
+    network = config.STELLAR_NETWORK
+
+app.kin_sdk = kin.SDK(secret_key=base_seed,
+                      horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
+                      network=network,
+                      channel_secret_keys=channel_seeds,
+                      kin_asset=kin_asset)
 
 # get (and print) the current balance for the account:
 from stellar_base.keypair import Keypair
@@ -58,10 +53,10 @@ print('the current KIN balance on the base-seed: %s' % stellar.get_kin_balance(K
 # get (and print) the current balance for the account:
 print('the current XLM balance on the base-seed: %s' % stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode()))
 
-
 for channel in channel_seeds:
     print('the current XLM balance on channel (%s): %s' % (channel, stellar.get_xlm_balance(Keypair.from_seed(channel).address().decode())))
 
+# SQLAlchemy stuff:
 # create an sqlalchemy engine with "autocommit" to tell sqlalchemy NOT to use un-needed transactions.
 # see this: http://oddbird.net/2014/06/14/sqlalchemy-postgres-autocommit/
 # and this: https://github.com/mitsuhiko/flask-sqlalchemy/pull/67
@@ -69,7 +64,6 @@ class MySQLAlchemy(SQLAlchemy):
     def apply_driver_hacks(self, app, info, options):
         options['isolation_level'] = 'AUTOCOMMIT'
         super(MySQLAlchemy, self).apply_driver_hacks(app, info, options)
-
 
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_CONNSTR
 
@@ -79,13 +73,10 @@ app.config['SQLALCHEMY_POOL_TIMEOUT'] = 5
 app.config['SQLALCHEMY_MAX_OVERFLOW'] = 100
 app.config['SQLALCHEMY_POOL_RECYCLE'] = 60*5
 
-if config.DEBUG:
-    # run a tight boat on stage to detect leaks
-    app.config['SQLALCHEMY_POOL_SIZE'] = 1000
-    app.config['SQLALCHEMY_MAX_OVERFLOW'] = 100
-
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+if config.DEBUG:
+    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
 if config.DEPLOYMENT_ENV in ['prod', 'stage']:
@@ -106,8 +97,10 @@ import redis
 
 #redis:
 app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0)
+# redis config sanity
+app.redis.setex('temp-key', 1, 'temp-value')
 
-#push: init the amqplib: two instances, one for beta and one for release
+#push: init the amqplib: two instances, one for beta and one for release TODO get rid of this eventually
 app.amqp_publisher_beta = AmqpPublisher()
 app.amqp_publisher_release = AmqpPublisher()
 if not app.amqp_publisher_beta.init_config('beta', config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE,
@@ -121,11 +114,6 @@ if not app.amqp_publisher_release.init_config('release', config.ESHU_RABBIT_ADDR
                                   config.ESHU_HEARTBEAT, config.ESHU_APPID, config.PUSH_TTL_SECS):
     print('could not init release amqppublisher')
     sys.exit(-1)
-
-# sanity for configuration
-if not config.DEBUG:
-    app.redis.setex('temp-key', 1, 'temp-value')
-
 
 # init truex credentials
 config.TRUEX_APP_ID, config.TRUEX_PARTNER_HASH, config.TRUEX_CALLBACK_SECRET = ssm.get_truex_creds()
@@ -141,7 +129,6 @@ state = 'enabled' if config.P2P_TRANSFERS_ENABLED else 'disabled'
 print('p2p transfers: %s' % state)
 print('replenish blackhawk cards enabled: %s' % config.BLACKHAWK_PURCHASES_ENABLED)
 
-
 # get the firebase service-account from ssm
 service_account_file_path = ssm.write_service_account()
 
@@ -153,6 +140,7 @@ firebase_admin.initialize_app(cred)
 app.firebase_admin = firebase_admin
 
 
-# uncomment to print db creation statements
-from .utils import print_creation_statement
-print_creation_statement()
+# print db creation statements
+if config.DEBUG:
+    from .utils import print_creation_statement
+    print_creation_statement()
