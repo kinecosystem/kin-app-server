@@ -109,6 +109,7 @@ class Tester(unittest.TestCase):
         # add an offer that's only for ios
         offer['id'] = '5'
         offer['price'] = 50
+        offer.pop('min_client_version_android')
         offer['min_client_version_ios'] = '99.99'
         # try to add a new offer - should succeed
         resp = self.app.post('/offer/add',
@@ -175,6 +176,21 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str(userid),
+                            'os': 'android',
+                            'device_model': 'samsung8',
+                            'device_id': '234234',
+                            'time_zone': '05:00',
+                            'token': 'fake_token',
+                            'app_ver': '1.0'}),
+            headers={},
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # register another user - ios
+        ios_userid = uuid4()
+        resp = self.app.post('/user/register',
+            data=json.dumps({
+                            'user_id': str(ios_userid),
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
@@ -278,7 +294,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
 
-        self.assertEqual(len(data['offers']), 2)
+        self.assertEqual(len(data['offers']), 3)
 
         resp = self.app.post('/offer/set_active',
             data=json.dumps({
@@ -310,6 +326,15 @@ class Tester(unittest.TestCase):
 
         # get the user's current offers - should have 3 offers
         headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/offers', headers=headers)
+        data = json.loads(resp.data)
+        print(data)
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertEqual(len(data['offers']), 3)
+
+        # get the ios user's current offers - should have 3 offers
+        headers = {USER_ID_HEADER: ios_userid}
         resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
         print(data)

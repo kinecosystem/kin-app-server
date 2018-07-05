@@ -32,13 +32,25 @@ print('config: %s' % config)
 # define an asset to forward to the SDK because we're using a custom issuer
 from stellar_base.asset import Asset
 kin_asset = Asset('KIN', config.STELLAR_KIN_ISSUER_ADDRESS)
-NETWORKS['CUSTOM'] = config.STELLAR_NETWORK
 
-app.kin_sdk = kin.SDK(secret_key=base_seed,
-                      horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
-                      network='CUSTOM',
-                      channel_secret_keys=channel_seeds,
-                      kin_asset=kin_asset)
+#TODO make this pretty:
+print("stellar horizon: %s" % config.STELLAR_HORIZON_URL)
+if config.STELLAR_NETWORK != 'TESTNET':
+    print('starting the sdk in a private network')
+    NETWORKS['CUSTOM'] = config.STELLAR_NETWORK
+
+    app.kin_sdk = kin.SDK(secret_key=base_seed,
+                          horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
+                          network='CUSTOM',
+                          channel_secret_keys=channel_seeds,
+                          kin_asset=kin_asset)
+else:
+    print('starting the sdk on the public testnet')
+    app.kin_sdk = kin.SDK(secret_key=base_seed,
+                          horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
+                          network=config.STELLAR_NETWORK,
+                          channel_secret_keys=channel_seeds,
+                          kin_asset=kin_asset)
 
 # get (and print) the current balance for the account:
 from stellar_base.keypair import Keypair
