@@ -16,10 +16,12 @@ class Offer(db.Model):
     address = db.Column(db.String(80), nullable=False, primary_key=False)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     provider_data = db.Column(db.JSON)
+    min_client_version_ios = db.Column(db.String(80), nullable=True, primary_key=False)
+    min_client_version_android = db.Column(db.String(80), nullable=True, primary_key=False)
 
     def __repr__(self):
-        return '<offer_id: %s, offer_type: %s, title: %s, desc: %s, kin_cost: %s, is_active: %s>' % \
-               (self.offer_id, self.offer_type, self.title, self.desc, self.kin_cost, self.is_active)
+        return '<offer_id: %s, offer_type: %s, title: %s, desc: %s, kin_cost: %s, is_active: %s, min_client_version_ios: %s, min_client_version_android: %s>' % \
+               (self.offer_id, self.offer_type, self.title, self.desc, self.kin_cost, self.is_active, self.min_client_version_ios, self.min_client_version_android)
 
 
 def list_all_offer_data():
@@ -105,6 +107,9 @@ def add_offer(offer_json, set_active=False):
         offer.kin_cost = int(offer_json['price'])
         offer.address = offer_json['address']
         offer.provider_data = offer_json['provider']
+        offer.min_client_version_ios = offer_json.get('min_client_version_ios', None)  # optional, can be None
+        offer.min_client_version_android = offer_json.get('min_client_version_android', None)  # optional, can be None
+
         db.session.add(offer)
         db.session.commit()
     except Exception as e:
@@ -128,12 +133,12 @@ def get_cost_and_address(offer_id):
 def get_offers_for_user(user_id):
     """return the list of active offers for this user"""
     from distutils.version import LooseVersion
-    offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
+    all_offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
     
     # filter out offers with no goods
     redeemable_offers = []
     from .good import goods_avilable
-    for offer in offers:
+    for offer in all_offers:
         if goods_avilable(offer.offer_id):
             redeemable_offers.append(offer)
         else:
@@ -147,6 +152,7 @@ def get_offers_for_user(user_id):
         print('filter out p2p for all users as per config flag')
         filter_p2p = True
     else:
+        # TODO remove this chunk of code when we go live on prod2.
         try:
             os_type = get_user_os_type(user_id)
         except Exception as e:
@@ -177,46 +183,33 @@ def get_offers_for_user(user_id):
         if item_to_remove is not None:
             redeemable_offers.remove(item_to_remove)
 
-    # filter itunes/playstore:
-    filter_googleplaystore = False
-    filter_itunes = False
+    # filter offers by the min_client_version fields
+    # 1. get the client's version and os:
     try:
+        client_version = get_user_app_data(user_id).app_ver
         os_type = get_user_os_type(user_id)
+        offers_to_remove = []
     except Exception as e:
-        # race condition - the user's OS hasn't been written into the db yet, so
-        # just dont show the googleplay/itunes offer. yes its an ugly patch
-        print('filter googleitunes - cant get user os_type')
-        filter_googleplaystore = True
-        filter_itunes = True
+        print('cant get app_ver or os_type - not filtering offers')
     else:
-        if os_type == OS_IOS:
-            filter_googleplaystore = True
-        else:
-            filter_itunes = True
+        # 2. collect offers that are not allowed for this os/app_ver
+        for offer in redeemable_offers:
+            if os_type == OS_ANDROID:
+                if not offer.min_client_version_android:
+                    # no minimum set, so dont remove
+                    continue
+                elif LooseVersion(offer.min_client_version_android) > LooseVersion(client_version):
+                    offers_to_remove.append(offer)
+            else:  # ios
+                if not offer.min_client_version_ios:
+                    # no minimum set, so dont remove
+                    continue
+                elif LooseVersion(offer.min_client_version_ios) > LooseVersion(client_version):
+                    offers_to_remove.append(offer)
+        # 3. clean up offers list
+        for offer in offers_to_remove:
+            redeemable_offers.remove(offer)
 
-        if filter_itunes:
-            item_to_remove = None
-
-            # find the first item to remove
-            for offer in redeemable_offers:
-                if offer.offer_type == 'itunes':
-                    item_to_remove = offer
-
-            # ...and remove it
-            if item_to_remove is not None:
-                redeemable_offers.remove(item_to_remove)
-
-        if filter_googleplaystore:
-            item_to_remove = None
-
-            # find the first item to remove
-            for offer in redeemable_offers:
-                if offer.offer_type == 'googleplaystore':
-                    item_to_remove = offer
-
-            # ...and remove it
-            if item_to_remove is not None:
-                redeemable_offers.remove(item_to_remove)
 
     # the client shows offers by the order they are listed, so make sure p2p (if it exists) is first
     redeemable_offers = sorted(redeemable_offers, key=lambda k: k.offer_type != 'p2p', reverse=False)
