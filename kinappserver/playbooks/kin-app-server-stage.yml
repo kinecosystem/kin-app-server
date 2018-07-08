@@ -13,7 +13,7 @@
      ENV: stage
    datadog_config:
      log_level: INFO
-   datadog_api_key: "cb6389daa2808d1c275f1f69bfff63e5"
+   datadog_api_key: "{{ lookup('aws_ssm', '/config/stage/datadog/apikey' )}}"
    debug: True
    nginx_domain: stage.kinitapp.com
    db_connstr: 'postgresql://kinappstageuser:password@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage'

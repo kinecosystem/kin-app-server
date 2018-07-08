@@ -11,7 +11,7 @@
    deployment_env: prod
    environment_config:
      ENV: prod
-   datadog_api_key: "cb6389daa2808d1c275f1f69bfff63e5"
+   datadog_api_key: "{{ lookup('aws_ssm', '/config/prod/datadog/apikey' )}}"
    datadog_config:
      log_level: INFO
    debug: False
