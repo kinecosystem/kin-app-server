@@ -1025,7 +1025,7 @@ def user_report_endpoint():
         UUID(user_id)
     except Exception as e:
         print('cant generate report for user_id: %s ' % user_id)
-        raise InternalError()
+        return jsonify(error='invalid_userid')
 
     if not user_exists(user_id):
         print('user_report_endpoint: user_id %s does not exist. aborting' % user_id)
