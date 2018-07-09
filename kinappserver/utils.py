@@ -203,7 +203,7 @@ def parse_phone_number_naively(number_to_parse):
     try:
         formatted_sent_number = phonenumbers.parse(number_to_parse, None)
     except phonenumbers.NumberParseException as e:
-        print('parse_phone_number_naively: cant parse number:%s' % number_to_parse)
+        print('parse_phone_number_naively: cant parse number')
         return None
     else:
         return phonenumbers.format_number(formatted_sent_number, phonenumbers.PhoneNumberFormat.E164)
@@ -217,7 +217,7 @@ def parse_phone_number_by_sender_country_code(sender_number, number_to_parse):
         country_code = formatted_sender_number.country_code
         formatted_sent_number = phonenumbers.parse(number_to_parse, phonenumbers.region_code_for_country_code(country_code))
     except phonenumbers.NumberParseException as e:
-            print('parse_phone_number_by_sender_country_code: cant parse number:%s with sender\'s country code' % (number_to_parse,sender_number))
+            print('parse_phone_number_by_sender_country_code: cant parse number with sender\'s country code')
             return None
     else:
         return phonenumbers.format_number(formatted_sent_number, phonenumbers.PhoneNumberFormat.E164)
