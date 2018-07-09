@@ -16,7 +16,7 @@
      log_level: INFO
    debug: False
    nginx_domain: prod.kinitapp.com
-   db_connstr: 'postgresql://kinappprod:password@kinappprod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappprod'
+   db_connstr: "postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinappprod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappprod"
    redis_endpoint: 'kin-app-server-prod.qugi0x.ng.0001.use1.cache.amazonaws.com'
    redis_port: 6379
    eshu_username: admin
@@ -49,4 +49,4 @@
      - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
      - { alias: '_log', command: 'cat /var/log/kinappserver.err.log' }
      - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
-     - { alias: '_sql', command: 'psql postgresql://kinappprod:password@kinappprod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappprod'}
+     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinappprod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappprod"}
