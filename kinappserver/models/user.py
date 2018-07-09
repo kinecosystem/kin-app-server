@@ -1,7 +1,7 @@
 """The User model"""
 from sqlalchemy_utils import UUIDType
 
-from kinappserver import db, config
+from kinappserver import db, config, app
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, get_global_config, generate_memo
 from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_please_upgrade_push_2
 from uuid import uuid4, UUID
@@ -25,7 +25,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
     onboarded = db.Column(db.Boolean, unique=False, default=False)
     public_address = db.Column(db.String(60), primary_key=False, unique=True, nullable=True)
-    phone_number = db.Column(db.String(60), primary_key=False, nullable=True)
+    enc_phone_number = db.Column(db.String(200), primary_key=False, nullable=True)
     deactivated = db.Column(db.Boolean, unique=False, default=False)
     auth_token = db.Column(UUIDType(binary=False), primary_key=False, nullable=True)
     package_id = db.Column(db.String(60), primary_key=False, nullable=True)
@@ -37,9 +37,9 @@ class User(db.Model):
 
     def __repr__(self):
         return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s,' \
-               ' onboarded: %s, public_address: %s, phone_number: %s, package_id: %s, screen_w: %s, screen_h: %s,' \
+               ' onboarded: %s, public_address: %s, enc_phone_number: %s, package_id: %s, screen_w: %s, screen_h: %s,' \
                ' screen_d: %s, user_agent: %s, deactivated: %s, truex_user_id: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
-                                                                                           self.device_id, self.onboarded, self.public_address, self.phone_number, self.package_id,
+                                                                                           self.device_id, self.onboarded, self.public_address, self.enc_phone_number, self.package_id,
                                                                                 self.screen_w, self.screen_h, self.screen_d, self.user_agent, self.deactivated, self.truex_user_id)
 
 
@@ -176,7 +176,7 @@ def list_all_users():
     for user in users:
         response[str(user.user_id)] = {'sid': user.sid, 'os': user.os_type, 'push_token': user.push_token,
                                        'time_zone': user.time_zone, 'device_id': user.device_id, 'device_model': user.device_model, 'onboarded': user.onboarded,
-                                       'phone_num': user.phone_number, 'auth_token': user.auth_token, 'deactivated': user.deactivated}
+                                       'enc_phone_number': user.enc_phone_number, 'auth_token': user.auth_token, 'deactivated': user.deactivated}
     return response
 
 
@@ -527,20 +527,21 @@ def set_user_phone_number(user_id, number):
     """sets a phone number to the user's entry"""
     try:
         user = get_user(user_id)
+        encrypted_number = app.encryption.encrypt(number)
         # allow (and ignore) re-submissions of the SAME number, but reject new numbers
-        if user.phone_number is not None:
-            if user.phone_number == number:
+        if user.enc_phone_number is not None:
+            if user.enc_phone_number == encrypted_number:
                 return  # all good, do nothing
             else:
                 raise InvalidUsage('trying to overwrite an existing phone number with a different one')
         else:
-            user.phone_number = number
+            user.enc_phone_number = encrypted_number
             db.session.add(user)
             db.session.commit()
 
         # does this number belong to another user? if so, de-activate the old user.
 
-        deactivate_by_phone_number(number, user_id)
+        deactivate_by_enc_phone_number(encrypted_number, user_id)
 
     except Exception as e:
         print('cant add phone number to user_id: %s. Exception: %s' % (user_id, e))
@@ -549,7 +550,8 @@ def set_user_phone_number(user_id, number):
 
 def get_active_user_id_by_phone(phone_number):
     try:
-        user = User.query.filter_by(phone_number=phone_number).filter_by(deactivated=False).first()
+        encrypted_phone_number = app.encryption.encrypt(phone_number)
+        user = User.query.filter_by(enc_phone_number=encrypted_phone_number).filter_by(deactivated=False).first()
         if user is None:
             return None
         else:
@@ -559,13 +561,13 @@ def get_active_user_id_by_phone(phone_number):
         raise
 
 
-def get_phone_number_by_user_id(user_id):
+def get_enc_phone_number_by_user_id(user_id):
     try:
         user = User.query.filter_by(user_id=user_id).filter_by(deactivated=False).first()
         if user is None:
             return None
         else:
-            return user.phone_number  # can be None
+            return user.enc_phone_number  # can be None
     except Exception as e:
         print('cant get user phone by user_id. Exception: %s' % e)
         raise
@@ -573,12 +575,13 @@ def get_phone_number_by_user_id(user_id):
 
 def is_user_phone_verified(user_id):
     """return true iff the user passed phone-verification"""
-    return get_phone_number_by_user_id(user_id) is not None
+    return get_enc_phone_number_by_user_id(user_id) is not None
 
 
 def get_all_user_id_by_phone(phone_number):
     try:
-        users = User.query.filter_by(phone_number=phone_number).all()
+        encrypted_number = app.encryption.encrypt(phone_number)
+        users = User.query.filter_by(enc_phone_number=encrypted_number).all()
         return [user.user_id for user in users]
     except Exception as e:
         print('cant get user(s) address by phone. Exception: %s' % e)
@@ -587,30 +590,32 @@ def get_all_user_id_by_phone(phone_number):
 
 def match_phone_number_to_address(phone_number, sender_user_id):
     """get the address associated with this phone number"""
-    # get the sender's phone number:
-    sender_phone_number = get_phone_number_by_user_id(sender_user_id)
-    if not sender_phone_number:
+    # get the sender's un-enc phone number by the userid:
+    sender_enc_phone_number = get_enc_phone_number_by_user_id(sender_user_id)
+    sender_unenc_phone_number = app.encryption.decrypt(sender_enc_phone_number)
+    if not sender_enc_phone_number:
         # should never happen while phone v. is active
         print('should never happen: cant get user\'s phone number. user_id: %s' % sender_user_id)
-    parsed_address = get_address_by_phone_number(parse_phone_number(phone_number, sender_phone_number))
+    enc_phone_num_1 = app.encryption.encrypt(parse_phone_number(phone_number, sender_unenc_phone_number))
+    parsed_address = get_address_by_enc_phone_number(enc_phone_num_1)
 
     if parsed_address is None:
         # special handling for Israeli numbers: perhaps the number was stored in the db with a leading zero.
         # in the db: +9720527702891
         # from the client: 0527702891
-        massaged_number = '+972' + phone_number
-        parsed_address = get_address_by_phone_number(massaged_number)
+        enc_phone_num_2 = app.encryption.encrypt('+972' + phone_number)
+        parsed_address = get_address_by_enc_phone_number(enc_phone_num_2)
         if parsed_address:
-            print('match_phone_number_to_address: applied special israeli-number logic to parse number: %s' % massaged_number)
+            print('match_phone_number_to_address: applied special israeli-number logic to parse number: %s' % enc_phone_num_2)
 
     return parsed_address
 
 
-def get_address_by_phone_number(phone_number):
+def get_address_by_enc_phone_number(enc_phone_number):
     try:
-        user = User.query.filter(User.phone_number==phone_number).filter_by(deactivated=False).first()
+        user = User.query.filter(User.enc_phone_number==enc_phone_number).filter_by(deactivated=False).first()
         if user is None:
-            print('cant find user for phone number: %s' % phone_number)
+            print('cant find user for encrypted phone number: %s' % enc_phone_number)
             return None
         else:
             return user.public_address  # can be None
@@ -619,26 +624,7 @@ def get_address_by_phone_number(phone_number):
         raise
 
 
-### not in use ###
-def get_address_by_phone_numbers(phone_numbers):
-    """"attempt to find a public address by a list of phone numbers
-
-    return None if no phone number exists or if the address wasn't set
-    if more than one matches, just get one
-    """
-    try:
-        user = User.query.filter(User.phone_number.in_(phone_numbers)).filter_by(deactivated=False).first()
-        if user is None:
-            return None
-        else:
-            return user.public_address  # can be None
-    except Exception as e:
-        print('cant get user address by phone. Exception: %s' % e)
-        raise
-
-
-
-def deactivate_by_phone_number(phone_number, user_id):
+def deactivate_by_enc_phone_number(enc_phone_number, user_id):
     """deactivate any active user with the given phone number except the one with user_id
 
     this function deactivates the previous active user with the given phone number AND
@@ -646,7 +632,7 @@ def deactivate_by_phone_number(phone_number, user_id):
     """
     try:
         # find candidates to de-activate (except user_id)
-        users = User.query.filter(User.phone_number == phone_number).filter(User.user_id != user_id).filter(User.deactivated == False).all()
+        users = User.query.filter(User.enc_phone_number == enc_phone_number).filter(User.user_id != user_id).filter(User.deactivated == False).all()
         if users is []:
             return None  # nothing to do
         else:
@@ -666,13 +652,8 @@ def deactivate_by_phone_number(phone_number, user_id):
                 #finally:
                 #    connection.close()
 
-                db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id='%s'" % (phone_number, user_id_to_deactivate))
+                db.engine.execute("update public.user set deactivated=true where enc_phone_number='%s' and user_id='%s'" % (enc_phone_number, user_id_to_deactivate))
                 db.engine.execute("update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(user_id)))
-
-
-                #db.engine.execute("update public.user set deactivated=true where phone_number='%s' and user_id='%s'; update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (phone_number, user_id_to_deactivate, user_id_to_deactivate, UUID(user_id)))
-
-
 
                 # also delete the new user's history and plant the old user's history instead
                 db.engine.execute("delete from public.user_task_results where user_id='%s'" % UUID(user_id))
@@ -688,10 +669,10 @@ def get_associated_user_ids(user_id):
     the list also includes the original user_id.
     """
     user = get_user(user_id)
-    if user.phone_number is None:
+    if user.enc_phone_number is None:
         return [user_id]
     else:
-        users = User.query.filter(User.phone_number == user.phone_number).all()
+        users = User.query.filter(User.enc_phone_number == user.enc_phone_number).all()
         return [str(user.user_id) for user in users]
 
 

@@ -6,6 +6,7 @@ import kin
 
 from kinappserver.amqp_publisher import AmqpPublisher
 from stellar_base.network import NETWORKS
+from .encrypt import AESCipher
 
 
 
@@ -55,6 +56,10 @@ print('the current XLM balance on the base-seed: %s' % stellar.get_xlm_balance(K
 
 for channel in channel_seeds:
     print('the current XLM balance on channel (%s): %s' % (channel, stellar.get_xlm_balance(Keypair.from_seed(channel).address().decode())))
+
+# init encryption util
+key, iv = ssm.get_encrpytion_creds()
+app.encryption = AESCipher(key, iv)
 
 # SQLAlchemy stuff:
 # create an sqlalchemy engine with "autocommit" to tell sqlalchemy NOT to use un-needed transactions.

@@ -1,10 +1,23 @@
 import json
 import os
+import ast
 
 import boto3
 
 from kinappserver import config
 from kinappserver.utils import InternalError
+
+
+def get_encrpytion_creds():
+    """returns the encrpytion/decryption key and iv from ssm"""
+    env = os.environ.get('ENV', 'test')
+    encryption_key = get_ssm_parameter('/config/' + env + '/encryption/key', config.KMS_KEY_AWS_REGION)
+    iv = bytes.fromhex(get_ssm_parameter('/config/' + env + '/encryption/iv', config.KMS_KEY_AWS_REGION)) # the iv is encoded into hex()
+    if not encryption_key:
+        print('cant get encryption_creds')
+        raise InternalError('cant get encryption_creds')
+
+    return encryption_key, iv
 
 
 def get_truex_creds(force_prod=False):

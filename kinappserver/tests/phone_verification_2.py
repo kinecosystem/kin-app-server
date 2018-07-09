@@ -250,6 +250,7 @@ class Tester(unittest.TestCase):
                             }),
                             headers={USER_ID_HEADER: str(userid2)},
                             content_type='application/json')
+        print('should fail - task was already submitted')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 400)
 
@@ -263,6 +264,7 @@ class Tester(unittest.TestCase):
                             }),
                             headers={USER_ID_HEADER: str(userid2)},
                             content_type='application/json')
+        print('should fail - task was already submitted')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 400)
 
@@ -276,6 +278,7 @@ class Tester(unittest.TestCase):
                             }),
                             headers={USER_ID_HEADER: str(userid2)},
                             content_type='application/json')
+        print('should succeed...')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
