@@ -246,6 +246,9 @@ def track_orders():
                     continue
                 print('card info: %s' % card)
                 code = card['redemption_details']['activation_account_number']  # the actual redemption code is called 'activation_account_number'
+                pin = card['redemption_details'].get('security_code', None)  # sometimes there's a PIN code - so add it if its there
+                if pin:
+                    code = code + '   PIN:%s' % pin
                 merchant_code = card['merchant_code']
                 card_id = card['id']
                 order_id = card['order']['id']
