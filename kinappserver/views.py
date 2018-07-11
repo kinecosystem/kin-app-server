@@ -150,7 +150,7 @@ def set_user_phone_number_api():
         user_id = extract_header(request)
         token = payload.get('token', None)
         unverified_phone_number = payload.get('phone_number', None)  # only used in tests
-        if None in (user_id, token, unverified_phone_number):
+        if None in (user_id, token):
             raise InvalidUsage('bad-request')
     except Exception as e:
         print(e)
@@ -163,9 +163,17 @@ def set_user_phone_number_api():
             return jsonify(status='error', reason='bad_token'), status.HTTP_404_NOT_FOUND
         phone = verified_number
     else:
-        # for tests, you can use the unverified number
-        print('using un-verified phone number')
-        phone = unverified_phone_number.strip().replace('-', '')
+        # for tests, you can use the unverified number if no token was given
+        if token:
+            phone = extract_phone_number_from_firebase_id_token(token)
+
+        if not phone:
+            print('using un-verified phone number in debug')
+            phone = unverified_phone_number.strip().replace('-', '')
+
+        if not phone:
+            print('could not extract phone in debug')
+            return jsonify(status='error', reason='no_phone_number')
 
     print('updating phone number for user %s' % user_id)
     set_user_phone_number(user_id, phone)
