@@ -1255,7 +1255,7 @@ def push_register_endpoint():
 def skip_wait_endpoint():
     """sets the next task's timestamp to the past for the given user"""
     limit_to_password()
-
+    print('headers:%s' % request.headers)
     try:
         payload = request.get_json(silent=True)
         user_id = payload.get('user_id', None)
