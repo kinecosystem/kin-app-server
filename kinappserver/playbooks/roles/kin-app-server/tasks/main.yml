@@ -99,7 +99,7 @@
 - cron:
     name: "gather periodic data about missing txs"
     job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/missing_txs.py"
-    # needs to run on all machines
+  run_once: true # runs every minute, on one machine of the 2
 
 - cron:
     name: "gather periodic metrics"
