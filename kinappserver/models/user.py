@@ -592,10 +592,11 @@ def match_phone_number_to_address(phone_number, sender_user_id):
     """get the address associated with this phone number"""
     # get the sender's un-enc phone number by the userid:
     sender_enc_phone_number = get_enc_phone_number_by_user_id(sender_user_id)
-    sender_unenc_phone_number = app.encryption.decrypt(sender_enc_phone_number)
     if not sender_enc_phone_number:
         # should never happen while phone v. is active
         print('should never happen: cant get user\'s phone number. user_id: %s' % sender_user_id)
+
+    sender_unenc_phone_number = app.encryption.decrypt(sender_enc_phone_number)
     enc_phone_num_1 = app.encryption.encrypt(parse_phone_number(phone_number, sender_unenc_phone_number))
     parsed_address = get_address_by_enc_phone_number(enc_phone_num_1)
 

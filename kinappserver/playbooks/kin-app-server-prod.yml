@@ -17,7 +17,7 @@
    debug: False
    nginx_domain: api.kinitapp.com
    db_connstr: "postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"
-   redis_endpoint: 'kin-app-server-prod.qugi0x.ng.0001.use1.cache.amazonaws.com'
+   redis_endpoint: 'kinit-app-prod-001.qugi0x.0001.use1.cache.amazonaws.com'
    redis_port: 6379
    eshu_username: admin
    eshu_password: admin
