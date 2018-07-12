@@ -136,19 +136,6 @@ def is_user_authenticated(user_id):
     return token_obj.authenticated
 
 
-def generate_retarget_list():
-    """find unresponsive users to target"""
-    push_list = []
-    push_auth_tokens = PushAuthToken.query.all()
-
-    for token in push_auth_tokens:
-        #   target anyone who has not acked but has been targeted before
-        if token.send_date and not token.authenticated:
-            push_list.append(token.user_id)
-
-    return push_list
-
-
 def scan_for_deauthed_users():
     """this script is called by cron every x sedonds to de-authenticate users that failed to ack the auth token"""
     push_auth_tokens = PushAuthToken.query.all()
