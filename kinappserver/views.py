@@ -25,7 +25,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id
+    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts
 
 
 def limit_to_local_host():
@@ -1247,5 +1247,24 @@ def push_register_endpoint():
     else:
         for user_id in user_ids:
             send_push_register(user_id)
+
+    return jsonify(status='ok')
+
+
+@app.route('/user/skip_wait', methods=['POST'])
+def skip_wait_endpoint():
+    """sets the next task's timestamp to the past for the given user"""
+    limit_to_password()
+
+    try:
+        payload = request.get_json(silent=True)
+        user_id = payload.get('user_id', None)
+        if user_id is None:
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    else:
+        store_next_task_results_ts(user_id, 1)
 
     return jsonify(status='ok')
