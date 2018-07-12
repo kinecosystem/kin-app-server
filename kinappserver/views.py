@@ -25,15 +25,19 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, generate_retarget_list, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts
+    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl
 
 
-def limit_to_local_host():
-    """aborts non-local requests for sensitive APIs (nginx specific). allow on DEBUG"""
-    if config.DEBUG or request.headers.get('X-Forwarded-For', None) is None:
+def limit_to_acl():
+    """aborts unauthorized requests for sensitive APIs (nginx specific). allow on DEBUG"""
+    source_ip = request.headers.get('X-Forwarded-For', None)
+    if not source_ip:
+        print('missing expected header')
+        abort(403)
         pass
-    else:
-        abort(403)  # Forbidden
+    if not is_in_acl(source_ip):
+        print('%s is not in ACL, rejecting' % source_ip)
+        abort(403)
 
 
 def limit_to_password():
@@ -321,7 +325,7 @@ def post_user_task_results_endpoint():
 def add_task_api():
     """used to add tasks to the db"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
     payload = request.get_json(silent=True)
 
     try:
@@ -340,7 +344,7 @@ def push_please_upgrade_api():
     """used to populate user tables with public addresses"""
     # TODO REMOVE ME
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
 
     payload = request.get_json(silent=True)
     try:
@@ -359,7 +363,7 @@ def push_please_upgrade_api():
 def set_delay_days_api():
     """used to set the delay_days on all tasks"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
     payload = request.get_json(silent=True)
     try:
         delay_days = payload.get('days', None)
@@ -600,7 +604,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
 def add_offer_api():
     """internal endpoint used to populate the server with offers"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
     payload = request.get_json(silent=True)
     try:
         offer = payload.get('offer', None)
@@ -618,7 +622,7 @@ def add_offer_api():
 def set_active_api():
     """internal endpoint used to enables/disables an offer"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
     payload = request.get_json(silent=True)
     try:
         offer_id = payload.get('id', None)
@@ -707,7 +711,7 @@ def purchase_api():
 def add_good_api():
     """internal endpoint used to populate the server with goods"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
     payload = request.get_json(silent=True)
     try:
         offer_id = payload.get('offer_id', None)
@@ -728,7 +732,7 @@ def add_good_api():
 def inventory_api():
     """internal endpoint used to list the goods inventory"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
     return jsonify(status='ok', inventory=list_inventory())
 
 
@@ -736,7 +740,7 @@ def inventory_api():
 def dbstats_api():
     """internal endpoint used to retrieve the number of db connections"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
     return jsonify(status='ok', stats=sqlalchemy_pool_status())
 
 
@@ -744,7 +748,7 @@ def dbstats_api():
 def balance_api():
     """endpoint used to get the current balance of the seed and channels"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
 
     base_seed, channel_seeds = ssm.get_stellar_credentials()
     balance = {'base_seed': {}, 'channel_seeds': {}}
@@ -766,7 +770,7 @@ def balance_api():
 def release_unclaimed_api():
     """endpoint used to release goods that were booked but never redeemed"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
     released = release_unclaimed_goods()
     increment_metric('unclaimed_released', released)
     return jsonify(status='ok', released=released)
@@ -776,7 +780,7 @@ def release_unclaimed_api():
 def send_engagemnt_api():
     """endpoint used to send engagement push notifications to users by scheme. password protected"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
 
     args = request.args
     scheme = args.get('scheme')
@@ -839,7 +843,7 @@ def report_p2p_tx_api():
 def fix_users_api():
     """internal endpoint used to list problems with user data"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
     missing_txs = find_missing_txs()
     print('missing_txs: found %s items' % len(missing_txs))
     # sort results by date (4th item in each tuple)
@@ -850,7 +854,7 @@ def fix_users_api():
 @app.route('/user/compensate', methods=['POST'])
 def compensate_user_api():
     """internal endpoint used to manually compensate users for missing txs"""
-    limit_to_password()
+    limit_to_acl()
 
     payload = request.get_json(silent=True)
     user_id = payload.get('user_id', None)
@@ -890,7 +894,7 @@ def compensate_user_api():
 def nuke_user_api():
     """internal endpoint used to nuke a user's task and tx data. use with care"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
 
     try:
         payload = request.get_json(silent=True)
@@ -915,7 +919,7 @@ def nuke_user_api():
 def init_bh_creds_api():
     """internal endpoint used to init blackhawk credentials"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
 
     try:
         payload = request.get_json(silent=True)
@@ -940,7 +944,7 @@ def init_bh_creds_api():
 def add_bh_offer_api():
     """adds a blackhawk offer to the db. the offer_id must already exist in the offers table"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
 
     try:
         payload = request.get_json(silent=True)
@@ -966,7 +970,7 @@ def add_bh_offer_api():
 def get_bh_balance():
     """returns the current balance of the bh account"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
 
     if not config.BLACKHAWK_PURCHASES_ENABLED:
         print('blackhawk purchases disabled by config. ignoring cron')
@@ -980,7 +984,7 @@ def get_bh_balance():
 def replenish_bh_cards_endpoint():
     """buy additional cards from blackhawk if below threshold"""
     if not config.DEBUG:
-        limit_to_local_host()
+        limit_to_acl()
 
     from .blackhawk import replenish_bh_cards, refresh_bh_auth_token
     if not config.BLACKHAWK_PURCHASES_ENABLED:
@@ -1000,7 +1004,7 @@ def replenish_bh_cards_endpoint():
 @app.route('/task/results', methods=['POST'])
 def post_task_results_endpoint():
     """an endpoint that can be used to return task results for bi"""
-    limit_to_password()
+    limit_to_acl()
 
     try:
         payload = request.get_json(silent=True)
@@ -1017,7 +1021,7 @@ def post_task_results_endpoint():
 @app.route('/user/report', methods=['POST'])
 def user_report_endpoint():
     """returns a summary of the user's data"""
-    limit_to_password()
+    limit_to_acl()
 
     try:
         payload = request.get_json(silent=True)
@@ -1045,7 +1049,7 @@ def user_report_endpoint():
 @app.route('/auth/retarget', methods=['POST'])
 def retarget_auth_endpoint():
     """re-send auth push tokens for users that have not answered"""
-    limit_to_local_host()
+    limit_to_acl()
 
     user_ids = generate_retarget_list()
     print('re-sending auth token to %s users' % len(user_ids))
@@ -1236,7 +1240,7 @@ def deauth_users_endpoint():
 @app.route('/users/push_register', methods=['POST'])
 def push_register_endpoint():
     """ask a set of userids to re-register via push"""
-    limit_to_password()
+    limit_to_acl()
 
     try:
         payload = request.get_json(silent=True)
@@ -1254,7 +1258,7 @@ def push_register_endpoint():
 @app.route('/user/skip_wait', methods=['POST'])
 def skip_wait_endpoint():
     """sets the next task's timestamp to the past for the given user"""
-    limit_to_password()
+    limit_to_acl()
     print('headers:%s' % request.headers)
     try:
         payload = request.get_json(silent=True)
