@@ -738,7 +738,7 @@ def nuke_user_data(phone_number, nuke_all = False):
         db.engine.execute("delete from public.transaction where user_id='%s'" % (user_id))
         db.engine.execute("delete from public.user_task_results where user_id='%s'" % (user_id))
         db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\'' % (user_id))
-    return user_ids if len(user_ids)>0 else None
+    return user_ids if len(user_ids) > 0 else None
 
 
 def get_user_config(user_id):
@@ -772,7 +772,7 @@ def get_user_report(user_id):
         user_report['os'] = user.os_type
         user_report['app_ver'] = user_app_data.app_ver
         user_report['device_model'] = user.device_model
-        user_report['enc_phone_number'] = user.enc_phone_number
+        user_report['phone_number'] = app.encryption.decrypt(user.enc_phone_number)
         user_report['push_token'] = user.push_token
         user_report['time_zone'] = user.time_zone
         user_report['device_id'] = user.device_id
