@@ -36,7 +36,7 @@ P2P_MIN_TASKS = 1
 P2P_MIN_KIN_AMOUNT = 300
 P2P_MAX_KIN_AMOUNT = 12500
 
-TOS_URL = 'https://www.beta.kinitapp.com/terms-and-privacy-policy'
+TOS_URL = 'http://www.kinitapp.com/terms-and-privacy-policy'
 FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/kin-app-server/service-account.json'
 
 
