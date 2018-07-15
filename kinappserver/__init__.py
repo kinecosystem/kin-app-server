@@ -55,7 +55,8 @@ print('the current KIN balance on the base-seed: %s' % stellar.get_kin_balance(K
 print('the current XLM balance on the base-seed: %s' % stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode()))
 
 for channel in channel_seeds:
-    print('the current XLM balance on channel (%s): %s' % (channel, stellar.get_xlm_balance(Keypair.from_seed(channel).address().decode())))
+    address = Keypair.from_seed(channel).address().decode()
+    print('the current XLM balance on channel (%s): %s' % (address, stellar.get_xlm_balance(address)))
 
 # init encryption util
 key, iv = ssm.get_encrpytion_creds()
