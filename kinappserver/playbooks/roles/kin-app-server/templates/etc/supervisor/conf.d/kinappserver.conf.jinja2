@@ -7,4 +7,5 @@ stderr_logfile=/var/log/kinappserver.err.log
 stdout_logfile=/var/log/kinappserver.out.log
 environment=
     FLASK_APP=kinappserver,
-    ENV={{ deployment_env }}
+    ENV={{ deployment_env }},
+    STELLAR_ACCOUNT_SID={{ play_hosts.index(inventory_hostname) }}

@@ -40,8 +40,12 @@ def get_truex_creds(force_prod=False):
 def get_stellar_credentials():
     # get credentials from ssm. the base_seed is required, the channel-seeds are optional
     env = os.environ.get('ENV', 'test')
-    base_seed = get_ssm_parameter('/config/' + env + '/stellar/base-seed', config.KMS_KEY_AWS_REGION)
-    channel_seeds = get_ssm_parameter('/config/' + env + '/stellar/channel-seeds', config.KMS_KEY_AWS_REGION)
+    account_sid = os.environ.get('STELLAR_ACCOUNT_SID', None)
+    
+    if env == 'TEST':
+        account_sid = '0'  # for tests, always use 0
+    base_seed = get_ssm_parameter('/config/' + env + '/stellar/account_sid_%s/base-seed' % account_sid, config.KMS_KEY_AWS_REGION)
+    channel_seeds = get_ssm_parameter('/config/' + env + '/stellar/account_sid_%s/channel-seeds' % account_sid, config.KMS_KEY_AWS_REGION)
 
     if base_seed is None:
         print('cant get base_seed, aborting')

@@ -7,8 +7,9 @@
 
   vars:
    deployment_env: stage
-   environment_config:
+   environment_config: # only sets the console env, not the app context. to set the context, edit supervisor's config
      ENV: stage
+     STELLAR_ACCOUNT_SID: "{{ play_hosts.index(inventory_hostname) }}" # sets the host's index within the play
    debug: True
    nginx_domain: stage.kinitapp.com
    db_connstr: "postgresql://{{lookup('aws_ssm', '/config/stage/sql/userpassword')}}@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage"

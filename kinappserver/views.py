@@ -1270,7 +1270,6 @@ def skip_wait_endpoint():
     limit_to_acl()
     limit_to_password()
 
-    print('headers:%s' % request.headers)
     try:
         payload = request.get_json(silent=True)
         user_id = payload.get('user_id', None)

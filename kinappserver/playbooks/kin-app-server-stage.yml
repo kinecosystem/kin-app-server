@@ -11,6 +11,7 @@
    deployment_env: stage
    environment_config:
      ENV: stage
+     STELLAR_ACCOUNT_SID: "{{ play_hosts.index(inventory_hostname) }}" # sets the host's index within the play
    datadog_config:
      log_level: INFO
    datadog_api_key: "{{ lookup('aws_ssm', '/config/stage/datadog/apikey' )}}"
