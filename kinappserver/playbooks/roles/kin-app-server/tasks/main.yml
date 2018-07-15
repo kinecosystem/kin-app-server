@@ -97,6 +97,11 @@
     # needs to run on all machines
 
 - cron:
+    name: "gather periodic xlm,kin balance"
+    job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/track_balance.py"
+    # needs to run on all machines
+
+- cron:
     name: "gather periodic data about missing txs"
     job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/missing_txs.py"
   run_once: true # runs every minute, on one machine of the 2
