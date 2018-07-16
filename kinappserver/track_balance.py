@@ -19,6 +19,12 @@ def report_balance():
     metric = 'base-seed-xlm'
     statsd.gauge('kinitapp.%s.%s.%s' % (os.environ['ENV'], hostname, metric), base_seed_xlm)
 
+    for index in range(10):
+        metric = 'channel-seed-%s-xlm' % index
+        channel_xlm = json.loads(response.text)['balance']['channel_seeds'].get(str(index), None)
+        if channel_xlm:
+            statsd.gauge('kinitapp.%s.%s.%s' % (os.environ['ENV'], hostname, metric), int(channel_xlm['xlm']))
+
     return True
 
 
