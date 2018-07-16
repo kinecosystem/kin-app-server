@@ -1,5 +1,4 @@
 - hosts: all
-  serial: 50%
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
   roles:
