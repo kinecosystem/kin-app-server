@@ -12,7 +12,7 @@
     git_rev: e153ed6
     datadog_api_key: "{{ lookup('aws_ssm', '/config/prod/datadog/apikey' )}}"
     datadog_config:
-      tags: "service:kin-app-eshu-backend"
+      tags: "service:kin-app-eshu-backend-prod"
     env: PROD
     target_name: eshu-backend
     log_level: debug

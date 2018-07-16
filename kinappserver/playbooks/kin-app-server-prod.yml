@@ -15,6 +15,7 @@
    datadog_api_key: "{{ lookup('aws_ssm', '/config/prod/datadog/apikey' )}}"
    datadog_config:
      log_level: INFO
+     tags: "service:kin-app-server-prod"
    debug: False
    nginx_domain: api.kinitapp.com
    db_connstr: "postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"

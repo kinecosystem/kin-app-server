@@ -11,7 +11,7 @@
     git_rev: e153ed6
     datadog_api_key: "{{ lookup('aws_ssm', '/config/stage/datadog/apikey' )}}"
     datadog_config:
-      tags: "service:eshu-backend"
+      tags: "service:eshu-backend-stage"
     env: STAGE
     target_name: eshu-backend
     log_level: debug

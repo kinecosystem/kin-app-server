@@ -13,6 +13,7 @@
      ENV: stage2
    datadog_config:
      log_level: INFO
+     tags: "service:kin-app-server-stage"
    datadog_api_key: "{{ lookup('aws_ssm', '/config/stage/datadog/apikey' )}}"
    debug: True
    nginx_domain: stage2.kinitapp.com
