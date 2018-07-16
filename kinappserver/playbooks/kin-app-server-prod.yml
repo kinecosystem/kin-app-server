@@ -1,4 +1,5 @@
 - hosts: all
+  serial: 50%
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
   roles:
@@ -52,3 +53,10 @@
      - { alias: '_log', command: 'cat /var/log/kinappserver.err.log' }
      - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
      - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"}
+
+# setup cron stuff. needs to run in a different play because it uses "run_once"
+- hosts: all
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: true
+  roles:
+    - kin-app-server-cron
