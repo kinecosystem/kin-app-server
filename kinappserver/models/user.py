@@ -754,6 +754,8 @@ def get_user_config(user_id):
         elif len(user_app_data.completed_tasks) < config.P2P_MIN_TASKS:
             global_config['p2p_enabled'] = False
 
+    print('user config for %s: %s' % (user_id, global_config))
+
     return global_config
 
 
