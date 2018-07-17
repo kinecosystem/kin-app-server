@@ -23,8 +23,8 @@
    redis_port: 6379
    eshu_username: admin
    eshu_password: admin
-   eshu_exchange: eshu-exchange
-   eshu_queue: eshu-queue
+   eshu_exchange: eshu-exchange # this is postfixed in the code with 'beta/release'
+   eshu_queue: eshu-queue # this is postfixed in the code with 'beta/release'
    eshu_virtual_host: kinapp
    eshu_appid: kinapp
    eshu_rabbit_address: eshu-rabbit-prod.kinitapp.com
