@@ -2,10 +2,10 @@
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
   roles:
-    - franklinkim.environment
-    - Datadog.datadog
+    #- franklinkim.environment
+    #- Datadog.datadog
     - kin-app-server
-    - igor_mukhin.bash_aliases
+    #- igor_mukhin.bash_aliases
 
   vars:
    deployment_env: prod
@@ -53,8 +53,8 @@
      - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
      - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"}
 
-# setup cron stuff. needs to run in a different play because it uses "run_once"
-- hosts: all
+# setup cron stuff that needs to run only on kin-app-server-prod-1
+- hosts: kin-app-server-prod-1
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
   roles:

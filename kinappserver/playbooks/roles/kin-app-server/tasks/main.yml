@@ -1,3 +1,17 @@
+- name: "reboot server 1"
+  when: inventory_hostname == "kin-app-server-prod-1"
+  cron:
+    name: "periodically reboot server"
+    job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/helpers/reboot_server.py"
+    minute: "*/30" # run every 30 minutes on all machines with a 10 minutes offset
+
+- name: "reboot server 2"
+  when: inventory_hostname == "kin-app-server-prod-2"
+  cron:
+    name: "periodically reboot server"
+    job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/helpers/reboot_server.py"
+    minute: "*/39" # run every 39 minutes on all machines with a 10 minutes offset
+
 - name: Run "apt-get update"
   apt:
     update_cache: yes
@@ -85,3 +99,20 @@
   service:
     name: nginx
     state: restarted
+
+# all the cron tasks that need to run on all machines:
+# (for those that need to run on just one, see the kin-app-server-cron role)
+- cron:
+    name: "gather periodic db-stats"
+    job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/db_stats.py"
+    # needs to run on all machines
+
+- cron:
+    name: "gather periodic xlm,kin balance"
+    job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/track_balance.py"
+    # needs to run on all machines
+
+- cron:
+    name: "periodically track exceptions in the log"
+    job: "/opt/kin-app-server/kinappserver/cron/track_exceptions.sh"
+    minute: "*/5" # run every 5 minutes on all machines
