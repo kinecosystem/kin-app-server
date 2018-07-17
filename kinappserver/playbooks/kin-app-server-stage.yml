@@ -29,7 +29,7 @@
    eshu_appid: kinapp
    eshu_rabbit_address: 10.0.1.20
    stellar_timeout_sec: 10
-   stellar_initial_account_balance: 10
+   stellar_initial_account_balance: 1
    stellar_network: 'Kin Playground Network ; June 2018'
    stellar_kin_issuer_address: GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7
    stellar_horizon_url: https://horizon-playground.kininfrastructure.com
