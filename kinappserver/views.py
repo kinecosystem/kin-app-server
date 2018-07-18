@@ -554,8 +554,14 @@ def register_api():
         package_id = payload.get('package_id', None)
         if None in (user_id, os, device_model, time_zone, app_ver):  # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
+
         if os not in (utils.OS_ANDROID, utils.OS_IOS):
             raise InvalidUsage('bad-request')
+
+        if 'Genymotion'.upper() in device_model.upper(): # block android emulator
+            print('refusing to register Genymotion devices. user_id %s' % user_id)
+            raise InvalidUsage('bad-request')
+
         user_id = UUID(user_id)  # throws exception on invalid uuid
     except Exception as e:
         raise InvalidUsage('bad-request')

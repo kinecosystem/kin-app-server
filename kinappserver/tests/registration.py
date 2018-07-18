@@ -28,12 +28,13 @@ class Tester(unittest.TestCase):
         """test registration scenarios"""
 
         # android
+        long_device_model = 'fjslkfjogihojfskfdobnovkvmlsgjhsfs;lfks;lfks;lfks;lfs;dlfs;dlfs;flksd;fowifjwpfmpwgeogtbpwlvwrgmoerijghpewgvwpovm'
         userid = str(uuid.uuid4())
         resp = self.app.post('/user/register',
             data=json.dumps({
                             'user_id': str(userid),
                             'os': 'android',
-                            'device_model': 'samsung8',
+                            'device_model': long_device_model,
                             'device_id': '234234',
                             'time_zone': '05:00',
                             'token': 'fake_token',
@@ -45,7 +46,7 @@ class Tester(unittest.TestCase):
         users = models.list_all_users()
         assert(users[userid]['onboarded'] == False)
         assert(users[userid]['os'] == 'android')
-        assert(users[userid]['device_model'] == 'samsung8')
+        assert(users[userid]['device_model'] == long_device_model[:40]) # trimmed to fit
         assert(users[userid]['device_id'] == '234234')
         assert(users[userid]['time_zone'] == int('5'))
         assert(users[userid]['push_token'] == 'fake_token')

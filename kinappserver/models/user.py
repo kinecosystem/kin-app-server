@@ -9,7 +9,7 @@ from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, s
 
 DEFAULT_TIME_ZONE = -4
 KINIT_IOS_PACKAGE_ID_PROD = 'org.kinecosystem.kinit'  # AKA bundle id
-
+DEVICE_MODEL_MAX_SIZE = 40
 
 class User(db.Model):
     """
@@ -18,7 +18,7 @@ class User(db.Model):
     sid = db.Column(db.Integer(), db.Sequence('sid', start=1, increment=1), primary_key=False)
     user_id = db.Column(UUIDType(binary=False), primary_key=True, nullable=False)
     os_type = db.Column(db.String(10), primary_key=False, nullable=False)
-    device_model = db.Column(db.String(40), primary_key=False, nullable=False)
+    device_model = db.Column(db.String(DEVICE_MODEL_MAX_SIZE), primary_key=False, nullable=False)
     push_token = db.Column(db.String(200), primary_key=False, nullable=True)
     time_zone = db.Column(db.Integer(), primary_key=False, nullable=False)
     device_id = db.Column(db.String(40), primary_key=False, nullable=True)
@@ -106,7 +106,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
 
     user.user_id = user_id
     user.os_type = os_type
-    user.device_model = device_model
+    user.device_model = device_model[:DEVICE_MODEL_MAX_SIZE]
     user.push_token = push_token
     user.time_zone = parse_timezone(time_zone)
     user.device_id = device_id
