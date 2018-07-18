@@ -85,20 +85,23 @@
     name: kinappserver
     state: present
 
-- name: restart supervisor
-  supervisorctl:
-    name: kinappserver
-    state: restarted  
-
 - name: template the nginx config file
   template:
     src: templates/etc/nginx/sites-enabled/kinappserver
     dest: /etc/nginx/sites-enabled/kinappserver
 
-- name: service nginx restart
-  service:
-    name: nginx
-    state: restarted
+# there's a dedicated play for restarting supervisor and nginx
+# which remvoves the servers from the load-balancer and does it one-by-one.
+
+#- name: restart supervisor
+#  supervisorctl:
+#    name: kinappserver
+#    state: restarted
+
+#- name: service nginx restart
+#  service:
+#    name: nginx
+#    state: restarted
 
 # all the cron tasks that need to run on all machines:
 # (for those that need to run on just one, see the kin-app-server-cron role)

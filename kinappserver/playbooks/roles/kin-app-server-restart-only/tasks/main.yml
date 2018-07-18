@@ -1,4 +1,10 @@
 - name: restart supervisor
   supervisorctl:
     name: kinappserver
-    state: restarted  
+    state: restarted
+
+
+- name: service nginx restart
+  service:
+    name: nginx
+    state: restarted
