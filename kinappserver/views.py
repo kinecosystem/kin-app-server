@@ -49,7 +49,8 @@ def limit_to_acl():
 
 def limit_to_password():
     """ensure the request came with the expected security password"""
-    if request.headers.get('X-Password', '') == ssm.get_security_password():
+    password = request.headers.get('X-Password', '')
+    if password in ssm.get_security_passwords():
         pass
     else:
         abort(403)  # Forbidden
@@ -1267,7 +1268,7 @@ def push_register_endpoint():
 @app.route('/user/skip_wait', methods=['POST'])
 def skip_wait_endpoint():
     """sets the next task's timestamp to the past for the given user"""
-    limit_to_acl()
+    #limit_to_acl() temporarly disable acl for this request
     limit_to_password()
 
     try:

@@ -101,8 +101,15 @@ def get_ssm_parameter(param_name, kms_key_region):
         return None
 
 
-def get_security_password():
+def get_security_passwords():
     """returns the kinit security password from ssm"""
+    passwords = []
     env = os.environ.get('ENV', 'test')
-    password =  get_ssm_parameter('/config/' + env + '/misc/password', config.KMS_KEY_AWS_REGION)
-    return password
+    password = get_ssm_parameter('/config/' + env + '/misc/password', config.KMS_KEY_AWS_REGION)
+    password2 = get_ssm_parameter('/config/' + env + '/misc/password2', config.KMS_KEY_AWS_REGION)
+
+    for item in [password, password2]:
+        if item:
+            passwords.append(item)
+
+    return passwords
