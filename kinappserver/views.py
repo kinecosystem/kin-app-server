@@ -1293,7 +1293,7 @@ def skip_wait_endpoint():
 
 
 @app.route('/users/tweak_tz', methods=['GET'])
-def skip_wait_endpoint():
+def tweak_tz_endpoint():
     """get a json dict of all the relevant users with their next ts"""
     limit_to_acl()
     return jsonify(list=generate_tz_tweak_list())

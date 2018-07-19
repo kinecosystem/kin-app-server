@@ -804,6 +804,7 @@ def generate_tz_tweak_list():
     d = {}
     users = User.query.all()
     for user in users:
+        user_id = str(user.user_id)
         if user.deactivated:
             continue
         if user.time_zone != 0:
@@ -813,6 +814,6 @@ def generate_tz_tweak_list():
         if user.push_token is None:
             continue
 
-        user_app_data = get_user_app_data(user.user_id)
-        d[user.user_id] = user_app_data.next_task_ts
+        user_app_data = get_user_app_data(user_id)
+        d[user_id] = user_app_data.next_task_ts
     return d
