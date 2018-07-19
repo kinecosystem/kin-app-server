@@ -3,14 +3,14 @@
   cron:
     name: "periodically reboot server"
     job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/helpers/reboot_server.py"
-    minute: "*/30" # run every 30 minutes on all machines with a 10 minutes offset
+    minute: "*/13" # run every 30 minutes on all machines with a 10 minutes offset
 
 - name: "reboot server 2"
   when: inventory_hostname == "kin-app-server-prod-2"
   cron:
     name: "periodically reboot server"
     job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/helpers/reboot_server.py"
-    minute: "*/39" # run every 39 minutes on all machines with a 10 minutes offset
+    minute: "*/17" # run every 39 minutes on all machines with a 10 minutes offset
 
 - name: Run "apt-get update"
   apt:
