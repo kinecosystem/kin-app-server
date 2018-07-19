@@ -798,3 +798,21 @@ def get_user_report(user_id):
     except Exception as e:
         print('caught exception in get_user_report:%s' % e)
     return user_report
+
+
+def generate_tz_tweak_list():
+    d = {}
+    users = User.query.all()
+    for user in users:
+        if user.deactivated:
+            continue
+        if user.time_zone != 0:
+            continue
+        if user.enc_phone_number is None:
+            continue
+        if user.push_token is None:
+            continue
+
+        user_app_data = get_user_app_data(user.user_id)
+        d[user.user_id] = user_app_data.next_task_ts
+    return d
