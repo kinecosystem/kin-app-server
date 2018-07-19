@@ -1274,18 +1274,19 @@ def push_register_endpoint():
 @app.route('/user/skip_wait', methods=['POST'])
 def skip_wait_endpoint():
     """sets the next task's timestamp to the past for the given user"""
-    #limit_to_acl() temporarly disable acl for this request
+    #limit_to_acl() temporarily disable acl for this request
     limit_to_password()
 
     try:
         payload = request.get_json(silent=True)
         user_id = payload.get('user_id', None)
+        next_ts = payload.get('next_ts', 1)  # optional
         if user_id is None:
             raise InvalidUsage('bad-request')
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
     else:
-        store_next_task_results_ts(user_id, 1)
+        store_next_task_results_ts(user_id, next_ts)
 
     return jsonify(status='ok')
