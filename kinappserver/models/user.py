@@ -107,7 +107,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user.user_id = user_id
     user.os_type = os_type
     user.device_model = device_model[:DEVICE_MODEL_MAX_SIZE]
-    user.push_token = push_token
+    user.push_token = push_token if push_token is not None else user.push_token
     user.time_zone = parse_timezone(time_zone)
     user.device_id = device_id
     user.auth_token = uuid4() if not user.auth_token else user.auth_token
