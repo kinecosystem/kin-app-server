@@ -1,10 +1,11 @@
 [program:kinappserver]
 directory=/opt/kin-app-server/kinappserver
-command=uwsgi --socket 0.0.0.0:8000 --protocol=http -w wsgi --enable-threads
+command=uwsgi --socket 0.0.0.0:8000 --protocol=http --master --workers 3 -w wsgi --enable-threads
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/kinappserver.err.log
 stdout_logfile=/var/log/kinappserver.out.log
+stopasgroup=true
 environment=
     FLASK_APP=kinappserver,
     ENV={{ deployment_env }},
