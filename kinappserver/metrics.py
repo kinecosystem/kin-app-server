@@ -36,5 +36,20 @@ def report_bh_balance():
     statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric), balance)
 
 
+def report_unauthed_user_count():
+    """tracks the current number of unauthed users"""
+    count = -1
+    response = requests.get(URL_PREFIX + '/users/unauthed')
+    try:
+        count = len(json.loads(response.text)['user_ids'])
+    except Exception as e:
+        print('cant collect unauthed user count')
+        pass
+
+    metric = 'unauthed_user_count'
+    statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric), count)
+
+
 report_inventory()
 report_bh_balance()
+report_unauthed_user_count()

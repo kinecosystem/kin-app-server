@@ -25,7 +25,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list
+    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list, get_unauthed_users
 
 
 def limit_to_localhost():
@@ -1250,6 +1250,14 @@ def deauth_users_endpoint():
 
     scan_for_deauthed_users()
     return jsonify(status='ok')
+
+
+@app.route('/users/unauthed', methods=['GET'])
+def users_unauthed_endpoint():
+    """get the list of userids that are not authenticated"""
+    if not config.DEBUG:
+        limit_to_localhost()
+    return jsonify(user_ids=get_unauthed_users())
 
 
 @app.route('/users/push_register', methods=['POST'])
