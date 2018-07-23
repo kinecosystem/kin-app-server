@@ -1289,6 +1289,7 @@ def skip_wait_endpoint():
     else:
         store_next_task_results_ts(user_id, next_ts)
 
+    increment_metric('skip-wait')
     return jsonify(status='ok')
 
 
