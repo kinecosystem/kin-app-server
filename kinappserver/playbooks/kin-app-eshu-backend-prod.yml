@@ -1,7 +1,7 @@
 - hosts: all
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
-  serial: "50%"
+  # do not play this serially as it will fuck the STELLAR_ACCOUNT_SID number
 
   roles:
     - eshu-backend
