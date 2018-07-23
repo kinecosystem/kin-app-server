@@ -789,6 +789,7 @@ def get_user_report(user_id):
         user_report['auth_token']['sent_date'] = str(push_token_entry.send_date)
         user_report['auth_token']['ack_data'] = str(push_token_entry.ack_date)
         user_report['auth_token']['authenticated'] = str(push_token_entry.authenticated)
+        user_report['auth_token']['token'] = str(push_token_entry.auth_token)
         user_report['package_id'] = str(user.package_id)
         user_report['screen_w'] = user.screen_w
         user_report['screen_h'] = user.screen_h
