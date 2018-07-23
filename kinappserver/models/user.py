@@ -823,7 +823,6 @@ def get_unauthed_users():
     l = []
     results = db.engine.execute("select * from public.user, push_auth_token where public.user.user_id=push_auth_token.user_id and push_auth_token.authenticated=false and push_auth_token.send_date is not null and public.user.deactivated=false and public.user.enc_phone_number is not null;")
     res = results.fetchall()
-    print(res)
     for item in res:
         l.append(str(item.user_id))
 

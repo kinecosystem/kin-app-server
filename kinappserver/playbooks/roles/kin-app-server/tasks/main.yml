@@ -74,6 +74,11 @@
     name: /opt/kin-app-server
     state: latest
 
+- name: delete previous supervisord config
+  file:
+    state: absent
+    path: /etc/supervisor/conf.d/kinappserver.conf
+
 - name: template the supervisord config file
   template:
     src: "{{ role_path }}/templates/etc/supervisor/conf.d/kinappserver.conf.jinja2"
