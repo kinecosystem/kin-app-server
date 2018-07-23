@@ -206,11 +206,22 @@ def update_token_api():
         print(e)
         raise InvalidUsage('bad-request')
 
-    print('updating token for user %s' % user_id)
-    update_user_token(user_id, token)
+    lock = redis_lock.Lock(app.redis, 'update_token:%s' % user_id)
+    if lock.acquire(blocking=False):
+        try:
+            print('updating token for user %s' % user_id)
+            update_user_token(user_id, token)
 
-    # send auth token now that we have push token
-    send_push_auth_token(user_id)
+            # send auth token now that we have push token
+            send_push_auth_token(user_id)
+        except Exception as e:
+            print('exception trying to update token for user_id %s' % user_id)
+            return jsonify(status='error'), status.HTTP_400_BAD_REQUEST
+        finally:
+            lock.release()
+
+    else:
+        print('already updating token for user %s. ignoring request' % user_id)
 
     return jsonify(status='ok')
 
