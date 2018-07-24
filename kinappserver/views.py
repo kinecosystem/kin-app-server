@@ -812,8 +812,8 @@ def release_unclaimed_api():
 @app.route('/engagement/send', methods=['GET'])
 def send_engagemnt_api():
     """endpoint used to send engagement push notifications to users by scheme. password protected"""
-    limit_to_acl()
-    limit_to_password()
+    if not config.DEBUG:
+        limit_to_localhost()
 
     args = request.args
     scheme = args.get('scheme')
