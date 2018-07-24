@@ -25,7 +25,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list, get_unauthed_users
+    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list, get_unauthed_users, get_all_user_id_by_phone
 
 
 def limit_to_localhost():
@@ -1063,7 +1063,9 @@ def user_report_endpoint():
     try:
         payload = request.get_json(silent=True)
         user_id = payload.get('user_id', None)
-        if user_id is None:
+        user_phone = payload.get('phone', None)
+        if (user_id is None and user_phone is None) or (user_id is not None and user_phone is not None):
+            print('user_report_endpoint: userid %s, user_phone %s' % (user_id, user_phone))
             raise InvalidUsage('bad-request')
     except Exception as e:
         print(e)
@@ -1071,16 +1073,26 @@ def user_report_endpoint():
 
     # sanitize user_id:
     try:
-        UUID(user_id)
+        if user_id:
+            UUID(user_id)
     except Exception as e:
         print('cant generate report for user_id: %s ' % user_id)
         return jsonify(error='invalid_userid')
 
-    if not user_exists(user_id):
-        print('user_report_endpoint: user_id %s does not exist. aborting' % user_id)
-        return jsonify(erorr='no_such_user')
+    if user_id:
+        if not user_exists(user_id):
+            print('user_report_endpoint: user_id %s does not exist. aborting' % user_id)
+            return jsonify(erorr='no_such_user')
+        else:
+            return jsonify(report=[get_user_report(user_id)])
 
-    return jsonify(report=get_user_report(user_id))
+    else: # user_phone
+        user_ids = get_all_user_id_by_phone(user_phone) # there may be a few users with this phone
+        if not user_ids:
+            print('user_report_endpoint: user_phone %s does not exist. aborting' % user_phone)
+            return jsonify(erorr='no_such_phone')
+        else:
+            return jsonify(report=[get_user_report(user_id) for user_id in user_ids])
 
 
 @app.route('/truex/activity', methods=['GET'])
