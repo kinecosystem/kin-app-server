@@ -867,6 +867,7 @@ def report_p2p_tx_api():
     res, tx_dict = add_p2p_tx(tx_hash, sender_id, destination_address, amount)
     if res:
         # send back the dict with the tx details
+        increment_metric('p2p-tx-added')
         return jsonify(status='ok', tx=tx_dict)
     else:
         raise InvalidUsage('failed to add p2ptx')
