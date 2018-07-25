@@ -832,10 +832,13 @@ def send_engagemnt_api():
         print('send_engagement_api - dry_run - not sending push')
     else:
         print('sending push ios %d tokens' % len(user_ids[utils.OS_IOS]))
+        import time
         for user_id in user_ids[utils.OS_IOS]:
+            time.sleep(2) # hack to slow down push-sending as it kills the server
             send_engagement_push(user_id, scheme)
         print('sending push android %d tokens' % len(user_ids[utils.OS_ANDROID]))
         for user_id in user_ids[utils.OS_ANDROID]:
+            time.sleep(2) # hack to slow down push-sending as it kills the server
             send_engagement_push(user_id, scheme)
 
     return jsonify(status='ok')
