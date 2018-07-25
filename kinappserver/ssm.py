@@ -40,7 +40,6 @@ def get_truex_creds(force_prod=False):
 def get_stellar_credentials():
     # get credentials from ssm. the base_seed is required, the channel-seeds are optional
     env = os.environ.get('ENV', 'test')
-    print('env: %s' % env)
     account_sid = os.environ.get('STELLAR_ACCOUNT_SID', None)
     
     if env.upper()== 'TEST':

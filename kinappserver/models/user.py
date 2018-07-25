@@ -678,6 +678,40 @@ def get_associated_user_ids(user_id):
 
 
 def find_missing_txs():
+    """get the list of missing txs - users that have submitted tasks but have no correlating txs"""
+    missing_txs = []
+    users = User.query.all()
+    distinct_phone_numbers = list(set([user.enc_phone_number for user in users]))
+
+    compensated_task_ids_query = '''select t2.tx_info->>'task_id' as task_id from public.user t1 inner join transaction t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
+    completed_task_ids_query = '''select t2.task_id from public.user t1 inner join user_task_results t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
+
+    for number in distinct_phone_numbers:
+        if not number:
+            continue
+
+        compensated_tasks = []
+        results = db.engine.execute(compensated_task_ids_query % number)
+        res = results.fetchall()
+        for item in res:
+            compensated_tasks.append(str(item))
+
+        completed = []
+        results = db.engine.execute(completed_task_ids_query % number)
+        res = results.fetchall()
+        for item in res:
+            completed.append(str(item))
+
+        uncompensated = set(completed) - set(compensated_tasks)
+        print('found uncompensated tasks: %s for number %s' % (uncompensated, number))
+
+        for item in uncompensated:
+            missing_txs.append({'enc_phone_number': number, 'task_id': item})
+
+    return missing_txs
+
+
+def find_missing_txs2():
     users = User.query.all()
     missing_txs = []
     num_missing_txs_by_user = {}
