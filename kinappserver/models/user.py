@@ -561,6 +561,18 @@ def get_active_user_id_by_phone(phone_number):
         raise
 
 
+def get_active_user_id_by_enc_phone(enc_phone_number):
+    try:
+        user = User.query.filter_by(enc_phone_number=enc_phone_number).filter_by(deactivated=False).first()
+        if user is None:
+            return None
+        else:
+            return user.user_id  # can be None
+    except Exception as e:
+        print('cant get user address by enc phone. Exception: %s' % e)
+        raise
+
+
 def get_enc_phone_number_by_user_id(user_id):
     try:
         user = User.query.filter_by(user_id=user_id).filter_by(deactivated=False).first()
@@ -681,32 +693,33 @@ def find_missing_txs():
     """get the list of missing txs - users that have submitted tasks but have no correlating txs"""
     missing_txs = []
     users = User.query.all()
-    distinct_phone_numbers = list(set([user.enc_phone_number for user in users]))
+    distinct_enc_phone_numbers = list(set([user.enc_phone_number for user in users]))
 
     compensated_task_ids_query = '''select t2.tx_info->>'task_id' as task_id from public.user t1 inner join transaction t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
     completed_task_ids_query = '''select t2.task_id from public.user t1 inner join user_task_results t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
 
-    for number in distinct_phone_numbers:
-        if not number:
+    for enc_number in distinct_enc_phone_numbers:
+        if not enc_number:
             continue
 
         compensated_tasks = []
-        results = db.engine.execute(compensated_task_ids_query % number)
+        results = db.engine.execute(compensated_task_ids_query % enc_number)
         res = results.fetchall()
         for item in res:
             compensated_tasks.append(str(item))
 
         completed = []
-        results = db.engine.execute(completed_task_ids_query % number)
+        results = db.engine.execute(completed_task_ids_query % enc_number)
         res = results.fetchall()
         for item in res:
             completed.append(str(item))
 
-        uncompensated = set(completed) - set(compensated_tasks)
-        print('found uncompensated tasks: %s for number %s' % (uncompensated, number))
+        uncompensated = list(set(completed) - set(compensated_tasks))
+        if len(uncompensated) != 0:
+            print('found uncompensated tasks: %s for number %s' % (uncompensated, enc_number))
 
         for item in uncompensated:
-            missing_txs.append({'enc_phone_number': number, 'task_id': item})
+            missing_txs.append({'active_user_id': get_active_user_id_by_enc_phone(enc_number), 'task_id': item})
 
     return missing_txs
 
