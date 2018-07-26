@@ -809,8 +809,44 @@ def release_unclaimed_api():
     return jsonify(status='ok', released=released)
 
 
-@app.route('/engagement/send', methods=['GET'])
-def send_engagemnt_api():
+@app.route('/engagement/list', methods=['GET'])
+def get_engagement_list_api():
+    """"""
+    limit_to_acl()
+
+    args = request.args
+    scheme = args.get('scheme')
+    if scheme is None:
+        raise InvalidUsage('invalid param')
+
+    dry_run = args.get('dryrun', 'True') == 'True'
+
+    user_ids = get_users_for_engagement_push(scheme)
+    if scheme is None:
+        raise InvalidUsage('invalid scheme')
+
+    print('gathered %d ios user_ids and %d gcm user_ids for scheme: %s, dry-run:%s' % (len(user_ids[utils.OS_IOS]), len(user_ids[utils.OS_ANDROID]), scheme, dry_run))
+    return jsonify(status='ok', user_ids=user_ids)
+
+
+@app.route('/engagement/push', methods=['POST'])
+def push_engagement_api():
+    """"""
+    payload = request.get_json(silent=True)
+    scheme = payload.get('scheme', None)
+    user_id = payload.get('user_id', None)
+
+    if None in (scheme, user_id):
+        print('invalid request')
+        raise InvalidUsage('invalid param')
+
+    send_engagement_push(user_id, scheme)
+    return jsonify(status='ok')
+
+
+@app.route('/engagement/send', methods=['POST'])
+def send_engagement_api():
+    return # disabled
     """endpoint used to send engagement push notifications to users by scheme. password protected"""
     if not config.DEBUG:
         limit_to_localhost()
