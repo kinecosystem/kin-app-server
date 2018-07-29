@@ -10,7 +10,7 @@ STELLAR_KIN_ISSUER_ADDRESS = 'GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLEL
 
 
 def make_payment(address, amount):
-    sdk = kin.SDK(horizon_endpoint_uri='https://horizon-testnet.stellar.org/', network='TESTNET', secret_key=get_ssm_parameter('/config/stage/stellar/base-seed'))
+    sdk = kin.SDK(horizon_endpoint_uri='https://horizon-playground.kininfrastructure.com', network='Kin Playground Network ; June 2018', secret_key=get_ssm_parameter('/config/stage/stellar/base-seed'))
     tx_hash = sdk.send_kin(address, amount, memo_text='testmemo')
     return tx_hash
 

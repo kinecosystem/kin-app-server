@@ -13,7 +13,7 @@ def start():
     with open('list.json') as f:
         data = json.load(f)
         for item in data['missing_txs']:
-            compensate_user(item[0], item[1], item[2])
+            compensate_user(item['user_id'], item['task_id'], item['reward'])
 
 
 if __name__=='__main__':

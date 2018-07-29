@@ -698,13 +698,13 @@ def find_missing_txs():
         results = db.engine.execute(compensated_task_ids_query % enc_number)  # safe
         res = results.fetchall()
         for item in res:
-            compensated_tasks.append(str(item))
+            compensated_tasks.append(item[0])
 
         completed = []
         results = db.engine.execute(completed_task_ids_query % enc_number)  # safe
         res = results.fetchall()
         for item in res:
-            completed.append(str(item))
+            completed.append(item[0])
 
         uncompensated = list(set(completed) - set(compensated_tasks))
         if len(uncompensated) != 0:

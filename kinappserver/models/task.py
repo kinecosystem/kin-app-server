@@ -311,7 +311,9 @@ def add_task(task_json):
 
 def set_delay_days(delay_days, task_id=None):
     """sets the delay days on all the tasks or optionally on one task"""
-    task_id = int(task_id)  # sanitize input
+    if task_id:  # sanitize input
+        task_id = int(task_id)
+
     where_clause = '' if not task_id else 'where task_id=\'%s\'' % task_id
     db.engine.execute("update task set delay_days=%d %s" % (int(delay_days), where_clause))  # safe
     return True
@@ -321,7 +323,7 @@ def get_reward_for_task(task_id):
     """return the amount of kin reward associated with this task"""
     task = Task.query.filter_by(task_id=task_id).first()
     if not task:
-        raise InternalError('no such task_id')
+        raise InternalError('no such task_id: %s' % task_id)
     return task.price
 
 
@@ -329,7 +331,7 @@ def get_task_delay(task_id):
     """return the amount of delay associated with this task"""
     task = Task.query.filter_by(task_id=task_id).first()
     if not task:
-        raise InternalError('no such task_id')
+        raise InternalError('no such task_id: %s' % task_id)
     return task.delay_days
 
 

@@ -388,6 +388,8 @@ def set_delay_days_api():
     payload = request.get_json(silent=True)
     try:
         delay_days = payload.get('days', None)
+        if delay_days is None:
+            raise InvalidUsage('missing days param')
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
