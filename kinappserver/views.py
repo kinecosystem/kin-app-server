@@ -618,12 +618,13 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
         # send the moneys
         print('calling send_kin: %s, %s' % (public_address, amount))
         tx_hash = send_kin(public_address, amount, memo)
+        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
     except Exception as e:
         print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
+        increment_metric('outgoing_tx_failed')
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
     finally:  # TODO dont do this if we fail with the tx
-        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
-        if send_push:
+        if tx_hash and send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
 
 
