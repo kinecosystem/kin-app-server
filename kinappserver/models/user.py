@@ -711,7 +711,10 @@ def find_missing_txs():
             print('found uncompensated tasks: %s for number %s' % (uncompensated, enc_number))
 
         for item in uncompensated:
-            missing_txs.append({'active_user_id': get_active_user_id_by_enc_phone(enc_number), 'task_id': item})
+            from .task import get_reward_for_task
+            reward = get_reward_for_task(str(item))
+            # get the active user id for the phone number
+            missing_txs.append({'user_id': get_active_user_id_by_enc_phone(enc_number), 'task_id': item, 'reward': reward})
 
     return missing_txs
 
