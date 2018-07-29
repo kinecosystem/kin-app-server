@@ -657,14 +657,6 @@ def deactivate_by_enc_phone_number(enc_phone_number, user_id):
 
             for user_id_to_deactivate in user_ids_to_deactivate:
                 # deactivate and copy task_history
-
-                #connection = db.session.connection()
-                #try:
-                #    rescount = connection.execute("select resource_id,count(resource_id) as total FROM resourcestats")
-                #    # do something
-                #finally:
-                #    connection.close()
-
                 db.engine.execute("update public.user set deactivated=true where enc_phone_number='%s' and user_id='%s'" % (enc_phone_number, user_id_to_deactivate))
                 db.engine.execute("update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(user_id)))
 
@@ -703,13 +695,13 @@ def find_missing_txs():
             continue
 
         compensated_tasks = []
-        results = db.engine.execute(compensated_task_ids_query % enc_number)
+        results = db.engine.execute(compensated_task_ids_query % enc_number)  # safe
         res = results.fetchall()
         for item in res:
             compensated_tasks.append(str(item))
 
         completed = []
-        results = db.engine.execute(completed_task_ids_query % enc_number)
+        results = db.engine.execute(completed_task_ids_query % enc_number)  # safe
         res = results.fetchall()
         for item in res:
             completed.append(str(item))

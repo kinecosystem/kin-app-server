@@ -71,13 +71,15 @@ def list_inventory():
 
 
 def count_total_goods(offer_id):
-    results = db.engine.execute("select count(sid) from good where good.offer_id=\'%s\';" % str(offer_id))
+    offer_id = int(offer_id)  # sanitize input
+    results = db.engine.execute("select count(sid) from good where good.offer_id=\'%s\';" % str(offer_id))  # safe
     return(results.fetchone()[0])    
 
 
 def count_available_goods(offer_id):
     """return the number of available goods for the given offer_id"""
-    results = db.engine.execute("select count(sid) from good where good.offer_id=\'%s\' and good.order_id is NULL;" % str(offer_id))
+    offer_id = int(offer_id)  # sanitize input
+    results = db.engine.execute("select count(sid) from good where good.offer_id=\'%s\' and good.order_id is NULL;" % str(offer_id))  # safe
     return(results.fetchone()[0])
 
 

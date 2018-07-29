@@ -311,8 +311,9 @@ def add_task(task_json):
 
 def set_delay_days(delay_days, task_id=None):
     """sets the delay days on all the tasks or optionally on one task"""
+    task_id = int(task_id)  # sanitize input
     where_clause = '' if not task_id else 'where task_id=\'%s\'' % task_id
-    db.engine.execute("update task set delay_days=%d %s" % (int(delay_days), where_clause))
+    db.engine.execute("update task set delay_days=%d %s" % (int(delay_days), where_clause))  # safe
     return True
 
 
@@ -359,7 +360,6 @@ def handle_task_results_resubmission(user_id, task_id):
 
     from .user import get_associated_user_ids
     associated_user_ids = get_associated_user_ids(user_id)
-
     memo, user_id = get_memo_for_user_ids(associated_user_ids, task_id)
     return memo, user_id
 

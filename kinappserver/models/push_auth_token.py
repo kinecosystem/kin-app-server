@@ -167,4 +167,4 @@ def deauth_users(user_ids):
     user_ids_string = user_ids_string[:-1]
     prepared_string = "update push_auth_token set authenticated=false where user_id in (%s)" % (user_ids_string)
     print('deauthing users: %s' % prepared_string)
-    db.engine.execute(prepared_string)
+    db.engine.execute(prepared_string)  # safe

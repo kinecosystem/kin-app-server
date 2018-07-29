@@ -62,8 +62,8 @@ def get_memo_for_user_ids(user_ids, task_id):
     given user_ids. only one memo is returned along with its associated user_id. or (None, None).
     """
     user_ids = "\',\'".join(user_ids)
+    task_id = int(task_id)  # sanitize input
     prep_stat = "select (user_id, tx_info->>'memo') from public.transaction where user_id in ('%s') and tx_info->>'task_id' LIKE '%s' fetch first 1 rows only" % (user_ids, task_id)
-    print('getting memo statement: %s' % prep_stat)
     results = db.engine.execute(prep_stat)
     row = results.fetchone()
     if row is None:

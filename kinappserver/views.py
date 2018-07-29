@@ -1110,8 +1110,7 @@ def user_report_endpoint():
         print(e)
         raise InvalidUsage('bad-request')
 
-    # sanitize user_id:
-    try:
+    try:  # sanitize user_id:
         if user_id:
             UUID(user_id)
     except Exception as e:
