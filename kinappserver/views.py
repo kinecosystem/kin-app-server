@@ -930,8 +930,7 @@ def fix_users_api():
 def compensate_user_api():
     """internal endpoint used to manually compensate users for missing txs"""
     if not config.DEBUG:
-        limit_to_acl()
-        limit_to_password()
+        limit_to_localhost()
 
     payload = request.get_json(silent=True)
     user_id = payload.get('user_id', None)

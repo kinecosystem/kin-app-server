@@ -9,11 +9,13 @@ def compensate_user(user_id, task_id, kin_amount):
 
 def start():
     import json
+    import time
 
     with open('list.json') as f:
         data = json.load(f)
         for item in data['missing_txs']:
             compensate_user(item['user_id'], item['task_id'], item['reward'])
+            time.sleep(3)
 
 
 if __name__=='__main__':
