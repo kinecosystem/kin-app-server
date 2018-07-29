@@ -6,7 +6,7 @@ Flask-API==1.0
 Flask-SQLAlchemy==2.3.2
 SQLAlchemy==1.1.14
 sqlalchemy_utils
-Flask-Cors==3.0.3
+Flask-Cors==3.0.6
 grequests==0.3.0
 requests==2.18.4
 simplejson==3.12.0
