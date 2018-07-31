@@ -1,7 +1,7 @@
 - cron:
     name: "gather periodic data about missing txs"
     job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/missing_txs.py"
-    minute: "*/10" # run every 5 minutes
+    minute: "*/20" # run every 5 minutes
   run_once: true # runs on one machine of the 2
 
 - cron:

@@ -220,7 +220,7 @@ def get_offers_for_user(user_id):
     for offer in redeemable_offers:
         offers_json_array.append(offer_to_json(offer))
 
-    print('offers for user %s: %s' % (user_id, offers_json_array))
+    print('offers for user %s: %s' % (user_id, [o['id'] for o in offers_json_array]))
     return offers_json_array
 
 
