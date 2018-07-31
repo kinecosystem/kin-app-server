@@ -277,7 +277,10 @@ def get_user_push_data(user_id):
         print('Error: could not get push data for user %s' % user_id)
         return None, None, None
     else:
-        push_env = package_id_to_push_env(user.package_id)
+        if user.os_type == OS_IOS:
+            push_env = package_id_to_push_env(user.package_id)
+        else:
+            push_env = 'beta'  # android dont send package id and only support 'beta'
         return user.os_type, user.push_token, push_env
 
 
