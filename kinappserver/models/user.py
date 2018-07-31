@@ -575,7 +575,7 @@ def get_active_user_id_by_enc_phone(enc_phone_number):
 
 def get_enc_phone_number_by_user_id(user_id):
     try:
-        user = User.query.filter_by(user_id=user_id).filter_by(deactivated=False).first()
+        user = User.query.filter_by(user_id=user_id).first()
         if user is None:
             return None
         else:
