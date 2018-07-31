@@ -413,7 +413,7 @@ def get_next_task():
 
     try:
         # handle unprintable chars...
-        print('tasks returned for user %s: %s' % (user_id, tasks))
+        print('tasks returned for user %s: %s' % (user_id, [t['id'] for t in tasks]))
     except Exception as e:
         print('cant print returned tasks for user %s' % user_id)
         print(e)
@@ -456,7 +456,6 @@ def get_transactions_api():
         detailed_txs = detailed_txs + p2p_txs
 
         # sort by date
-        print(detailed_txs)
         detailed_txs = sorted(detailed_txs, key=lambda k: k['date'], reverse=True)
         if len(detailed_txs) > MAX_TXS_PER_USER:
             detailed_txs = detailed_txs[:MAX_TXS_PER_USER]
