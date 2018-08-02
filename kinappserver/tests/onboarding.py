@@ -66,7 +66,7 @@ class Tester(unittest.TestCase):
         address = Address(address=kp.address().decode())
         address.get() # get the updated information
         assert(address.balances[0]['asset_type'] == 'native' and 
-            int(float(address.balances[0]['balance'])) == 10) #TODO read 2 from config
+            int(float(address.balances[0]['balance'])) == 2) #TODO read 2 from config
 
         # try onboarding again with the same user - should fail
         resp = self.app.post('/user/onboard',
