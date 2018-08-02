@@ -32,6 +32,7 @@ test:
 	python kinappserver/tests/update_token.py
 	python kinappserver/tests/user_app_data.py
 	python kinappserver/tests/task_results.py
+	python kinappserver/tests/task_results_quiz.py
 
 all:
 	install test
