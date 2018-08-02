@@ -248,21 +248,21 @@ def add_task(task_json):
                 raise InvalidUsage('cant add task with invalid item-type')
 
             # test validity of quiz items
-            if task_json.get('quiz_data', None):
+            if item.get('quiz_data', None):
                 # the task must be of type quiz
                 if not task_json['type'] == 'quiz':
                         raise InvalidUsage('found quiz_data for a non-quiz task type')
 
-                # must have answer_id, explanation and reward and they must not be empty
-                answer_id = task_json['quiz_data']['answer_id']
-                exp = task_json['quiz_data']['explanation']
-                reward = task_json['quiz_data']['reward']
+                # quiz_data must have answer_id, explanation and reward and they must not be empty
+                answer_id = item['quiz_data']['answer_id']
+                exp = item['quiz_data']['explanation']
+                reward = item['quiz_data']['reward']
                 if '' in (answer_id, exp, reward):
                     raise InvalidUsage('empty fields in one of answer_id, exp, reward')
 
-                # the answer_id must match
-                if not item['results'].get(answer_id):
-                    raise InvalidUsage('mismatch between answer_id (%s) and actual answers' % answer_id)
+                # the answer_id must match a an answer in the item results
+                if answer_id not in [result['id'] for result in item['results']]:
+                    raise InvalidUsage('answer_id %s does not match answer_ids %s' % (answer_id, [result['id'] for result in item['results']]))
 
 
         fail_flag = False

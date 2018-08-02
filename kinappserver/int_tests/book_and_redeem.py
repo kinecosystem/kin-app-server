@@ -75,7 +75,7 @@ def book_and_redeem():
              'image_url': 'image_url',
              'skip_image_test': True,
              'price': 2,
-             'address': 'GCORIYYEQP3ANHFT6XHMBY7VB3RH53WB5KZZHGCEXYRWCEJQZUXPGWQM',
+             'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
              'provider':
                 {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
             }

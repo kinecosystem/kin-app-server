@@ -285,6 +285,8 @@ def post_user_task_results_endpoint():
         increment_metric('premature_task_results')
         return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_400_BAD_REQUEST
 
+    delta = 0  # change in the total kin reward for this task
+
     # the following function handles task-results resubmission:
 
     # there are a few possible scenarios here:
@@ -303,10 +305,42 @@ def post_user_task_results_endpoint():
         # this task was already submitted - and compensated, so just re-return the memo to the user.
         return jsonify(status='ok', memo=str(memo))
 
+    task_data = get_task_by_id(task_id)
+
+    # if the task type is "quiz", traverse all the quiz questions and calculate the correct reward based on answers:
+    # note that some questions might not be quiz-questions.
+    if task_data['type'] == 'quiz':
+        correct_answers = {}  # dict of {'qid': 'xxx', 'reward': yyy}
+        total_quiz_reward = 0  # the total reward collected for this task
+
+        # create a question/correct-answers dict
+        for item in task_data['items']:
+            if item.get('quiz_data', None):
+                correct_answers[item['id']] = {'aid': item['quiz_data']['answer_id'], 'reward': item['quiz_data']['reward']}
+
+        print('correct results: %s' % correct_answers)
+
+        # create results dict from array:
+        actual_results = {}
+        for item in results:
+            print('item: %s' % item)
+            actual_results[item['qid']] = item['aid'][0] # assumes that quiz answers are always a list with a single element
+
+        # compare to the actual results to the correct results
+        for qid in correct_answers.keys():
+            if correct_answers[qid]['aid'] == actual_results[qid]:
+                total_quiz_reward = total_quiz_reward + correct_answers[qid]['reward']
+                print('added reward %s for correct results: qid:%s, aid:%s' % (correct_answers[qid]['reward'], qid, correct_answers[qid]['aid']))
+            else:
+                print('not rewarding %s for incorrect results: qid:%s, actual aid:%s, expected aid:%s' % (correct_answers[qid]['reward'], qid, actual_results[qid], correct_answers[qid]['aid']))
+
+        print('total reward for quiz task: %s' % total_quiz_reward)
+        delta = delta + total_quiz_reward
+
     #  if the last item in the task is of type tip, then figure out how much tip was given:
     #  TODO move to a function
     tip = 0
-    task_data = get_task_by_id(task_id)
+
     if task_data['items'][-1]['type'] == 'tip':
         try:
             #  get the last item in the task - which is where the tipping data is:
@@ -325,13 +359,14 @@ def post_user_task_results_endpoint():
             print('could not get tip value for video_questionnaire. e:%s' % e)
 
         print('tipping value %s for task_id %s' % (tip, task_id))
+        delta = delta + (-1 * tip)  # tip has a negative affect on the delta
 
     # this should never fail for application-level reasons:
     if not store_task_results(user_id, task_id, results):
             raise InternalError('cant save results for userid %s' % user_id)
     try:
         memo = get_and_replace_next_task_memo(user_id)
-        reward_and_push(address, task_id, send_push, user_id, memo, tip)
+        reward_and_push(address, task_id, send_push, user_id, memo, delta)
     except Exception as e:
         print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
@@ -595,16 +630,18 @@ def register_api():
             return jsonify(status='ok', config=get_global_config())
 
 
-def reward_and_push(public_address, task_id, send_push, user_id, memo, tip):
+def reward_and_push(public_address, task_id, send_push, user_id, memo, delta):
     """create a thread to perform this function in the background"""
-    Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo, tip)).start()
+    Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo, delta)).start()
 
 
-def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo, tip=0):
+def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo, delta=0):
     """transfer the correct amount of kins for the task to the given address
 
        this function runs in the background and sends a push message to the client to
        indicate that the money was indeed transferred.
+
+       typically, tips are negative delta and quiz-results are positive delta
     """
     # get reward amount from db
     amount = get_reward_for_task(task_id)
@@ -612,8 +649,8 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
         print('could not figure reward amount for task_id: %s' % task_id)
         raise InternalError('cant find reward for task_id %s' % task_id)
 
-    # take into account tipping: reduce the reward of the user by the amount that was tipped
-    amount = amount - tip
+    # take into account the delta: add or reduce kins from the amount
+    amount = amount + delta
 
     try:
         # send the moneys
@@ -1295,7 +1332,7 @@ def compensate_truex_activity(user_id):
     try:
         memo = get_and_replace_next_task_memo(user_id)
         address = get_address_by_userid(user_id)
-        reward_and_push(address, task_id, False, user_id, memo, tip=0)
+        reward_and_push(address, task_id, False, user_id, memo, delta=0)
     except Exception as e:
         print('failed to reward truex task %s at address %s for user_id %s. exception: %s' % (task_id, address, user_id, e))
         raise(e)

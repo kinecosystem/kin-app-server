@@ -52,3 +52,19 @@
      - { alias: '_log', command: 'cat /var/log/kinappserver.err.log' }
      - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
      - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/stage/sql/userpassword')}}@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage" }
+
+# add aliases to non-sudo user
+- hosts: all
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: false
+  roles:
+    - igor_mukhin.bash_aliases
+
+  vars:
+   bash_aliases:
+     - { alias: '_env', command: 'echo "kinappserver"' }
+     - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
+     - { alias: '_log', command: 'cat /var/log/kinappserver.err.log' }
+     - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
+     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/stage/sql/userpassword')}}@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage" }
+

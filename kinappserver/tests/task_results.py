@@ -182,7 +182,7 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '0',
-                            'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
                             'results': {'2234': 'werw', '5345': '345345'},
                             'send_push': False
                             }),
@@ -223,7 +223,7 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '1',
-                            'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
                             'results': {'2234': 'werw', '5345': '345345'},
                             'send_push': False
                             }),
@@ -254,7 +254,7 @@ class Tester(unittest.TestCase):
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '2',
-                            'address': 'GBDUPSZP4APH3PNFIMYMTHIGCQQ2GKTPRBDTPCORALYRYJZJ35O2LOBL',
+                            'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
                             'results': {'2234': 'werw', '5345': '345345'},
                             'send_push': False
                             }),
