@@ -602,6 +602,9 @@ def register_api():
         if None in (user_id, os, device_model, time_zone, app_ver):  # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
 
+        if device_model == 'HTC6525LVW':
+            raise InvalidUsage('bad-request')
+
         if os not in (utils.OS_ANDROID, utils.OS_IOS):
             raise InvalidUsage('bad-request')
 
