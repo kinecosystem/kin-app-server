@@ -583,6 +583,10 @@ def register_api():
 
     this function may be called by the client multiple times to update fields
     """
+    print(request.headers)
+    source_ip = request.headers.get('X-Forwarded', None)
+    if source_ip:
+        print('registering from %s' % source_ip)
     payload = request.get_json(silent=True)
     try:
         # add redis lock here?
