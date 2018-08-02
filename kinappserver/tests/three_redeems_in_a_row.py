@@ -32,7 +32,7 @@ class Tester(unittest.TestCase):
         self.postgresql.stop()
 
 
-    def test_book_and_redeem(self):
+    def test_book_and_redeem_in_a_row(self):
         """test creating orders"""
         offerid = '0'
         offer = {'id': offerid,

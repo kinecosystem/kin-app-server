@@ -1005,8 +1005,9 @@ def compensate_user_api():
 @app.route('/user/nuke-data', methods=['POST'])
 def nuke_user_api():
     """internal endpoint used to nuke a user's task and tx data. use with care"""
-    limit_to_acl()
-    limit_to_password()
+    if not config.DEBUG:
+        limit_to_acl()
+        limit_to_password()
 
     try:
         payload = request.get_json(silent=True)
