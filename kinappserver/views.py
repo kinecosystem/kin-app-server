@@ -1417,7 +1417,7 @@ def tweak_tz_endpoint():
 @app.route('/backup/hints', methods=['GET'])
 def get_back_questions_endpoint():
     """return a dict of the backup questions"""
-    return jsonify(list=generate_backup_questions_dict())
+    return jsonify(hints=generate_backup_questions_dict())
 
 
 @app.route('/user/backup/hints', methods=['GET'])

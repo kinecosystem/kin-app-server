@@ -31,7 +31,7 @@ class Tester(unittest.TestCase):
 
 
     def test_backup_questions_api(self):
-        """test good creation and allocation/release"""
+        """test various aspects of the backup questions"""
         db.engine.execute("insert into public.backup_question values(1,'how much wood?');")
         db.engine.execute("insert into public.backup_question values(2,'how much non-wood?');")
 
@@ -87,7 +87,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(data, {'hints': ['1', '2']})
 
         resp = self.app.post('/user/backup/hints', # should succeed, also - overrides previous results
-                             data=json.dumps({'hints': ['1', '2', '3']}),
+                             data=json.dumps({'hints': ['11', '12', '13']}),
                              headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
@@ -95,7 +95,18 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('user_backup_hints: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data, {'hints': ['1', '2', '3']})
+        self.assertEqual(data, {'hints': ['11', '12', '13']})
+
+        resp = self.app.post('/user/backup/hints', # should succeed, also - overrides previous results
+                             data=json.dumps({'hints': ['13', '12', '11']}),
+                             headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)},  content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.get('/user/backup/hints', headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)})
+        data = json.loads(resp.data)
+        print('user_backup_hints: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data, {'hints': ['13', '12', '11']})
 
         # try again, but now with an incorrect auth token
         resp = self.app.get('/user/backup/hints', headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(uuid4())})
