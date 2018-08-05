@@ -26,7 +26,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
-    get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_dict, store_backup_hints
+    get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_dict, store_backup_hints, validate_auth_token
 
 
 def limit_to_localhost():
@@ -73,13 +73,15 @@ def handle_internal_error(error):
     return response
 
 
-def extract_header(request):
+def extract_headers(request):
     """extracts the user_id from the request header"""
     try:
-        return request.headers.get('X-USERID')
+        user_id = request.headers.get('X-USERID')
+        auth_token = request.headers.get('X-AUTH-TOKEN', None)
     except Exception as e:
         print('cant extract user_id from header')
         raise InvalidUsage('bad header')
+    return user_id, auth_token
 
 
 @app.route('/health', methods=['GET'])
@@ -98,7 +100,7 @@ def app_launch():
     payload = request.get_json(silent=True)
     app_ver, user_id = None, None
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         app_ver = payload.get('app_ver', None)
     except Exception as e:
         raise InvalidUsage('bad-request')
@@ -121,7 +123,7 @@ def get_address_by_phone_api():
 
     payload = request.get_json(silent=True)
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         phone_number = payload.get('phone_number', None)
         if None in (user_id, phone_number):
             raise InvalidUsage('bad-request')
@@ -140,7 +142,7 @@ def ack_auth_token_api():
     """endpoint used by clients to ack the auth-token they received"""
     payload = request.get_json(silent=True)
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         token = payload.get('token', None)
         if None in (user_id, token):
             raise InvalidUsage('bad-request: invalid input')
@@ -160,7 +162,7 @@ def set_user_phone_number_api():
     """get the firebase id token and extract the phone number from it"""
     payload = request.get_json(silent=True)
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         token = payload.get('token', None)
         unverified_phone_number = payload.get('phone_number', None)  # only used in tests
         if None in (user_id, token):
@@ -199,7 +201,7 @@ def update_token_api():
     """updates a user's token in the database """
     payload = request.get_json(silent=True)
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         token = payload.get('token', None)
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
@@ -232,7 +234,7 @@ def push_update_token_api():
     """updates a user's push token in the database. also sends the auth token to the user"""
     payload = request.get_json(silent=True)
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         token = payload.get('token', None)
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
@@ -254,7 +256,7 @@ def post_user_task_results_endpoint():
     """receive the results for a tasks and pay the user for them"""
     payload = request.get_json(silent=True)
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         task_id = payload.get('id', None)
         address = payload.get('address', None)
         results = payload.get('results', None)
@@ -438,7 +440,7 @@ def set_delay_days_api():
 @app.route('/user/tasks', methods=['GET'])
 def get_next_task():
     """returns the current task for the user with the given id"""
-    user_id = extract_header(request)
+    user_id, auth_token = extract_headers(request)
     tasks = get_tasks_for_user(user_id)
     if len(tasks) == 1:
         tasks[0]['memo'] = get_next_task_memo(user_id)
@@ -469,7 +471,7 @@ def get_transactions_api():
     """
     detailed_txs = []
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         server_txs = [{'type': 'server', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': not tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
 
         # get the offer, task details
@@ -519,7 +521,7 @@ def user_redeemed_api():
 
     redeemed_goods = []
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         incoming_txs_hashes = [tx.tx_hash for tx in list_user_transactions(user_id) if tx.incoming_tx]
         # get an array of the goods and add details from the offer table:
         for good in get_redeemed_items(incoming_txs_hashes):
@@ -538,7 +540,7 @@ def onboard_user():
     """creates a wallet for the user and deposits some xlms there"""
     # input sanity
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         public_address = request.get_json(silent=True).get('public_address', None)
         if None in (public_address, user_id):
             raise InvalidUsage('bad-request')
@@ -713,7 +715,7 @@ def book_offer_api():
     """books an offer by a user"""
     payload = request.get_json(silent=True)
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         offer_id = payload.get('id', None)
         if None in (user_id, offer_id):
             raise InvalidUsage('invalid payload')
@@ -737,7 +739,7 @@ def book_offer_api():
 def get_offers_api():
     """return the list of available offers for this user"""
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         if user_id is None:
             raise InvalidUsage('no user_id')
     except Exception as e:
@@ -755,7 +757,7 @@ def purchase_api():
     # for our account(s). this should hasten the process of redeeming offers.
     payload = request.get_json(silent=True)
     try:
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         tx_hash = payload.get('tx_hash', None)
         if None in (user_id, tx_hash):
             raise InvalidUsage('invalid param')
@@ -936,7 +938,7 @@ def report_p2p_tx_api():
     try:
         # TODO Should we verify the tx against the blockchain?
         # TODO this api needs to be secured with auth token
-        sender_id = extract_header(request)
+        sender_id, auth_token = extract_headers(request)
         tx_hash = payload.get('tx_hash', None)
         destination_address = payload.get('destination_address', None)
         amount = payload.get('amount', None)
@@ -1182,7 +1184,7 @@ def truex_activity_endpoint():
        meaning that her current task is of type truex and the submission time was met"""
     try:
         remote_ip = request.headers.get('X-Forwarded-For', None)
-        user_id = extract_header(request)
+        user_id, auth_token = extract_headers(request)
         if user_id is None:
             raise InvalidUsage('no user_id')
         if remote_ip is None:
@@ -1421,37 +1423,27 @@ def get_back_questions_endpoint():
 @app.route('/user/backup/hints', methods=['GET'])
 def get_backup_hints_endpoint():
     """return the user's backup hints"""
-    user_id = None
-    try:
-        user_id = extract_header(request)
-    except Exception as e:
-        print('cant extract user_id, e: %s' % e)
-        raise InvalidUsage('bad-request')
-    else:
-        return jsonify(hints=get_backup_hints(user_id))
+    user_id, auth_token = extract_headers(request)
+    if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
+        abort(403)
+    return jsonify(hints=get_backup_hints(user_id))
 
 
 @app.route('/user/backup/hints', methods=['POST'])
 def post_backup_hints_endpoint():
     """store the user's backup hints"""
-    user_id = None
+    user_id, auth_token = extract_headers(request)
+    if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
+        abort(403)
     try:
-        #TODO check auth token here
-        user_id = extract_header(request)
-        try:
-            payload = request.get_json(silent=True)
-            hints = payload.get('hints', None)
-            if user_id is None:
-                raise InvalidUsage('bad-request')
-        except Exception as e:
-            print(e)
+        payload = request.get_json(silent=True)
+        hints = payload.get('hints', None)
+        if user_id is None:
             raise InvalidUsage('bad-request')
-        else:
-            print('hints: %s' % hints)
-            store_next_task_results_ts(user_id, hints)
-
     except Exception as e:
-        print('cant extract user_id, e: %s' % e)
+        print(e)
         raise InvalidUsage('bad-request')
     else:
+        print('hints: %s' % hints)
+        store_next_task_results_ts(user_id, hints)
         return jsonify(hints=store_backup_hints(user_id, hints))

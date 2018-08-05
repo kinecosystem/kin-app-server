@@ -168,3 +168,12 @@ def deauth_users(user_ids):
     prepared_string = "update push_auth_token set authenticated=false where user_id in (%s)" % (user_ids_string)
     print('deauthing users: %s' % prepared_string)
     db.engine.execute(prepared_string)  # safe
+
+
+def validate_auth_token(user_id, auth_token):
+    """compare the given auth token and user_id to the one stored in the db"""
+    obj = get_token_obj_by_user_id(user_id)
+    if str(obj.auth_token) == auth_token:
+        return True
+    print('auth token validation failed for user_id %s and token %s' % (user_id , auth_token))
+    return False
