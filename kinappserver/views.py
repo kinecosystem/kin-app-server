@@ -25,7 +25,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     handle_task_results_resubmission, reject_premature_results, find_missing_txs, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list, get_unauthed_users, get_all_user_id_by_phone
+    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
+    get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_dict, store_backup_hints
 
 
 def limit_to_localhost():
@@ -583,10 +584,6 @@ def register_api():
 
     this function may be called by the client multiple times to update fields
     """
-    print(request.headers)
-    source_ip = request.headers.get('X-Forwarded', None)
-    if source_ip:
-        print('registering from %s' % source_ip)
     payload = request.get_json(silent=True)
     try:
         # add redis lock here?
@@ -1413,3 +1410,48 @@ def tweak_tz_endpoint():
     """get a json dict of all the relevant users with their next ts"""
     limit_to_acl()
     return jsonify(list=generate_tz_tweak_list())
+
+
+@app.route('/backup/hints', methods=['GET'])
+def get_back_questions_endpoint():
+    """return a dict of the backup questions"""
+    return jsonify(list=generate_backup_questions_dict())
+
+
+@app.route('/user/backup/hints', methods=['GET'])
+def get_backup_hints_endpoint():
+    """return the user's backup hints"""
+    user_id = None
+    try:
+        user_id = extract_header(request)
+    except Exception as e:
+        print('cant extract user_id, e: %s' % e)
+        raise InvalidUsage('bad-request')
+    else:
+        return jsonify(hints=get_backup_hints(user_id))
+
+
+@app.route('/user/backup/hints', methods=['POST'])
+def post_backup_hints_endpoint():
+    """store the user's backup hints"""
+    user_id = None
+    try:
+        #TODO check auth token here
+        user_id = extract_header(request)
+        try:
+            payload = request.get_json(silent=True)
+            hints = payload.get('hints', None)
+            if user_id is None:
+                raise InvalidUsage('bad-request')
+        except Exception as e:
+            print(e)
+            raise InvalidUsage('bad-request')
+        else:
+            print('hints: %s' % hints)
+            store_next_task_results_ts(user_id, hints)
+
+    except Exception as e:
+        print('cant extract user_id, e: %s' % e)
+        raise InvalidUsage('bad-request')
+    else:
+        return jsonify(hints=store_backup_hints(user_id, hints))
