@@ -33,6 +33,7 @@ test:
 	python kinappserver/tests/user_app_data.py
 	python kinappserver/tests/task_results.py
 	python kinappserver/tests/task_results_quiz.py
+	python kinappserver/tests/backup_questions.py
 
 all:
 	install test

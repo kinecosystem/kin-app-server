@@ -52,23 +52,13 @@ class Tester(unittest.TestCase):
 
         # set a fake token
         db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
+        db.engine.execute("""update public.user set enc_phone_number='%s' where user_id='%s';""" % ('1234', str(userid)))
 
         # should succeed anyways
         resp = self.app.get('/backup/hints')
         data = json.loads(resp.data)
         print('backup_hints: %s' % data)
         self.assertEqual(resp.status_code, 200)
-
-        # should fail - no token
-        resp = self.app.get('/user/backup/hints', headers={USER_ID_HEADER: str(userid)})
-        self.assertEqual(resp.status_code, 403)
-
-        # again with the auth token this time
-        resp = self.app.get('/user/backup/hints', headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)})
-        data = json.loads(resp.data)
-        print('user_backup_hints: %s' % data)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data, {'hints': None})
 
         resp = self.app.post('/user/backup/hints', # should fail - not auth token
                              data=json.dumps({'hints': ['1', '2']}),
@@ -80,37 +70,15 @@ class Tester(unittest.TestCase):
                              headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        resp = self.app.get('/user/backup/hints', headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)})
-        data = json.loads(resp.data)
-        print('user_backup_hints: %s' % data)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data, {'hints': ['1', '2']})
-
         resp = self.app.post('/user/backup/hints', # should succeed, also - overrides previous results
                              data=json.dumps({'hints': ['11', '12', '13']}),
                              headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        resp = self.app.get('/user/backup/hints', headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)})
-        data = json.loads(resp.data)
-        print('user_backup_hints: %s' % data)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data, {'hints': ['11', '12', '13']})
-
         resp = self.app.post('/user/backup/hints', # should succeed, also - overrides previous results
                              data=json.dumps({'hints': ['13', '12', '11']}),
                              headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        resp = self.app.get('/user/backup/hints', headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(userid)})
-        data = json.loads(resp.data)
-        print('user_backup_hints: %s' % data)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data, {'hints': ['13', '12', '11']})
-
-        # try again, but now with an incorrect auth token
-        resp = self.app.get('/user/backup/hints', headers={USER_ID_HEADER: str(userid), AUTH_TOKEN_HEADER: str(uuid4())})
-        self.assertEqual(resp.status_code, 403)
 
 if __name__ == '__main__':
     unittest.main()

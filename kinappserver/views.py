@@ -158,7 +158,7 @@ def ack_auth_token_api():
 
 
 @app.route('/user/firebase/update-id-token', methods=['POST'])
-def set_user_phone_number_api():
+def set_user_phone_number_endpoint():
     """get the firebase id token and extract the phone number from it"""
     payload = request.get_json(silent=True)
     try:
@@ -1420,15 +1420,6 @@ def get_back_questions_endpoint():
     return jsonify(hints=generate_backup_questions_dict())
 
 
-@app.route('/user/backup/hints', methods=['GET'])
-def get_backup_hints_endpoint():
-    """return the user's backup hints"""
-    user_id, auth_token = extract_headers(request)
-    if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
-        abort(403)
-    return jsonify(hints=get_backup_hints(user_id))
-
-
 @app.route('/user/backup/hints', methods=['POST'])
 def post_backup_hints_endpoint():
     """store the user's backup hints"""
@@ -1444,6 +1435,26 @@ def post_backup_hints_endpoint():
         print(e)
         raise InvalidUsage('bad-request')
     else:
-        print('hints: %s' % hints)
-        store_next_task_results_ts(user_id, hints)
-        return jsonify(hints=store_backup_hints(user_id, hints))
+        if store_backup_hints(user_id, hints):
+            return jsonify(status='ok')
+        else:
+            raise InternalError('cant store hints')
+
+
+# @app.route('/user/backup/match-phone', methods=['POST'])
+# def post_backup_match_phone():
+#     """store the user's backup hints"""
+#     user_id, auth_token = extract_headers(request)
+#     if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
+#         abort(403)
+#     try:
+#         payload = request.get_json(silent=True)
+#         hints = payload.get('phone', None)
+#         if user_id is None:
+#             raise InvalidUsage('bad-request')
+#     except Exception as e:
+#         print(e)
+#         raise InvalidUsage('bad-request')
+#     else:
+#         print('hints: %s' % hints)
+#         return jsonify(hints=store_backup_hints(phonenumber, hints))
