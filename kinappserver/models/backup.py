@@ -1,11 +1,7 @@
-import arrow
 
-from kinappserver import db
+from kinappserver import db, app
 from kinappserver.utils import InternalError
 from kinappserver.utils import InvalidUsage
-from sqlalchemy_utils import UUIDType
-
-from .offer import Offer
 
 
 class BackupQuestion(db.Model):
@@ -29,49 +25,54 @@ def generate_backup_questions_dict():
     return response
 
 
-class UserBackupHints(db.Model):
-    """the UserBackupHints model holds (for each userid) the sid of the questions selected by the user for the recent-most backup.
+class PhoneBackupHints(db.Model):
+    """the PhoneBackupHints model holds (for each userid) the sid of the questions selected by the user for the recent-most backup.
     """
-    user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
+    enc_phone_number = db.Column('enc_phone_number', db.String(200), primary_key=True, nullable=False) # cant be a foreign key because its not unique in user.
     hints = db.Column(db.JSON(), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
         return '<user_id: %s, hints: %s' \
-               ' updated_at: %s>' % (self.user_id, self.hints, self.updated_at)
+               ' updated_at: %s>' % (self.enc_phone_number, self.hints, self.updated_at)
 
 
 def store_backup_hints(user_id, hints):
     """stores given hints for the given userid in the db. overwrite if already existing"""
+    from .user import get_enc_phone_number_by_user_id
+    enc_phone_number = get_enc_phone_number_by_user_id(user_id)
+    if enc_phone_number in (None, ''):
+        print('cant store hints for user_id %s - bad enc_phone_number' % user_id)
+        return False
     try:
-        ubh = get_user_backup_hints(user_id)
-        print('user backup hints already exist for user_id %s, updating data' % user_id)
+        ubh = get_user_backup_hints(enc_phone_number)
+        print('user backup hints already exist for enc_phone_number %s, updating data' % enc_phone_number)
     except Exception as e:
-        ubh = UserBackupHints()
+        ubh = PhoneBackupHints()
     try:
         ubh.hints = hints
-        ubh.user_id = user_id
+        ubh.enc_phone_number = enc_phone_number
         db.session.add(ubh)
         db.session.commit()
     except Exception as e:
-        print('failed to store user backup hints with id: %s' % user_id)
+        print('failed to store user backup hints with enc_phone_number: %s' % enc_phone_number)
         print(e)
-        raise InternalError('failed to store user backup hints with id: %s' % user_id)
+        raise InternalError('failed to store user backup hints with enc_phone_number: %s' % enc_phone_number)
     else:
         return True
 
 
-def get_user_backup_hints(user_id):
-    """return the user backup hints object for the given user_id or throws exception"""
-    ubh = UserBackupHints.query.filter_by(user_id=user_id).first()
+def get_user_backup_hints(enc_phone_number):
+    """return the user backup hints object for the given enc_phone_number or throws exception"""
+    ubh = PhoneBackupHints.query.filter_by(enc_phone_number=enc_phone_number).first()
     if not ubh:
-        raise InvalidUsage('no such user_id')
+        raise InvalidUsage('no such enc_phone_number')
     return ubh
 
 
-def get_backup_hints(user_id):
-    """return the user's back up hints"""
+def get_backup_hints(enc_phone_number):
+    """return the user's back up hints by user_id"""
     try:
-        return get_user_backup_hints(user_id).hints
+        return get_user_backup_hints(enc_phone_number).hints
     except Exception as e:
         return None
