@@ -4,7 +4,7 @@ import arrow
 import json
 
 from kinappserver import db, config
-#from kinappserver.push import send_please_upgrade_push
+from kinappserver.push import send_please_upgrade_push
 from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
 

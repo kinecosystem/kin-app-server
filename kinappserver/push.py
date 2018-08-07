@@ -75,9 +75,9 @@ def send_please_upgrade_push(user_id):
     if token:
         if os_type == OS_ANDROID:
             increment_metric('pleaseupgrade-android')
-            return  # not supported yet
-            # print('sending please-upgrade push message to GCM user %s' % user_id)
-            # send_gcm(token, gcm_payload(push_type, push_id, {'title': '', 'body': "Please upgrade the app to get the next task"}))
+            #return  # not supported yet
+            print('sending please-upgrade push message to GCM user %s' % user_id)
+            push_send_gcm(token, gcm_payload(push_type, push_id, {'title': '', 'body': "Please upgrade the app to get the next task"}),push_env)
 
         else:
             increment_metric('pleaseupgrade-ios')
