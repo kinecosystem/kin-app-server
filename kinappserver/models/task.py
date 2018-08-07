@@ -189,7 +189,7 @@ def get_tasks_for_user(user_id):
         if not can_support_task(os_type, user_app_data.app_ver, next_task):
             # client does NOT support the next task, so return an empty array and push a notification
             print('user %s, client os:%s client_ver:%s does not support the next task. returning empty array' % (user_id, os_type, user_app_data.app_ver))
-            # send_please_upgrade_push(user_id) #TOOD disabled this push for beta.
+            send_please_upgrade_push(user_id)
             return []
 
         else:

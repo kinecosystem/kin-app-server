@@ -2,7 +2,7 @@
 from kinappserver import db, app
 from kinappserver.utils import InternalError
 from kinappserver.utils import InvalidUsage
-
+MINIMAL_BACKUP_HINTS = 2
 
 class BackupQuestion(db.Model):
     """the BackupQuestion model represents a single backup question. these are essentially hardcoded into the db.
@@ -16,12 +16,12 @@ class BackupQuestion(db.Model):
                ' updated_at: %s>' % (self.sid, self.question_text, self.updated_at)
 
 
-def generate_backup_questions_dict():
-    """returns a dict of all the questions with their sid"""
-    response = {}
+def generate_backup_questions_list():
+    """returns a list of all the questions with their sid"""
+    response = []
     questions = BackupQuestion.query.order_by(BackupQuestion.sid).all()
     for q in questions:
-        response[q.sid] = {'text': q.question_text}
+        response.append({'id': q.sid, 'text': q.question_text})
     return response
 
 
@@ -40,12 +40,25 @@ class PhoneBackupHints(db.Model):
 def store_backup_hints(user_id, hints):
     """stores given hints for the given userid in the db. overwrite if already existing"""
     from .user import get_enc_phone_number_by_user_id
+
+    # sanity: require min number of hints:
+    if len(hints) < MINIMAL_BACKUP_HINTS:
+        print('wont store less than %s hints. aborting' % MINIMAL_BACKUP_HINTS)
+        return False
+
+    # sanity: ensure the hints make sense
+    all_hints_sids = [item['id'] for item in generate_backup_questions_list()]
+    for item in hints:
+        if item not in all_hints_sids:
+            print('cant find given hint %s in the pool of hints. aborting' % item)
+            return False
+
     enc_phone_number = get_enc_phone_number_by_user_id(user_id)
     if enc_phone_number in (None, ''):
         print('cant store hints for user_id %s - bad enc_phone_number' % user_id)
         return False
     try:
-        ubh = get_user_backup_hints(enc_phone_number)
+        ubh = get_user_backup_hints_by_enc_phone(enc_phone_number)
         print('user backup hints already exist for enc_phone_number %s, updating data' % enc_phone_number)
     except Exception as e:
         ubh = PhoneBackupHints()
@@ -57,12 +70,12 @@ def store_backup_hints(user_id, hints):
     except Exception as e:
         print('failed to store user backup hints with enc_phone_number: %s' % enc_phone_number)
         print(e)
-        raise InternalError('failed to store user backup hints with enc_phone_number: %s' % enc_phone_number)
+        return False
     else:
         return True
 
 
-def get_user_backup_hints(enc_phone_number):
+def get_user_backup_hints_by_enc_phone(enc_phone_number):
     """return the user backup hints object for the given enc_phone_number or throws exception"""
     ubh = PhoneBackupHints.query.filter_by(enc_phone_number=enc_phone_number).first()
     if not ubh:
@@ -70,9 +83,15 @@ def get_user_backup_hints(enc_phone_number):
     return ubh
 
 
-def get_backup_hints(enc_phone_number):
-    """return the user's back up hints by user_id"""
+def get_backup_hints(user_id):
+    """return the user's phone number backup hints by user_id"""
     try:
-        return get_user_backup_hints(enc_phone_number).hints
+        from .user import get_enc_phone_number_by_user_id
+        enc_phone_number = get_enc_phone_number_by_user_id(user_id)
+        if enc_phone_number in (None, ''):
+            print('cant get hints for user_id %s - bad enc_phone_number' % user_id)
+            return []
+
+        return get_user_backup_hints_by_enc_phone(enc_phone_number).hints
     except Exception as e:
-        return None
+        return []

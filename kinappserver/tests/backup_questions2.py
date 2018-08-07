@@ -30,10 +30,12 @@ class Tester(unittest.TestCase):
         self.postgresql.stop()
 
 
-    def test_backup_questions_api(self):
-        """test various aspects of the backup questions"""
+    def test_steal_address_with_backup(self):
+        """test restoring using someone else's address"""
+
         db.engine.execute("insert into public.backup_question values(1,'how much wood?');")
         db.engine.execute("insert into public.backup_question values(2,'how much non-wood?');")
+        db.engine.execute("insert into public.backup_question values(3,'how much whatever man. whatever');")
 
         # create a user
         userid1 = uuid4()
@@ -53,12 +55,6 @@ class Tester(unittest.TestCase):
         # set a fake token
         db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid1), str(userid1)))
 
-        # should succeed anyways
-        resp = self.app.get('/backup/hints')
-        data = json.loads(resp.data)
-        print('backup_hints: %s' % data)
-        self.assertEqual(resp.status_code, 200)
-
         # user1 updates his phone number to the server after client-side verification
         phone_num = '+9720528802120'
         resp = self.app.post('/user/firebase/update-id-token',
@@ -76,40 +72,54 @@ class Tester(unittest.TestCase):
         db.engine.execute("""update public.user set public_address='%s' where user_id='%s';""" % ('my-address-1', str(userid1)))
         db.engine.execute("""update public.user set onboarded=true where user_id='%s';""" % str(userid1))
 
-        # try to restore user_id PRIOR to setting hints - should fail
-        resp = self.app.post('/user/restore',
-                             data=json.dumps({
-                                 'address': 'my-address-1'}),
-                             headers={USER_ID_HEADER: str(userid1)},
-                             content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
-
-        resp = self.app.post('/user/backup/hints',  # should fail - not auth token
-                             data=json.dumps({'hints': [1, 2]}),
-                             headers={USER_ID_HEADER: str(userid1)},  content_type='application/json')
-        self.assertEqual(resp.status_code, 403)
-
-        resp = self.app.post('/user/backup/hints',  # should succeed
+        resp = self.app.post('/user/backup/hints', # should succeed
                              data=json.dumps({'hints': [1, 2]}),
                              headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        resp = self.app.post('/user/backup/hints',  # should fail as there are no such hints
-                             data=json.dumps({'hints': [1, 11]}),
-                             headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
-
-        resp = self.app.post('/user/backup/hints',  # should fail as there are no such hints
-                             data=json.dumps({'hints': []}),
-                             headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
-        self.assertNotEqual(resp.status_code, 200)
-
-        resp = self.app.post('/user/backup/hints',  # should succeed, also - overrides previous results
-                             data=json.dumps({'hints': [2, 1]}),
-                             headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
+        # create another (3rd) user. this is an unsuspecting 3rd party. we'll try to steal his address
+        userid3 = uuid4()
+        resp = self.app.post('/user/register',
+            data=json.dumps({
+                            'user_id': str(userid3),
+                            'os': 'android',
+                            'device_model': 'samsung8',
+                            'device_id': '234234',
+                            'time_zone': '05:00',
+                            'token': 'fake_token',
+                            'app_ver': '1.0'}),
+            headers={},
+            content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # create another user with the same phone
+        # set a fake token
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid3), str(userid3)))
+
+        # userid3 updates his phone number to the server after client-side verification
+        phone_num2 = '+9720528802121'
+        resp = self.app.post('/user/firebase/update-id-token',
+                    data=json.dumps({
+                        'token': 'fake-token',
+                        'phone_number': phone_num2}),
+                    headers={USER_ID_HEADER: str(userid3)},
+                    content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        print('backup_hints as received from phone-verification of user_id1: %s' % data)
+        self.assertEqual(data['hints'], [])  # no hints yet
+
+        # mock onboarding
+        db.engine.execute("""update public.user set public_address='%s' where user_id='%s';""" % ('my-address-3', str(userid3)))
+        db.engine.execute("""update public.user set onboarded=true where user_id='%s';""" % str(userid3))
+
+        resp = self.app.post('/user/backup/hints', # should succeed
+                             data=json.dumps({'hints': [2, 3]}),
+                             headers={USER_ID_HEADER: str(userid3), AUTH_TOKEN_HEADER: str(userid3)},  content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # try to use userid2 to restore with userid3's address
+
+        # create another user with the same phone and address
         userid2 = uuid4()
         resp = self.app.post('/user/register',
                              data=json.dumps({
@@ -138,20 +148,17 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print('backup_hints as received from phone-verification of user_id2: %s' % data)
-        self.assertEqual(data['hints'],  [2, 1])
+        self.assertEqual(data['hints'],  [1, 2])
 
-        # try to restore with the wrong address - should fail
+        # try to restore with userid3 address - should fail
         resp = self.app.post('/user/restore',
                              data=json.dumps({
-                                 'address': 'no-such-address'}),
+                                 'address': 'my-address-3'}),
                              headers={USER_ID_HEADER: str(userid2)},
                              content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
-        data = json.loads(resp.data)
-        print('restore result: %s' % data)
 
-
-        # try to restore with the right address
+        # try to restore with userid1 address - should succeed
         resp = self.app.post('/user/restore',
                              data=json.dumps({
                                  'address': 'my-address-1'}),
@@ -159,11 +166,7 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
-        print('restore result: %s' % data)
-        data = json.loads(resp.data)
         self.assertEqual(data['user_id'], str(userid1))
-
-
 
 if __name__ == '__main__':
     unittest.main()
