@@ -526,6 +526,10 @@ def onboard_user():
     except Exception as e:
         raise InvalidUsage('bad-request')
 
+    #TODO uncomment this when the time is right!
+    # elif config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+    #    raise InvalidUsage('user isnt phone verified')
+
     # ensure the user exists but does not have an account:
     onboarded = is_onboarded(user_id)
     if onboarded is True:
@@ -1428,6 +1432,7 @@ def post_backup_restore():
      - a phone number can only restore to a previously owned address
     """
     user_id, auth_token = extract_headers(request)
+    #TODO consider adding this if it doesn't break anything
     #if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
     #    abort(403) #
     try:
