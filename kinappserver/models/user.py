@@ -536,6 +536,7 @@ def set_user_phone_number(user_id, number):
             if user.enc_phone_number == encrypted_number:
                 return  # all good, do nothing
             else:
+                print('refusing to overwrite phone number for user_id %s' % user_id)
                 raise InvalidUsage('trying to overwrite an existing phone number with a different one')
         else:
             user.enc_phone_number = encrypted_number
@@ -543,7 +544,6 @@ def set_user_phone_number(user_id, number):
             db.session.commit()
 
         # does this number belong to another user? if so, de-activate the old user.
-
         deactivate_by_enc_phone_number(encrypted_number, user_id)
 
     except Exception as e:
@@ -640,15 +640,20 @@ def get_address_by_enc_phone_number(enc_phone_number):
         raise
 
 
-def deactivate_by_enc_phone_number(enc_phone_number, user_id):
+def deactivate_by_enc_phone_number(enc_phone_number, new_user_id, activate_user=False):
     """deactivate any active user with the given phone number except the one with user_id
 
     this function deactivates the previous active user with the given phone number AND
     also duplicates his history into the new user.
     """
+    new_user_id = str(new_user_id)
+
+    if activate_user: # used in backup-restore
+        print('activating user %s prior to deactivating all other user_ids' % new_user_id)
+        db.engine.execute("update public.user set deactivated=false where user_id='%s'" % new_user_id)
     try:
         # find candidates to de-activate (except user_id)
-        users = User.query.filter(User.enc_phone_number == enc_phone_number).filter(User.user_id != user_id).filter(User.deactivated == False).all()
+        users = User.query.filter(User.enc_phone_number == enc_phone_number).filter(User.user_id != new_user_id).filter(User.deactivated == False).all()
         if users is []:
             return None  # nothing to do
         else:
@@ -661,11 +666,13 @@ def deactivate_by_enc_phone_number(enc_phone_number, user_id):
             for user_id_to_deactivate in user_ids_to_deactivate:
                 # deactivate and copy task_history
                 db.engine.execute("update public.user set deactivated=true where enc_phone_number='%s' and user_id='%s'" % (enc_phone_number, user_id_to_deactivate))
-                db.engine.execute("update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(user_id)))
+
+                completed_tasks_query = "update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(new_user_id))
+                db.engine.execute(completed_tasks_query)
 
                 # also delete the new user's history and plant the old user's history instead
-                db.engine.execute("delete from public.user_task_results where user_id='%s'" % UUID(user_id))
-                db.engine.execute("update public.user_task_results set user_id='%s' where user_id='%s'" % (UUID(user_id), user_id_to_deactivate))
+                db.engine.execute("delete from public.user_task_results where user_id='%s'" % UUID(new_user_id))
+                db.engine.execute("update public.user_task_results set user_id='%s' where user_id='%s'" % (UUID(new_user_id), user_id_to_deactivate))
 
     except Exception as e:
         print('cant deactivate_by_phone_number. Exception: %s' % e)
@@ -873,3 +880,45 @@ def get_unauthed_users():
         l.append(str(item.user_id))
 
     return l
+
+
+def restore_user_by_address(current_user_id, address):
+    """given the user_id and the address, restore the device associated with this phone number to the given address"""
+
+    # 1. find the phone number associated with this user_id
+    #    and ensure the phone number has hints: deny restore from numbers with no hints.
+    curr_enc_phone_number = get_enc_phone_number_by_user_id(current_user_id)
+    if not curr_enc_phone_number:
+        print('restore_user_by_address: cant find enc_phone_number for current user_id %s. aborting' % current_user_id)
+        return None
+    try:
+        from .backup import get_user_backup_hints_by_enc_phone
+        hints = get_user_backup_hints_by_enc_phone(curr_enc_phone_number)
+    except Exception as e:
+        print('cant get hints for enc_phone_number %s. e:%s' % (curr_enc_phone_number, e))
+        return None
+    else:
+        if hints == []:
+            print('no hints found for enc_phone_number %s. aborting' % curr_enc_phone_number)
+            return None
+        # else - found hints, okay to continue with the restore
+
+    # 2. find the original user_id from the given address
+    original_user_id = get_userid_by_address(address)
+    if not original_user_id:
+        print('restore_user_by_address: cant find the original user_id for the given address. aborting')
+        return None
+
+    # ensure the user_id actually belongs to the same phone number as the current user_id
+    original_enc_phone_number = get_enc_phone_number_by_user_id(original_user_id)
+    if not original_enc_phone_number or (original_enc_phone_number != curr_enc_phone_number):
+        print('restore_user_by_address: phone number mismatch. current=%s, original=%s' % (curr_enc_phone_number, original_enc_phone_number))
+        return None
+
+    # 3. activate the original user, deactivate the current one and
+    # 4. copy the tasks from the current_user_id back onto the original user_id
+    deactivate_by_enc_phone_number(curr_enc_phone_number, original_user_id, True)
+
+    # 5. return the (now active) original user_id.
+    print('restore_user_by_address: successfully restored the original user_id: %s' % original_user_id)
+    return original_user_id

@@ -73,6 +73,24 @@ class Tester(unittest.TestCase):
         print('data: %s' % data)
         self.assertEqual(data['config']['phone_verification_enabled'], True)
 
+
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid2), str(userid2)))
+
+        resp = self.app.post('/user/auth/ack',
+                            data=json.dumps({
+                            'token': str(userid)}),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.post('/user/auth/ack',
+                             data=json.dumps({
+                                 'token': str(userid2)}),
+                             headers={USER_ID_HEADER: str(userid2)},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         # add a bunch of tasks
         task0 = {
             'id': '0',

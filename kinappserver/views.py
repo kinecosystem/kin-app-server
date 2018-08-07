@@ -26,7 +26,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
-    get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_dict, store_backup_hints, validate_auth_token
+    get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_dict, store_backup_hints, validate_auth_token, restore_user_by_address
 
 
 def limit_to_localhost():
@@ -193,7 +193,8 @@ def set_user_phone_number_endpoint():
     print('updating phone number for user %s' % user_id)
     set_user_phone_number(user_id, phone)
 
-    return jsonify(status='ok')
+    # return success and the backup hint, if they exist
+    return jsonify(status='ok', hints=get_backup_hints(user_id))
 
 
 @app.route('/user/update-token', methods=['POST'])
@@ -225,28 +226,6 @@ def update_token_api():
 
     else:
         print('already updating token for user %s. ignoring request' % user_id)
-
-    return jsonify(status='ok')
-
-
-@app.route('/user/push/update-token', methods=['POST'])
-def push_update_token_api():
-    """updates a user's push token in the database. also sends the auth token to the user"""
-    payload = request.get_json(silent=True)
-    try:
-        user_id, auth_token = extract_headers(request)
-        token = payload.get('token', None)
-        if None in (user_id, token):
-            raise InvalidUsage('bad-request')
-    except Exception as e:
-        print(e)
-        raise InvalidUsage('bad-request')
-
-    print('updating token for user %s' % user_id)
-    update_user_token(user_id, token)
-
-    # send auth token now that we have push token
-    send_push_auth_token(user_id)
 
     return jsonify(status='ok')
 
@@ -399,7 +378,7 @@ def add_task_api():
 
 @app.route('/push/please_upgrade', methods=['POST'])
 def push_please_upgrade_api():
-    """used to populate user tables with public addresses"""
+    """sends a please-upgrade message to the given user_ids"""
     # TODO REMOVE ME
     if not config.DEBUG:
         limit_to_localhost()
@@ -1435,23 +1414,33 @@ def post_backup_hints_endpoint():
         if store_backup_hints(user_id, hints):
             return jsonify(status='ok')
         else:
-            raise InternalError('cant store hints')
+            return jsonify(status='error')
 
 
-# @app.route('/user/backup/match-phone', methods=['POST'])
-# def post_backup_match_phone():
-#     """store the user's backup hints"""
-#     user_id, auth_token = extract_headers(request)
-#     if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
-#         abort(403)
-#     try:
-#         payload = request.get_json(silent=True)
-#         hints = payload.get('phone', None)
-#         if user_id is None:
-#             raise InvalidUsage('bad-request')
-#     except Exception as e:
-#         print(e)
-#         raise InvalidUsage('bad-request')
-#     else:
-#         print('hints: %s' % hints)
-#         return jsonify(hints=store_backup_hints(phonenumber, hints))
+@app.route('/user/restore', methods=['POST'])
+def post_backup_restore():
+    """restore the user to the one with the previous private address
+
+    this api is protected by the following means:
+     - a phone number can only restore if a previous back was performed
+     - a phone number can only restore to a previously owned address
+    """
+    user_id, auth_token = extract_headers(request)
+    #if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
+    #    abort(403) #
+    try:
+        payload = request.get_json(silent=True)
+        address = payload.get('address', None)
+        if address is None:
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    else:
+        user_id = restore_user_by_address(user_id, address)
+        if user_id:
+            increment_metric('restore-success')
+            return jsonify(status='ok', user_id=user_id)
+        else:
+            increment_metric('restore-failure')
+            raise InvalidUsage('cant restore user')

@@ -45,7 +45,7 @@ def store_backup_hints(user_id, hints):
         print('cant store hints for user_id %s - bad enc_phone_number' % user_id)
         return False
     try:
-        ubh = get_user_backup_hints(enc_phone_number)
+        ubh = get_user_backup_hints_by_enc_phone(enc_phone_number)
         print('user backup hints already exist for enc_phone_number %s, updating data' % enc_phone_number)
     except Exception as e:
         ubh = PhoneBackupHints()
@@ -62,7 +62,7 @@ def store_backup_hints(user_id, hints):
         return True
 
 
-def get_user_backup_hints(enc_phone_number):
+def get_user_backup_hints_by_enc_phone(enc_phone_number):
     """return the user backup hints object for the given enc_phone_number or throws exception"""
     ubh = PhoneBackupHints.query.filter_by(enc_phone_number=enc_phone_number).first()
     if not ubh:
@@ -70,9 +70,15 @@ def get_user_backup_hints(enc_phone_number):
     return ubh
 
 
-def get_backup_hints(enc_phone_number):
-    """return the user's back up hints by user_id"""
+def get_backup_hints(user_id):
+    """return the user's phone number backup hints by user_id"""
     try:
-        return get_user_backup_hints(enc_phone_number).hints
+        from .user import get_enc_phone_number_by_user_id
+        enc_phone_number = get_enc_phone_number_by_user_id(user_id)
+        if enc_phone_number in (None, ''):
+            print('cant get hints for user_id %s - bad enc_phone_number' % user_id)
+            return []
+
+        return get_user_backup_hints_by_enc_phone(enc_phone_number).hints
     except Exception as e:
-        return None
+        return []
