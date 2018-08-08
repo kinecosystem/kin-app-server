@@ -8,6 +8,7 @@
     - igor_mukhin.bash_aliases
 
   vars:
+   kin_app_server_branch_name: master
    deployment_env: prod
    environment_config:
      ENV: prod

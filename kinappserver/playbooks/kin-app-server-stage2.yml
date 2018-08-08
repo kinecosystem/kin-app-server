@@ -8,9 +8,11 @@
     - igor_mukhin.bash_aliases
 
   vars:
+   kin_app_server_branch_name: ami/add-payment-service
    deployment_env: stage2
    environment_config:
      ENV: stage2
+     STELLAR_ACCOUNT_SID: "{{ play_hosts.index(inventory_hostname) }}" # sets the host's index within the play
    datadog_config:
      log_level: INFO
      tags: "service:kin-app-server-stage"

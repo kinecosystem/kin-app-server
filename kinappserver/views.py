@@ -1453,22 +1453,22 @@ def post_backup_restore():
             raise InvalidUsage('cant restore user')
 
 
-PAYMENT_SERVICE_URL = '10.0.1.228:4999'
+PAYMENT_SERVICE_URL = 'http://stage2.payments.kinitapp.com:4999' # move to config
 @app.route('/payments/pay', methods=['POST'])
 def payment_service_pay_endpoint():
     """temp endpoint used to initiate payment - debug only"""
     if not config.DEBUG:
         limit_to_localhost()
     import random
-    headers = {'X-REQUEST-ID': random.randint(1,10000)}
+    headers = {'X-REQUEST-ID': str(random.randint(1,10000))}
     payment_id = 'my-payment-id-%s' % random.randint(1,10000)
 
     payment_payload = {
         "id": payment_id,
         "amount": 1,
         "app_id": "kinitapp-stage",
-        "recipient_address": "SDAJO7UQ6JRSEN3CRRTVOI2TRMUNXQDCLIWWBHVLAGTHP2Z2KZUFFZZE",
-        "callback": "https://stage2.kinitapp.com"
+        "recipient_address": "GDSNPNNITT7A543TXFVCUH3JEJEP2ZPSFODTFZ3ZYIQCSDHJ57SKI3CN",
+        "callback": "https://stage2.kinitapp.com/payments/callback"  # move to config
     }
     import requests
     res = requests.post('%s/payments' % PAYMENT_SERVICE_URL, headers=headers, json=payment_payload)
