@@ -431,6 +431,7 @@ def get_next_task():
     try:
         # handle unprintable chars...
         print('tasks returned for user %s: %s' % (user_id, [t['id'] for t in tasks]))
+        print('user %s tasks: %s' % (user_id, tasks)) # TODO remove me
     except Exception as e:
         print('cant print returned tasks for user %s' % user_id)
         print(e)
