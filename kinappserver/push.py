@@ -2,6 +2,9 @@ import uuid
 
 from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, increment_metric
+import redis
+
+PLEASE_UPGRADE_COOLDOWN_SECONDS = 60
 
 
 def generate_push_id():
@@ -68,6 +71,11 @@ def send_p2p_push(user_id, amount, tx_dict):
 
 def send_please_upgrade_push(user_id):
     """sends a push to the given userid to please upgrade"""
+    #  add cooldown with redis to this function.
+    if not (app.redis.set('plsupgr:%s' % str(user_id), '', ex=PLEASE_UPGRADE_COOLDOWN_SECONDS, nx=True)):
+        # returns None if already exists
+        return
+
     push_id = generate_push_id()
     push_type = 'please_upgrade'
     from kinappserver.models import get_user_push_data
