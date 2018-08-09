@@ -131,7 +131,7 @@ class Task(db.Model):
     task_id = db.Column(db.String(40), nullable=False, primary_key=True)
     task_type = db.Column(db.String(40), nullable=False, primary_key=True)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
-    desc = db.Column(db.String(80), nullable=False, primary_key=False)
+    desc = db.Column(db.String(200), nullable=False, primary_key=False)
     price = db.Column(db.Integer(), nullable=False, primary_key=False)
     video_url = db.Column(db.String(100), nullable=True, primary_key=False)
     min_to_complete = db.Column(db.Float(), nullable=False, primary_key=False)
