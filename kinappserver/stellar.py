@@ -2,6 +2,8 @@ from kinappserver import app, config
 from kinappserver.utils import InvalidUsage, increment_metric
 from time import sleep
 import kin
+import requests
+import random
 
 ASSET_NAME = 'KIN'
 
@@ -39,7 +41,38 @@ def send_kin(public_address, amount, memo=None):
         increment_metric('send_kin_error')
         print('caught exception sending %s kin to address %s' % (amount, public_address))
         print(e)
-        
+
+
+def send_kin_with_payment_service(public_address, amount, memo=None):
+    """send kins to an address using the payment service"""
+
+    #  sanity:
+    if public_address in (None, ''):
+        print('cant send kin to address: %s' % public_address)
+        return False, None
+
+    if amount is None or amount < 1:
+        print('cant send kin amount: %s' % amount)
+        return False, None
+
+    print('sending kin to address: %s' % public_address)
+    headers = {'X-REQUEST-ID': str(random.randint(1, 1000000))}  # doesn't actually matter
+    payment_payload = {
+        'id': memo,
+        'amount': amount,
+        'app_id': 'kit',
+        'recipient_address': public_address,
+        'callback': "%s/payments/callback" % config.API_SERVER_URL  # move to config
+    }
+
+    try:
+        res = requests.post('%s/payments' % config.PAYMENT_SERVICE_URL, headers=headers, json=payment_payload)
+        res.raise_for_status()
+    except Exception as e:
+        increment_metric('send_kin_error')
+        print('caught exception sending %s kin to address %s using the payment service' % (amount, public_address))
+        print(e)
+
 
 def extract_tx_payment_data(tx_hash):
     """ensures that the given tx_hash is a valid payment tx,

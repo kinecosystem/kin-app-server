@@ -136,7 +136,6 @@ class Task(db.Model):
     video_url = db.Column(db.String(100), nullable=True, primary_key=False)
     min_to_complete = db.Column(db.Float(), nullable=False, primary_key=False)
     provider_data = db.Column(db.JSON)
-    quiz_data = db.Column(db.JSON)
     tags = db.Column(db.JSON)
     items = db.Column(db.JSON)
     start_date = db.Column(ArrowType)
@@ -228,8 +227,6 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
     task_json['items'] = task.items
-    if task.quiz_data:
-        task_json['quiz_data'] = task.quiz_data
     task_json['updated_at'] = arrow.get(task.update_at).timestamp
     task_json['start_date'] = int(shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp)
     task_json['min_client_version_android'] = task.min_client_version_android or DEFAULT_MIN_CLIENT_VERSION
@@ -315,7 +312,6 @@ def add_task(task_json):
         task.video_url = task_json.get('video_url', None)
         task.min_to_complete = float(task_json['min_to_complete'])
         task.provider_data = task_json['provider']
-        task.quiz_data = task_json.get('quiz_data', None)
         task.tags = task_json['tags']
         task.items = task_json['items']
         task.start_date = arrow.get(task_json['start_date'])

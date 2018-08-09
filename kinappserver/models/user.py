@@ -576,6 +576,15 @@ def get_active_user_id_by_enc_phone(enc_phone_number):
         raise
 
 
+def get_unenc_phone_number_by_user_id(user_id):
+    """return the un-enc phone number for the given userid"""
+    #TODO get rid of this once migration to payment service is done
+    try:
+        return app.encryption.decrypt(get_enc_phone_number_by_user_id(user_id))
+    except Exception as e:
+        return None
+
+
 def get_enc_phone_number_by_user_id(user_id):
     try:
         user = User.query.filter_by(user_id=user_id).first()
