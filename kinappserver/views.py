@@ -1467,7 +1467,7 @@ def payment_service_pay_endpoint():
         "id": payment_id,
         "amount": 1,
         "app_id": "kinitapp-stage",
-        "recipient_address": "GDSNPNNITT7A543TXFVCUH3JEJEP2ZPSFODTFZ3ZYIQCSDHJ57SKI3CN",
+        "recipient_address": "GBKZR75F3BTHBTZA3M6TZOLDQCHPDWGOLKYRHF6VFYKYYIN4HLCTNO42",
         "callback": "https://stage2.kinitapp.com/payments/callback"  # move to config
     }
     import requests
