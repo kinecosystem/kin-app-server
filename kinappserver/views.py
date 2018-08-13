@@ -26,7 +26,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
-    get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, validate_auth_token, restore_user_by_address
+    get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, validate_auth_token, restore_user_by_address, \
+    get_email_template_by_type
 
 
 def limit_to_localhost():
@@ -1407,36 +1408,6 @@ def get_ui_alerts_endpoint():
     return jsonify(status='ok', alerts=alerts)
 
 
-@app.route('/test/email', methods=['GET'])
-def send_email_endpoint():
-    """temp endpoint used to send emails"""
-    from .send_email import send_mail
-
-    sender = "backup@kinitapp.com"  # this has to be a verified mail in SES
-    recipients = ["ami.blonder@kik.com"]  # replace with valid mails
-    mail_subject = "This is the mail subject line"
-    mail_body = """\
-    <html>
-    <head></head>
-    <body>
-    <h1>Hello!</h1>
-    <p>Please save the attached backup code somewhere nobody can read</p>
-    </body>
-    </html>
-    """
-    attachments = {}
-    responses = send_mail(
-        sender,
-        recipients,
-        mail_subject,
-        mail_body,
-        attachments)
-
-    print(responses)
-
-    return jsonify(status='ok')
-
-
 @app.route('/user/email_backup', methods=['POST'])
 def email_backup_endpoint():
     """generates an email with the user's backup details and sends it"""
@@ -1445,16 +1416,36 @@ def email_backup_endpoint():
         abort(403)
     try:
         payload = request.get_json(silent=True)
-        address = payload.get('address', None)
+        to_address = payload.get('to_address', None)
         enc_key = payload.get('enc_key', None)
-        if None in (address, enc_key):
+        if None in (to_address, enc_key):
             raise InvalidUsage('bad-request')
         # TODO validate email address is legit
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
 
-    # TODO generate email and send with ses
+    #get_template from db, generate email and send with ses
+    from .models.email_template import EMAIL_TEMPLATE_BACKUP_NAG_1
+    template_dict = get_email_template_by_type(EMAIL_TEMPLATE_BACKUP_NAG_1)
+    if not template_dict:
+        raise InternalError('cant fetch email template')
+
+    from .send_email import send_mail_with_qr_attachment
+    try:
+        res = send_mail_with_qr_attachment(
+            template_dict['sent_from'],
+            [to_address],
+            template_dict['title'],
+            template_dict['body'],
+            enc_key)
+        print('email result: %s' % res)
+        increment_metric('backup-email-sent-success')
+    except Exception as e:
+        print('failed to sent backup email to %s. e:%s' % (to_address, e))
+        increment_metric('backup-email-sent-failure')
+    #TODO handle errors
+
     return jsonify(status='ok')
 
 

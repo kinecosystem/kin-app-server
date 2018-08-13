@@ -44,3 +44,52 @@ def send_mail(sender: str, recipients: list, title: str, body: str, attachments:
             })
         responses.append(response)
     return responses
+
+
+def send_mail_with_qr_attachment(sender: str, recipients: list, title: str, body: str, qr_input) -> list:
+    '''
+    Sends an email via ses with a qr attachment called 'qr_code.png' which is generated on the fly
+    '''
+    # create raw email
+    msg = MIMEMultipart()
+    msg['Subject'] = title
+    msg['From'] = sender
+
+    charset = "utf-8"
+
+    # qr attachment from png stream
+    part = MIMEApplication(create_qr_buffer(qr_input).getvalue())
+    part.add_header('Content-Disposition', 'attachment', filename='qr_code.png')
+    part.add_header('Content-ID', '<qrcode>')
+    msg.attach(part)
+
+    # html content
+    part = MIMEText(body.encode(charset), 'html', charset)
+    msg.attach(part)
+
+
+
+    # end create raw email
+    responses = []
+    for recipient in recipients:
+        # important: msg['To'] has to be a string. If you want more than one recipient,
+        # you need to do sth. like ", ".join(recipients)
+        msg['To'] = recipient
+        response = ses_client.send_raw_email(
+            Source=sender,
+            Destinations=[recipient],  # here it has to be a list, even if it is only one recipient
+            RawMessage={
+                'Data': msg.as_string()  # this generates all the headers and stuff for a raw mail message
+            })
+        responses.append(response)
+    return responses
+
+
+def create_qr_buffer(qr_input):
+    import io
+    import pyqrcode
+    import png
+    buffer = io.BytesIO()
+    qr = pyqrcode.create(qr_input)
+    qr.png(buffer, scale=5)
+    return buffer

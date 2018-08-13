@@ -227,7 +227,7 @@ def print_creation_statement():
     """prints out db creation statement. useful"""
     from sqlalchemy.schema import CreateTable
     from sqlalchemy.dialects import postgresql
-    from .models import BlackhawkCard, BlackhawkOffer, BlackhawkCreds, UserAppData, User, ACL, BackupQuestion, PhoneBackupHints
+    from .models import BlackhawkCard, BlackhawkOffer, BlackhawkCreds, UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, EmailTemplate
     print(CreateTable(User.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(UserAppData.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(BlackhawkCard.__table__).compile(dialect=postgresql.dialect()))
@@ -236,6 +236,7 @@ def print_creation_statement():
     print(CreateTable(ACL.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(BackupQuestion.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(PhoneBackupHints.__table__).compile(dialect=postgresql.dialect()))
+    print(CreateTable(EmailTemplate.__table__).compile(dialect=postgresql.dialect()))
 
 
 def random_string(length=8):
