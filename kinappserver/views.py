@@ -1402,10 +1402,10 @@ def get_back_questions_endpoint():
 
 
 @app.route('/user/ui-alerts', methods=['GET'])
-def get_back_questions_endpoint():
+def get_ui_alerts_endpoint():
     """return a dict of the backup questions"""
-    texts = {'nag_backup': 'please use our amazing backup mechanism please. lorem ipsum est dolour'}
-    return jsonify(status='ok', texts=texts)
+    alerts = [{"type": "backup_nag", "text": "please use our amazing backup mechanism please. lorem ipsum est dolour"}]
+    return jsonify(status='ok', alerts=alerts)
 
 
 @app.route('/user/backup/hints', methods=['POST'])
