@@ -1407,6 +1407,36 @@ def get_ui_alerts_endpoint():
     return jsonify(status='ok', alerts=alerts)
 
 
+@app.route('/test/email', methods=['GET'])
+def send_email_endpoint():
+    """temp endpoint used to send emails"""
+    from .send_email import send_mail
+
+    sender = "backup@kinitapp.com"  # this has to be a verified mail in SES
+    recipients = ["ami.blonder@kik.com"]  # replace with valid mails
+    mail_subject = "This is the mail subject line"
+    mail_body = """\
+    <html>
+    <head></head>
+    <body>
+    <h1>Hello!</h1>
+    <p>Please save the attached backup code somewhere nobody can read</p>
+    </body>
+    </html>
+    """
+    attachments = {}
+    responses = send_mail(
+        sender,
+        recipients,
+        mail_subject,
+        mail_body,
+        attachments)
+
+    print(responses)
+
+    return jsonify(status='ok')
+
+
 @app.route('/user/email_backup', methods=['POST'])
 def email_backup_endpoint():
     """generates an email with the user's backup details and sends it"""
