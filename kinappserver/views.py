@@ -1408,6 +1408,27 @@ def get_ui_alerts_endpoint():
     return jsonify(status='ok', alerts=alerts)
 
 
+@app.route('/user/email_backup', methods=['POST'])
+def email_backup_endpoint():
+    """generates an email with the user's backup details and sends it"""
+    user_id, auth_token = extract_headers(request)
+    if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
+        abort(403)
+    try:
+        payload = request.get_json(silent=True)
+        address = payload.get('address', None)
+        enc_key = payload.get('enc_key', None)
+        if None in (address, enc_key):
+            raise InvalidUsage('bad-request')
+        # TODO validate email address is legit
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    # TODO generate email and send with ses
+    return jsonify(status='ok')
+
+
 @app.route('/user/backup/hints', methods=['POST'])
 def post_backup_hints_endpoint():
     """store the user's backup hints"""
