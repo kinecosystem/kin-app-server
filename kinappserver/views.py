@@ -198,6 +198,39 @@ def set_user_phone_number_endpoint():
     return jsonify(status='ok', hints=get_backup_hints(user_id))
 
 
+@app.route('/user/push/update-token', methods=['POST'])
+def update_token_api_old():
+    """updates a user's token in the database """
+    payload = request.get_json(silent=True)
+    try:
+        user_id, auth_token = extract_headers(request)
+        token = payload.get('token', None)
+        if None in (user_id, token):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    lock = redis_lock.Lock(app.redis, 'update_token:%s' % user_id)
+    if lock.acquire(blocking=False):
+        try:
+            print('updating token for user %s' % user_id)
+            update_user_token(user_id, token)
+
+            # send auth token now that we have push token
+            send_push_auth_token(user_id)
+        except Exception as e:
+            print('exception trying to update token for user_id %s' % user_id)
+            return jsonify(status='error'), status.HTTP_400_BAD_REQUEST
+        finally:
+            lock.release()
+
+    else:
+        print('already updating token for user %s. ignoring request' % user_id)
+
+    return jsonify(status='ok')
+
+
 @app.route('/user/update-token', methods=['POST'])
 def update_token_api():
     """updates a user's token in the database """
