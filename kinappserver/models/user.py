@@ -6,6 +6,7 @@ from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_num
 from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_please_upgrade_push_2
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
+import arrow
 
 DEFAULT_TIME_ZONE = -4
 KINIT_IOS_PACKAGE_ID_PROD = 'org.kinecosystem.kinit'  # AKA bundle id
@@ -124,7 +125,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
         user_app_data.user_id = user_id
         user_app_data.completed_tasks = '[]'
         user_app_data.app_ver = app_ver
-        user_app_data.next_task_ts = None
+        user_app_data.next_task_ts = arrow.utcnow().timestamp
         user_app_data.next_task_memo = generate_memo()
         db.session.add(user_app_data)
         db.session.commit()
@@ -407,7 +408,6 @@ def get_next_task_results_ts(user_id):
 def get_users_for_engagement_push(scheme):
     """get user_ids for an engagement scheme"""
     from datetime import datetime, timedelta
-    import arrow
     from kinappserver.models import get_tasks_for_user
     now = arrow.utcnow().shift(seconds=60).timestamp  # add a small timeshift to account for calculation time
     user_ids = {OS_IOS: [], OS_ANDROID: []}
