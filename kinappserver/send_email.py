@@ -60,14 +60,21 @@ def send_mail_with_qr_attachment(sender: str, recipients: list, title: str, body
     # qr attachment from png stream
     part = MIMEApplication(create_qr_buffer(qr_input).getvalue())
     part.add_header('Content-Disposition', 'attachment', filename='qr_code.png')
-    part.add_header('Content-ID', '<qrcode>')
+    part.add_header('Content-ID', '<qr_code.png>')
     msg.attach(part)
+
+    # attach static images
+    attachments = {'beta_logo.png': '/opt/kin-app-server/kinappserver/statics/beta_logo.png',
+                   '@2xbeta_logo.png': '/opt/kin-app-server/kinappserver/statics/@2xbeta_logo.png'}
+    for attachment in attachments:
+        part = MIMEApplication(open(attachments[attachment], 'rb').read())
+        part.add_header('Content-Disposition', 'attachment', filename=attachment)
+        part.add_header('Content-ID', '<%s>' % attachment)
+        msg.attach(part)
 
     # html content
     part = MIMEText(body.encode(charset), 'html', charset)
     msg.attach(part)
-
-
 
     # end create raw email
     responses = []
@@ -91,5 +98,5 @@ def create_qr_buffer(qr_input):
     import png
     buffer = io.BytesIO()
     qr = pyqrcode.create(qr_input)
-    qr.png(buffer, scale=5)
+    qr.png(buffer, scale=10)
     return buffer
