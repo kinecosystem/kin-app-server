@@ -1019,6 +1019,7 @@ def compensate_user_api():
         # also send push to the user
         task_title = get_task_details(task_id)['title']
         send_compensated_push(user_id, kin_amount, task_title)
+        increment_metric('manual-compensation')
 
         return jsonify(status='ok', tx_hash=tx_hash)
 

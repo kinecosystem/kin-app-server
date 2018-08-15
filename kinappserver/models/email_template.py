@@ -10,7 +10,7 @@ class EmailTemplate(db.Model):
     """email templates for various uses"""
     template_type = db.Column(db.String(100), primary_key=True)
     title = db.Column(db.String(200), primary_key=False)
-    body = db.Column(db.String(1000), primary_key=False)
+    body = db.Column(db.String(100000), primary_key=False)
     sent_from = db.Column(db.String(100), primary_key=False)
 
     def __repr__(self):
