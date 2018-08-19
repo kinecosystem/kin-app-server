@@ -235,6 +235,9 @@ def track_orders():
         if status == 'incomplete':
             print('ignoring order_id %s with status: incomplete' % order_id)
             continue
+        if status == 'cancelled':
+            print('ignoring order_id %s with status: cancelled' % order_id)
+            continue
         if status == 'processed':
             # order was processed, so add all related cards to our db
             print('detected a processed order: %s. getting card codes for this order...' % order_id)
