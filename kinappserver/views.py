@@ -1556,3 +1556,11 @@ def post_backup_restore():
         else:
             increment_metric('restore-failure')
             raise InvalidUsage('cant restore user')
+
+
+@app.route('/blacklist/areacodes', methods=['GET'])
+def get_blacklist_areacodes_endpoint():
+    """returns a list of blacklisted areacodes"""
+    #TODO implement a serverside block too
+    blocked_areacodes = ['+55']
+    return jsonify(areacodes=blocked_areacodes)
