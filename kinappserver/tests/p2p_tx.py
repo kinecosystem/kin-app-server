@@ -160,7 +160,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(len(json.loads(resp.data)['txs']), 0)
 
         # user 1 updates his phone number to the server after client-side verification
-        phone_num = '+972527702891'
+        phone_num = '+972527702890'
         resp = self.app.post('/user/firebase/update-id-token',
                     data=json.dumps({
                         'token': phone_num,
