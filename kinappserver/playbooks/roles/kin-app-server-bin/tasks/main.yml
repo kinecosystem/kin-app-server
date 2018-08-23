@@ -4,6 +4,7 @@
     dest=/opt/kin-app-server
     accept_hostkey=true
     force=yes
+    version={{kin_app_server_branch_name}}
 
 - name: Template the config file
   template:

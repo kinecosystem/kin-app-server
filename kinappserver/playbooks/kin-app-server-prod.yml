@@ -8,6 +8,7 @@
     - igor_mukhin.bash_aliases
 
   vars:
+   kin_app_server_branch_name: master
    deployment_env: prod
    environment_config:
      ENV: prod
@@ -46,6 +47,9 @@
    auth_token_enabled: True
    blackhawk_purchases_enabled: True
    blackhawk_critical_balance_threshold: 30 # no cards will be ordered when we reach this threshold
+   payment_service_url: 'http://prod.payments.kinitapp.com:5000'
+   api_server_url: 'https://api.kinitapp.com'
+   use_payment_service_phone_number_prefix: '++'
    bash_aliases:
      - { alias: '_env', command: 'echo "kinappserver prod"' }
      - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}

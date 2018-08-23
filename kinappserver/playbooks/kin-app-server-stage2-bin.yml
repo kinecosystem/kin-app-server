@@ -4,9 +4,9 @@
   roles:
     - franklinkim.environment
     - kin-app-server-bin
-    - igor_mukhin.bash_aliases
 
   vars:
+   kin_app_server_branch_name: ami/add-payment-service
    deployment_env: stage2
    environment_config:
      ENV: stage2
@@ -24,9 +24,9 @@
    eshu_rabbit_address: 10.0.1.48
    stellar_timeout_sec: 30
    stellar_initial_account_balance: 2
-   stellar_network: 'TESTNET'
-   stellar_kin_issuer_address: GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V
-   stellar_horizon_url: https://horizon-testnet.stellar.org/
+   stellar_network: 'Kin Playground Network ; June 2018'
+   stellar_kin_issuer_address: GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7
+   stellar_horizon_url: https://horizon-playground.kininfrastructure.com
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: True
@@ -40,10 +40,6 @@
    auth_token_enabled: True
    blackhawk_purchases_enabled: False
    blackhawk_critical_balance_threshold: 50
-   bash_aliases:
-     - { alias: '_env', command: 'echo "kinappserver"' }
-     - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
-     - { alias: '_log', command: 'cat /var/log/kinappserver.err.log' }
-     - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
-     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/stage2/sql/userpassword')}}@kinappstage2.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage" }
-
+   payment_service_url: 'http://stage2.payments.kinitapp.com:4999'
+   api_server_url: 'https://stage2.kinitapp.com'
+   use_payment_service_phone_number_prefix: '++'

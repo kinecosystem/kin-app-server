@@ -5,9 +5,11 @@ from flask import config
 import os
 import requests
 import phonenumbers
+import redis
+import json
 
 
-from kinappserver import config
+from kinappserver import config, app
 
 
 ERROR_ORDERS_COOLDOWN = -1
@@ -242,3 +244,35 @@ def print_creation_statement():
 def random_string(length=8):
     import random
     return ''.join(random.choice('0123456789ABCDEF') for i in range(length))
+
+
+def read_json_from_cache(key):
+    try:
+        data = app.redis.get(key)
+        if not data:
+            raise InternalError('could not find key %s in cache' % key)
+        return json.loads(data.decode())
+    except Exception as e:
+        print('could not read json data from cache with key %s. e=%s' % (key,e))
+        return None
+
+
+def write_json_to_cache(key, val, ttl=10*60):
+    if val is None:
+        print('write_json_to_cache: refusing to store None value')
+        return False
+    try:
+        app.redis.setex(key, ttl, json.dumps(val))
+        return True
+    except Exception as e:
+        print('failed to write json data to cache with key %s and value %s. exception: %s' % (key, val, e))
+        return False
+
+
+def write_payment_data_to_cache(memo, user_id, task_id, send_push=True):
+    return write_json_to_cache(memo, {'user_id': str(user_id), 'task_id': str(task_id), 'send_push': send_push})
+
+
+def read_payment_data_from_cache(memo):
+    data = read_json_from_cache(memo)
+    return data['user_id'], data['task_id'], data['send_push']

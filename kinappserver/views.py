@@ -11,9 +11,9 @@ import arrow
 import redis
 
 from kinappserver import app, config, stellar, utils, ssm
-from kinappserver.stellar import create_account, send_kin
+from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
-    sqlalchemy_pool_status, get_global_config
+    sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     store_task_results, add_task, get_tasks_for_user, is_onboarded, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
@@ -26,8 +26,9 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
-    get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, validate_auth_token, restore_user_by_address, \
-    get_email_template_by_type
+    get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
+    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id
+
 
 
 def limit_to_localhost():
@@ -403,13 +404,68 @@ def post_user_task_results_endpoint():
             raise InternalError('cant save results for userid %s' % user_id)
     try:
         memo = get_and_replace_next_task_memo(user_id)
-        reward_and_push(address, task_id, send_push, user_id, memo, delta)
+        split_payment(address, task_id, send_push, user_id, memo, delta)
+
     except Exception as e:
         print('exception: %s' % e)
         print('failed to reward task %s at address %s' % (task_id, address))
 
     increment_metric('task_completed')
     return jsonify(status='ok', memo=str(memo))
+
+
+def split_payment(address, task_id, send_push, user_id, memo, delta):
+    """this function calls either the payment service or the internal sdk to pay the user
+
+    this function will eventually be replaced, once we're sure the payment service is working
+    as intended.
+    """
+    use_payment_service = False
+    phone_number = get_unenc_phone_number_by_user_id(user_id)
+    if phone_number and phone_number.find(config.USE_PAYMENT_SERVICE_PHONE_NUMBER_PREFIX) >= 0: # like '+' or '+972' or '++' for (all, israeli numbers, nothing)
+        print('using payment service for user_id %s' % user_id)
+        use_payment_service = True
+
+    if use_payment_service:
+        reward_address_for_task_internal_payment_service(address, task_id, send_push, user_id, memo, delta)
+    else:
+        reward_and_push(address, task_id, send_push, user_id, memo, delta)
+
+
+def reward_and_push(public_address, task_id, send_push, user_id, memo, delta):
+    """create a thread to perform this function in the background"""
+    Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo, delta)).start()
+
+
+def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo, delta=0):
+    """transfer the correct amount of kins for the task to the given address
+
+       this function runs in the background and sends a push message to the client to
+       indicate that the money was indeed transferred.
+
+       typically, tips are negative delta and quiz-results are positive delta
+    """
+    # get reward amount from db
+    amount = get_reward_for_task(task_id)
+    if not amount:
+        print('could not figure reward amount for task_id: %s' % task_id)
+        raise InternalError('cant find reward for task_id %s' % task_id)
+
+    # take into account the delta: add or reduce kins from the amount
+    amount = amount + delta
+
+    try:
+        # send the moneys
+        print('calling send_kin: %s, %s' % (public_address, amount))
+        tx_hash = send_kin(public_address, amount, memo)
+        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
+    except Exception as e:
+        print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
+        increment_metric('outgoing_tx_failed')
+        raise InternalError('failed sending %s kins to %s' % (amount, public_address))
+    finally:  # TODO dont do this if we fail with the tx
+        if tx_hash and send_push:
+            send_push_tx_completed(user_id, tx_hash, amount, task_id)
 
 
 @app.route('/task/add', methods=['POST'])
@@ -706,6 +762,28 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
     finally:  # TODO dont do this if we fail with the tx
         if tx_hash and send_push:
             send_push_tx_completed(user_id, tx_hash, amount, task_id)
+
+
+def reward_address_for_task_internal_payment_service(public_address, task_id, send_push, user_id, memo, delta=0):
+    """transfer the correct amount of kins for the task to the given address using the payment service.
+       the payment service is async and calls a callback when its done. the tx is written into the db
+       in the callback function.
+
+       typically, tips are negative delta and quiz-results are positive delta
+    """
+    memo = memo[6:]  # trim down the memo because the payment service adds the '1-kit-' bit.
+    # get reward amount from db
+    amount = get_reward_for_task(task_id)
+    if not amount:
+        print('could not figure reward amount for task_id: %s' % task_id)
+        raise InternalError('cant find reward for task_id %s' % task_id)
+
+    # take into account the delta: add or reduce kins from the amount
+    amount = amount + delta
+    write_payment_data_to_cache(memo, user_id, task_id, send_push) # store this info in cache for when the callback is called
+    print('calling send_kin with the payment service: %s, %s' % (public_address, amount))
+    # sends a request to the payment service. result comes back via a callback
+    send_kin_with_payment_service(public_address, amount, memo)
 
 
 @app.route('/offer/add', methods=['POST'])
@@ -1564,3 +1642,56 @@ def get_blacklist_areacodes_endpoint():
     #TODO implement a serverside block too
     blocked_areacodes = ['+55']
     return jsonify(areacodes=blocked_areacodes)
+
+@app.route('/payments/callback', methods=['POST'])
+def payment_service_callback_endpoint():
+    """an endpoint for the payment service."""
+    payload = request.get_json(silent=True)
+    print(payload) #TODO remove eventually
+
+    try:
+        action = payload.get('action', None)
+        obj = payload.get('object', None)
+        state = payload.get('state', None)
+        val = payload.get('value', None)
+
+        if None in (action, obj, state, val):
+            print('should never happen: cant process payment service callback: %s' % payload)
+            increment_metric('payment-callback-error')
+            return jsonify(status='error', reason='internal_error')
+
+        #  process payment:
+        if action == 'send' and obj == 'payment':
+            if state == 'success':
+                memo = val.get('id', None)
+                tx_hash = val.get('transaction_id', None)
+                amount = val.get('amount', None)
+                public_address = val.get('sender_address')
+                if None in (memo, tx_hash, amount):
+                    print('should never happen: cant process successful payment callback: %s' % payload)
+                    increment_metric('payment-callback-error')
+                    return jsonify(status='error', reason='internal_error')
+
+                # retrieve the user_id and task_id from the cache
+                user_id, task_id, send_push = read_payment_data_from_cache(memo)
+
+                # slap the '1-kit' on the memo
+                memo = '1-kit-%s' % memo
+
+                create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
+                increment_metric('payment-callback-success')
+                if tx_hash and send_push:
+                        send_push_tx_completed(user_id, tx_hash, amount, task_id)
+            else:
+                print('received failed tx from the payment service: %s' % payload)
+                #TODO implement some retry mechanism here
+        else:
+            print('should never happen: unhandled callback from the payment service: %s' % payload)
+
+    except Exception as e:
+        increment_metric('payment-callback-error')
+        print('failed processing the payment service callback')
+        print(e)
+        return jsonify(status='error', reason='internal_error')
+
+    return jsonify(status='ok')
