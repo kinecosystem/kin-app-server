@@ -138,6 +138,27 @@ def get_address_by_phone_api():
     return jsonify(status='ok', address=address)
 
 
+@app.route('/user/auth/send', methods=['POST'])
+def send_auth_token_api():
+    """debug endpoint used to manually target clients with auth tokens"""
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    payload = request.get_json(silent=True)
+    try:
+        user_ids = payload.get('user_ids', [])
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    for user_id in user_ids:
+        # force send auth push
+        send_push_auth_token(user_id, force_send=True)
+
+    return jsonify(status='ok')
+
+
+
 @app.route('/user/auth/ack', methods=['POST'])
 def ack_auth_token_api():
     """endpoint used by clients to ack the auth-token they received"""
