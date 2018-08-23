@@ -47,7 +47,7 @@
    auth_token_enabled: True
    blackhawk_purchases_enabled: True
    blackhawk_critical_balance_threshold: 30 # no cards will be ordered when we reach this threshold
-   payment_service_url: 'http://prod.payments.kinitapp.com:5000'
+   payment_service_url: 'http://prod.payments.kinitapp.com:4999'
    api_server_url: 'https://api.kinitapp.com'
    use_payment_service_phone_number_prefix: '+972527702891'
    bash_aliases:

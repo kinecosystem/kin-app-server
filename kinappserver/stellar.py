@@ -62,7 +62,7 @@ def send_kin_with_payment_service(public_address, amount, memo=None):
         'amount': amount,
         'app_id': 'kit',
         'recipient_address': public_address,
-        'callback': "%s/payments/callback" % config.API_SERVER_URL  # move to config
+        'callback': "%s/payments/callback" % config.API_SERVER_URL
     }
 
     try:

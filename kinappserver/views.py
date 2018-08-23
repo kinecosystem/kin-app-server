@@ -421,10 +421,13 @@ def split_payment(address, task_id, send_push, user_id, memo, delta):
     as intended.
     """
     use_payment_service = False
-    phone_number = get_unenc_phone_number_by_user_id(user_id)
-    if phone_number and phone_number.find(config.USE_PAYMENT_SERVICE_PHONE_NUMBER_PREFIX) >= 0: # like '+' or '+972' or '++' for (all, israeli numbers, nothing)
-        print('using payment service for user_id %s' % user_id)
-        use_payment_service = True
+    try:
+        phone_number = get_unenc_phone_number_by_user_id(user_id)
+        if phone_number and phone_number.find(config.USE_PAYMENT_SERVICE_PHONE_NUMBER_PREFIX) >= 0: # like '+' or '+972' or '++' for (all, israeli numbers, nothing)
+            print('using payment service for user_id %s' % user_id)
+            use_payment_service = True
+    except Exception as e:
+        print('cant determine whether to use the payment service for user_id %s. defaulting to no' % user_id)
 
     if use_payment_service:
         reward_address_for_task_internal_payment_service(address, task_id, send_push, user_id, memo, delta)
