@@ -161,7 +161,6 @@ def get_user_id_by_truex_user_id(truex_user_id):
         raise
 
 
-
 def update_user_token(user_id, push_token):
     """updates the user's token with a new one"""
     user = get_user(user_id)

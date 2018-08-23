@@ -236,7 +236,7 @@ def update_token_api_old():
     lock = redis_lock.Lock(app.redis, 'update_token:%s' % user_id)
     if lock.acquire(blocking=False):
         try:
-            print('updating token for user %s' % user_id)
+            print('updating token for user %s to %s' % (user_id, token))
             update_user_token(user_id, token)
 
             # send auth token now that we have push token
