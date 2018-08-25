@@ -329,7 +329,7 @@ def replenish_bh_cards():
     # TODO: at the moment, we only generate a new order (for any card) if there are no pending yet-unprocessed orders.
     # TODO this may create a bottleneck once we have multiple blackhawk offers configured. in the future, we may want
     # TODO to change that.
-    if yet_unprocessed_orders > 5:
+    if yet_unprocessed_orders > 10:
         print('replenish_bh_cards: not making additional blackhawk orders while there are %s unprocessed orders' % yet_unprocessed_orders)
         return True
 
