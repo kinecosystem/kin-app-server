@@ -49,7 +49,7 @@
    blackhawk_critical_balance_threshold: 30 # no cards will be ordered when we reach this threshold
    payment_service_url: 'http://prod.payments.kinitapp.com:4999'
    api_server_url: 'https://api.kinitapp.com'
-   use_payment_service_phone_number_prefix: '+'
+   use_payment_service_phone_number_prefix: '+972'
    bash_aliases:
      - { alias: '_env', command: 'echo "kinappserver prod"' }
      - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}

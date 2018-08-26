@@ -253,7 +253,7 @@ def read_json_from_cache(key):
             raise InternalError('could not find key %s in cache' % key)
         return json.loads(data.decode())
     except Exception as e:
-        print('could not read json data from cache with key %s. e=%s' % (key,e))
+        print('could not read json data from cache with key %s. e=%s' % (key, e))
         return None
 
 
