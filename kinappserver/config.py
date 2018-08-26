@@ -53,4 +53,4 @@ TRUEX_APP_ID = ''
 TRUEX_PARTNER_HASH = ''
 TRUEX_CALLBACK_SECRET = ''
 
-PAYMENT_SERVICE_URL = 'https://stage2.payments.kinitapp.com:5000'
+PAYMENT_SERVICE_URL = 'https://stage.payments.kinitapp.com:5000'
