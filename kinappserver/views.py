@@ -352,26 +352,29 @@ def post_user_task_results_endpoint():
         correct_answers = {}  # dict of {'qid': 'xxx', 'reward': yyy}
         total_quiz_reward = 0  # the total reward collected for this task
 
-        # create a question/correct-answers dict
-        for item in task_data['items']:
-            if item.get('quiz_data', None):
-                correct_answers[item['id']] = {'aid': item['quiz_data']['answer_id'], 'reward': item['quiz_data']['reward']}
+        try:
+            # create a question/correct-answers dict
+            for item in task_data['items']:
+                if item.get('quiz_data', None):
+                    correct_answers[item['id']] = {'aid': item['quiz_data']['answer_id'], 'reward': item['quiz_data']['reward']}
 
-        print('correct results: %s' % correct_answers)
+            print('correct results: %s' % correct_answers)
 
-        # create results dict from array:
-        actual_results = {}
-        for item in results:
-            print('item: %s' % item)
-            actual_results[item['qid']] = item['aid'][0] # assumes that quiz answers are always a list with a single element
+            # create results dict from array:
+            actual_results = {}
+            for item in results:
+                print('item: %s' % item)
+                actual_results[item['qid']] = item['aid'][0] # assumes that quiz answers are always a list with a single element
 
-        # compare to the actual results to the correct results
-        for qid in correct_answers.keys():
-            if correct_answers[qid]['aid'] == actual_results[qid]:
-                total_quiz_reward = total_quiz_reward + correct_answers[qid]['reward']
-                print('added reward %s for correct results: qid:%s, aid:%s' % (correct_answers[qid]['reward'], qid, correct_answers[qid]['aid']))
-            else:
-                print('not rewarding %s for incorrect results: qid:%s, actual aid:%s, expected aid:%s' % (correct_answers[qid]['reward'], qid, actual_results[qid], correct_answers[qid]['aid']))
+            # compare to the actual results to the correct results
+            for qid in correct_answers.keys():
+                if correct_answers[qid]['aid'] == actual_results[qid]:
+                    total_quiz_reward = total_quiz_reward + correct_answers[qid]['reward']
+                    print('added reward %s for correct results: qid:%s, aid:%s' % (correct_answers[qid]['reward'], qid, correct_answers[qid]['aid']))
+                else:
+                    print('not rewarding %s for incorrect results: qid:%s, actual aid:%s, expected aid:%s' % (correct_answers[qid]['reward'], qid, actual_results[qid], correct_answers[qid]['aid']))
+        except Exception as e:
+            print('caught exception processing quiz results for user_id %s and task_id %s.' % (user_id, task_id))
 
         print('total reward for quiz task: %s' % total_quiz_reward)
         delta = delta + total_quiz_reward
