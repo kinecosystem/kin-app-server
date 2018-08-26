@@ -438,43 +438,6 @@ def split_payment(address, task_id, send_push, user_id, memo, delta):
     else:
         reward_and_push(address, task_id, send_push, user_id, memo, delta)
 
-
-def reward_and_push(public_address, task_id, send_push, user_id, memo, delta):
-    """create a thread to perform this function in the background"""
-    Thread(target=reward_address_for_task_internal, args=(public_address, task_id, send_push, user_id, memo, delta)).start()
-
-
-def reward_address_for_task_internal(public_address, task_id, send_push, user_id, memo, delta=0):
-    """transfer the correct amount of kins for the task to the given address
-
-       this function runs in the background and sends a push message to the client to
-       indicate that the money was indeed transferred.
-
-       typically, tips are negative delta and quiz-results are positive delta
-    """
-    # get reward amount from db
-    amount = get_reward_for_task(task_id)
-    if not amount:
-        print('could not figure reward amount for task_id: %s' % task_id)
-        raise InternalError('cant find reward for task_id %s' % task_id)
-
-    # take into account the delta: add or reduce kins from the amount
-    amount = amount + delta
-
-    try:
-        # send the moneys
-        print('calling send_kin: %s, %s' % (public_address, amount))
-        tx_hash = send_kin(public_address, amount, memo)
-        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
-    except Exception as e:
-        print('caught exception sending %s kins to %s - exception: %s:' % (amount, public_address, e))
-        increment_metric('outgoing_tx_failed')
-        raise InternalError('failed sending %s kins to %s' % (amount, public_address))
-    finally:  # TODO dont do this if we fail with the tx
-        if tx_hash and send_push:
-            send_push_tx_completed(user_id, tx_hash, amount, task_id)
-
-
 @app.route('/task/add', methods=['POST'])
 def add_task_api():
     """used to add tasks to the db"""
@@ -1451,8 +1414,10 @@ def compensate_truex_activity(user_id):
 
     memo, compensated_user_id = handle_task_results_resubmission(user_id, task_id)
     if memo:
-        print('compensate_truex_activity: detected resubmission of previously payed-for task by user_id: %s. memo:%s' % (compensated_user_id, memo))
-        # this task was already submitted - and compensated, so just re-return the memo to the user.
+        print('compensate_truex_activity: detected resubmission of previously payed-for task by user_id: %s . memo:%s' % (compensated_user_id, memo))
+        # this task was already submitted - and compensated, so dont pay again for the same task.
+        # this really shouldn't happen, but it could happen if the phone-number's history wasn't migrated to the new user.
+        # lets copy the user's history and bring her up to date, and then return 200OK.
         return True
 
     # store some fake results as this task doesn't have any
@@ -1463,7 +1428,7 @@ def compensate_truex_activity(user_id):
         address = get_address_by_userid(user_id)
         reward_and_push(address, task_id, False, user_id, memo, delta=0)
     except Exception as e:
-        print('failed to reward truex task %s at address %s for user_id %s. exception: %s' % (task_id, address, user_id, e))
+        print('failed to reward truex task %s at address %s for user_id %s . exception: %s' % (task_id, address, user_id, e))
         raise(e)
 
     increment_metric('task_completed')

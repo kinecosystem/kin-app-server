@@ -142,6 +142,7 @@ def scan_for_deauthed_users():
     deauth_user_ids = []
     now = arrow.utcnow()
     for token in push_auth_tokens:
+        print('scanning %s tokens' % len(push_auth_tokens))
         if token.authenticated:
             # authenticated users have all previously been sent - and acked
             send_date = arrow.get(token.send_date)
