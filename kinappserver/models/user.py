@@ -735,7 +735,7 @@ def find_missing_txs():
             # get the active user id for the phone number
             missing_txs.append({'user_id': get_active_user_id_by_enc_phone(enc_number), 'task_id': item, 'reward': reward})
 
-        if len(missing_txs) > 200:
+        if len(missing_txs) > 500:
             # stop here, otherwise it takes too long
             break
 
