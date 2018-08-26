@@ -142,7 +142,8 @@ def get_offers_for_user(user_id):
         if goods_avilable(offer.offer_id):
             redeemable_offers.append(offer)
         else:
-            print('filtering out un-redeemable offer-id: %s' % offer.offer_id)
+            #print('filtering out un-redeemable offer-id: %s' % offer.offer_id)
+            pass
 
     # filter out p2p for users with client versions that do not support it
     from .user import get_user_app_data, get_user_os_type
@@ -208,7 +209,7 @@ def get_offers_for_user(user_id):
                     offers_to_remove.append(offer)
         # 3. clean up offers list
         for offer in offers_to_remove:
-            print('get_offers_for_user: removing offer_id %s' % offer.offer_id)
+            #print('get_offers_for_user: removing offer_id %s' % offer.offer_id)
             redeemable_offers.remove(offer)
 
 
