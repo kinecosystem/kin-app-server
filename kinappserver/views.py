@@ -341,6 +341,13 @@ def post_user_task_results_endpoint():
     if memo:
         print('detected resubmission of previously payed-for task by user_id: %s. memo:%s' % (compensated_user_id, memo))
         # this task was already submitted - and compensated, so just re-return the memo to the user.
+
+        # try to fix the task for the nex time:
+        try:
+            fix_user_task_history(user_id)
+        except Exception as e:
+            print('failed to fix user_id %s history. e=%s' % (user_id, e))
+
         return jsonify(status='ok', memo=str(memo))
 
     task_data = get_task_by_id(task_id)
