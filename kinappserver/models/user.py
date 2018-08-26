@@ -888,3 +888,17 @@ def restore_user_by_address(current_user_id, address):
     # 5. return the (now active) original user_id.
     print('restore_user_by_address: successfully restored the original user_id: %s' % original_user_id)
     return original_user_id
+
+
+def fix_user_task_history(user_id):
+    #TODO add try-catch
+    """ find this user's phone number make sure this user_id has the most updated task history"""
+    enc_phone_number = get_enc_phone_number_by_user_id(user_id)
+    # find the user_id that has the most tasks and copy it
+    prepated_stmt = '''select public.user.user_id from public.user, public.user_app_data where public.user.user_id=public.user_app_data.user_id and public.user.enc_phone_number='%s' order by cast(user_app_data.completed_tasks as varchar) desc limit 1;'''
+    results = db.engine.execute(prepated_stmt % (enc_phone_number))
+    longest_history_user_id = results.fetchone()[0]
+    print('planting user_id %s task history into %s' % (longest_history_user_id, user_id))
+
+    db.engine.execute("delete from public.user_task_results where user_id='%s'" % UUID(user_id))
+    db.engine.execute("update public.user_task_results set user_id='%s' where user_id='%s'" % (UUID(user_id), longest_history_user_id))

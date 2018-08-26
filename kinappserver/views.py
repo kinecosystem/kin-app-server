@@ -27,7 +27,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
-    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id
+    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history
 
 
 
@@ -1418,6 +1418,7 @@ def compensate_truex_activity(user_id):
         # this task was already submitted - and compensated, so dont pay again for the same task.
         # this really shouldn't happen, but it could happen if the phone-number's history wasn't migrated to the new user.
         # lets copy the user's history and bring her up to date, and then return 200OK.
+        fix_user_task_history(user_id)
         return True
 
     # store some fake results as this task doesn't have any
