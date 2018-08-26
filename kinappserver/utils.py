@@ -249,11 +249,12 @@ def random_string(length=8):
 def read_json_from_cache(key):
     try:
         data = app.redis.get(key)
+        print('data: %s' % data)
         if not data:
             raise InternalError('could not find key %s in cache' % key)
         return json.loads(data.decode())
     except Exception as e:
-        print('could not read json data from cache with key %s. e=%s' % (key, e))
+        print('could not read json data from cache with key %s. e=%s. data=%s' % (key, e, data))
         return None
 
 
