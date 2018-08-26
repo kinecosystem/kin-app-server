@@ -1688,6 +1688,7 @@ def payment_service_callback_endpoint():
             else:
                 print('received failed tx from the payment service: %s' % payload)
                 #TODO implement some retry mechanism here
+                increment_metric('payment-callback-failed')
         else:
             print('should never happen: unhandled callback from the payment service: %s' % payload)
 
