@@ -242,7 +242,7 @@ def update_token_api_old():
             # send auth token now that we have push token
             send_push_auth_token(user_id)
         except Exception as e:
-            print('exception trying to update token for user_id %s' % user_id)
+            print('exception trying to update token for user_id %s with token: %s. exception: %s' % (user_id, token, e))
             return jsonify(status='error'), status.HTTP_400_BAD_REQUEST
         finally:
             lock.release()
