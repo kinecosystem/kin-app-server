@@ -271,9 +271,9 @@ def write_json_to_cache(key, val, ttl=10*60):
 
 
 def write_payment_data_to_cache(memo, user_id, task_id, send_push=True):
-    return write_json_to_cache(memo, {'user_id': str(user_id), 'task_id': str(task_id), 'send_push': send_push})
+    return write_json_to_cache('memo:%s' % memo, {'user_id': str(user_id), 'task_id': str(task_id), 'send_push': send_push})
 
 
 def read_payment_data_from_cache(memo):
-    data = read_json_from_cache(memo)
+    data = read_json_from_cache('memo:%s' % memo)
     return data['user_id'], data['task_id'], data['send_push']
