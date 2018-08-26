@@ -348,6 +348,7 @@ def post_user_task_results_endpoint():
     # if the task type is "quiz", traverse all the quiz questions and calculate the correct reward based on answers:
     # note that some questions might not be quiz-questions.
     if task_data['type'] == 'quiz':
+        print('processing quiz results for userid %s and task %s' % (user_id, task_id))
         correct_answers = {}  # dict of {'qid': 'xxx', 'reward': yyy}
         total_quiz_reward = 0  # the total reward collected for this task
 
