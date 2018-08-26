@@ -48,7 +48,6 @@ def create_tx(tx_hash, user_id, remote_address, incoming_tx, amount, tx_info):
     else:
         print('created tx with txinfo: %s' % tx.tx_info)
 
-
 def count_transactions_by_minutes_ago(minutes_ago=1):
     """return the number of failed txs since minutes_ago"""
     time_minutes_ago = datetime.datetime.now() - datetime.timedelta(minutes=minutes_ago)
@@ -73,3 +72,10 @@ def get_memo_for_user_ids(user_ids, task_id):
         memo = row[0][comma_index+1:]
         user_id = row[0][:comma_index-1]
         return memo, user_id
+
+
+def update_tx_ts(tx_hash, timestamp):
+    tx = Transaction.query.filter_by(tx_hash=tx_hash).first()
+    tx.update_at = timestamp
+    db.session.add(tx)
+    db.session.commit()

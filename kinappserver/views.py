@@ -27,7 +27,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
-    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, get_userid_by_address
+    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts
 
 
 
@@ -344,7 +344,8 @@ def post_user_task_results_endpoint():
 
         # try to fix the task for the nex time:
         try:
-            fix_user_task_history(user_id)
+            #fix_user_task_history(user_id)
+            pass
         except Exception as e:
             print('failed to fix user_id %s history. e=%s' % (user_id, e))
 
@@ -508,13 +509,15 @@ def set_delay_days_api():
 def get_next_task():
     """returns the current task for the user with the given id"""
     user_id, auth_token = extract_headers(request)
-    tasks = get_tasks_for_user(user_id)
-    if len(tasks) == 1:
-        tasks[0]['memo'] = get_next_task_memo(user_id)
 
     if user_deactivated(user_id):
         print('user %s is deactivated. returning empty task array' % user_id)
         return jsonify(tasks=[], reason='user_deactivated')
+
+    print('getting tasks for userid %s' % user_id)
+    tasks = get_tasks_for_user(user_id)
+    if len(tasks) == 1:
+        tasks[0]['memo'] = get_next_task_memo(user_id)
 
     try:
         # handle unprintable chars...
@@ -1426,7 +1429,8 @@ def compensate_truex_activity(user_id):
         # this really shouldn't happen, but it could happen if the phone-number's history wasn't migrated to the new user.
         # lets copy the user's history and bring her up to date, and then return 200OK.
         try:
-            fix_user_task_history(user_id)
+            #fix_user_task_history(user_id)
+            pass
         except Exception as e:
             print('failed to fix user_id %s history. e=%s' % (user_id, e))
         return True
@@ -1682,7 +1686,7 @@ def payment_service_callback_endpoint():
     return jsonify(status='ok')
 
 
-@app.route('/txs/create', methods=['POST'])
+@app.route('/txs/update_ts', methods=['POST'])
 def create_txs_endpoint():
     #TODO REMVOE THIS
     '''temp endpoit to add txs for users with nissing txs'''
@@ -1692,16 +1696,9 @@ def create_txs_endpoint():
     payload = request.get_json(silent=True)
 
     tx_hash = payload.get('tx_hash', None)
-    amount = payload.get('amount', None)
-    to_address = payload.get('to_address', None)
-    memo = payload.get('memo', None)
+    timestamp = payload.get('timestamp', None)
 
-    user_id = get_userid_by_address(to_address)
-    if not user_id:
-        print('cant find user_id for address %s' % to_address)
-        return jsonify(status='error')
-
-    create_tx(tx_hash, user_id, to_address, False, amount, {'task_id': '-1', 'memo': '1-kit-%s' % memo})
+    update_tx_ts(tx_hash, timestamp)
     return jsonify(status='ok')
 
 

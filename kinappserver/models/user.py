@@ -901,4 +901,4 @@ def fix_user_task_history(user_id):
     completed_tasks = results.fetchone()[0]
     print('planting completed_tasks into user_id %s: %s' % (user_id, completed_tasks))
     db.engine.execute("delete from public.user_task_results where user_id='%s';" % UUID(user_id))
-    db.engine.execute("update public.user_app_data set completed_tasks='%s' where user_id='%s';" % (completed_tasks, UUID(user_id)))
+    db.engine.execute('update public.user_app_data set completed_tasks=\'"%s"\' where user_id=\'%s\';' % (str(completed_tasks), UUID(user_id)))
