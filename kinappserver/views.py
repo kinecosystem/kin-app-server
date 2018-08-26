@@ -1418,7 +1418,10 @@ def compensate_truex_activity(user_id):
         # this task was already submitted - and compensated, so dont pay again for the same task.
         # this really shouldn't happen, but it could happen if the phone-number's history wasn't migrated to the new user.
         # lets copy the user's history and bring her up to date, and then return 200OK.
-        fix_user_task_history(user_id)
+        try:
+            fix_user_task_history(user_id)
+        except Exception as e:
+            print('failed to fix user_id %s history. e=%s' % (user_id, e))
         return True
 
     # store some fake results as this task doesn't have any

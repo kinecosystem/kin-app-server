@@ -741,6 +741,7 @@ def find_missing_txs():
 
     return missing_txs
 
+
 def nuke_user_data(phone_number, nuke_all = False):
     """nuke user's data by phone number. by default only nuke the active user"""
     # find the active user with this number:
