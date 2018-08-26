@@ -27,7 +27,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
-    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history
+    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, get_userid_by_address
 
 
 
@@ -1626,6 +1626,7 @@ def get_blacklist_areacodes_endpoint():
     blocked_areacodes = ['+55']
     return jsonify(areacodes=blocked_areacodes)
 
+
 @app.route('/payments/callback', methods=['POST'])
 def payment_service_callback_endpoint():
     """an endpoint for the payment service."""
@@ -1679,3 +1680,28 @@ def payment_service_callback_endpoint():
         return jsonify(status='error', reason='internal_error')
 
     return jsonify(status='ok')
+
+
+@app.route('/txs/create', methods=['POST'])
+def create_txs_endpoint():
+    #TODO REMVOE THIS
+    '''temp endpoit to add txs for users with nissing txs'''
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    payload = request.get_json(silent=True)
+
+    tx_hash = payload.get('tx_hash', None)
+    amount = payload.get('amount', None)
+    to_address = payload.get('to_address', None)
+    memo = payload.get('memo', None)
+
+    user_id = get_userid_by_address(to_address)
+    if not user_id:
+        print('cant find user_id for address %s' % to_address)
+        return jsonify(status='error')
+
+    create_tx(tx_hash, user_id, to_address, False, amount, {'task_id': '-1', 'memo': '1-kit-%s' % memo})
+    return jsonify(status='ok')
+
+
