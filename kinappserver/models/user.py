@@ -52,6 +52,14 @@ def get_user(user_id):
     return user
 
 
+def deactivate_user(user_id):
+    """deactivate user by userid"""
+    user = get_user(user_id)
+    user.deactivated = True
+    db.session.add(user)
+    db.session.commit()
+
+
 def user_deactivated(user_id):
     """returns true if the user_id is deactivated"""
     # TODO cacahe the results?

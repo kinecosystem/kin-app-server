@@ -30,7 +30,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
-    should_block_user_by_client_version
+    should_block_user_by_client_version, deactivate_user
 from .push import send_please_upgrade_push_2
 
 
@@ -521,6 +521,9 @@ def get_next_task():
     """returns the current task for the user with the given id"""
     user_id, auth_token = extract_headers(request)
 
+    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        return jsonify(tasks=[], reason='user_not_phone_verified')
+
     if user_deactivated(user_id):
         print('user %s is deactivated. returning empty task array' % user_id)
         return jsonify(tasks=[], reason='user_deactivated')
@@ -631,8 +634,10 @@ def onboard_user():
 
     # block users with an older version from onboarding. and send them a push message
     if should_block_user_by_client_version(user_id):
-        print('blocking user %s on onboarding with older version and sending push' % user_id)
+        print('blocking + deactivating user %s on onboarding with older version and sending push' % user_id)
         send_please_upgrade_push_2([user_id])
+        # and also, deactivate the user
+        deactivate_user(user_id)
 
         abort(403)
 
@@ -724,8 +729,6 @@ def register_api():
 
             # turn off phone verfication for older clients:
             disable_phone_verification = False
-            print(os)
-            print('app_ver %s' % app_ver)
             if os == OS_ANDROID and LooseVersion(app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_ANDROID_VERSION):
                     disable_phone_verification = True
             elif os == OS_IOS and LooseVersion(app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_IOS_VERSION):
