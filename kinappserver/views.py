@@ -620,7 +620,7 @@ def onboard_user():
 
     # block users with an older version from onboarding. and send them a push message
     if should_block_user_by_client_version(user_id):
-        print('blocking user %s on onboarding with older version')
+        print('blocking user %s on onboarding with older version and sending push' % user_id)
         send_please_upgrade_push_2([user_id])
         abort(403)
 

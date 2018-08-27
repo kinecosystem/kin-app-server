@@ -50,8 +50,8 @@
    payment_service_url: 'http://prod.payments.kinitapp.com:4999'
    api_server_url: 'https://api.kinitapp.com'
    use_payment_service_phone_number_prefix: '+972559998888'
-   block_onboarding_android_version: 999
-   block_onboarding_ios_version: 999
+   block_onboarding_android_version: 0.0
+   block_onboarding_ios_version: 0.0
    bash_aliases:
      - { alias: '_env', command: 'echo "kinappserver prod"' }
      - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
