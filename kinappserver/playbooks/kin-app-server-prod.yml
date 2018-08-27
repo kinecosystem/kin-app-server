@@ -52,6 +52,7 @@
    use_payment_service_phone_number_prefix: '+972559998888'
    block_onboarding_android_version: 0.0
    block_onboarding_ios_version: 0.0
+   blocked_phone_prefixes: '[]' # handle with care. for example: '["+55"]'. must be a valid python list as a string. getting it wrong will break the server at startup.
    bash_aliases:
      - { alias: '_env', command: 'echo "kinappserver prod"' }
      - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}

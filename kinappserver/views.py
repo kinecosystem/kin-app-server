@@ -198,11 +198,18 @@ def set_user_phone_number_endpoint():
     if not config.DEBUG:
         print('extracting verified phone number fom firebase id token...')
         verified_number = extract_phone_number_from_firebase_id_token(token)
+
         if verified_number is None:
             print('bad id-token: %s' % token)
             return jsonify(status='error', reason='bad_token'), status.HTTP_404_NOT_FOUND
+
+        for prefix in app.blocked_phone_prefixes:
+            if verified_number.find(prefix) == 0:
+                print('found blocked phone prefix (%s) in verified phone number (%s): aborting' % (prefix, verified_number))
+                abort(403)
+
         phone = verified_number
-    else:
+    else: #DEBUG
         # for tests, you can use the unverified number if no token was given
         if token:
             phone = extract_phone_number_from_firebase_id_token(token)
@@ -1632,9 +1639,7 @@ def post_backup_restore():
 @app.route('/blacklist/areacodes', methods=['GET'])
 def get_blacklist_areacodes_endpoint():
     """returns a list of blacklisted areacodes"""
-    #TODO implement a serverside block too
-    blocked_areacodes = ['+55']
-    return jsonify(areacodes=blocked_areacodes)
+    return jsonify(areacodes=app.blocked_phone_prefixes)
 
 
 @app.route('/payments/callback', methods=['POST'])
