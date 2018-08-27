@@ -902,3 +902,23 @@ def fix_user_task_history(user_id):
     print('planting completed_tasks into user_id %s: %s' % (user_id, completed_tasks))
     db.engine.execute("delete from public.user_task_results where user_id='%s';" % UUID(user_id))
     db.engine.execute('update public.user_app_data set completed_tasks=\'"%s"\' where user_id=\'%s\';' % (str(completed_tasks), UUID(user_id)))
+
+
+def fix_user_completed_tasks(user_id):
+    import json
+    user_app_data = get_user_app_data(user_id)
+    print('user tasks:%s' % user_app_data.completed_tasks)
+    try:
+        json.loads(user_app_data.completed_tasks)
+    except Exception as e:
+        print('detected bad completed tasks')
+        #convert the bad tasks into good tasks:
+        fixed_tasks = json.dumps(user_app_data.completed_tasks)
+        print('the fix tasks: %s' % fixed_tasks)
+        #write the tasks back to the db:
+        user_app_data.completed_tasks = fixed_tasks
+        db.session.add(user_app_data)
+        db.session.commit()
+    else:
+        print('nothing to fix')
+    return
