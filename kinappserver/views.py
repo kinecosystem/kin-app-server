@@ -203,11 +203,10 @@ def set_user_phone_number_endpoint():
             print('bad id-token: %s' % token)
             return jsonify(status='error', reason='bad_token'), status.HTTP_404_NOT_FOUND
 
-        #TODO uncomment this later today
-        #for prefix in app.blocked_phone_prefixes:
-        #    if verified_number.find(prefix) == 0:
-        #        print('found blocked phone prefix (%s) in verified phone number (%s): aborting' % (prefix, verified_number))
-        #        abort(403)
+        for prefix in app.blocked_phone_prefixes:
+            if verified_number.find(prefix) == 0:
+                print('found blocked phone prefix (%s) in verified phone number (%s): aborting' % (prefix, verified_number))
+                abort(403)
 
         phone = verified_number
     else: #DEBUG
