@@ -2,7 +2,7 @@
 from sqlalchemy_utils import UUIDType
 
 from kinappserver import db, config, app
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, get_global_config, generate_memo
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS
 from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_please_upgrade_push_2
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
@@ -922,3 +922,25 @@ def fix_user_completed_tasks(user_id):
     else:
         print('nothing to fix')
     return
+
+
+def should_block_user_by_client_version(user_id):
+    """determines whether this user_id should be blocked based on the client version"""
+    from distutils.version import LooseVersion
+    try:
+        os_type = get_user_os_type(user_id)
+        client_version = get_user_app_data(user_id).app_ver
+    except Exception as e:
+        print('should_block_user_by_client_version: cant get os_type/client version for user_id %s' % user_id)
+        return False
+    else:
+        if os_type == OS_ANDROID:
+            if LooseVersion(client_version) <= LooseVersion(config.BLOCK_ONBOARDING_ANDROID_VERSION):
+                print('should block android version (%s), config: %s' % (client_version, config.BLOCK_ONBOARDING_ANDROID_VERSION))
+                return True
+        else: # OS_IOS
+            if LooseVersion(client_version) <= LooseVersion(config.BLOCK_ONBOARDING_IOS_VERSION):
+                print('should block ios version (%s), config: %s' % (client_version, config.BLOCK_ONBOARDING_IOS_VERSION))
+                return True
+    return False
+

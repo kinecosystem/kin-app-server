@@ -50,6 +50,8 @@
    payment_service_url: 'http://stage.payments.kinitapp.com:5000'
    api_server_url: 'https://stage.kinitapp.com'
    use_payment_service_phone_number_prefix: '+'
+   block_onboarding_android_version: 999
+   block_onboarding_ios_version: 999
    bash_aliases:
      - { alias: '_env', command: 'echo "kinappserver"' }
      - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
