@@ -7,6 +7,7 @@ from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
 import arrow
+from distutils.version import LooseVersion
 
 DEFAULT_TIME_ZONE = -4
 KINIT_IOS_PACKAGE_ID_PROD = 'org.kinecosystem.kinit'  # AKA bundle id
@@ -763,16 +764,31 @@ def nuke_user_data(phone_number, nuke_all = False):
 def get_user_config(user_id):
     """return the user-specific config based on the global config"""
     global_config = get_global_config()
+    user_app_data = get_user_app_data(user_id)
+    os_type = get_user_os_type(user_id)
 
     # customize the p2p tx flag
     if config.P2P_TRANSFERS_ENABLED:
-        user_app_data = get_user_app_data(user_id)
+
         if not user_app_data:
             print('could not customize user config. disabling p2p txs for this user')
             global_config['p2p_enabled'] = False
         elif len(user_app_data.completed_tasks) < config.P2P_MIN_TASKS:
             global_config['p2p_enabled'] = False
     global_config['backup_nag'] = True
+
+    # turn off phone verification for older clients:
+    disable_phone_verification = False
+    if os_type == OS_ANDROID and LooseVersion(user_app_data.app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_ANDROID_VERSION):
+        disable_phone_verification = True
+    elif os_type == OS_IOS and LooseVersion(user_app_data.app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_IOS_VERSION):
+        disable_phone_verification = True
+
+    if disable_phone_verification:
+        print('disabling phone verification for userid %s' % user_id)
+        global_config['phone_verification_enabled'] = False
+
+
     print('user config for %s: %s' % (user_id, global_config))
 
     return global_config

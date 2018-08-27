@@ -9,6 +9,8 @@ from flask_api import status
 import redis_lock
 import arrow
 import redis
+from distutils.version import LooseVersion
+from .utils import OS_ANDROID, OS_IOS
 
 from kinappserver import app, config, stellar, utils, ssm
 from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service
@@ -631,6 +633,7 @@ def onboard_user():
     if should_block_user_by_client_version(user_id):
         print('blocking user %s on onboarding with older version and sending push' % user_id)
         send_please_upgrade_push_2([user_id])
+
         abort(403)
 
     #TODO uncomment this when the time is right!
@@ -719,8 +722,22 @@ def register_api():
             else:
                 print('updated userid %s data' % user_id)
 
+            # turn off phone verfication for older clients:
+            disable_phone_verification = False
+            print(os)
+            print('app_ver %s' % app_ver)
+            if os == OS_ANDROID and LooseVersion(app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_ANDROID_VERSION):
+                    disable_phone_verification = True
+            elif os == OS_IOS and LooseVersion(app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_IOS_VERSION):
+                    disable_phone_verification = True
+
+            global_config = get_global_config()
+            if disable_phone_verification:
+                print('disabling phone verification for registering userid %s' % user_id)
+                global_config['phone_verification_enabled'] = False
+
             # return global config - the user doesn't have user-specific config (yet)
-            return jsonify(status='ok', config=get_global_config())
+            return jsonify(status='ok', config=global_config)
 
 
 def reward_and_push(public_address, task_id, send_push, user_id, memo, delta):
