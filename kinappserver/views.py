@@ -314,6 +314,8 @@ def post_user_task_results_endpoint():
         print('exception in /user/task/results. e=%s' % e)
         raise InvalidUsage('bad-request')
 
+    print('processing submitted tasks results for task %s from user %s' % (task_id, user_id))
+
     if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
         print('user %s is not authenticated. rejecting results submission request' % user_id)
         increment_metric('rejected-on-auth')
