@@ -2,6 +2,7 @@ import simplejson as json
 from uuid import uuid4
 from time import sleep
 import testing.postgresql
+import arrow
 
 import unittest
 import kinappserver
@@ -41,11 +42,13 @@ class Tester(unittest.TestCase):
         user_id = 'f8acc02c-0818-40f7-9938-7f1d1007c43f'
         task_id = '9'
         send_push = False
-        self.assertEqual(utils.write_payment_data_to_cache(memo, user_id, task_id, send_push), True)
-        user_id_r, task_id_r, send_push_r = utils.read_payment_data_from_cache(memo)
+        timestamp = arrow.utcnow().timestamp
+        self.assertEqual(utils.write_payment_data_to_cache(memo, user_id, task_id, timestamp, send_push), True)
+        user_id_r, task_id_r, timestamp_r, send_push_r = utils.read_payment_data_from_cache(memo)
         self.assertEqual(user_id, user_id_r)
         self.assertEqual(task_id, task_id_r)
         self.assertEqual(send_push, send_push_r)
+        self.assertEqual(timestamp_r, timestamp)
 
 if __name__ == '__main__':
     unittest.main()

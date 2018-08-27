@@ -43,6 +43,12 @@ def increment_metric(metric_name, count=1):
     statsd.increment('kinitapp.%s.%s' % (config.DEPLOYMENT_ENV, metric_name), count)
 
 
+def gauge_metric(metric_name, value):
+    """increment a counter with the given name and value"""
+    # set env to undefined for local tests (which do not emit stats, as there's no agent)
+    statsd.gauge('kinitapp.%s.%s' % (config.DEPLOYMENT_ENV, metric_name), value)
+
+
 def errors_to_string(errorcode):
     """ translate error codes to human-readable reasons """
     if errorcode == ERROR_ORDERS_COOLDOWN:
@@ -270,10 +276,10 @@ def write_json_to_cache(key, val, ttl=10*60):
         return False
 
 
-def write_payment_data_to_cache(memo, user_id, task_id, send_push=True):
-    return write_json_to_cache('memo:%s' % memo, {'user_id': str(user_id), 'task_id': str(task_id), 'send_push': send_push})
+def write_payment_data_to_cache(memo, user_id, task_id, timestamp, send_push=True):
+    return write_json_to_cache('memo:%s' % memo, {'user_id': str(user_id), 'task_id': str(task_id), 'timestamp': timestamp, 'send_push': send_push})
 
 
 def read_payment_data_from_cache(memo):
     data = read_json_from_cache('memo:%s' % memo)
-    return data['user_id'], data['task_id'], data['send_push']
+    return data['user_id'], data['task_id'], data['timestamp'], data['send_push']
