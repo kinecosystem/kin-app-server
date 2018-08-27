@@ -358,7 +358,7 @@ def get_task_details(task_id):
     task = Task.query.filter_by(task_id=task_id).first()
     if not task:
         print('cant find task with task_id %s. using default text' % task_id)
-        return {'title': 'Delayed Kin', 'desc': '', 'provider': {}}
+        return {'title': 'Delayed Kin', 'desc': '', 'provider': {"image_url": "https://cdn.kinitapp.com/brand_img/poll_logo_kin.png", "name": "Kinit Team"}}
     return {'title': task.title, 'desc': task.desc, 'provider': task.provider_data}
 
 
