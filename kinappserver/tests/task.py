@@ -126,6 +126,15 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
+
+        resp = self.app.post('/user/auth/ack',
+                            data=json.dumps({
+                            'token': str(userid)}),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/tasks', headers=headers)

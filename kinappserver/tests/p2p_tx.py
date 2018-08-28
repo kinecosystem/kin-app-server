@@ -92,6 +92,15 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid1), str(userid1)))
+
+        resp = self.app.post('/user/auth/ack',
+                             data=json.dumps({
+                                 'token': str(userid1)}),
+                             headers={USER_ID_HEADER: str(userid1)},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         userid2 = uuid4()
         resp = self.app.post('/user/register',
             data=json.dumps({
@@ -106,6 +115,15 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid2), str(userid2)))
+
+        resp = self.app.post('/user/auth/ack',
+                             data=json.dumps({
+                                 'token': str(userid2)}),
+                             headers={USER_ID_HEADER: str(userid2)},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         userid3 = uuid4()
         resp = self.app.post('/user/register',
                              data=json.dumps({
@@ -117,6 +135,15 @@ class Tester(unittest.TestCase):
                                  'token': 'fake_token',
                                  'app_ver': '1.0'}),
                              headers={},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid3), str(userid3)))
+
+        resp = self.app.post('/user/auth/ack',
+                             data=json.dumps({
+                                 'token': str(userid3)}),
+                             headers={USER_ID_HEADER: str(userid3)},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
