@@ -101,21 +101,21 @@ def book_and_redeem():
     resp = post_to_server('/good/add',
                           {'offer_id': offerid,
                             'good_type': 'code',
-                            'value': 'abcd'})
+                            'value': 'abcd1'})
     assertEqual(resp.status_code, 200)
 
     # create a good instance for the offer (3)
     resp = post_to_server('/good/add',
                           {'offer_id': offerid,
                             'good_type': 'code',
-                            'value': 'abcd'})
+                            'value': 'abcd2'})
     assertEqual(resp.status_code, 200)
 
     # create a good instance for the offer (4)
     resp = post_to_server('/good/add',
                           {'offer_id': offerid,
                             'good_type': 'code',
-                            'value': 'abcd'})
+                            'value': 'abcd3'})
     assertEqual(resp.status_code, 200)
 
     # 4 goods at this point

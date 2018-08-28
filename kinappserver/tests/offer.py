@@ -136,7 +136,7 @@ class Tester(unittest.TestCase):
             data=json.dumps({
             'offer_id': '1',
             'good_type': 'code',
-            'value': 'abcd'}),
+            'value': 'abcd1'}),
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -146,7 +146,7 @@ class Tester(unittest.TestCase):
             data=json.dumps({
             'offer_id': '2',
             'good_type': 'code',
-            'value': 'abcd'}),
+            'value': 'abcd2'}),
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -156,7 +156,7 @@ class Tester(unittest.TestCase):
             data=json.dumps({
             'offer_id': '4',
             'good_type': 'code',
-            'value': 'abcd'}),
+            'value': 'abcd3'}),
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -166,7 +166,7 @@ class Tester(unittest.TestCase):
             data=json.dumps({
             'offer_id': '5',
             'good_type': 'code',
-            'value': 'abcd'}),
+            'value': 'abcd4'}),
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)

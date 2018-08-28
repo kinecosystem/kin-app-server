@@ -1709,15 +1709,17 @@ def payment_service_callback_endpoint():
                     return jsonify(status='error', reason='internal_error')
 
                 # retrieve the user_id and task_id from the cache
-                user_id, task_id, send_push, request_timestamp = read_payment_data_from_cache(memo)
+                user_id, task_id, request_timestamp, send_push = read_payment_data_from_cache(memo)
 
                 # compare the timestamp from the callback with the one from the original request, and
                 # post as a gauge  metric for tracking
                 try:
-                    request_duration_sec = (arrow.get(payment_ts) - arrow.get(request_timestamp)).total_seconds()
+                    request_duration_sec = arrow.get(payment_ts) - arrow.get(request_timestamp)
+                    request_duration_sec = int(request_duration_sec.total_seconds())
+                    print('request_duration_sec: %s' % request_duration_sec)
                     gauge_metric('payment-req-dur', request_duration_sec)
                 except Exception as e:
-                    print('failed to calculate payment request duration')
+                    print('failed to calculate payment request duration. e=%s' % e)
 
                 # slap the '1-kit' on the memo
                 memo = '1-kit-%s' % memo
