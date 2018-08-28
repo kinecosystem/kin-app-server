@@ -13,6 +13,7 @@ from distutils.version import LooseVersion
 from .utils import OS_ANDROID, OS_IOS
 
 from kinappserver import app, config, stellar, utils, ssm
+from .push import send_please_upgrade_push_2, send_country_not_supported
 from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
     sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
@@ -30,8 +31,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
-    should_block_user_by_client_version, deactivate_user, get_user_os_type
-from .push import send_please_upgrade_push_2
+    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix
+
 
 
 
@@ -337,6 +338,12 @@ def post_user_task_results_endpoint():
         increment_metric('premature_task_results')
         return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_400_BAD_REQUEST
 
+    if should_block_user_by_phone_prefix(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from submitting tasks - country not supported' % user_id)
+        return jsonify(tasks=[], reason='phone_prefix_not supported')
+
     delta = 0  # change in the total kin reward for this task
 
     # the following function handles task-results resubmission:
@@ -521,6 +528,12 @@ def set_delay_days_api():
 def get_next_task():
     """returns the current task for the user with the given id"""
     user_id, auth_token = extract_headers(request)
+
+    if should_block_user_by_phone_prefix(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from getting tasks - country not supported' % user_id)
+        return jsonify(tasks=[], reason='phone_prefix_not supported')
 
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
         return jsonify(tasks=[], reason='user_not_phone_verified')

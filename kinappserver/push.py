@@ -5,6 +5,7 @@ from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, increment_metri
 import redis
 
 PLEASE_UPGRADE_COOLDOWN_SECONDS = 60
+COUNTRY_NOT_SUPPORTED_PUSH_COOLDOWN_SECONDS = 60 * 60 * 8
 
 
 def generate_push_id():
@@ -66,6 +67,33 @@ def send_p2p_push(user_id, amount, tx_dict):
             push_send_apns(token, apns_payload("", "A friend just sent you %sKIN!" % amount, 'p2p_received', push_id, 'default', {'tx': tx_dict}), push_env)
     else:
         print('not sending p2p-tx push to user_id %s: no token' % user_id)
+    return
+
+
+def send_country_not_supported(user_id):
+    """sends a push to the given userid to tell them their country isnt supported"""
+    #  add cooldown with redis to this function.
+    if not (app.redis.set('countrynot:%s' % str(user_id), '', ex=COUNTRY_NOT_SUPPORTED_PUSH_COOLDOWN_SECONDS, nx=True)):
+        # returns None if already exists
+        return
+
+    push_id = generate_push_id()
+    push_type = 'country_not_supported'
+    from kinappserver.models import get_user_push_data
+    os_type, token, push_env = get_user_push_data(user_id)
+    if token:
+        if os_type == OS_ANDROID:
+            increment_metric('country_not_supported-android')
+            # return  # not supported yet
+            print('sending country_not_supported push message to GCM user %s' % user_id)
+            push_send_gcm(token, gcm_payload(push_type, push_id, {'title': 'Oh no!', 'body': "Kinit is currently not available in your country. We are continuing to grow, so check back again soon."}), push_env)
+
+        else:
+            increment_metric('country_not_supported-ios')
+            print('sending country_not_supported push message to APNS user %s' % user_id)
+            push_send_apns(token, apns_payload("Oh no!", "Kinit is currently not available in your country. We are continuing to grow, so check back again soon.", push_type, push_id), push_env)
+    else:
+        print('not sending country_not_supported push to user_id %s: no token' % user_id)
     return
 
 

@@ -968,3 +968,15 @@ def should_block_user_by_client_version(user_id):
                 return True
     return False
 
+
+def should_block_user_by_phone_prefix(user_id):
+    """determines whether to block a user by her phone prefix"""
+    try:
+        phone_number = get_unenc_phone_number_by_user_id(user_id)
+        for prefix in app.blocked_phone_prefixes:
+            if phone_number.find(prefix) == 0:
+                print('should_block_user_by_phone_prefix: should block user_id %s with phone number %s' % (user_id, phone_number))
+                return True
+    except Exception as e:
+        print('should_block_user_by_phone_prefix: caught exception: %s' % e)
+    return False
