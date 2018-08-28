@@ -458,7 +458,7 @@ def split_payment(address, task_id, send_push, user_id, memo, delta):
         phone_number = get_unenc_phone_number_by_user_id(user_id)
         if phone_number and phone_number.find(config.USE_PAYMENT_SERVICE_PHONE_NUMBER_PREFIX) >= 0:  # like '+' or '+972' or '++' for (all, israeli numbers, nothing)
             user_rolled = random_percent()
-            print('user rolled: %s, config: %s' % (user_rolled, config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS))
+            #print('split_payment: user rolled: %s, config: %s' % (user_rolled, config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS))
             if int(user_rolled) <= int(config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS):
                 print('using payment service for user_id %s' % user_id)
                 use_payment_service = True
@@ -1719,7 +1719,7 @@ def payment_service_callback_endpoint():
                 try:
                     request_duration_sec = arrow.get(payment_ts) - arrow.get(request_timestamp)
                     request_duration_sec = int(request_duration_sec.total_seconds())
-                    print('request_duration_sec: %s' % request_duration_sec)
+                    print('payment request for tx_hash: %s took %s seconds' % (tx_hash, request_duration_sec))
                     gauge_metric('payment-req-dur', request_duration_sec)
                 except Exception as e:
                     print('failed to calculate payment request duration. e=%s' % e)
