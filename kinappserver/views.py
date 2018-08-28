@@ -15,7 +15,7 @@ from .utils import OS_ANDROID, OS_IOS
 from kinappserver import app, config, stellar, utils, ssm
 from .push import send_please_upgrade_push_2, send_country_not_supported
 from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service
-from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
+from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
     sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     store_task_results, add_task, get_tasks_for_user, is_onboarded, \
@@ -809,7 +809,7 @@ def reward_address_for_task_internal_payment_service(public_address, task_id, se
 
     # take into account the delta: add or reduce kins from the amount
     amount = amount + delta
-    write_payment_data_to_cache(memo, user_id, task_id, send_push) # store this info in cache for when the callback is called
+    write_payment_data_to_cache(memo, user_id, task_id, arrow.utcnow().timestamp,send_push)  # store this info in cache for when the callback is called
     print('calling send_kin with the payment service: %s, %s' % (public_address, amount))
     # sends a request to the payment service. result comes back via a callback
     send_kin_with_payment_service(public_address, amount, memo)
@@ -1701,6 +1701,7 @@ def payment_service_callback_endpoint():
                 memo = val.get('id', None)
                 tx_hash = val.get('transaction_id', None)
                 amount = val.get('amount', None)
+                payment_ts = payload.get('timestamp', None)
                 public_address = val.get('sender_address')
                 if None in (memo, tx_hash, amount):
                     print('should never happen: cant process successful payment callback: %s' % payload)
@@ -1708,7 +1709,15 @@ def payment_service_callback_endpoint():
                     return jsonify(status='error', reason='internal_error')
 
                 # retrieve the user_id and task_id from the cache
-                user_id, task_id, send_push = read_payment_data_from_cache(memo)
+                user_id, task_id, send_push, request_timestamp = read_payment_data_from_cache(memo)
+
+                # compare the timestamp from the callback with the one from the original request, and
+                # post as a gauge  metric for tracking
+                try:
+                    request_duration_sec = (arrow.get(payment_ts) - arrow.get(request_timestamp)).total_seconds()
+                    gauge_metric('payment-req-dur', request_duration_sec)
+                except Exception as e:
+                    print('failed to calculate payment request duration')
 
                 # slap the '1-kit' on the memo
                 memo = '1-kit-%s' % memo
