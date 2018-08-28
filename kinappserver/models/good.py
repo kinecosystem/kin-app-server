@@ -35,6 +35,10 @@ def create_good(offer_id, good_type, value):
         print('refusing to create good with offer_id: %s' % offer_id)
         return False
 
+    if does_code_exist(value):
+        print('refusing to create good with code: %s as it already exists in the db' % value)
+        return False
+
     try:
         now = arrow.utcnow()
         good = Good()
@@ -128,7 +132,6 @@ def finalize_good(order_id, tx_hash):
         raise InternalError('cant finalize good for order_id: %s' % order_id)
     else:
         return True, good_res
-        
 
 
 def release_good(order_id):
@@ -181,3 +184,10 @@ def get_redeemed_items(tx_hases):
     for good in db.session.query(Good).filter(Good.tx_hash.in_(tx_hases)).order_by(Good.updated_at.desc()).all():
             redeemed.append({'date': arrow.get(good.updated_at).timestamp, 'value': good.value, 'type': good.good_type, 'offer_id': good.offer_id})
     return redeemed
+
+
+def does_code_exist(code):
+    """return true if the given code is already present in the db"""
+    results = db.engine.execute("select * from good where cast(value as varchar)='\"%s\"' limit 1;" % code)
+    results = results.fetchall()
+    return (results.fetchone()[0]) is not None
