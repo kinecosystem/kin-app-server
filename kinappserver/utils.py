@@ -7,6 +7,7 @@ import requests
 import phonenumbers
 import redis
 import json
+import random
 
 
 from kinappserver import config, app
@@ -248,8 +249,11 @@ def print_creation_statement():
 
 
 def random_string(length=8):
-    import random
     return ''.join(random.choice('0123456789ABCDEF') for i in range(length))
+
+
+def random_percent():
+    return random.randint(1, 100)
 
 
 def read_json_from_cache(key):

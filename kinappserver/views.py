@@ -10,7 +10,7 @@ import redis_lock
 import arrow
 import redis
 from distutils.version import LooseVersion
-from .utils import OS_ANDROID, OS_IOS
+from .utils import OS_ANDROID, OS_IOS, random_percent
 
 from kinappserver import app, config, stellar, utils, ssm
 from .push import send_please_upgrade_push_2, send_country_not_supported
@@ -456,9 +456,12 @@ def split_payment(address, task_id, send_push, user_id, memo, delta):
     use_payment_service = False
     try:
         phone_number = get_unenc_phone_number_by_user_id(user_id)
-        if phone_number and phone_number.find(config.USE_PAYMENT_SERVICE_PHONE_NUMBER_PREFIX) >= 0: # like '+' or '+972' or '++' for (all, israeli numbers, nothing)
-            print('using payment service for user_id %s' % user_id)
-            use_payment_service = True
+        if phone_number and phone_number.find(config.USE_PAYMENT_SERVICE_PHONE_NUMBER_PREFIX) >= 0:  # like '+' or '+972' or '++' for (all, israeli numbers, nothing)
+            user_rolled = random_percent()
+            print('user rolled: %s, config: %s' % (user_rolled, config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS))
+            if int(user_rolled) <= int(config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS):
+                print('using payment service for user_id %s' % user_id)
+                use_payment_service = True
     except Exception as e:
         print('cant determine whether to use the payment service for user_id %s. defaulting to no' % user_id)
 
