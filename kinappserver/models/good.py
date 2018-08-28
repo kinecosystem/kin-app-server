@@ -190,4 +190,4 @@ def does_code_exist(code):
     """return true if the given code is already present in the db"""
     results = db.engine.execute("select * from good where cast(value as varchar)='\"%s\"' limit 1;" % code)
     results = results.fetchall()
-    return (results.fetchone()[0]) is not None
+    return (results != [])

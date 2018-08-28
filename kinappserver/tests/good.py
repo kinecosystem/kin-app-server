@@ -81,6 +81,16 @@ class Tester(unittest.TestCase):
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        # add the same instance of goods again - should fail
+        resp = self.app.post('/good/add',
+                    data=json.dumps({
+                    'offer_id': offer['id'],
+                    'good_type': 'code',
+                    'value': 'abcd'}),
+                    headers={},
+                    content_type='application/json')
+        self.assertNotEqual(resp.status_code, 200)
+
         # one good instance at this point
         resp = self.app.get('/good/inventory')
         self.assertEqual(resp.status_code, 200)
@@ -107,7 +117,7 @@ class Tester(unittest.TestCase):
                     data=json.dumps({
                     'offer_id': '1',
                     'good_type': 'code',
-                    'value': 'abcd'}),
+                    'value': 'abcde'}),
                     headers={},
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
@@ -126,6 +136,15 @@ class Tester(unittest.TestCase):
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
+
+        resp = self.app.post('/user/auth/ack',
+                            data=json.dumps({
+                            'token': str(userid)}),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         # create an order and allocate a good
