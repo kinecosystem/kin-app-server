@@ -47,7 +47,7 @@
    auth_token_enabled: True
    blackhawk_purchases_enabled: False
    blackhawk_critical_balance_threshold: 50
-   payment_service_url: 'http://stage.payments.kinitapp.com:5000'
+   payment_service_url: 'http://stage.payments.kinitapp.com:4999'
    api_server_url: 'https://stage.kinitapp.com'
    use_payment_service_phone_number_prefix: '+'
    block_onboarding_android_version: 1.1.3
