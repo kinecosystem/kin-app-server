@@ -1764,6 +1764,8 @@ def fix_user_tasks_endpoint():
 @app.route('/user/data/delete', methods=['POST'])
 def delete_user_data_endpoint():
     """endpoint used to delete all of a users data"""
+    #disabling this function as its too risky
+    abort(403)
     if not config.DEBUG:
         limit_to_localhost()
 
