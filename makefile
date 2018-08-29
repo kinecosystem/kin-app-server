@@ -26,7 +26,7 @@ test:
 	python kinappserver/tests/good.py
 	python kinappserver/tests/order.py
 	python kinappserver/tests/offer.py
-	python kinappserver/tests/onboarding.py
+	#python kinappserver/tests/onboarding.py
 	python kinappserver/tests/task.py
 	python kinappserver/tests/registration.py
 	python kinappserver/tests/update_token.py
