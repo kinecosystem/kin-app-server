@@ -35,7 +35,7 @@ test:
 	python kinappserver/tests/task_results_quiz.py
 	python kinappserver/tests/backup_questions.py
 	python kinappserver/tests/backup_questions2.py
-	python kinappserver/tests/test_utils.py
+	python kinappserver/tests/utils_test.py
 
 all:
 	install test
