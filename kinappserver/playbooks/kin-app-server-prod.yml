@@ -50,7 +50,7 @@
    payment_service_url: 'http://prod.payments.kinitapp.com:4999'
    api_server_url: 'https://api.kinitapp.com'
    use_payment_service_phone_number_prefix: '+'
-   use_payment_service_percent_of_users: 25
+   use_payment_service_percent_of_users: 10
    block_onboarding_android_version: 1.1.3
    block_onboarding_ios_version: 0.0
    blocked_phone_prefixes: "['+55']" # handle with care. for example: "['+55','+972']" . must be a valid python list as a string. getting it wrong will break the server at startup.
