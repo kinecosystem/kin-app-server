@@ -1008,7 +1008,7 @@ def delete_all_user_data(user_id, are_u_sure=False):
 
     # get all the user_ids associated with this user's phone number:
     enc_phone = get_enc_phone_number_by_user_id(user_id)
-    if enc_phone is (None or ''):
+    if not enc_phone:
         print('refusing to delete data for user with no phone number')
         return
     uids = get_user_ids_by_enc_phone(enc_phone)
