@@ -31,7 +31,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
-    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix
+    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data
 
 
 
@@ -1747,22 +1747,6 @@ def payment_service_callback_endpoint():
     return jsonify(status='ok')
 
 
-@app.route('/txs/update_ts', methods=['POST'])
-def create_txs_endpoint():
-    #TODO REMVOE THIS
-    '''temp endpoit to add txs for users with nissing txs'''
-    if not config.DEBUG:
-        limit_to_localhost()
-
-    payload = request.get_json(silent=True)
-
-    tx_hash = payload.get('tx_hash', None)
-    timestamp = payload.get('timestamp', None)
-
-    update_tx_ts(tx_hash, timestamp)
-    return jsonify(status='ok')
-
-
 @app.route('/user/tasks/fix', methods=['POST'])
 def fix_user_tasks_endpoint():
     #TODO REMVOE THIS
@@ -1774,5 +1758,17 @@ def fix_user_tasks_endpoint():
 
     user_id = payload.get('user_id', None)
     fix_user_completed_tasks(user_id)
+    return jsonify(status='ok')
+
+
+@app.route('/user/data/delete', methods=['POST'])
+def delete_user_data_endpoint():
+    """endpoint used to delete all of a users data"""
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    payload = request.get_json(silent=True)
+    user_id = payload.get('user_id', None)
+    delete_all_user_data(user_id)
     return jsonify(status='ok')
 
