@@ -1007,7 +1007,11 @@ def delete_all_user_data(user_id, are_u_sure=False):
     delete_user = '''delete from public.user where user_id='%s';'''
 
     # get all the user_ids associated with this user's phone number:
-    uids = get_user_ids_by_enc_phone(get_enc_phone_number_by_user_id(user_id))
+    enc_phone = get_enc_phone_number_by_user_id(user_id)
+    if enc_phone is (None or ''):
+        print('refusing to delete data for user with no phone number')
+        return
+    uids = get_user_ids_by_enc_phone(enc_phone)
     print('WARNING: will delete all data of the following %s user_ids: %s' % (len(uids), uids))
     if not are_u_sure:
         print('refusing to delete users. if youre sure, send with force flag')
