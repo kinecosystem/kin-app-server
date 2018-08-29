@@ -995,30 +995,39 @@ def delete_all_user_data(user_id):
     """delete all user data from the db. this erases all the users associated with the same phone number"""
     print('deleting all info related to user_id %s' % user_id)
 
-    delete_user_goods = '''delete from good where good.order_id in (select order_id from transaction where user_id='%s');'''
+    delete_user_goods = '''delete from good where good.order_id in (select tx_info->>'memo' as order_id from transaction where user_id='%s');'''
     delete_user_transactions = '''delete from transaction where user_id='%s';'''
     delete_user_orders = '''delete from public.order where user_id='%s';'''
     delete_p2p_txs_sent = '''delete from p2_p_transaction where sender_user_id='%s';'''
     delete_p2p_txs_received = '''delete from p2_p_transaction where receiver_user_id='%s';'''
     delete_phone_backup_hints = '''delete from phone_backup_hints where enc_phone_number in (select enc_phone_number from public.user where user_id='%s');'''
     delete_task_results = '''delete from public.user_task_results where user_id='%s';'''
-    delete_push_token = '''delete from public.push_auth_token where user_id='%s';'''
+    delete_auth_token = '''delete from public.push_auth_token where user_id='%s';'''
     delete_app_data = '''delete from public.user_app_data where user_id='%s';'''
     delete_user = '''delete from public.user where user_id='%s';'''
 
     # get all the user_ids associated with this user's phone number:
     for uid in get_user_ids_by_enc_phone(get_enc_phone_number_by_user_id(user_id)):
         print('deleting all data related to user_id %s' % uid)
+        print('deleting goods...')
         db.engine.execute(delete_user_goods % uid)
+        print('deleting orders...')
         db.engine.execute(delete_user_orders % uid)
+        print('deleting txs...')
         db.engine.execute(delete_user_transactions % uid)
+        print('deleting p2p txs...')
         db.engine.execute(delete_p2p_txs_sent % uid)
         db.engine.execute(delete_p2p_txs_received % uid)
+        print('deleting backup hints...')
         db.engine.execute(delete_phone_backup_hints % uid)
+        print('deleting task results...')
         db.engine.execute(delete_task_results % uid)
-        db.engine.execute(delete_push_token % uid)
+        print('deleting auth tokens...')
+        db.engine.execute(delete_auth_token % uid)
+        print('deleting user data...')
         db.engine.execute(delete_app_data % uid)
         db.engine.execute(delete_user % uid)
+        print('done with user_id: %s' % uid)
 
 
 
