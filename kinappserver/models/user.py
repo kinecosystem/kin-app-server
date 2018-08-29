@@ -991,9 +991,9 @@ def should_block_user_by_phone_prefix(user_id):
     return False
 
 
-def delete_all_user_data(user_id):
+def delete_all_user_data(user_id, are_u_sure=False):
     """delete all user data from the db. this erases all the users associated with the same phone number"""
-    print('deleting all info related to user_id %s' % user_id)
+    print('preparing to delete all info related to user_id %s' % user_id)
 
     delete_user_goods = '''delete from good where good.order_id in (select tx_info->>'memo' as order_id from transaction where user_id='%s');'''
     delete_user_transactions = '''delete from transaction where user_id='%s';'''
@@ -1007,7 +1007,13 @@ def delete_all_user_data(user_id):
     delete_user = '''delete from public.user where user_id='%s';'''
 
     # get all the user_ids associated with this user's phone number:
-    for uid in get_user_ids_by_enc_phone(get_enc_phone_number_by_user_id(user_id)):
+    uids = get_user_ids_by_enc_phone(get_enc_phone_number_by_user_id(user_id))
+    print('WARNING: will delete all data of the following %s user_ids: %s' % (len(uids), uids))
+    if not are_u_sure:
+        print('refusing to delete users. if youre sure, send with force flag')
+        return
+
+    for uid in uids:
         print('deleting all data related to user_id %s' % uid)
         print('deleting goods...')
         db.engine.execute(delete_user_goods % uid)

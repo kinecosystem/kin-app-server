@@ -1769,6 +1769,7 @@ def delete_user_data_endpoint():
 
     payload = request.get_json(silent=True)
     user_id = payload.get('user_id', None)
-    delete_all_user_data(user_id)
+    are_u_sure = payload.get('are_u_sure', False)
+    delete_all_user_data(user_id, are_u_sure)
     return jsonify(status='ok')
 
