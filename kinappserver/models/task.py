@@ -5,8 +5,8 @@ import json
 
 from kinappserver import db, config
 from kinappserver.push import send_please_upgrade_push
-from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url
-from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url
+from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts, get_user_os_type, get_user_app_data, get_unenc_phone_number_by_user_id
 
 
 TASK_TYPE_TRUEX = 'truex'
@@ -78,6 +78,10 @@ def store_task_results(user_id, task_id, results):
         delay_days = None
         # calculate the next task's valid submission time, and store it:
         # this takes into account the delay_days field on the next task.
+
+        # note: even if we end up skipping the next task (for example, truex for iOS),
+        # we should still use the original delay days value (as done here).
+
         try:
             delay_days = get_task_delay(str(int(task_id) + 1))  # throws exception if no such task exists
         except Exception as e:
@@ -168,7 +172,7 @@ def get_tasks_for_user(user_id):
         - or the user gets the next task (which is len(completed-tasks)
     """
 
-    from .user import get_user_app_data, get_user_os_type
+
 
     user_app_data = get_user_app_data(user_id)
 
@@ -177,8 +181,16 @@ def get_tasks_for_user(user_id):
         print('no previous task results, giving task 0')
         return [get_task_by_id('0')]
 
+    # by default, the next task is just the 'next integer' one.
+    # however, in some cases we want to skip a task, which requires special processing:
+    next_task_id = str(len(json.loads(user_app_data.completed_tasks)))
 
-    next_task = get_task_by_id(str(len(json.loads(user_app_data.completed_tasks))), get_next_task_results_ts(user_id))
+    while should_skip_task(user_id, next_task_id):
+        print('skipping task %s for userid %s' % (user_id, next_task_id))
+        next_task_id = str(int(next_task_id) + 1)
+
+    next_task_ts = get_next_task_results_ts(user_id)
+    next_task = get_task_by_id(next_task_id, next_task_ts)
 
     if next_task is None:  # no more tasks atm...
         return []
@@ -193,6 +205,27 @@ def get_tasks_for_user(user_id):
 
         else:
             return [next_task]
+
+
+def should_skip_task(user_id, task_id):
+    """determines whether to skip the given task_id for the given user_id"""
+    try:
+        task = get_task_details(task_id)
+
+        # skip truex for iOS devices, non-american android
+        if get_task_type(task_id) == TASK_TYPE_TRUEX:
+            if get_user_os_type(user_id) == OS_IOS:
+                print('skipping truex task %s for ios user %s' % (task_id, user_id))
+                return True
+
+            unenc_phone_number = get_unenc_phone_number_by_user_id(user_id)
+            if unenc_phone_number.find('+1') != 0:
+                print('skipping truex task %s for prefix %s' % (task_id, unenc_phone_number[:3]))
+                return True
+    except Exception as e:
+        print('caught exception in should_skip_task, defaulting to no. e=%s' % e)
+
+    return False
 
 
 def can_support_task(os_type, app_ver, task):
@@ -351,6 +384,14 @@ def get_task_delay(task_id):
     if not task:
         raise InternalError('no such task_id: %s' % task_id)
     return task.delay_days
+
+
+def get_task_type(task_id):
+    """get the tasks type"""
+    task = Task.query.filter_by(task_id=task_id).first()
+    if not task:
+        raise InternalError('no such task_id: %s' % task_id)
+    return task.task_type
 
 
 def get_task_details(task_id):

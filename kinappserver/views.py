@@ -372,7 +372,7 @@ def post_user_task_results_endpoint():
 
         return jsonify(status='ok', memo=str(memo))
 
-    task_data = get_task_by_id(task_id)
+    task_data = get_task_by_id(task_id)  # need the task itself to correctly process the results
 
     # if the task type is "quiz", traverse all the quiz questions and calculate the correct reward based on answers:
     # note that some questions might not be quiz-questions.
