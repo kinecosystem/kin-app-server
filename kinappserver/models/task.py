@@ -206,42 +206,43 @@ def get_tasks_for_user(user_id, source_ip=None):
             return [next_task]
 
 
-def should_skip_task(user_id, task_id, source_ip=None):
+def should_skip_truex_task(user_id, task_id, source_ip=None):
+    if get_user_os_type(user_id) == OS_IOS:
+        print('skipping truex task %s for ios user %s' % (task_id, user_id))
+        return True
+
+    unenc_phone_number = get_unenc_phone_number_by_user_id(user_id)
+    if unenc_phone_number.find('+1') != 0:
+        print('skipping truex task %s for prefix %s' % (task_id, unenc_phone_number[:3]))
+        return True
+
+    if source_ip:
+        try:
+            if app.geoip_reader.get(source_ip)['country']['iso_code'] != 'US':
+                print('detected non-US source IP - skipping truex task')
+                return True
+        except Exception as e:
+            print('should_skip_task: could not figure out country from source ip %s' % source_ip)
+            pass
+
+    # TODO cache results here
+    # skip selected user_ids
+    if is_user_id_blacklisted_for_truex(user_id):
+        print('skipping truex task %s for blacklisted user %s' % (task_id, user_id))
+        return True
+
+
+def should_skip_task(user_id, task_id, source_ip):
     """determines whether to skip the given task_id for the given user_id"""
     try:
-        task = get_task_details(task_id)
-
         # skip truex for iOS devices, non-american android
         if get_task_type(task_id) == TASK_TYPE_TRUEX:
-
-            if get_user_os_type(user_id) == OS_IOS:
-                print('skipping truex task %s for ios user %s' % (task_id, user_id))
+            if should_skip_truex_task(user_id, task_id, source_ip):
                 return True
-
-            unenc_phone_number = get_unenc_phone_number_by_user_id(user_id)
-            if unenc_phone_number.find('+1') != 0:
-                print('skipping truex task %s for prefix %s' % (task_id, unenc_phone_number[:3]))
-                return True
-
-            if source_ip:
-                try:
-                    if app.geoip_reader.get(source_ip)['country']['iso_code'] != 'US':
-                        print('detected non-US source IP - skipping truex task')
-                        return True
-                except Exception as e:
-                    print('should_skip_task: could not figure out country from source ip %s' % source_ip)
-                    pass
-
-            # TODO cache this
-            # skip selected task_ids
-            if task_id in literal_eval(config.TRUEX_BLACKLISTED_TASKIDS):
+        else:  # not truex
+            # skip special truex-related tasks for users that skipped the truex task
+            if task_id in literal_eval(config.TRUEX_BLACKLISTED_TASKIDS) and should_skip_truex_task(user_id, task_id, source_ip):
                 print('skipping blacklisted truex task %s' % task_id)
-                return True
-
-            # TODO cache results here
-            # skip selected user_ids
-            if is_user_id_blacklisted_for_truex(user_id):
-                print('skipping truex task %s for blacklisted user %s' % (task_id, user_id))
                 return True
 
     except Exception as e:

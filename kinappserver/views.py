@@ -1598,6 +1598,8 @@ def email_backup_endpoint():
     """generates an email with the user's backup details and sends it"""
     user_id, auth_token = extract_headers(request)
     if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
+        print('received a bad auth token from user_id %s: %s. ignoring for now' % (user_id, auth_token))
+    if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
         abort(403)
     try:
         payload = request.get_json(silent=True)
@@ -1639,6 +1641,8 @@ def post_backup_hints_endpoint():
     """store the user's backup hints"""
     user_id, auth_token = extract_headers(request)
     if config.AUTH_TOKEN_ENFORCED and not validate_auth_token(user_id, auth_token):
+        print('received a bad auth token from user_id %s: %s. ignoring for now' % (user_id, auth_token))
+    if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
         abort(403)
     try:
         payload = request.get_json(silent=True)
