@@ -91,6 +91,11 @@ def extract_headers(request):
     return user_id, auth_token
 
 
+def get_source_ip(request):
+    """returns the source ip of the request from the nginx header"""
+    return request.headers.get('X-FORWARDED-FOR', None)
+
+
 @app.route('/health', methods=['GET'])
 def get_health():
     """health endpoint"""
@@ -553,7 +558,7 @@ def get_next_task():
         return jsonify(tasks=[], reason='user_deactivated')
 
     print('getting tasks for userid %s' % user_id)
-    tasks = get_tasks_for_user(user_id)
+    tasks = get_tasks_for_user(user_id, get_source_ip())
     if len(tasks) == 1:
         tasks[0]['memo'] = get_next_task_memo(user_id)
 

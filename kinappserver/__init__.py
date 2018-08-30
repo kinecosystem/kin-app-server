@@ -149,6 +149,10 @@ app.firebase_admin = firebase_admin
 from ast import literal_eval
 app.blocked_phone_prefixes = literal_eval(config.BLOCKED_PHONE_PREFIXES)
 
+# initialize geoip instance
+from geolite2 import geolite2
+app.geoip_reader = geolite2.reader()
+
 # print db creation statements
 if config.DEBUG:
     from .utils import print_creation_statement

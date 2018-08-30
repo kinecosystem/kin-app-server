@@ -4,7 +4,7 @@ import arrow
 import json
 from ast import literal_eval
 
-from kinappserver import db, config
+from kinappserver import db, config, app
 from kinappserver.push import send_please_upgrade_push
 from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts, get_user_os_type, get_user_app_data, get_unenc_phone_number_by_user_id
@@ -163,7 +163,7 @@ def list_all_task_data():
     return response
 
 
-def get_tasks_for_user(user_id):
+def get_tasks_for_user(user_id, source_ip=None):
     """return an array of the current tasks for this user or empty array if there are
         no more tasks in the db.
 
@@ -172,8 +172,6 @@ def get_tasks_for_user(user_id):
         - or the user completed all the available tasks -> gets an empty array
         - or the user gets the next task (which is len(completed-tasks)
     """
-
-
 
     user_app_data = get_user_app_data(user_id)
 
@@ -186,7 +184,7 @@ def get_tasks_for_user(user_id):
     # however, in some cases we want to skip a task, which requires special processing:
     next_task_id = str(len(json.loads(user_app_data.completed_tasks)))
 
-    while should_skip_task(user_id, next_task_id):
+    while should_skip_task(user_id, next_task_id, source_ip):
         print('skipping task %s for userid %s' % (user_id, next_task_id))
         next_task_id = str(int(next_task_id) + 1)
 
@@ -208,7 +206,7 @@ def get_tasks_for_user(user_id):
             return [next_task]
 
 
-def should_skip_task(user_id, task_id):
+def should_skip_task(user_id, task_id, source_ip=None):
     """determines whether to skip the given task_id for the given user_id"""
     try:
         task = get_task_details(task_id)
@@ -224,6 +222,15 @@ def should_skip_task(user_id, task_id):
             if unenc_phone_number.find('+1') != 0:
                 print('skipping truex task %s for prefix %s' % (task_id, unenc_phone_number[:3]))
                 return True
+
+            if source_ip:
+                try:
+                    if app.geoip_reader.get(source_ip)['country']['iso_code'] != 'US':
+                        print('detected non-US source IP - skipping truex task')
+                        return True
+                except Exception as e:
+                    print('should_skip_task: could not figure out country from source ip %s' % source_ip)
+                    pass
 
             # TODO cache this
             # skip selected task_ids
