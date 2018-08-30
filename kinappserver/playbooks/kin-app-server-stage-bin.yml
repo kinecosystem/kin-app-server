@@ -48,3 +48,4 @@
    block_onboarding_ios_version: 1.0.0
    blocked_phone_prefixes: "['+55']"
    truex_blacklisted_taskids: "[]"
+   max_num_registrations_per_number: 9999

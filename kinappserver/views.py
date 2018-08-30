@@ -31,7 +31,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl, generate_tz_tweak_list,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
-    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data
+    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number
 
 
 
@@ -206,6 +206,7 @@ def set_user_phone_number_endpoint():
             print('bad id-token: %s' % token)
             return jsonify(status='error', reason='bad_token'), status.HTTP_404_NOT_FOUND
 
+        # reject blacklisted phone prefixes
         for prefix in app.blocked_phone_prefixes:
             if verified_number.find(prefix) == 0:
                 os_type = get_user_os_type(user_id)
@@ -225,6 +226,12 @@ def set_user_phone_number_endpoint():
         if not phone:
             print('could not extract phone in debug')
             return jsonify(status='error', reason='no_phone_number')
+
+    # limit the number of registrations a single phone number can do.
+    if count_registrations_for_phone_number(phone) > int(config.MAX_NUM_REGISTRATIONS_PER_NUMBER) - 1:
+        print('rejecting registration from user_id %s and phone number %s - too many re-registrations' % (user_id, phone))
+        increment_metric("reject-too-many_registrations")
+        abort(403)
 
     print('updating phone number for user %s' % user_id)
     set_user_phone_number(user_id, phone)

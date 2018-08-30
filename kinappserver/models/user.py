@@ -1040,4 +1040,10 @@ def delete_all_user_data(user_id, are_u_sure=False):
         print('done with user_id: %s' % uid)
 
 
+def count_registrations_for_phone_number(phone_number):
+    """returns the number of registrations for the given unenc phone number"""
+    enc_phone_number = app.encryption.encrypt(phone_number)
+    count_users_with_enc_phone_number = '''select count(*) from public.user where enc_phone_number='%s';'''
+    count = db.engine.execute(count_users_with_enc_phone_number % enc_phone_number).scalar()
+    return count if count else 0
 
