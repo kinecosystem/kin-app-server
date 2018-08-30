@@ -183,7 +183,6 @@ def get_tasks_for_user(user_id, source_ip=None):
     # by default, the next task is just the 'next integer' one.
     # however, in some cases we want to skip a task, which requires special processing:
     completed_tasks = json.loads(user_app_data.completed_tasks)
-    print('completed_tasks: %s' % completed_tasks)
     next_task_id = str(int(find_max_task(completed_tasks))+1)
 
     while should_skip_task(user_id, next_task_id, source_ip):
