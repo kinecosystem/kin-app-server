@@ -558,7 +558,7 @@ def get_next_task():
         return jsonify(tasks=[], reason='user_deactivated')
 
     print('getting tasks for userid %s' % user_id)
-    tasks = get_tasks_for_user(user_id, get_source_ip())
+    tasks = get_tasks_for_user(user_id, get_source_ip(request))
     if len(tasks) == 1:
         tasks[0]['memo'] = get_next_task_memo(user_id)
 
