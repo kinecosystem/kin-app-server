@@ -2,12 +2,13 @@
 from sqlalchemy_utils import UUIDType, ArrowType
 import arrow
 import json
+from ast import literal_eval
 
 from kinappserver import db, config
 from kinappserver.push import send_please_upgrade_push
 from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts, get_user_os_type, get_user_app_data, get_unenc_phone_number_by_user_id
-
+from .truex_blacklisted_user import is_user_id_blacklisted_for_truex
 
 TASK_TYPE_TRUEX = 'truex'
 
@@ -214,6 +215,7 @@ def should_skip_task(user_id, task_id):
 
         # skip truex for iOS devices, non-american android
         if get_task_type(task_id) == TASK_TYPE_TRUEX:
+
             if get_user_os_type(user_id) == OS_IOS:
                 print('skipping truex task %s for ios user %s' % (task_id, user_id))
                 return True
@@ -222,6 +224,19 @@ def should_skip_task(user_id, task_id):
             if unenc_phone_number.find('+1') != 0:
                 print('skipping truex task %s for prefix %s' % (task_id, unenc_phone_number[:3]))
                 return True
+
+            # TODO cache this
+            # skip selected task_ids
+            if task_id in literal_eval(config.TRUEX_BLACKLISTED_TASKIDS):
+                print('skipping blacklisted truex task %s' % task_id)
+                return True
+
+            # TODO cache results here
+            # skip selected user_ids
+            if is_user_id_blacklisted_for_truex(user_id):
+                print('skipping truex task %s for blacklisted user %s' % (task_id, user_id))
+                return True
+
     except Exception as e:
         print('caught exception in should_skip_task, defaulting to no. e=%s' % e)
 

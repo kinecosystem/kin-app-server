@@ -12,3 +12,4 @@ from .blackhawk_offer import *
 from .acl import *
 from .backup import *
 from .email_template import *
+from .truex_blacklisted_user import *
