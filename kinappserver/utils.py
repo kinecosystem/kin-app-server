@@ -289,3 +289,11 @@ def write_payment_data_to_cache(memo, user_id, task_id, timestamp, send_push=Tru
 def read_payment_data_from_cache(memo):
     data = read_json_from_cache('memo:%s' % memo)
     return data['user_id'], data['task_id'], data['timestamp'], data['send_push']
+
+
+def find_max_task(completed_tasks):
+    max_task = 0
+    for task in completed_tasks:
+        if int(task) > max_task:
+            max_task = int(task)
+    return max_task

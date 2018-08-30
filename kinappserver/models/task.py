@@ -6,7 +6,7 @@ from ast import literal_eval
 
 from kinappserver import db, config, app
 from kinappserver.push import send_please_upgrade_push
-from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url, find_max_task
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts, get_user_os_type, get_user_app_data, get_unenc_phone_number_by_user_id
 from .truex_blacklisted_user import is_user_id_blacklisted_for_truex
 
@@ -182,7 +182,9 @@ def get_tasks_for_user(user_id, source_ip=None):
 
     # by default, the next task is just the 'next integer' one.
     # however, in some cases we want to skip a task, which requires special processing:
-    next_task_id = str(len(json.loads(user_app_data.completed_tasks)))
+    completed_tasks = json.loads(user_app_data.completed_tasks)
+    print('completed_tasks: %s' % completed_tasks)
+    next_task_id = str(int(find_max_task(completed_tasks))+1)
 
     while should_skip_task(user_id, next_task_id, source_ip):
         print('skipping task %s for userid %s' % (user_id, next_task_id))
