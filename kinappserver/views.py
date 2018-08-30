@@ -551,6 +551,7 @@ def get_next_task():
         return jsonify(tasks=[], reason='phone_prefix_not supported')
 
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        print('blocking user %s from getting tasks: phone not verified' % user_id)
         return jsonify(tasks=[], reason='user_not_phone_verified')
 
     if user_deactivated(user_id):

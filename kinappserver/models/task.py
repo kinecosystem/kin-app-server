@@ -186,7 +186,7 @@ def get_tasks_for_user(user_id, source_ip=None):
     next_task_id = str(int(find_max_task(completed_tasks))+1)
 
     while should_skip_task(user_id, next_task_id, source_ip):
-        print('skipping task %s for userid %s' % (user_id, next_task_id))
+        print('skipping task %s for userid %s' % (next_task_id, user_id))
         next_task_id = str(int(next_task_id) + 1)
 
     next_task_ts = get_next_task_results_ts(user_id)
@@ -213,7 +213,12 @@ def should_skip_truex_task(user_id, task_id, source_ip=None):
         return True
 
     unenc_phone_number = get_unenc_phone_number_by_user_id(user_id)
-    if unenc_phone_number.find('+1') != 0:
+
+    # DEBUG - remove this
+    if not unenc_phone_number:
+        print('should_skip_truex_task: somehow, userid %s has no phone number!' % user_id)
+
+    if unenc_phone_number and unenc_phone_number.find('+1') != 0:
         print('skipping truex task %s for prefix %s' % (task_id, unenc_phone_number[:3]))
         return True
 
