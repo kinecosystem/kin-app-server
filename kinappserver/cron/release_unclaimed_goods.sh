@@ -1,1 +1,1 @@
-curl -X GET http://localhost:8000/good/release_unclaimed
+curl -X GET http://localhost:80/internal/good/release_unclaimed

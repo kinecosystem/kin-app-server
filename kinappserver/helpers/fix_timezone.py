@@ -12,11 +12,11 @@ def request_re_register(user_id):
 
 ####################### untested code ######################
 def get_user_report(user_id):
-    resp = requests.post('http://localhost:8000/user/report', json={'user_id': user_id})
+    resp = requests.post('http://localhost:80/internal/user/report', json={'user_id': user_id})
     return resp.json()
 
 def set_next_ts(user_id, new_ts):
-    resp = requests.post('http://localhost:8000/user/skip_wait', json={'user_id': user_id, 'next_ts': new_ts})
+    resp = requests.post('http://localhost:80/internal/user/skip_wait', json={'user_id': user_id, 'next_ts': new_ts})
     return resp.json()
 
 def scan():

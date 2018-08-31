@@ -3,7 +3,7 @@ import requests
 import json
 import os
 
-URL_PREFIX = 'http://localhost:8000'
+URL_PREFIX = 'http://localhost:80/internal'
 
 def report_balance():
     """tracks the kin and xlm balance on this server"""

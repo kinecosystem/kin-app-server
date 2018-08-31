@@ -3,7 +3,7 @@ import requests
 
 def compensate_user(user_id, task_id, kin_amount):
     print('compensating user %s for taskid %s' % (user_id, task_id))
-    resp = requests.post('http://localhost:8000/user/compensate', json={'task_id': task_id, 'user_id': user_id, 'kin_amount': kin_amount})
+    resp = requests.post('http://localhost:80/internal/user/compensate', json={'task_id': task_id, 'user_id': user_id, 'kin_amount': kin_amount})
     print(resp.status_code)
 
 

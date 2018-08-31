@@ -3,7 +3,7 @@ import requests
 import json
 import os
 
-URL_PREFIX = 'http://localhost:8000'
+URL_PREFIX = 'http://localhost:80/internal'
 
 
 def report_inventory():

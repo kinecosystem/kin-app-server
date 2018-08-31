@@ -1,6 +1,8 @@
 [program:kinappserver]
 directory=/opt/kin-app-server/kinappserver
-command=uwsgi --socket 0.0.0.0:8000 --protocol=http --master --workers 3 -w wsgi --enable-threads
+command=uwsgi --socket 0.0.0.0:8000 --protocol=http --master --workers 3 -w wsgi  --enable-threads -l 4000
+; #refer to https://stackoverflow.com/questions/12340047/uwsgi-your-server-socket-listen-backlog-is-limited-to-100-connections for wsgi connections
+; # as this requires additional `sysctl -w net.core.somaxconn=4096` config
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/kinappserver.err.log

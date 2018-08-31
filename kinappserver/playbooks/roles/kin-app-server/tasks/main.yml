@@ -37,6 +37,14 @@
   pip:
     name: uwsgi
 
+- name: add entry to sysctrl for somaxconn - needed for uwsgi's connections
+  sysctl:
+    name: net.core.somaxconn
+    value: 4096
+    sysctl_set: yes
+    state: present
+    reload: yes
+
 - name: Clone the kin-core-python repo
   git:
     repo=https://github.com/kinfoundation/kin-core-python.git

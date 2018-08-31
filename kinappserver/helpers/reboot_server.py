@@ -13,7 +13,7 @@ DEREGISTER_TIMEOUT_SECS = 60
 
 def get_checkout_connections():
     try:
-        response = requests.get('http://localhost:8000/stats/db')
+        response = requests.get('http://localhost:80/internal/stats/db')
         response.raise_for_status()
         return json.loads(response.text)['stats']['checkedout']
     except Exception as e:

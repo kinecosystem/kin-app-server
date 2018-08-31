@@ -1,1 +1,1 @@
-curl -XPOST "http://localhost:8000/blackhawk/cards/replenish"
+curl -XPOST "http://localhost:80/internal/blackhawk/cards/replenish"

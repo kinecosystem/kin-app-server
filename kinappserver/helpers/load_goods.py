@@ -6,7 +6,7 @@ import requests
 
 def load_goods(filename, offer_id):
     print('reading file: %s' % filename)
-    url = 'http://localhost:8000/good/add'
+    url = 'http://localhost:80/internal/good/add'
     headers = {"Content-Type": "application/json"}
     lines = tuple(open(filename, 'r'))
     payload = """{"offer_id": "%s", "good_type": "code", "value": "%s"}"""

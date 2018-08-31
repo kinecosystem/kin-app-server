@@ -25,5 +25,5 @@ task = { 'title': 'do you know horses?',
             }]
         }
 
-resp = requests.post('http://localhost:8000/task/add', json={'id': 1, 'task': task})
+resp = requests.post('http://localhost:80/internal/task/add', json={'id': 1, 'task': task})
 print(resp.status_code)
