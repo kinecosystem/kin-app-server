@@ -21,10 +21,10 @@
     job: "/opt/kin-app-server/kinappserver/cron/replenish_blackhawk_cards.sh"
   run_once: true # runs every minute, on one machine of the 2
 
-- cron:
-    name: "periodically de-authenticate users"
-    job: "/opt/kin-app-server/kinappserver/cron/deauth_users.sh"
-  run_once: true # runs every minute, on one machine of the 2
+#- cron:
+#    name: "periodically de-authenticate users"
+#    job: "/opt/kin-app-server/kinappserver/cron/deauth_users.sh"
+#  run_once: true # runs every minute, on one machine of the 2
 
 - cron:
     name: "release unclaimed goods every minute"
