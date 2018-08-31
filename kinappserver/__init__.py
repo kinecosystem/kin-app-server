@@ -157,3 +157,7 @@ app.geoip_reader = geolite2.reader()
 if config.DEBUG:
     from .utils import print_creation_statement
     print_creation_statement()
+
+from .utils import increment_metric
+increment_metric('server-starting')
+

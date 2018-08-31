@@ -544,15 +544,17 @@ def get_next_task():
     """returns the current task for the user with the given id"""
     user_id, auth_token = extract_headers(request)
 
+    # dont serve users with no phone number
+    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        print('blocking user %s from getting tasks: phone not verified' % user_id)
+        return jsonify(tasks=[], reason='user_not_phone_verified')
+
+    # user has a verified phone number, but is it blocked?
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting tasks - country not supported' % user_id)
         return jsonify(tasks=[], reason='phone_prefix_not supported')
-
-    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
-        print('blocking user %s from getting tasks: phone not verified' % user_id)
-        return jsonify(tasks=[], reason='user_not_phone_verified')
 
     if user_deactivated(user_id):
         print('user %s is deactivated. returning empty task array' % user_id)
@@ -1489,7 +1491,7 @@ def compensate_truex_activity(user_id):
 
     memo, compensated_user_id = handle_task_results_resubmission(user_id, task_id)
     if memo:
-        print('compensate_truex_activity: detected resubmission by user_id %s of previously payed-for task by user_id: %s . memo:%s' % (user_id, compensated_user_id, memo))
+        print('compensate_truex_activity: detected resubmission by user_id %s of previously payed-for task id % by user_id: %s . memo:%s' % (user_id, task_id, compensated_user_id, memo))
         # this task was already submitted - and compensated, so dont pay again for the same task.
         # this really shouldn't happen, but it could happen if the phone-number's history wasn't migrated to the new user.
         # lets copy the user's history and bring her up to date, and then return 200OK.
