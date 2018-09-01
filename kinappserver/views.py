@@ -117,6 +117,8 @@ def app_launch():
     except Exception as e:
         raise InvalidUsage('bad-request')
 
+    print('app-launch from user %s and source_ip:%s' % (user_id, get_source_ip(request)))
+
     update_user_app_version(user_id, app_ver)
 
     # send auth token if needed
@@ -329,7 +331,7 @@ def post_user_task_results_endpoint():
         print('exception in /user/task/results. e=%s' % e)
         raise InvalidUsage('bad-request')
 
-    print('processing submitted tasks results for task %s from user %s' % (task_id, user_id))
+    print('processing submitted tasks results for task %s from user %s and source_ip:%s' % (task_id, user_id, get_source_ip(request)))
 
     if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
         print('user %s is not authenticated. rejecting results submission request' % user_id)
@@ -544,6 +546,8 @@ def get_next_task():
     """returns the current task for the user with the given id"""
     user_id, auth_token = extract_headers(request)
 
+    print('getting tasks for userid %s and source_ip: %s' % (user_id, get_source_ip(request)))
+
     # dont serve users with no phone number
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
         print('blocking user %s from getting tasks: phone not verified' % user_id)
@@ -560,7 +564,7 @@ def get_next_task():
         print('user %s is deactivated. returning empty task array' % user_id)
         return jsonify(tasks=[], reason='user_deactivated')
 
-    print('getting tasks for userid %s' % user_id)
+
     tasks = get_tasks_for_user(user_id, get_source_ip(request))
     if len(tasks) == 1:
         tasks[0]['memo'] = get_next_task_memo(user_id)
