@@ -55,6 +55,13 @@ class Tester(unittest.TestCase):
         # set a fake token
         db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid1), str(userid1)))
 
+        resp = self.app.post('/user/auth/ack',
+                            data=json.dumps({
+                            'token': str(userid1)}),
+                            headers={USER_ID_HEADER: str(userid1)},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         # user1 updates his phone number to the server after client-side verification
         phone_num = '+9720528802120'
         resp = self.app.post('/user/firebase/update-id-token',
@@ -71,6 +78,7 @@ class Tester(unittest.TestCase):
         # mock onboarding
         db.engine.execute("""update public.user set public_address='%s' where user_id='%s';""" % ('my-address-1', str(userid1)))
         db.engine.execute("""update public.user set onboarded=true where user_id='%s';""" % str(userid1))
+
 
         resp = self.app.post('/user/backup/hints', # should succeed
                              data=json.dumps({'hints': [1, 2]}),
@@ -94,6 +102,13 @@ class Tester(unittest.TestCase):
 
         # set a fake token
         db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid3), str(userid3)))
+
+        resp = self.app.post('/user/auth/ack',
+                            data=json.dumps({
+                            'token': str(userid3)}),
+                            headers={USER_ID_HEADER: str(userid3)},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
         # userid3 updates his phone number to the server after client-side verification
         phone_num2 = '+9720528802121'
@@ -136,6 +151,13 @@ class Tester(unittest.TestCase):
 
         # set a fake token
         db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid2), str(userid2)))
+
+        resp = self.app.post('/user/auth/ack',
+                            data=json.dumps({
+                            'token': str(userid2)}),
+                            headers={USER_ID_HEADER: str(userid2)},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
         # user2 updates his phone number to the server after client-side verification.
         # should have the same hints as user1

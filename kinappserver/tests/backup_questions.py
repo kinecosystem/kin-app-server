@@ -100,7 +100,7 @@ class Tester(unittest.TestCase):
                              headers={USER_ID_HEADER: str(userid1)},  content_type='application/json')
         self.assertEqual(resp.status_code, 403)
 
-        # deauth user
+        # auth user
         db.engine.execute("""update public.push_auth_token set authenticated=true where user_id='%s';""" % (str(userid1)))
 
         resp = self.app.post('/user/backup/hints',  # should succeed
