@@ -99,23 +99,19 @@
     name: kinappserver
     state: present
 
-- name: template the nginx config file
+- name: template the nginx kinappserver config file
   template:
     src: templates/etc/nginx/sites-enabled/kinappserver
     dest: /etc/nginx/sites-enabled/kinappserver
 
+- name: template the nginx default config file (with the /internal endpoint)
+  template:
+    src: templates/etc/nginx/sites-enabled/default
+    dest: /etc/nginx/sites-enabled/default
+
 # there's a dedicated play for restarting supervisor and nginx
-# which remvoves the servers from the load-balancer and does it one-by-one.
-
-#- name: restart supervisor
-#  supervisorctl:
-#    name: kinappserver
-#    state: restarted
-
-#- name: service nginx restart
-#  service:
-#    name: nginx
-#    state: restarted
+# which remvoves the servers from the load-balancer and does it one-by-one. once
+# this play is done, you need to run the restart one
 
 # all the cron tasks that need to run on all machines:
 # (for those that need to run on just one, see the kin-app-server-cron role)
