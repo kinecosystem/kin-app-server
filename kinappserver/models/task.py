@@ -175,11 +175,6 @@ def get_tasks_for_user(user_id, source_ip=None):
 
     user_app_data = get_user_app_data(user_id)
 
-    # if the user has no previous task results, just give her task '0'
-    if len(user_app_data.completed_tasks) == 0:
-        print('no previous task results, giving task 0')
-        return [get_task_by_id('0')]
-
     # by default, the next task is just the 'next integer' one.
     # however, in some cases we want to skip a task, which requires special processing:
     completed_tasks = json.loads(user_app_data.completed_tasks)
