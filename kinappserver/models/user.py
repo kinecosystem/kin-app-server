@@ -775,6 +775,10 @@ def nuke_user_data(phone_number, nuke_all = False):
         db.engine.execute("delete from public.transaction where user_id='%s'" % (user_id))
         db.engine.execute("delete from public.user_task_results where user_id='%s'" % (user_id))
         db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\'' % (user_id))
+
+    # also erase the backup hints for the phone
+    db.engine.execute("delete from phone_backup_hints where enc_phone_number='%s'" % app.encryption.encrypt(phone_number))
+
     return user_ids if len(user_ids) > 0 else None
 
 
