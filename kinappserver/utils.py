@@ -292,7 +292,7 @@ def read_payment_data_from_cache(memo):
 
 
 def find_max_task(completed_tasks):
-    max_task = -1
+    max_task = -1 # because if there are no tasks, we want to get -1 +1 = task no. 0
     for task in completed_tasks:
         if int(task) > max_task:
             max_task = int(task)
