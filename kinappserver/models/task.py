@@ -214,10 +214,6 @@ def should_skip_truex_task(user_id, task_id, source_ip=None):
 
     unenc_phone_number = get_unenc_phone_number_by_user_id(user_id)
 
-    # DEBUG - remove this
-    if not unenc_phone_number:
-        print('should_skip_truex_task: somehow, userid %s has no phone number!' % user_id)
-
     if unenc_phone_number and unenc_phone_number.find('+1') != 0:
         print('skipping truex task %s for prefix %s' % (task_id, unenc_phone_number[:3]))
         return True
