@@ -53,6 +53,14 @@ class Tester(unittest.TestCase):
         # set a fake token
         db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid1), str(userid1)))
 
+
+        resp = self.app.post('/user/auth/ack',
+                            data=json.dumps({
+                            'token': str(userid1)}),
+                            headers={USER_ID_HEADER: str(userid1)},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         # should succeed anyways
         resp = self.app.get('/backup/hints')
         data = json.loads(resp.data)
@@ -84,10 +92,16 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
 
-        resp = self.app.post('/user/backup/hints',  # should fail - not auth token
+        # deauth user
+        db.engine.execute("""update public.push_auth_token set authenticated=false where user_id='%s';""" % (str(userid1)))
+
+        resp = self.app.post('/user/backup/hints',  # should fail - not authenticated
                              data=json.dumps({'hints': [1, 2]}),
                              headers={USER_ID_HEADER: str(userid1)},  content_type='application/json')
         self.assertEqual(resp.status_code, 403)
+
+        # deauth user
+        db.engine.execute("""update public.push_auth_token set authenticated=true where user_id='%s';""" % (str(userid1)))
 
         resp = self.app.post('/user/backup/hints',  # should succeed
                              data=json.dumps({'hints': [1, 2]}),
