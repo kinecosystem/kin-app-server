@@ -1,3 +1,36 @@
+- name: Run "apt-get update"
+  apt:
+    update_cache: yes
+
+
+- name: Install list of packages
+  apt: name={{item}} state=installed
+  with_items:
+       - git
+       - python3-pip
+
+- name: Clone the kin-app-server repo
+  git:
+    repo=https://github.com/kinfoundation/kin-app-server.git
+    dest=/opt/kin-app-server
+    accept_hostkey=true
+    force=yes
+    version={{kin_app_server_branch_name}}
+
+- name: pip install reqs
+  pip:
+    requirements: /opt/kin-app-server/kinappserver/requirements.txt
+
+- name: Template the config file
+  template:
+    src: templates/kinappserver/config.py.jinja2
+    dest: /opt/kin-app-server/kinappserver/config.py
+
+- name: install the kin-app-server from the local copy. force upgrade to take any changes.
+  pip:
+    name: /opt/kin-app-server
+    state: latest
+
 - cron:
     name: "gather periodic data about missing txs"
     job: "/usr/bin/python3 /opt/kin-app-server/kinappserver/missing_txs.py"

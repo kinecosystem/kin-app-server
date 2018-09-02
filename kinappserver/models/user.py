@@ -718,48 +718,6 @@ def get_associated_user_ids(user_id):
         return [str(user.user_id) for user in users]
 
 
-def find_missing_txs():
-    """get the list of missing txs - users that have submitted tasks but have no correlating txs"""
-    missing_txs = []
-    users = User.query.all()
-    distinct_enc_phone_numbers = list(set([user.enc_phone_number for user in users]))
-
-    compensated_task_ids_query = '''select t2.tx_info->>'task_id' as task_id from public.user t1 inner join transaction t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
-    completed_task_ids_query = '''select t2.task_id from public.user t1 inner join user_task_results t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
-
-    for enc_number in distinct_enc_phone_numbers:
-        if not enc_number:
-            continue
-
-        compensated_tasks = []
-        results = db.engine.execute(compensated_task_ids_query % enc_number)  # safe
-        res = results.fetchall()
-        for item in res:
-            compensated_tasks.append(item[0])
-
-        completed = []
-        results = db.engine.execute(completed_task_ids_query % enc_number)  # safe
-        res = results.fetchall()
-        for item in res:
-            completed.append(item[0])
-
-        uncompensated = list(set(completed) - set(compensated_tasks))
-        if len(uncompensated) != 0:
-            print('found uncompensated tasks: %s for number %s' % (uncompensated, enc_number))
-
-        for item in uncompensated:
-            from .task import get_reward_for_task
-            reward = get_reward_for_task(str(item))
-            # get the active user id for the phone number
-            missing_txs.append({'user_id': get_active_user_id_by_enc_phone(enc_number), 'task_id': item, 'reward': reward})
-
-        if len(missing_txs) > 500:
-            # stop here, otherwise it takes too long
-            break
-
-    return missing_txs
-
-
 def nuke_user_data(phone_number, nuke_all = False):
     """nuke user's data by phone number. by default only nuke the active user"""
     # find the active user with this number:
