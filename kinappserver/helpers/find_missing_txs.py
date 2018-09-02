@@ -53,6 +53,10 @@ def function_to_run():
     completed_task_ids_query = '''select t2.task_id from public.user t1 inner join user_task_results t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
 
     for enc_number in distinct_enc_phone_numbers:
+        if len(missing_txs) > 500:
+            print(missing_txs)
+            break
+
         sleep(0.1)
         enc_number = enc_number[0]
 
