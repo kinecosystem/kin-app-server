@@ -98,7 +98,8 @@ else:
 #logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 #logging.getLogger('sqlalchemy.pool').setLevel(logging.DEBUG)
 
-import kinappserver.views
+import kinappserver.views_private
+import kinappserver.views_public
 import redis
 
 #redis:
