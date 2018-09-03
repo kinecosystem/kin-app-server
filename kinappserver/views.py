@@ -34,6 +34,9 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number
 
 
+def get_source_ip(request):
+    """returns the source ip of the request from the nginx header"""
+    return request.headers.get('X-FORWARDED-FOR', None)
 
 
 def limit_to_localhost():
@@ -89,11 +92,6 @@ def extract_headers(request):
         print('cant extract user_id from header')
         raise InvalidUsage('bad header')
     return user_id, auth_token
-
-
-def get_source_ip(request):
-    """returns the source ip of the request from the nginx header"""
-    return request.headers.get('X-FORWARDED-FOR', None)
 
 
 @app.route('/health', methods=['GET'])
@@ -1786,4 +1784,3 @@ def delete_user_data_endpoint():
     are_u_sure = payload.get('are_u_sure', False)
     delete_all_user_data(user_id, are_u_sure)
     return jsonify(status='ok')
-
