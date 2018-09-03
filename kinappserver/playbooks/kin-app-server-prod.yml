@@ -65,14 +65,6 @@
      - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"}
 
 
-# setup cron stuff that needs to run only on kin-app-server-prod-1
-- hosts: kin-app-server-prod-1
-  remote_user: "{{ remote_user | default('ubuntu') }}"
-  become: true
-  roles:
-    - kin-app-server-cron
-
-
 # add aliases to non-sudo user
 - hosts: all
   remote_user: "{{ remote_user | default('ubuntu') }}"
