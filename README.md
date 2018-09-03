@@ -2,14 +2,20 @@
 
 ![](https://travis-ci.org/kinecosystem/kin-app-server.svg?branch=master)
 
-An internal service for the Kinit App aimed at:
+An backend service for the Kinit App aimed at:
     - storing user data (userid, push-token, device-id etc)
     - offering spend and earn opportunities for clients
-    - paying clients for completing tasks
+    - paying clients via the payment service (https://github.com/kinecosystem/payment-service)
+    - push messages are sent via rabbit queues to a dedicated Eshu cluster which forwards them to GCM/APNS
+    
+    all hosts are private in AWS. only the web-server ia accessible via a loadbalancer at port 443. Some internal services reside behind a loadbalancer (eshu, the payment service). There's even a load-balancer for the rabbit cluster (for health-checks.
+
+there's also an additional machine (kinit-app-cron) which runs some cron'd scripts.
+
+There's a simplified environment called stage with a single instace of every service.
 
 ## General Design
-At the moment we design for simplicity: this is a straight-forward flask webapp backed
-by a Postgress SQL server in AWS. In the future we may split the logic to frontend/backend (with a message queue) but at the moment everything is synchronous.
+This is a straight-forward flask webapp backed with a Postgress SQL server in AWS. We use redis for syncing some operations. Payments are done asynchronously with the payment service.
 
 - We monitor/alert with datadog/pagerduty
 - Refer to the groundcontrol repo for ops data
@@ -31,7 +37,7 @@ run ansible (2.4.2.0) with this command:
 ## Configuration
 All configurations reside in the config.py.jinj2 file (in kin-app-server/kinappserver/playbooks/roles/kin-app-server/templates), which is processed by Ansible into a config.py file.
 
-By default, the config is set to DEBUG mode, which has some pre-set values. Production/Stage values must be give in the Ansible role.
+By default, the config is set to DEBUG mode, which has some preset values. Production/Stage values must be give in the Ansible role.
 
 To test the service, run the unittests.
 
@@ -62,49 +68,7 @@ go into python console and:
      prod/stage DB's as well. this needs to happen manually, unless you want to completely re-create the databases.
 
 ## External API
-    POST /user/register
-    - register a new user_id (valid UUID RFC 4122) to the system. 
-    optionally pass a push-token.
-
-    input: a json payload with the following fields:
-                        {
-                            'user_id': <UUID, picked by the client>,
-                            'os': 'android/ios',
-                            'device_model': 'samsung8',
-                            'device_id': '<some device id like iemi>',
-                            'time_zone': '05:00',
-                            'token':'optional push token'}),
-                        }
-    returns 200OK, 'status'='ok' on success
-
-    POST /user/app-launch
-    - update the db with the app's latest activity time and app-version
-
-    input: a json payload with the following fields:
-                        {
-                            'user_id': <UUID, picked by the client>,
-                            'app_ver':'1.0'}),
-                        }
-    returns 200OK, 'status'='ok' on success
-
-    GET /user/task?user_id=<uuid>
-    - get this user's current task(s)
-    for example: 
-
-    POST /user/task/results
-    - post answers for a task
-
-    input:
-                        {
-                            'user_id': str(userid),
-                            'id':'1',
-                            'address':'address to send reward to',
-                            'results':[{'qid':'the question id',
-                                        'aid':'the answer id'},...]
-                        }
-
-    POST /user/update-token
-    - post updates to the client's push token
+just read the code.
 
 
 ## Contributions
@@ -113,18 +77,11 @@ we welcome contributions in the form of pull requests.
 ## StyleSheet
 We intend to loosly follow pep8 and suggest you do too. We do not intend to obey the limit on line length.
 
-## API Changelog
-  
-
 ## A bunch of debugging tools:
 
 1. the psql client:
 a. install with:
-
     sudo apt-get install postgresql-client
 
 b. run with:
-
     export PGPASSWORD=<the password>; psql <db url as given by amazon>
-
-2. a useful mac ui for postgress: http://www.psequel.com/
