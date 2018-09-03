@@ -824,25 +824,6 @@ def get_user_report(user_id):
     return user_report
 
 
-def generate_tz_tweak_list():
-    d = {}
-    users = User.query.all()
-    for user in users:
-        user_id = str(user.user_id)
-        if user.deactivated:
-            continue
-        if user.time_zone != 0:
-            continue
-        if user.enc_phone_number is None:
-            continue
-        if user.push_token is None:
-            continue
-
-        user_app_data = get_user_app_data(user_id)
-        d[user_id] = user_app_data.next_task_ts
-    return d
-
-
 def get_unauthed_users():
     l = []
     results = db.engine.execute("select * from public.user, push_auth_token where public.user.user_id=push_auth_token.user_id and push_auth_token.authenticated=false and push_auth_token.send_date is not null and public.user.deactivated=false and public.user.enc_phone_number is not null;")

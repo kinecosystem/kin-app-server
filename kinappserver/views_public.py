@@ -1,5 +1,5 @@
 """
-The Kin App Server API is defined here.
+The Kin App Server public API is defined here.
 """
 from threading import Thread
 from uuid import UUID
@@ -695,6 +695,20 @@ def reward_address_for_task_internal_payment_service(public_address, task_id, se
     send_kin_with_payment_service(public_address, amount, memo)
 
 
+@app.route('/user/offers', methods=['GET'])
+def get_offers_api():
+    """return the list of available offers for this user"""
+    try:
+        user_id, auth_token = extract_headers(request)
+        if user_id is None:
+            raise InvalidUsage('no user_id')
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+        #print('offers %s' % get_offers_for_user(user_id))
+    return jsonify(offers=get_offers_for_user(user_id))
+
+
 @app.route('/offer/book', methods=['POST'])
 def book_offer_api():
     """books an offer by a user"""
@@ -718,20 +732,6 @@ def book_offer_api():
         return jsonify(status='ok', order_id=order_id)
     else:
         return jsonify(status='error', reason=errors_to_string(error_code)), status.HTTP_400_BAD_REQUEST
-
-
-@app.route('/user/offers', methods=['GET'])
-def get_offers_api():
-    """return the list of available offers for this user"""
-    try:
-        user_id, auth_token = extract_headers(request)
-        if user_id is None:
-            raise InvalidUsage('no user_id')
-    except Exception as e:
-        print('exception: %s' % e)
-        raise InvalidUsage('bad-request')
-        #print('offers %s' % get_offers_for_user(user_id))
-    return jsonify(offers=get_offers_for_user(user_id))
 
 
 @app.route('/offer/redeem', methods=['POST'])
@@ -796,8 +796,6 @@ def report_p2p_tx_api():
         return jsonify(status='ok', tx=tx_dict)
     else:
         raise InvalidUsage('failed to add p2ptx')
-
-
 
 
 @app.route('/truex/activity', methods=['GET'])
