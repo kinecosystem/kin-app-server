@@ -8,6 +8,7 @@ from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
 import arrow
 from distutils.version import LooseVersion
+from .backup import get_user_backup_hints_by_enc_phone
 
 DEFAULT_TIME_ZONE = -4
 KINIT_IOS_PACKAGE_ID_PROD = 'org.kinecosystem.kinit'  # AKA bundle id
@@ -782,6 +783,7 @@ def get_user_report(user_id):
         from .push_auth_token import get_token_by_user_id
         push_token_entry = get_token_obj_by_user_id(user_id)
 
+
         user_report['user_id'] = str(user.user_id)
         user_report['user_id_upper'] = str(user.user_id).upper()
         user_report['os'] = user.os_type
@@ -809,28 +811,17 @@ def get_user_report(user_id):
         user_report['screen_d'] = user.screen_d
         user_report['user_agent'] = user.user_agent
         user_report['truex_user_id'] = user.truex_user_id
+
+        if user.enc_phone_number:
+            ubh = get_user_backup_hints_by_enc_phone(user.enc_phone_number)
+            if ubh:
+                user_report['backup'] = {}
+                user_report['backup']['hints'] = ubh.hints
+                user_report['backup']['updated_at'] = ubh.updated_at
+
     except Exception as e:
         print('caught exception in get_user_report:%s' % e)
     return user_report
-
-
-def generate_tz_tweak_list():
-    d = {}
-    users = User.query.all()
-    for user in users:
-        user_id = str(user.user_id)
-        if user.deactivated:
-            continue
-        if user.time_zone != 0:
-            continue
-        if user.enc_phone_number is None:
-            continue
-        if user.push_token is None:
-            continue
-
-        user_app_data = get_user_app_data(user_id)
-        d[user_id] = user_app_data.next_task_ts
-    return d
 
 
 def get_unauthed_users():

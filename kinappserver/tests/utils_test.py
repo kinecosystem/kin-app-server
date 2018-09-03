@@ -6,7 +6,7 @@ import arrow
 
 import unittest
 import kinappserver
-from kinappserver import db, stellar, models, utils
+from kinappserver import db, stellar, models, utils, encrypt
 
 
 
@@ -21,6 +21,7 @@ class Tester(unittest.TestCase):
 
 
     def setUp(self):
+
         #overwrite the db name, dont interfere with stage db data
         self.postgresql = testing.postgresql.Postgresql()
         kinappserver.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url()
@@ -49,6 +50,11 @@ class Tester(unittest.TestCase):
         self.assertEqual(task_id, task_id_r)
         self.assertEqual(send_push, send_push_r)
         self.assertEqual(timestamp_r, timestamp)
+
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
