@@ -72,12 +72,13 @@ def ack_auth_token(user_id, token):
 
     returns true if all went well, false otherwise
     """
-    push_auth_token = get_token_obj_by_user_id(user_id)
-    if str(push_auth_token.auth_token) == str(token):
-        print('user_id %s successfully acked the push token' % user_id)
-        set_ack_date(user_id)
-        return True
-    else:
+    try:
+        push_auth_token = get_token_obj_by_user_id(user_id)
+        if str(push_auth_token.auth_token) == str(token):
+            print('user_id %s successfully acked the push token' % user_id)
+            set_ack_date(user_id)
+            return True
+    except Exception as e:
         print('user_id %s failed to ack the (internal) push token: %s with this token %s' % (user_id, str(push_auth_token.auth_token), token))
         return False
 
