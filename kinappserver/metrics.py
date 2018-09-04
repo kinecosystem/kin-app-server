@@ -20,19 +20,9 @@ def report_inventory():
         statsd.gauge(metric_name_unallocated, inventory[offer_id]['unallocated'], tags=['app:kinit,env:%s' % os.environ['ENV']])
 
 
-
 def report_bh_balance():
     """tracks the current balance of our blackhawk account"""
-    balance = 0
-    response = requests.get(URL_PREFIX + '/blackhawk/account/balance')
-    try:
-        balance = json.loads(response.text)['balance']
-    except Exception as e:
-        print('cant collect balance')
-        pass
-
-    metric = 'bh-account-balance'
-    statsd.gauge(metric, balance, tags=['app:kinit,env:%s' % os.environ['ENV']])
+    requests.get(URL_PREFIX + '/blackhawk/account/balance')
 
 
 def report_unauthed_user_count():

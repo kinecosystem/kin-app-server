@@ -183,7 +183,7 @@ def dbstats_api():
     if not config.DEBUG:
         limit_to_localhost()
 
-    return jsonify(status='ok', stats=sqlalchemy_pool_status())
+    return jsonify(status='ok', stats=sqlalchemy_pool_status()) # cant be async, used by the reboot script
 
 
 @app.route('/balance', methods=['GET'])
@@ -409,21 +409,22 @@ def add_bh_offer_api():
 
 @app.route('/blackhawk/account/balance', methods=['GET'])
 def get_bh_balance():
-    """returns the current balance of the bh account"""
+    """asynchronously reports a metric with bh's account balance"""
     if not config.DEBUG:
         limit_to_localhost()
 
     if not config.BLACKHAWK_PURCHASES_ENABLED:
         print('blackhawk purchases disabled by config. ignoring cron')
-        return jsonify(status='ok', balance=-1)
+        return jsonify(status='ok')
 
     from .blackhawk import get_account_balance
-    return jsonify(status='ok', balance=get_account_balance())
+    gauge_metric('bh-account-balance', get_account_balance())
+    return jsonify(status='ok')
 
 
 @app.route('/blackhawk/cards/replenish', methods=['POST'])
 def replenish_bh_cards_endpoint():
-    """buy additional cards from blackhawk if below threshold"""
+    """asynchronously buy additional cards from blackhawk if below threshold"""
     if not config.DEBUG:
         limit_to_localhost()
 
@@ -435,11 +436,8 @@ def replenish_bh_cards_endpoint():
     refresh_bh_auth_token()
 
     # buys cards if needed
-    retval = replenish_bh_cards()
-    if retval > 0:
-        return jsonify(status='ok', unprocessed_orders=retval)
-    else:
-        return jsonify(status='error')
+    app.rq.enqueue(replenish_bh_cards)
+    return jsonify(status='ok')
 
 
 @app.route('/user/report', methods=['POST'])

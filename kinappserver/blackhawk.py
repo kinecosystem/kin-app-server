@@ -18,7 +18,7 @@ import requests
 from kinappserver.models import create_bh_card, list_unprocessed_orders, set_processed_orders, \
     create_good, get_bh_creds, replace_bh_token, list_inventory, get_bh_offers
 from kinappserver import config
-from kinappserver.utils import increment_metric
+from kinappserver.utils import increment_metric, gauge_metric
 import urllib.parse
 
 HEADERS = {'Content-Type': 'application/x-www-form-urlencoded'}
@@ -70,7 +70,7 @@ def get_order_status_api(token, order_id):
     return None
 
 
-def get_account_balance_api(token, account_id):
+def get_bh_account_balance_api(token, account_id):
     """gets the balance on the account (one account is assumed)"""
     accounts = get_accounts_data_api(token)
     if accounts is None:
@@ -82,7 +82,6 @@ def get_account_balance_api(token, account_id):
             return account['account']['balance']
 
     print('could not find account id %s balance' % account_id)
-    return None
 
 
 def get_accounts_data_api(token):
@@ -143,7 +142,7 @@ def get_account_balance():
         print('no bh creds object/auth token')
         return False
     else:
-        return get_account_balance_api(creds['token'], creds['account_id'])
+        return get_bh_account_balance_api(creds['token'], creds['account_id'])
 
 
 def egift_add_card_api(token, order_id, denomination):
@@ -224,7 +223,6 @@ def track_orders():
     if not token:
         print('track_orders: no bh auth token')
         return -1
-
 
     orders_dict = list_unprocessed_orders()
     unprocessed_orders = 0
