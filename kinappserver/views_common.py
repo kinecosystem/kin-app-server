@@ -5,6 +5,7 @@ code that's common to both public and private apis
 from flask import request, jsonify, abort
 from kinappserver.utils import InvalidUsage, InternalError
 from kinappserver import app, ssm
+from .models import is_in_acl
 
 
 @app.errorhandler(InvalidUsage)

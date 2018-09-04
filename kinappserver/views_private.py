@@ -488,7 +488,7 @@ def deauth_users_endpoint():
     if not config.DEBUG:
         limit_to_localhost()
 
-    scan_for_deauthed_users()
+    app.rq.enqueue(scan_for_deauthed_users)
     return jsonify(status='ok')
 
 

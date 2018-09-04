@@ -41,13 +41,13 @@ def generate_memo(is_manual=False):
 def increment_metric(metric_name, count=1):
     """increment a counter with the given name and value"""
     # set env to undefined for local tests (which do not emit stats, as there's no agent)
-    statsd.increment('kinitapp.%s.%s' % (config.DEPLOYMENT_ENV, metric_name), count)
+    statsd.increment('kinitapp.%s' % metric_name, count, tags=['env:%s' % config.DEPLOYMENT_ENV])
 
 
 def gauge_metric(metric_name, value):
     """increment a counter with the given name and value"""
     # set env to undefined for local tests (which do not emit stats, as there's no agent)
-    statsd.gauge('kinitapp.%s.%s' % (config.DEPLOYMENT_ENV, metric_name), value)
+    statsd.increment('kinitapp.%s' % metric_name, value, tags=['env:%s' % config.DEPLOYMENT_ENV])
 
 
 def errors_to_string(errorcode):
@@ -86,6 +86,8 @@ def get_global_config():
     d['backup_nag'] = True
     if config.TOS_URL is not '':
         d['tos'] = config.TOS_URL
+    if config.FAQ_URL is not '':
+        d['faq'] = config.FAQ_URL
     return d
 
 

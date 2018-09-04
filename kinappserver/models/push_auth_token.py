@@ -154,6 +154,7 @@ def scan_for_deauthed_users():
                 deauth_user_ids.append(token.user_id)
 
     deauth_users(deauth_user_ids)
+    print('deauthed %s users' % len(deauth_user_ids))
     return True
 
 

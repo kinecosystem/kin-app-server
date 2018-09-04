@@ -92,7 +92,13 @@
   template:
     src: "{{ role_path }}/templates/etc/supervisor/conf.d/kinappserver.conf.jinja2"
     dest: /etc/supervisor/conf.d/kinappserver.conf
-    mode: 
+    mode:
+
+- name: template the supervisord config file
+  template:
+    src: "{{ role_path }}/templates/etc/supervisor/conf.d/kinappworker.conf.jinja2"
+    dest: /etc/supervisor/conf.d/kinappworker.conf
+    mode:
 
 - name: update supervisor
   supervisorctl:

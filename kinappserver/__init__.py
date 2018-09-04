@@ -9,13 +9,14 @@ from stellar_base.network import NETWORKS
 from .encrypt import AESCipher
 
 
-
-
 app = Flask(__name__)
 CORS(app)
 
 from flask_sqlalchemy import SQLAlchemy
 from kinappserver import config, ssm, stellar
+
+from .utils import increment_metric
+increment_metric('server-starting')
 
 # get seeds, channels from aws ssm:
 base_seed, channel_seeds = ssm.get_stellar_credentials()
@@ -101,11 +102,15 @@ else:
 import kinappserver.views_private
 import kinappserver.views_public
 import redis
+from rq import Queue
 
 #redis:
 app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0)
 # redis config sanity
 app.redis.setex('temp-key', 1, 'temp-value')
+
+# start the rq queue connection
+app.rq = Queue(connection=redis.Redis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0))
 
 #push: init the amqplib: two instances, one for beta and one for release TODO get rid of this eventually
 app.amqp_publisher_beta = AmqpPublisher()
@@ -156,9 +161,8 @@ app.geoip_reader = geolite2.reader()
 
 # print db creation statements
 if config.DEBUG:
-    from .utils import print_creation_statement
-    print_creation_statement()
+    #from .utils import print_creation_statement
+    #print_creation_statement()
+    pass
 
-from .utils import increment_metric
-increment_metric('server-starting')
 
