@@ -16,10 +16,9 @@ def report_inventory():
         print('cant collect inventory')
         pass
     for offer_id in inventory.keys():
-        metric_name_total = 'inventory-offerid-%s-total' % offer_id
         metric_name_unallocated = 'inventory-offerid-%s-unallocated' % offer_id
-        statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_unallocated), inventory[offer_id]['unallocated'])
-        statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric_name_total), inventory[offer_id]['total'])
+        statsd.gauge(metric_name_unallocated, inventory[offer_id]['unallocated'], tags=['app:kinit,env:%s' % os.environ['ENV']])
+
 
 
 def report_bh_balance():
@@ -33,7 +32,7 @@ def report_bh_balance():
         pass
 
     metric = 'bh-account-balance'
-    statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric), balance)
+    statsd.gauge(metric, balance, tags=['app:kinit,env:%s' % os.environ['ENV']])
 
 
 def report_unauthed_user_count():
@@ -47,7 +46,7 @@ def report_unauthed_user_count():
         pass
 
     metric = 'unauthed_user_count'
-    statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric), count)
+    statsd.gauge(metric, count, tags=['app:kinit,env:%s' % os.environ['ENV']])
 
 
 report_inventory()

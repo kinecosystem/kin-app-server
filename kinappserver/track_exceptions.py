@@ -37,8 +37,7 @@ def report_exceptions():
     redis_con.set(redis_key, num_exceptions)
 
     # also send to dd
-    metric = 'track-exceptions'
-    statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], metric), found_new_exceptions)
+    statsd.gauge('track-exceptions', found_new_exceptions, tags=['app:kinit,env:%s' % os.environ['ENV']])
     return True
 
 

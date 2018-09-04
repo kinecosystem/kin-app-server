@@ -11,7 +11,7 @@ def report_missing_txs():
 
     response = requests.get(URL_PREFIX + '/users/missing_txs')
     missing_txs = json.loads(response.text)['missing_txs']
-    statsd.gauge('kinitapp.%s.%s' % (os.environ['ENV'], 'missing-txs'), len(missing_txs))
+    statsd.gauge('missing-txs', len(missing_txs), tags=['app:kinit,env:%s' % os.environ['ENV']])
 
 
 report_missing_txs()

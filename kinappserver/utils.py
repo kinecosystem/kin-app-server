@@ -41,13 +41,13 @@ def generate_memo(is_manual=False):
 def increment_metric(metric_name, count=1):
     """increment a counter with the given name and value"""
     # set env to undefined for local tests (which do not emit stats, as there's no agent)
-    statsd.increment('kinitapp.%s' % metric_name, count, tags=['env:%s' % config.DEPLOYMENT_ENV])
+    statsd.increment(metric_name, count, tags=['app:kinit,env:%s' % config.DEPLOYMENT_ENV])
 
 
 def gauge_metric(metric_name, value):
     """increment a counter with the given name and value"""
     # set env to undefined for local tests (which do not emit stats, as there's no agent)
-    statsd.increment('kinitapp.%s' % metric_name, value, tags=['env:%s' % config.DEPLOYMENT_ENV])
+    statsd.increment(metric_name, value, tags=['app:kinit,env:%s' % config.DEPLOYMENT_ENV])
 
 
 def errors_to_string(errorcode):

@@ -13,9 +13,8 @@ def report_db_stats():
 
     response = requests.get(URL_PREFIX + '/stats/db')
     stats = json.loads(response.text)['stats']
-    statsd.gauge('kinitapp.%s.%s.%s' % (os.environ['ENV'], hostname,'dbstats-checkedout'), stats['checkedout'])
-    #statsd.gauge('kinitapp.%s.%s.%s' % (os.environ['ENV'], hostname,'dbstats-overflow'), stats['overflow'])
-    #statsd.gauge('kinitapp.%s.%s.%s' % (os.environ['ENV'], hostname,'dbstats-checkedin'), stats['checkedin'])
+    statsd.gauge('dbstats-checkedout', stats['checkedout'], tags=['app:kinit,env:%s' % os.environ['ENV']])
+
 
 
 report_db_stats()
