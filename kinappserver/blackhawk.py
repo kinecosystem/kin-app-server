@@ -310,13 +310,16 @@ def refresh_bh_auth_token(force=False):
     return True
 
 
-def replenish_bh_cards():
+def replenish_bh_cards(refresh_creds=False):
     """inspect the current status of the goods, and buy additional cards if needed.
     this function is called by cron every minute.
     this function only handles amazon gift cards at the moment.
     this function will not order additional cards as long as there are some cards
     still being processed by blackhawk.
     """
+
+    if refresh_creds:
+        refresh_bh_auth_token()
     
     # start by converting previously-unprocessed orders into goods
     yet_unprocessed_orders = track_orders()

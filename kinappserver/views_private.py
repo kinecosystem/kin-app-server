@@ -428,14 +428,12 @@ def replenish_bh_cards_endpoint():
     if not config.DEBUG:
         limit_to_localhost()
 
-    from .blackhawk import replenish_bh_cards, refresh_bh_auth_token
     if not config.BLACKHAWK_PURCHASES_ENABLED:
         print('blackhawk purchases disabled by config. ignoring cron')
         return jsonify(status='ok')
 
-    refresh_bh_auth_token()
-
     # buys cards if needed
+    from .blackhawk import replenish_bh_cards
     app.rq.enqueue(replenish_bh_cards)
     return jsonify(status='ok')
 
