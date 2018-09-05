@@ -828,6 +828,8 @@ def get_user_report(user_id):
         user_report['completed_tasks'] = user_app_data.completed_tasks
         user_report['next_task_ts'] = user_app_data.next_task_ts
         user_report['last_app_launch'] = user_app_data.update_at
+        user_report['ip_addr'] = user_app_data.ip_address
+        user_report['country_iso_code'] = user_app_data.country_iso_code
         user_report['auth_token'] = {}
         user_report['auth_token']['sent_date'] = str(push_token_entry.send_date)
         user_report['auth_token']['ack_data'] = str(push_token_entry.ack_date)
