@@ -110,7 +110,7 @@ app.redis = redis.StrictRedis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT
 app.redis.setex('temp-key', 1, 'temp-value')
 
 # start the rq queue connection
-app.rq = Queue('kinappserver', connection=redis.Redis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0))
+app.rq = Queue('kinappserver-%s' % config.DEPLOYMENT_ENV, connection=redis.Redis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0))
 
 #push: init the amqplib: two instances, one for beta and one for release TODO get rid of this eventually
 app.amqp_publisher_beta = AmqpPublisher()
