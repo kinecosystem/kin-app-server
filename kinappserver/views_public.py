@@ -31,7 +31,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
-    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number
+    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
+    update_ip_address
 
 
 
@@ -50,7 +51,7 @@ def app_launch():
     except Exception as e:
         raise InvalidUsage('bad-request')
 
-    print('app-launch from user %s and source_ip:%s' % (user_id, get_source_ip(request)))
+    update_ip_address(user_id, get_source_ip(request))
 
     update_user_app_version(user_id, app_ver)
 

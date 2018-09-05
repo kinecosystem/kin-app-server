@@ -1,5 +1,6 @@
 """The User model"""
 from sqlalchemy_utils import UUIDType
+from sqlalchemy.dialects.postgresql import INET
 
 from kinappserver import db, config, app
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS
@@ -200,6 +201,8 @@ class UserAppData(db.Model):
     completed_tasks = db.Column(db.JSON)
     next_task_ts = db.Column(db.String(40), primary_key=False, nullable=True)  # the ts for th next task, can be None
     next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=True)  # the memo for the user's next task.
+    ip_address = db.Column(INET) # the user's last known ip
+    country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
 
 
 def update_user_app_version(user_id, app_ver):
@@ -212,6 +215,31 @@ def update_user_app_version(user_id, app_ver):
     except Exception as e:
         print(e)
         raise InvalidUsage('cant set user app data')
+
+
+def update_ip_address(user_id, ip_address):
+    try:
+        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
+        if userAppData.ip_address == ip_address:
+            # nothing to update
+            return
+
+        userAppData.ip_address = ip_address
+        try:
+            userAppData.country_iso_code = app.geoip_reader.get(ip_address)['country']['iso_code']
+        except Exception as e:
+            print('could not calc country iso code for %s' % ip_address)
+        db.session.add(userAppData)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('cant set user ip address')
+    else:
+        print('updated user %s ip to %s' % (user_id, ip_address))
+
+
+def get_user_country_code(user_id):
+    return User.query.filter_by(user_id=user_id).one().country_iso_code  # can be null
 
 
 def get_next_task_memo(user_id):

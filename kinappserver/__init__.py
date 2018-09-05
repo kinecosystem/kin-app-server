@@ -161,8 +161,8 @@ app.geoip_reader = geolite2.reader()
 
 # print db creation statements
 if config.DEBUG:
-    #from .utils import print_creation_statement
-    #print_creation_statement()
+    from .utils import print_creation_statement
+    print_creation_statement()
     pass
 
 
