@@ -255,17 +255,16 @@ def push_engagement_api():
 
 @app.route('/engagement/send', methods=['POST'])
 def send_engagement_api():
-    return # disabled
     """endpoint used to send engagement push notifications to users by scheme. password protected"""
     if not config.DEBUG:
         limit_to_localhost()
 
-    args = request.args
-    scheme = args.get('scheme')
+    payload = request.get_json(silent=True)
+    scheme = payload.get('scheme')
     if scheme is None:
         raise InvalidUsage('invalid param')
-    dry_run = args.get('dryrun', 'True') == 'True'
-    app.rq.enqueue_call(func=send_enagagement_messages, args=(scheme, dry_run))
+    dry_run = payload.get('dryrun', 'True') == 'True'
+    app.rq.enqueue_call(func=send_engagement_messages, args=(scheme, dry_run))
     return jsonify(status='ok')
 
 
