@@ -317,6 +317,7 @@ def replenish_bh_cards(refresh_creds=False):
     this function will not order additional cards as long as there are some cards
     still being processed by blackhawk.
     """
+    print('replenishing blackhawk cards...')
 
     if refresh_creds:
         refresh_bh_auth_token()

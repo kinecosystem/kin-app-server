@@ -811,7 +811,6 @@ def get_user_report(user_id):
         from .push_auth_token import get_token_by_user_id
         push_token_entry = get_token_obj_by_user_id(user_id)
 
-
         user_report['user_id'] = str(user.user_id)
         user_report['user_id_upper'] = str(user.user_id).upper()
         user_report['os'] = user.os_type
