@@ -264,13 +264,14 @@ def send_engagement_api():
     scheme = args.get('scheme')
     if scheme is None:
         raise InvalidUsage('invalid param')
-
     dry_run = args.get('dryrun', 'True') == 'True'
+    app.rq.enqueue_call(func=send_enagagement_messages, args=(scheme, dry_run))
+    return jsonify(status='ok')
 
+
+def send_engagement_messages(scheme, dry_run):
+    """does the actual work related to sending engagement messages. should be called in the worker"""
     user_ids = get_users_for_engagement_push(scheme)
-    if scheme is None:
-        raise InvalidUsage('invalid scheme')
-
     print('gathered %d ios user_ids and %d gcm user_ids for scheme: %s, dry-run:%s' % (len(user_ids[utils.OS_IOS]), len(user_ids[utils.OS_ANDROID]), scheme, dry_run))
 
     if dry_run:
@@ -279,14 +280,12 @@ def send_engagement_api():
         print('sending push ios %d tokens' % len(user_ids[utils.OS_IOS]))
         import time
         for user_id in user_ids[utils.OS_IOS]:
-            time.sleep(2) # hack to slow down push-sending as it kills the server
+            time.sleep(0.1)  # hack to slow down push-sending as it kills the server
             send_engagement_push(user_id, scheme)
         print('sending push android %d tokens' % len(user_ids[utils.OS_ANDROID]))
         for user_id in user_ids[utils.OS_ANDROID]:
-            time.sleep(2) # hack to slow down push-sending as it kills the server
+            time.sleep(0.1)  # hack to slow down push-sending as it kills the server
             send_engagement_push(user_id, scheme)
-
-    return jsonify(status='ok')
 
 
 @app.route('/user/compensate', methods=['POST'])
