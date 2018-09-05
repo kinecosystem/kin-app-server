@@ -239,7 +239,7 @@ def update_ip_address(user_id, ip_address):
 
 
 def get_user_country_code(user_id):
-    return User.query.filter_by(user_id=user_id).one().country_iso_code  # can be null
+    return UserAppData.query.filter_by(user_id=user_id).one().country_iso_code  # can be null
 
 
 def get_next_task_memo(user_id):
@@ -968,8 +968,20 @@ def should_block_user_by_phone_prefix(user_id):
                 print('should_block_user_by_phone_prefix: should block user_id %s with phone number %s' % (user_id, phone_number))
                 return True
     except Exception as e:
-        print('should_block_user_by_phone_prefix: caught exception: %s' % e)
+        print('should_block_user_by_phone_prefix for userid %s: caught exception: %s' % (user_id, e))
     return False
+
+
+def should_block_user_by_country_code(user_id):
+    """determines whether to block users by their country code"""
+    try:
+        country_code = get_user_country_code(user_id)
+        if country_code in app.blocked_country_codes:
+            print('should_block_user_by_country_code: should block user_id %s with country_code %s' % (user_id, country_code))
+            return True
+    except Exception as e:
+        print('should_block_user_by_country_code for userid %s: caught exception %s' % (user_id, e))
+        return False
 
 
 def delete_all_user_data(user_id, are_u_sure=False):

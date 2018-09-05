@@ -32,7 +32,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
-    update_ip_address
+    update_ip_address, should_block_user_by_country_code
 
 
 
@@ -272,6 +272,13 @@ def post_user_task_results_endpoint():
         print('blocked user_id %s from submitting tasks - country not supported' % user_id)
         return jsonify(tasks=[], reason='phone_prefix_not supported')
 
+    # user has a verified phone number, but is it from a blocked country?
+    if should_block_user_by_country_code(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
+        return jsonify(tasks=[], reason='country_code_not_supported')
+
     delta = 0  # change in the total kin reward for this task
 
     # the following function handles task-results resubmission:
@@ -415,8 +422,15 @@ def get_next_task():
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
-        print('blocked user_id %s from getting tasks - country not supported' % user_id)
+        print('blocked user_id %s from getting tasks - blocked prefix' % user_id)
         return jsonify(tasks=[], reason='phone_prefix_not supported')
+
+    # user has a verified phone number, but is it from a blocked country?
+    if should_block_user_by_country_code(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
+        return jsonify(tasks=[], reason='country_code_not_supported')
 
     if user_deactivated(user_id):
         print('user %s is deactivated. returning empty task array' % user_id)
@@ -725,6 +739,20 @@ def book_offer_api():
         print('user %s is not authenticated. rejecting book request' % user_id)
         increment_metric('rejected-on-auth')
         return jsonify(status='error', reason='auth-failed'), status.HTTP_400_BAD_REQUEST
+
+    # user has a verified phone number, but is it blocked?
+    if should_block_user_by_phone_prefix(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from getting tasks - blocked prefix' % user_id)
+        return jsonify(tasks=[], reason='phone_prefix_not supported')
+
+    # user has a verified phone number, but is it from a blocked country?
+    if should_block_user_by_country_code(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
+        return jsonify(tasks=[], reason='country_code_not_supported')
 
     order_id, error_code = create_order(user_id, offer_id)
     if order_id:
