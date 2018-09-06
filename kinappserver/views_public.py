@@ -721,6 +721,22 @@ def get_offers_api():
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
         #print('offers %s' % get_offers_for_user(user_id))
+
+    # user has a verified phone number, but is it blocked?
+    if should_block_user_by_phone_prefix(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from getting offers - blocked prefix' % user_id)
+        return jsonify(tasks=[], reason='phone_prefix_not supported')
+
+    # user has a verified phone number, but is it from a blocked country?
+    if should_block_user_by_country_code(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from getting offers - blocked country code' % user_id)
+        return jsonify(tasks=[], reason='country_code_not_supported')
+
+
     return jsonify(offers=get_offers_for_user(user_id))
 
 
@@ -745,14 +761,14 @@ def book_offer_api():
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
-        print('blocked user_id %s from getting tasks - blocked prefix' % user_id)
+        print('blocked user_id %s from booking goods - blocked prefix' % user_id)
         return jsonify(tasks=[], reason='phone_prefix_not supported')
 
     # user has a verified phone number, but is it from a blocked country?
     if should_block_user_by_country_code(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
-        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
+        print('blocked user_id %s from booking goods - blocked country code' % user_id)
         return jsonify(tasks=[], reason='country_code_not_supported')
 
     order_id, error_code = create_order(user_id, offer_id)
