@@ -399,6 +399,8 @@ def send_engagement_push(user_id, push_type):
         push_send_apns(token, engagement_payload_apns(push_type), push_env)
     else:
         push_send_gcm(token, engagement_payload_gcm(push_type), push_env)
+
+    increment_metric('sent_eng_push_%s' % push_type)
     return True
 
 
