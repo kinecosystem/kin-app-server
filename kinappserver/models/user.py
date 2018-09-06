@@ -450,6 +450,10 @@ def get_users_for_engagement_push(scheme):
     now = arrow.utcnow().shift(seconds=60).timestamp  # add a small timeshift to account for calculation time
     user_ids = {OS_IOS: [], OS_ANDROID: []}
 
+    if scheme not in ['engage-recent', 'engage-week']:
+        print('invalid scheme:%s' % scheme)
+        raise InvalidUsage('invalid scheme: %s' % scheme)
+
     if scheme == 'engage-recent':
         # get all user_ids that:
         # (1) have active tasks and 
