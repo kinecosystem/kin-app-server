@@ -36,6 +36,8 @@ test:
 	python kinappserver/tests/backup_questions.py
 	python kinappserver/tests/backup_questions2.py
 	python kinappserver/tests/utils_test.py
+        python kinappserver/tests/phone_verification_blacklisted_phone.py
+        python kinappserver/tests/blacklisted_phone_numbers.py
 
 all:
 	install test

@@ -32,7 +32,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
-    update_ip_address, should_block_user_by_country_code
+    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted
 
 
 
@@ -78,6 +78,11 @@ def get_address_by_phone_api():
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
+
+    if is_userid_blacklisted(user_id):
+        print('blocked user_id %s from matching p2p - user_id blacklisted' % user_id)
+        return jsonify(status='error', reason='no_match')
+
     address = match_phone_number_to_address(phone_number, user_id)
     if not address:
         return jsonify(status='error', reason='no_match'), status.HTTP_404_NOT_FOUND
@@ -279,6 +284,10 @@ def post_user_task_results_endpoint():
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting tasks - blocked country code' % user_id)
         return jsonify(tasks=[], reason='country_code_not_supported')
+
+    if is_userid_blacklisted(user_id):
+        print('blocked user_id %s from booking goods - user_id blacklisted' % user_id)
+        return jsonify(tasks=[], reason='blacklisted')
 
     delta = 0  # change in the total kin reward for this task
 
@@ -770,6 +779,10 @@ def book_offer_api():
         send_country_not_supported(user_id)
         print('blocked user_id %s from booking goods - blocked country code' % user_id)
         return jsonify(tasks=[], reason='country_code_not_supported')
+
+    if is_userid_blacklisted(user_id):
+        print('blocked user_id %s from booking goods - user_id blacklisted' % user_id)
+        return jsonify(tasks=[], reason='blacklisted')
 
     order_id, error_code = create_order(user_id, offer_id)
     if order_id:

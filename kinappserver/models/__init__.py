@@ -13,3 +13,4 @@ from .acl import *
 from .backup import *
 from .email_template import *
 from .truex_blacklisted_user import *
+from .blacklisted_phone_numbers import *
