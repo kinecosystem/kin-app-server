@@ -416,7 +416,9 @@ def get_bh_balance():
         return jsonify(status='ok')
 
     from .blackhawk import get_account_balance
-    gauge_metric('bh-account-balance', get_account_balance())
+    balance = get_account_balance()
+    print('bh account balance:%s' % balance)
+    gauge_metric('bh-account-balance', balance)
     return jsonify(status='ok')
 
 
