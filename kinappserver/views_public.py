@@ -246,6 +246,7 @@ def post_user_task_results_endpoint():
         raise InvalidUsage('bad-request')
 
     print('processing submitted tasks results for task %s from user %s and source_ip:%s' % (task_id, user_id, get_source_ip(request)))
+    update_ip_address(user_id, get_source_ip(request))
 
     if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
         print('user %s is not authenticated. rejecting results submission request' % user_id)
