@@ -731,6 +731,10 @@ def get_offers_api():
         raise InvalidUsage('bad-request')
         #print('offers %s' % get_offers_for_user(user_id))
 
+    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        print('blocking user (%s) results - didnt pass phone_verification' % user_id)
+        return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
+
     # user has a verified phone number, but is it blocked?
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
@@ -765,6 +769,10 @@ def book_offer_api():
         print('user %s is not authenticated. rejecting book request' % user_id)
         increment_metric('rejected-on-auth')
         return jsonify(status='error', reason='auth-failed'), status.HTTP_400_BAD_REQUEST
+
+    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        print('blocking user (%s) results - didnt pass phone_verification' % user_id)
+        return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
 
     # user has a verified phone number, but is it blocked?
     if should_block_user_by_phone_prefix(user_id):

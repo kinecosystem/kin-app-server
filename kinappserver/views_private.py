@@ -246,11 +246,11 @@ def send_engagement_messages(scheme, dry_run):
         print('sending push ios %d tokens' % len(user_ids[utils.OS_IOS]))
         import time
         for user_id in user_ids[utils.OS_IOS]:
-            time.sleep(0.1)  # hack to slow down push-sending as it kills the server
+            time.sleep(1)  # hack to slow down push-sending as it kills the server
             send_engagement_push(user_id, scheme)
         print('sending push android %d tokens' % len(user_ids[utils.OS_ANDROID]))
         for user_id in user_ids[utils.OS_ANDROID]:
-            time.sleep(0.1)  # hack to slow down push-sending as it kills the server
+            time.sleep(1)  # hack to slow down push-sending as it kills the server
             send_engagement_push(user_id, scheme)
 
 
