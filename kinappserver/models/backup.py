@@ -3,6 +3,7 @@ from kinappserver import db, app
 from kinappserver.utils import InternalError
 from kinappserver.utils import InvalidUsage
 MINIMAL_BACKUP_HINTS = 2
+import arrow
 
 class BackupQuestion(db.Model):
     """the BackupQuestion model represents a single backup question. these are essentially hardcoded into the db.
@@ -31,6 +32,7 @@ class PhoneBackupHints(db.Model):
     enc_phone_number = db.Column('enc_phone_number', db.String(200), primary_key=True, nullable=False) # cant be a foreign key because its not unique in user.
     hints = db.Column(db.JSON(), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
+    previous_hints = db.Column(db.JSON(), nullable=True)
 
     def __repr__(self):
         return '<user_id: %s, hints: %s' \
@@ -59,10 +61,19 @@ def store_backup_hints(user_id, hints):
         return False
     try:
         ubh = get_user_backup_hints_by_enc_phone(enc_phone_number)
-        print('user backup hints already exist for enc_phone_number %s, updating data' % enc_phone_number)
+        print('user backup hints already exist for enc_phone_number %s, updating data.' % enc_phone_number)
     except Exception as e:
         ubh = PhoneBackupHints()
     try:
+        # save previous hints
+        if ubh.previous_hints is None:
+            ubh.previous_hints = [{'date': arrow.utcnow().timestamp, 'hints': hints}]
+        else:
+            ubh.previous_hints.append({'date': arrow.utcnow().timestamp, 'hints': hints})
+            # turns out sqlalchemy cant detect json updates, and requires manual flagging:
+            # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
+            from sqlalchemy.orm.attributes import flag_modified
+            flag_modified(ubh, "previous_hints")
         ubh.hints = hints
         ubh.enc_phone_number = enc_phone_number
         db.session.add(ubh)

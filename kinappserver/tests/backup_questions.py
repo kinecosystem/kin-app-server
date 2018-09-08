@@ -119,6 +119,22 @@ class Tester(unittest.TestCase):
         self.assertNotEqual(resp.status_code, 200)
 
         resp = self.app.post('/user/backup/hints',  # should succeed, also - overrides previous results
+                             data=json.dumps({'hints': [1, 1]}),
+                             headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.post('/user/backup/hints',  # should succeed, also - overrides previous results
+                             data=json.dumps({'hints': [2, 2]}),
+                             headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.post('/user/backup/hints',  # should succeed, also - overrides previous results
+                             data=json.dumps({'hints': [2, 1]}),
+                             headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+
+        resp = self.app.post('/user/backup/hints',  # should succeed, also - overrides previous results
                              data=json.dumps({'hints': [2, 1]}),
                              headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -176,6 +192,9 @@ class Tester(unittest.TestCase):
         print('restore result: %s' % data)
         data = json.loads(resp.data)
         self.assertEqual(data['user_id'], str(userid1))
+
+        res = db.engine.execute("select * from phone_backup_hints;")
+        print('hints %s' % res.fetchall()[0])
 
 
 
