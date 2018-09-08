@@ -16,6 +16,16 @@ def is_phone_number_blacklisted(phone_number):
     return is_enc_phone_number_blacklisted(encrypted_phone_number)
 
 
+def blacklist_phone_by_user_id(user_id):
+    from .user import get_enc_phone_number_by_user_id
+    enc_phone_number = get_enc_phone_number_by_user_id(user_id)
+    if not enc_phone_number:
+        print('blacklist_phone_by_user_id: no enc_number')
+        return False
+
+    return blacklist_enc_phone_number(enc_phone_number)
+
+
 def blacklist_phone_number(phone_number):
     encrypted_phone_number = app.encryption.encrypt(phone_number)
     if is_enc_phone_number_blacklisted(encrypted_phone_number):

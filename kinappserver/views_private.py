@@ -33,7 +33,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
-    blacklist_phone_number
+    blacklist_phone_number, blacklist_phone_by_user_id
 
 
 @app.route('/health', methods=['GET'])
@@ -580,3 +580,25 @@ def post_task_results_endpoint():
         raise InvalidUsage('bad-request')
 
     return jsonify(status='ok', results=get_task_results(task_id))
+
+
+@app.route('/user/blacklist', methods=['POST'])
+def blacklist_user_endpoint():
+    """"""
+    if not config.DEBUG:
+        limit_to_acl()
+        limit_to_password()
+
+    try:
+        payload = request.get_json(silent=True)
+        user_id = payload.get('user_id', None)
+        if user_id is None:
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    else:
+        if blacklist_phone_by_user_id(user_id):
+            return jsonify(status='ok')
+        else:
+            return jsonify(status='error')

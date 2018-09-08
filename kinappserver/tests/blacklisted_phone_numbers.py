@@ -31,13 +31,7 @@ class Tester(unittest.TestCase):
         # blacklist a number
         resp = self.app.post('/user/phone-number/blacklist',
             data=json.dumps({
-                            'phone-number': phone_number,
-                            'os': 'android',
-                            'device_model': 'samsung8',
-                            'device_id': '234234',
-                            'time_zone': '05:00',
-                            'token': 'fake_token',
-                            'app_ver': '1.0'}),
+                            'phone-number': phone_number}),
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
