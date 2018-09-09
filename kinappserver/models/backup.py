@@ -66,14 +66,16 @@ def store_backup_hints(user_id, hints):
         ubh = PhoneBackupHints()
     try:
         # save previous hints
-        if ubh.previous_hints is None:
-            ubh.previous_hints = [{'date': arrow.utcnow().timestamp, 'hints': hints}]
-        else:
-            ubh.previous_hints.append({'date': arrow.utcnow().timestamp, 'hints': hints})
+        if ubh.hints is not None:
+            if ubh.previous_hints is None:
+                ubh.previous_hints = [{'date': arrow.get(ubh.updated_at).timestamp, 'hints': ubh.hints}]
+            else:
+                ubh.previous_hints.append({'date': arrow.get(ubh.updated_at).timestamp, 'hints': ubh.hints})
             # turns out sqlalchemy cant detect json updates, and requires manual flagging:
             # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
             from sqlalchemy.orm.attributes import flag_modified
             flag_modified(ubh, "previous_hints")
+
         ubh.hints = hints
         ubh.enc_phone_number = enc_phone_number
         db.session.add(ubh)

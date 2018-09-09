@@ -1,6 +1,7 @@
 import unittest
 from uuid import uuid4
 import json
+import time
 
 import testing.postgresql
 
@@ -103,41 +104,78 @@ class Tester(unittest.TestCase):
         # auth user
         db.engine.execute("""update public.push_auth_token set authenticated=true where user_id='%s';""" % (str(userid1)))
 
+
+        import arrow
+        now = arrow.utcnow().timestamp
         resp = self.app.post('/user/backup/hints',  # should succeed
                              data=json.dumps({'hints': [1, 2]}),
                              headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        res = db.engine.execute("select previous_hints from phone_backup_hints;")
+        previous_hints = res.fetchall()[0]
+        print('previous_hints %s' % previous_hints)
+        self.assertEqual(previous_hints, (None,))
 
         resp = self.app.post('/user/backup/hints',  # should fail as there are no such hints
                              data=json.dumps({'hints': [1, 11]}),
                              headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
 
-        resp = self.app.post('/user/backup/hints',  # should fail as there are no such hints
+        resp = self.app.post('/user/backup/hints',  # should fail as there are no hints
                              data=json.dumps({'hints': []}),
                              headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
 
+        time.sleep(1)
+        now1 = arrow.utcnow().timestamp
         resp = self.app.post('/user/backup/hints',  # should succeed, also - overrides previous results
                              data=json.dumps({'hints': [1, 1]}),
                              headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+
+        res = db.engine.execute("select previous_hints from phone_backup_hints;")
+        previous_hints = res.fetchall()[0]
+        print('previous_hints %s' % previous_hints)
+        self.assertEqual(previous_hints, ([{'date': now, 'hints': [1, 2]}],))
+
+
+        time.sleep(1)
+        now2 = arrow.utcnow().timestamp
         resp = self.app.post('/user/backup/hints',  # should succeed, also - overrides previous results
                              data=json.dumps({'hints': [2, 2]}),
                              headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        res = db.engine.execute("select previous_hints from phone_backup_hints;")
+        previous_hints = res.fetchall()[0]
+        print('previous_hints %s' % previous_hints)
+        self.assertEqual(previous_hints, ([{'date': now, 'hints': [1, 2]}, {'date': now1, 'hints': [1, 1]}],))
+
+        time.sleep(1)
+        now3 = arrow.utcnow().timestamp
         resp = self.app.post('/user/backup/hints',  # should succeed, also - overrides previous results
                              data=json.dumps({'hints': [2, 1]}),
                              headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        res = db.engine.execute("select previous_hints from phone_backup_hints;")
+        previous_hints = res.fetchall()[0]
+        print('previous_hints %s' % previous_hints)
+        self.assertEqual(previous_hints, ([{'date': now, 'hints': [1, 2]}, {'date': now1, 'hints': [1, 1]}, {'date': now2, 'hints': [2, 2]}],))
 
 
         resp = self.app.post('/user/backup/hints',  # should succeed, also - overrides previous results
                              data=json.dumps({'hints': [2, 1]}),
                              headers={USER_ID_HEADER: str(userid1), AUTH_TOKEN_HEADER: str(userid1)},  content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        res = db.engine.execute("select previous_hints from phone_backup_hints;")
+        previous_hints = res.fetchall()[0]
+        print('hints %s' % previous_hints)
+        self.assertEqual(previous_hints, ([{'date': now, 'hints': [1, 2]}, {'date': now1, 'hints': [1, 1]}, {'date': now2, 'hints': [2, 2]}, {'date': now3, 'hints': [2, 1]}],))
+
 
         # create another user with the same phone
         userid2 = uuid4()
