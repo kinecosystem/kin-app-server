@@ -163,7 +163,10 @@ def set_user_phone_number_endpoint():
     increment_metric('user-phone-verified')
 
     # return success and the backup hint, if they exist
-    return jsonify(status='ok', hints=get_backup_hints(user_id))
+    hints = get_backup_hints(user_id)
+    if config.DEBUG:
+        print('restore hints for user_id, phone: %s: %s: %s' % (user_id, phone, hints))
+    return jsonify(status='ok', hints=hints)
 
 
 @app.route('/user/push/update-token', methods=['POST'])
