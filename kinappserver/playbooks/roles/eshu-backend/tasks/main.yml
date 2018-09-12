@@ -28,7 +28,7 @@
 
 - name: Template eshu-backend configuration
   template:
-    src=config/config.yml.j2
+    src=config/docker-compose.yaml.j2
     dest=/opt/eshu/config.yml
 
 - name: Download eshu-backend

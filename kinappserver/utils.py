@@ -275,7 +275,7 @@ def read_json_from_cache(key):
         return None
 
 
-def write_json_to_cache(key, val, ttl=10*60):
+def write_json_to_cache(key, val, ttl=30*60):
     if val is None:
         print('write_json_to_cache: refusing to store None value')
         return False

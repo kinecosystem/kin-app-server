@@ -6,6 +6,7 @@
   apt: name={{item}} state=installed
   with_items:
        - git
+       - pip
 
 - name: Create /opt/payment-service
   file: path=/opt/payment-service state=directory
@@ -13,17 +14,58 @@
 
 - name: Template payment-service config
   template:
-    src=config/config.yml.j2
-    dest=/opt/payment-service/config.yml
+    src=config/docker-compose.yaml.j2
+    dest=/opt/payment-service/docker-compose.yaml
 
-- name: Download eshu-backend
-  get_url:
-    url=https://s3.amazonaws.com/kinapp-deployment-binaries/eshu/eshu-backend-{{git_rev}}
-    dest=/opt/eshu/eshu-backend
-    force=yes
-    mode=0770
 
-- name: restart supervisor
-  supervisorctl:
-    name: eshu-backend
-    state: restarted
+  - docker_service:
+      project_src: docker-compose.yaml
+      state: absent
+
+  - docker_service:
+      project_src: flask
+    register: output
+
+  - debug:
+      var: output
+
+  - docker_service:
+      project_src: flask
+      build: no
+    register: output
+
+  - debug:
+      var: output
+
+  - assert:
+      that: "not output.changed "
+
+  - docker_service:
+      project_src: flask
+      build: no
+      stopped: true
+    register: output
+
+  - debug:
+      var: output
+
+  - assert:
+      that:
+        - "not web.flask_web_1.state.running"
+        - "not db.flask_db_1.state.running"
+
+  - docker_service:
+      project_src: flask
+      build: no
+      restarted: true
+    register: output
+
+  - debug:
+      var: output
+
+  - assert:
+      that:
+        - "web.flask_web_1.state.running"
+        - "db.flask_db_1.state.running"
+
+
