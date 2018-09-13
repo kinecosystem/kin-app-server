@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import INET
 
 from kinappserver import db, config, app
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS
-from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_please_upgrade_push_2
+from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_country_not_supported
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
 import arrow
@@ -468,6 +468,15 @@ def get_users_for_engagement_push(scheme):
         all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
         for user in all_pushable_users:
             try:
+                from .blacklisted_phone_numbers import is_userid_blacklisted
+                if is_userid_blacklisted(user.user_id):
+                    print('skipping user %s - blacklisted' % user.user_id)
+                    continue
+
+                if send_country_not_supported(user.user_id):
+                    print('skipping user %s - country not supported' % user.user_id)
+                    continue
+
                 # filter out users with no tasks AND ALSO users with future tasks:
                 tasks = get_tasks_for_user(user.user_id)
                 if tasks == []:
@@ -511,6 +520,14 @@ def get_users_for_engagement_push(scheme):
         all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
         for user in all_pushable_users:
             try:
+                from .blacklisted_phone_numbers import is_userid_blacklisted
+                if is_userid_blacklisted(user.user_id):
+                    print('skipping user %s - blacklisted' % user.user_id)
+                    continue
+
+                if send_country_not_supported(user.user_id):
+                    print('skipping user %s - country not supported' % user.user_id)
+                    continue
 
                 tasks = get_tasks_for_user(user.user_id)
                 if tasks == []:
