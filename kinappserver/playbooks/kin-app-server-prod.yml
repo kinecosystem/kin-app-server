@@ -1,3 +1,9 @@
+- hosts: "{{ play_hosts | first }}"
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: true
+  roles:
+    - kin-app-server-cron
+
 - hosts: all
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
@@ -66,6 +72,10 @@
      - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
      - { alias: '_tailworker', command: 'tail -f /var/log/kinappworker.err.log -n 10' }
      - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"}
+
+
+
+
 
 
 # add aliases to non-sudo user

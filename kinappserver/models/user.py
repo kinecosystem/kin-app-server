@@ -3,13 +3,14 @@ from sqlalchemy_utils import UUIDType
 from sqlalchemy.dialects.postgresql import INET
 
 from kinappserver import db, config, app
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS
 from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_please_upgrade_push_2
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
 import arrow
 from distutils.version import LooseVersion
 from .backup import get_user_backup_hints_by_enc_phone
+from time import sleep
 
 DEFAULT_TIME_ZONE = -4
 KINIT_IOS_PACKAGE_ID_PROD = 'org.kinecosystem.kinit'  # AKA bundle id
@@ -1046,3 +1047,59 @@ def count_registrations_for_phone_number(phone_number):
     count = db.engine.execute(count_users_with_enc_phone_number % enc_phone_number).scalar()
     return count if count else 0
 
+
+def count_missing_txs():
+    """counts the number of users with missing txs in their data == users we owe money to"""
+
+    missing_txs = []
+
+    # get the list of tasks and their rewards:
+    tasks_d = {}
+    res = db.engine.execute('SELECT task_id, price from public.task')
+    tasks = res.fetchall()
+    for task in tasks:
+        tasks_d[task[0]] = task[1]
+
+    # get all the phone numbers in the system
+    res2 = db.engine.execute('SELECT distinct enc_phone_number from public.user where enc_phone_number is not null')
+    distinct_enc_phone_numbers = res2.fetchall()
+
+    compensated_task_ids_query = '''select t2.tx_info->>'task_id' as task_id from public.user t1 inner join transaction t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
+    completed_task_ids_query = '''select t2.task_id from public.user t1 inner join user_task_results t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
+
+    # for each phone number, find
+    for enc_number in distinct_enc_phone_numbers:
+        try:
+            if len(missing_txs) > 500:
+                # stop here no need to go over more than 500.
+                break
+
+            sleep(0.1)  # lets not kill the db
+            enc_number = enc_number[0]
+
+            compensated_tasks = []
+            res3 = db.engine.execute(compensated_task_ids_query % enc_number)  # safe
+            res = res3.fetchall()
+            for item in res:
+                compensated_tasks.append(item[0])
+
+            completed = []
+            res4 = db.engine.execute(completed_task_ids_query % enc_number)  # safe
+            res = res4.fetchall()
+            for item in res:
+                completed.append(item[0])
+
+            uncompensated = list(set(completed) - set(compensated_tasks))
+            if len(uncompensated) != 0:
+                print('found uncompensated tasks: %s for number %s' % (uncompensated, enc_number))
+                # get the active user id for that phone number
+                res5 = db.engine.execute("SELECT user_id from public.user where enc_phone_number='%s' and deactivated=false" % enc_number)
+                active_user_id = res5.fetchone()[0]
+                for task_id in uncompensated:
+                    reward = tasks_d[task_id]
+                    missing_txs.append({'user_id': active_user_id, 'task_id': task_id, 'reward': reward})
+        except Exception as e:
+            print('exception while processing enc_phone_number: %s' % enc_number)
+
+    print('missing txs: %s' % missing_txs)
+    gauge_metric('missing-txs', len(missing_txs))

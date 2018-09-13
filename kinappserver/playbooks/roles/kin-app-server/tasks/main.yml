@@ -116,7 +116,7 @@
     dest: /etc/nginx/sites-enabled/default
 
 # there's a dedicated play for restarting supervisor and nginx
-# which remvoves the servers from the load-balancer and does it one-by-one. once
+# which removes the servers from the load-balancer and does it one-by-one. once
 # this play is done, you need to run the restart one
 
 # all the cron tasks that need to run on all machines:

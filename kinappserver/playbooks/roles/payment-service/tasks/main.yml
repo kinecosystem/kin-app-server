@@ -1,0 +1,35 @@
+- name: Run "apt-get update"
+  apt:
+    update_cache: yes
+
+- name: Install list of packages
+  apt: name={{item}} state=installed
+  with_items:
+       - git
+       - python3-pip
+
+- name: install docker-compose
+  pip:
+    name: docker-compose
+
+- name: get the payment-service code
+  git:
+    repo: 'https://github.com/kinecosystem/payment-service.git'
+    dest: /opt/payment-service
+    version: master
+
+- name: Template payment-service config
+  template:
+    src=config/docker-compose.yaml.j2
+    dest=/opt/payment-service/docker-compose.yaml
+
+- name: Template payment-service env file
+  template:
+    src=config/env-params.j2
+    dest=/opt/payment-service/env-params
+
+- name: run docker-compose up
+  shell: . ./env-params |docker-compose up
+  args:
+    chdir: /opt/payment-service/
+
