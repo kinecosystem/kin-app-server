@@ -5,7 +5,7 @@ import json
 import testing.postgresql
 
 import kinappserver
-from kinappserver import db
+from kinappserver import db, models
 
 USER_ID_HEADER = "X-USERID"
 AUTH_TOKEN_HEADER = "X-AUTH-TOKEN"
@@ -46,7 +46,7 @@ class Tester(unittest.TestCase):
                             'device_model': 'samsung8',
                             'device_id': '234234',
                             'time_zone': '05:00',
-                            'token': 'fake_token',
+                            'token': 'fake_token1',
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')
@@ -91,10 +91,10 @@ class Tester(unittest.TestCase):
             data=json.dumps({
                             'user_id': str(userid3),
                             'os': 'android',
-                            'device_model': 'samsung8',
+                            'device_model': 'samsung9',
                             'device_id': '234234',
                             'time_zone': '05:00',
-                            'token': 'fake_token',
+                            'token': 'fake_token3',
                             'app_ver': '1.0'}),
             headers={},
             content_type='application/json')
@@ -140,10 +140,10 @@ class Tester(unittest.TestCase):
                              data=json.dumps({
                                  'user_id': str(userid2),
                                  'os': 'android',
-                                 'device_model': 'samsung8',
+                                 'device_model': 'samsung2',
                                  'device_id': '234234',
-                                 'time_zone': '05:00',
-                                 'token': 'fake_token',
+                                 'time_zone': '06:00',
+                                 'token': 'fake_token2',
                                  'app_ver': '1.0'}),
                              headers={},
                              content_type='application/json')
@@ -189,6 +189,12 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         self.assertEqual(data['user_id'], str(userid1))
+
+        # verify that the updated push token and device_model were migrated to the restored user
+        post_restore_user = models.get_user(userid1)
+        print(post_restore_user)
+        self.assertEqual(post_restore_user.push_token, 'fake_token2')
+        self.assertEqual(post_restore_user.device_model, 'samsung2')
 
 if __name__ == '__main__':
     unittest.main()
