@@ -873,6 +873,7 @@ def get_unauthed_users():
 def restore_user_by_address(current_user_id, address):
     """given the user_id and the address, restore the device associated with this phone number to the given address"""
 
+
     # 1. find the phone number associated with this user_id
     #    and ensure the phone number has hints: deny restore from numbers with no hints.
     curr_enc_phone_number = get_enc_phone_number_by_user_id(current_user_id)
@@ -907,6 +908,10 @@ def restore_user_by_address(current_user_id, address):
     # 4. copy the tasks from the current_user_id back onto the original user_id
     deactivate_by_enc_phone_number(curr_enc_phone_number, original_user_id, True)
 
+    # copy the (potentially new device data and new push token to the old user)
+    if not migrate_restored_user_data(current_user_id, original_user_id):
+        print('restore_user_by_address: failed to migrate device-specific data from the temp user_id %s to the restored user-id %s' % (current_user_id, original_user_id))
+
     # 5. return the (now active) original user_id.
     print('restore_user_by_address: successfully restored the original user_id: %s' % original_user_id)
     return original_user_id
@@ -923,6 +928,42 @@ def fix_user_task_history(user_id):
     print('planting completed_tasks into user_id %s: %s' % (user_id, completed_tasks))
     db.engine.execute("delete from public.user_task_results where user_id='%s';" % UUID(user_id))
     db.engine.execute('update public.user_app_data set completed_tasks=\'"%s"\' where user_id=\'%s\';' % (str(completed_tasks), UUID(user_id)))
+
+
+def migrate_restored_user_data(temp_user_id, restored_user_id):
+    """copy some of the fresher, device-related fields into a restored user"""
+    try:
+        temp_user = get_user(temp_user_id)
+        restored_user = get_user(restored_user_id)
+
+        temp_user_app_data = get_user_app_data(temp_user_id)
+        restored_user_app_data = get_user_app_data(restored_user_id)
+
+        restored_user.os_type = temp_user.os_type
+        restored_user.device_model = temp_user.device_model
+        restored_user.push_token = temp_user.push_token
+        restored_user.time_zone = temp_user.time_zone
+        restored_user.device_id = temp_user.device_id
+        restored_user.auth_token = temp_user.auth_token
+        restored_user.package_id = temp_user.package_id
+        restored_user.screen_w = temp_user.screen_w
+        restored_user.screen_h = temp_user.screen_h
+        restored_user.screen_d = temp_user.screen_d
+        restored_user.user_agent = temp_user.user_agent
+
+        restored_user_app_data.app_ver = temp_user_app_data.app_ver
+        restored_user_app_data.ip_address = temp_user_app_data.ip_address
+        restored_user_app_data.app_ver = temp_user_app_data.app_ver
+        restored_user_app_data.country_iso_code = temp_user_app_data.country_iso_code
+
+        db.session.add(restored_user)
+        db.session.add(restored_user_app_data)
+        db.session.commit()
+    except Exception as e:
+        print('failed to migrate resteod used data. e=%s' % e)
+        return False
+    else:
+        return True
 
 
 def fix_user_completed_tasks(user_id):
