@@ -330,7 +330,8 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
         print('cant push to user %s: no push token' % user_id)
         return False
     if os_type == OS_IOS:
-        print('sending tx_completed for ios is not supported yet - or needed')
+        from kinappserver.push import tx_completed_push_apns, generate_push_id
+        push_send_apns(token, tx_completed_push_apns(generate_push_id(), str(tx_hash), str(user_id), str(task_id), str(amount)), push_env)
     else:
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('tx_completed', generate_push_id(), {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id})
