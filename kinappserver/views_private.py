@@ -33,7 +33,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
-    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs
+    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data
 
 
 @app.route('/health', methods=['GET'])
@@ -610,3 +610,26 @@ def get_missing_txs_endpoint():
         limit_to_localhost()
     app.rq.enqueue(count_missing_txs)
     return jsonify(status='ok')
+
+
+@app.route('/users/migrate-restored-user', methods=['POST'])
+def migrate_restored_user():
+    # TODO remove me later
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    try:
+        payload = request.get_json(silent=True)
+        restored_user_id = payload.get('restored_user_id', None)
+        temp_user_id = payload.get('temp_user_id', None)
+    except Exception as e:
+        print('failed to process migrate-restored-user')
+
+    if not migrate_restored_user_data(temp_user_id, restored_user_id):
+        print('failed to migrate restored user data from %s to %s' % (temp_user_id, restored_user_id))
+        return jsonify(status='error')
+    else:
+        send_push_register(restored_user_id)
+
+    return jsonify(status='ok')
+
