@@ -486,7 +486,9 @@ def get_transactions_api():
             detailed_txs.append({**tx, **details})
 
         # get p2p details
-        p2p_txs = [{'title': 'Kin from a friend' if str(tx.receiver_user_id).lower() == str(user_id).lower() else 'Kin to a friend',
+        import emoji
+        kin_from_a_friend_text=emoji.emojize(':party_popper: Kin from a friend')
+        p2p_txs = [{'title': kin_from_a_friend_text if str(tx.receiver_user_id).lower() == str(user_id).lower() else 'Kin to a friend',
                     'description': 'a friend sent you %sKIN' % tx.amount,
                     'provider': {'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/poll_logo_kin.png', 'name': 'friend'},
                     'type': 'p2p',
