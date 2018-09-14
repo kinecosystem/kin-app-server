@@ -34,8 +34,8 @@ def auth_push_apns(push_id, auth_token, user_id):
     return payload_dict
 
 
-def tx_completed_push_apns(push_id, tx_hash, user_id, task_id, kin_amount):
-    payload_dict = {'aps': {"content-available": 1, "sound": ""}, 'kin': {'push_type': 'tx_completed', 'push_id': push_id, 'tx_data': {'tx_hash': tx_hash, 'user_id': user_id, 'task_id': task_id, 'kin': kin_amount}}}
+def tx_completed_push_apns(push_id, tx_hash, user_id, task_id, kin_amount, memo):
+    payload_dict = {'aps': {"content-available": 1, "sound": ""}, 'kin': {'push_type': 'tx_completed', 'push_id': push_id, 'tx_data': {'tx_hash': tx_hash, 'user_id': user_id, 'task_id': task_id, 'kin': kin_amount, 'memo': memo}}}
     print('the apns payload for tx_completed: %s' % payload_dict)
     return payload_dict
 

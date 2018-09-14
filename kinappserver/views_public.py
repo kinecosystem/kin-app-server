@@ -699,7 +699,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
     finally:  # TODO dont do this if we fail with the tx
         if tx_hash and send_push:
-            send_push_tx_completed(user_id, tx_hash, amount, task_id)
+            send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
 
 
 def reward_address_for_task_internal_payment_service(public_address, task_id, send_push, user_id, memo, delta=0):
@@ -1212,7 +1212,7 @@ def payment_service_callback_endpoint():
                 create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
                 increment_metric('payment-callback-success')
                 if tx_hash and send_push:
-                        send_push_tx_completed(user_id, tx_hash, amount, task_id)
+                        send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
             else:
                 print('received failed tx from the payment service: %s' % payload)
                 #TODO implement some retry mechanism here

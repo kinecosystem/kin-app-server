@@ -323,7 +323,7 @@ def get_user_push_data(user_id):
         return user.os_type, user.push_token, push_env
 
 
-def send_push_tx_completed(user_id, tx_hash, amount, task_id):
+def send_push_tx_completed(user_id, tx_hash, amount, task_id, memo):
     """send a message indicating that the tx has been successfully completed"""
     os_type, token, push_env = get_user_push_data(user_id)
     if token is None:
@@ -331,7 +331,7 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id):
         return False
     if os_type == OS_IOS:
         from kinappserver.push import tx_completed_push_apns, generate_push_id
-        push_send_apns(token, tx_completed_push_apns(generate_push_id(), str(tx_hash), str(user_id), str(task_id), str(amount)), push_env)
+        push_send_apns(token, tx_completed_push_apns(generate_push_id(), str(tx_hash), str(user_id), str(task_id), int(amount), str(memo)), push_env)
     else:
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('tx_completed', generate_push_id(), {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id})
