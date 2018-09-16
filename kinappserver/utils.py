@@ -305,3 +305,28 @@ def find_max_task(completed_tasks):
         if int(task) > max_task:
             max_task = int(task)
     return max_task
+
+
+def passed_captcha(captcha_token):
+    """get a recaptcha result"""
+    try:
+        params = {
+            'secret': app.recaptcha_secret,
+            'response': captcha_token,
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded", "charset": "utf-8"}
+        res = requests.post('https://www.google.com/recaptcha/api/siteverify', params=params, headers=headers)
+        res.raise_for_status()
+        print('user recaptcha results: %s' % res.text)
+    except Exception as e:
+        print('caught exception (%s) in passed_captcha result')
+        return False
+    else:
+        if json.loads(res.text)['success']:
+            return True
+        else:
+            if config.DEBUG:
+                print('failed captcha results, but letting it slide in debug')
+                return True
+
+            return False

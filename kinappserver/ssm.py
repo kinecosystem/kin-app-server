@@ -8,6 +8,15 @@ from kinappserver import config
 from kinappserver.utils import InternalError
 
 
+def get_ssm_value(keyname):
+    value = get_ssm_parameter(keyname, config.KMS_KEY_AWS_REGION)
+    if not value:
+        print('could not retrieve value %s from ssm' % value)
+        return None
+    else:
+        return value
+
+
 def get_encrpytion_creds():
     """returns the encrpytion/decryption key and iv from ssm"""
     env = os.environ.get('ENV', 'test')
