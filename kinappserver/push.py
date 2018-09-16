@@ -76,6 +76,33 @@ def send_p2p_push(user_id, amount, tx_dict):
     return
 
 
+def send_country_IS_supported(user_id):
+    """sends a push to the given userid to tell them their country isnt supported"""
+    #  add cooldown with redis to this function.
+    if not (app.redis.set('countryis:%s' % str(user_id), '', ex=COUNTRY_NOT_SUPPORTED_PUSH_COOLDOWN_SECONDS, nx=True)):
+        # returns None if already exists
+        return
+
+    push_id = generate_push_id()
+    push_type = 'country_is_supported'
+    from kinappserver.models import get_user_push_data
+    os_type, token, push_env = get_user_push_data(user_id)
+    if token:
+        if os_type == OS_ANDROID:
+            increment_metric('country_is_supported-android')
+            # return  # not supported yet
+            print('sending country_is_supported push message to GCM user %s' % user_id)
+            push_send_gcm(token, gcm_payload(push_type, push_id, {'title': 'Business as Usual', 'body': "Kinit is back on track and is now available again."}), push_env)
+
+        else:
+            increment_metric('country_is_supported-ios')
+            print('sending country_is_supported push message to APNS user %s' % user_id)
+            push_send_apns(token, apns_payload("Business as Usual", "Kinit is back on track and is now available again.", push_type, push_id), push_env)
+    else:
+        print('not sending country_is_supported push to user_id %s: no token' % user_id)
+    return
+
+
 def send_country_not_supported(user_id):
     """sends a push to the given userid to tell them their country isnt supported"""
     #  add cooldown with redis to this function.
