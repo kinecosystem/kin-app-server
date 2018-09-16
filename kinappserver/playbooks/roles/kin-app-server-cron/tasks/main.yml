@@ -1,6 +1,6 @@
 - cron:
     name: "gather periodic data about missing txs"
-    job: 'curl localhost:80/internal/users/missing-txs'
+    job: '#curl localhost:80/internal/users/missing-txs'
     hour: "*" # run every hour
   run_once: true # runs on one machine of the 2
 
@@ -13,14 +13,14 @@
     name: "send daily push messages - engage-recent"
     hour: 15
     minute: 0
-    job: 'curl localhost:80/internal/engagement/send -H "Content-Type: application/json" -XPOST -d''{"scheme":"engage-recent", "dryrun":"False"}'''
+    job: '#curl localhost:80/internal/engagement/send -H "Content-Type: application/json" -XPOST -d''{"scheme":"engage-recent", "dryrun":"False"}'''
   run_once: true # runs every day at 15 gmt on one machine
 
 - cron:
     name: "send daily push messages - engage-week"
     hour: 18
     minute: 0
-    job: 'curl localhost:80/internal/engagement/send -H "Content-Type: application/json" -XPOST -d''{"scheme":"engage-week", "dryrun":"False"}'''
+    job: '#curl localhost:80/internal/engagement/send -H "Content-Type: application/json" -XPOST -d''{"scheme":"engage-week", "dryrun":"False"}'''
   run_once: true # runs every day at 18 gmt on one machine
 
 - cron:
