@@ -154,6 +154,7 @@ app.firebase_admin = firebase_admin
 # figure out blocked prefixes - if this fail, crash the server
 from ast import literal_eval
 app.blocked_phone_prefixes = literal_eval(config.BLOCKED_PHONE_PREFIXES)
+app.allowed_phone_prefixes = literal_eval(config.ALLOWED_PHONE_PREFIXES)
 app.blocked_country_codes = literal_eval(config.BLOCKED_COUNTRY_CODES)
 
 # initialize geoip instance

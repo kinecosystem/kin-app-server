@@ -1038,6 +1038,20 @@ def should_block_user_by_phone_prefix(user_id):
     return False
 
 
+def should_allow_user_by_phone_prefix(user_id):
+    """determines whether to allow a user based on her phone prefix"""
+    try:
+        phone_number = get_unenc_phone_number_by_user_id(user_id)
+        for prefix in app.allowed_phone_prefixes:
+            if phone_number.find(prefix) == 0:
+                return True
+    except Exception as e:
+        print('should_allow_user_by_phone_prefix for userid %s: caught exception: %s' % (user_id, e))
+
+    print('should_allow_user_by_phone_prefix: not allowing user_id %s with phone number %s' % (user_id, phone_number))
+    return False
+
+
 def should_block_user_by_country_code(user_id):
     """determines whether to block users by their country code"""
     try:

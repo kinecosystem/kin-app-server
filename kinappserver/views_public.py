@@ -32,7 +32,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
-    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted
+    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix
 
 
 
@@ -738,22 +738,28 @@ def get_offers_api():
 
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
         print('blocking user (%s) results - didnt pass phone_verification' % user_id)
-        return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
+        return jsonify(offers=[], status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
 
     # user has a verified phone number, but is it blocked?
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting offers - blocked prefix' % user_id)
-        return jsonify(tasks=[], reason='phone_prefix_not supported')
+        return jsonify(offers=[], status='error', reason='phone prefix blacklisted')
+
+    # user has a verified phone number, but is it blocked?
+    if not should_allow_user_by_phone_prefix(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        print('blocked user_id %s from getting offers - not in whitelist' % user_id)
+        return jsonify(offers=[], status='error', reason='phone prefix not whitelitest')
+
 
     # user has a verified phone number, but is it from a blocked country?
     if should_block_user_by_country_code(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting offers - blocked country code' % user_id)
-        return jsonify(tasks=[], reason='country_code_not_supported')
-
+        return jsonify(offers=[], status='error', reason='country_code_not_supported')
 
     return jsonify(offers=get_offers_for_user(user_id))
 
