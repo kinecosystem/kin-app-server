@@ -41,6 +41,6 @@
 
 - cron:
     name: "track rq queue length"
-    job: '''curl localhost:80/internal/rq/jobs/count'''
+    job: 'curl localhost:80/internal/rq/jobs/count'
     minute: "*/5" # run every 5 minutes
   run_once: true # runs every 5 minutes on one machine of the two
