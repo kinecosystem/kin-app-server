@@ -737,7 +737,7 @@ def get_offers_api():
         #print('offers %s' % get_offers_for_user(user_id))
 
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
-        print('blocking user (%s) results - didnt pass phone_verification' % user_id)
+        print('blocking user (%s) from getting offers - didnt pass phone_verification' % user_id)
         return jsonify(offers=[], status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
 
     # user has a verified phone number, but is it blocked?
