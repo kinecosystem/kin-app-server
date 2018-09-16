@@ -44,10 +44,13 @@ def increment_metric(metric_name, count=1):
     statsd.increment(metric_name, count, tags=['app:kinit,env:%s' % config.DEPLOYMENT_ENV])
 
 
-def gauge_metric(metric_name, value):
+def gauge_metric(metric_name, value, tags_str=''):
     """increment a counter with the given name and value"""
     # set env to undefined for local tests (which do not emit stats, as there's no agent)
-    statsd.gauge(metric_name, value, tags=['app:kinit,env:%s' % config.DEPLOYMENT_ENV])
+    tags = 'app:kinit,env:%s' % config.DEPLOYMENT_ENV
+    if tags_str:
+        tags = tags + ',' + tags_str
+    statsd.gauge(metric_name, value, tags=[tags])
 
 
 def errors_to_string(errorcode):

@@ -33,7 +33,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
-    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, send_corrected_push
+    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data
 
 
 @app.route('/health', methods=['GET'])
@@ -231,17 +231,6 @@ def send_engagement_api():
         raise InvalidUsage('invalid param')
     dry_run = payload.get('dryrun', 'True') == 'True'
     app.rq.enqueue_call(func=send_engagement_messages, args=(scheme, dry_run))
-    return jsonify(status='ok')
-
-
-@app.route('/engagement/fix', methods=['POST'])
-def send_engagement_fix_api():
-    """endpoint used to send engagement push notifications to users by scheme. password protected"""
-    if not config.DEBUG:
-        limit_to_localhost()
-
-    payload = request.get_json(silent=True)
-    app.rq.enqueue(send_corrected_push)
     return jsonify(status='ok')
 
 
@@ -642,5 +631,19 @@ def migrate_restored_user():
     else:
         send_push_register(restored_user_id)
 
+    return jsonify(status='ok')
+
+
+@app.route('/rq/jobs/count', methods=['GET'])
+def get_rq_q_length():
+    # TODO remove me later
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    from rq import Queue
+    for queue_name in ['kinappserver-%s' % config.DEPLOYMENT_ENV]:
+        q = Queue(queue_name, connection=app.redis)
+        print('there are currently %s jobs in the %s queue' % (q.count, queue_name))
+        gauge_metric('rq_queue_len', q.count, 'queue_name:%s' % queue_name)
     return jsonify(status='ok')
 

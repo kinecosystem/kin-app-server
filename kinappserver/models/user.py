@@ -447,21 +447,6 @@ def get_next_task_results_ts(user_id):
         raise InvalidUsage('cant get task result ts')
 
 
-def send_corrected_push():
-    all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
-    for user in all_pushable_users:
-        try:
-            from .blacklisted_phone_numbers import is_userid_blacklisted
-            if is_userid_blacklisted(user.user_id):
-                print('skipping user %s - blacklisted' % user.user_id)
-                continue
-
-            send_country_IS_supported(user.user_id)
-        except Exception as e:
-            print('cant send send_country_IS_supported to user %s' % user.user_id)
-            pass
-
-
 def get_users_for_engagement_push(scheme):
     """get user_ids for an engagement scheme"""
     from datetime import datetime, timedelta
