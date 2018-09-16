@@ -740,19 +740,18 @@ def get_offers_api():
         print('blocking user (%s) from getting offers - didnt pass phone_verification' % user_id)
         return jsonify(offers=[], status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
 
-    # user has a verified phone number, but is it blocked?
+    # user has a verified phone number, but is it in the phone-prefix blacklist? also send push!
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting offers - blocked prefix' % user_id)
         return jsonify(offers=[], status='error', reason='phone prefix blacklisted')
 
-    # user has a verified phone number, but is it blocked?
+    # user has a verified phone number, but is it in the phone-prefix white list? if not, just dont return offers
     if not should_allow_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         print('blocked user_id %s from getting offers - not in whitelist' % user_id)
         return jsonify(offers=[], status='error', reason='phone prefix not whitelitest')
-
 
     # user has a verified phone number, but is it from a blocked country?
     if should_block_user_by_country_code(user_id):
