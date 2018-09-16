@@ -474,7 +474,7 @@ def get_users_for_engagement_push(scheme):
                     print('skipping user %s - blacklisted' % user.user_id)
                     continue
 
-                if send_country_not_supported(user.user_id):
+                if should_block_user_by_country_code(user.user_id):
                     print('skipping user %s - country not supported' % user.user_id)
                     continue
 
@@ -526,7 +526,7 @@ def get_users_for_engagement_push(scheme):
                     print('skipping user %s - blacklisted' % user.user_id)
                     continue
 
-                if send_country_not_supported(user.user_id):
+                if should_block_user_by_country_code(user.user_id):
                     print('skipping user %s - country not supported' % user.user_id)
                     continue
 
