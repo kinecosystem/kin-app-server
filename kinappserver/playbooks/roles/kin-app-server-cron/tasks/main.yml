@@ -1,7 +1,7 @@
 - cron:
     name: "gather periodic data about missing txs"
     job: 'curl localhost:80/internal/users/missing-txs'
-    minute: "*/40" # run every 5 minutes
+    hour: "*" # run every hour
   run_once: true # runs on one machine of the 2
 
 - cron:
@@ -37,3 +37,10 @@
     name: "release unclaimed goods every minute"
     job: "/opt/kin-app-server/kinappserver/cron/release_unclaimed_goods.sh"
   run_once: true # runs every minute, on one machine of the 2
+
+
+- cron:
+    name: "track rq queue length"
+    job: '''curl localhost:80/internal/rq/jobs/count -H "Content-Type: application/json" -XPOST'''
+    minute: "*/5" # run every 5 minutes
+  run_once: true # runs every 5 minutes on one machine of the two
