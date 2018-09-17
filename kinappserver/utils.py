@@ -72,7 +72,7 @@ def seconds_to_local_nth_midnight(tz_shift, delay_days):
     # get the next local day as date object:
     local_tomorrow_date = datetime.date(local_time_dt + timedelta(days=delay_days))
     # convert date object back to datetime. hack from https://stackoverflow.com/a/27760382/1277048
-    tomorrow_dt = datetime.strptime(local_tomorrow_date.strftime('%Y%m%d'), '%Y%m%d')
+    tomorrow_dt = datetime.strptime(local_tomorrow_date.strftime('%Y%m%d'), '%Y%m%d') + timedelta(seconds=5)
     # calc hours until tomorrow
     return int((tomorrow_dt - local_time_dt).total_seconds())
 
