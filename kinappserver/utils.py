@@ -90,7 +90,7 @@ def get_global_config():
     if config.TOS_URL is not '':
         d['tos'] = config.TOS_URL
     if config.FAQ_URL is not '':
-        d['faq'] = config.FAQ_URL
+        d['faq_url'] = config.FAQ_URL
     return d
 
 
