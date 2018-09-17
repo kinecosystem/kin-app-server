@@ -33,7 +33,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
-    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data
+    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, re_register_all_users
 
 
 @app.route('/health', methods=['GET'])
@@ -230,7 +230,7 @@ def send_engagement_api():
     if scheme is None:
         raise InvalidUsage('invalid param')
     dry_run = payload.get('dryrun', 'True') == 'True'
-    app.rq.enqueue_call(func=send_engagement_messages, args=(scheme, dry_run))
+    app.rq_slow.enqueue_call(func=send_engagement_messages, args=(scheme, dry_run))
     return jsonify(status='ok')
 
 
@@ -401,7 +401,7 @@ def replenish_bh_cards_endpoint():
 
     # buys cards if needed
     from .blackhawk import replenish_bh_cards
-    app.rq.enqueue_call(func=replenish_bh_cards, args=(True,))
+    app.rq_fast.enqueue_call(func=replenish_bh_cards, args=(True,))
     return jsonify(status='ok')
 
 
@@ -491,7 +491,7 @@ def deauth_users_endpoint():
     if not config.DEBUG:
         limit_to_localhost()
 
-    app.rq.enqueue(scan_for_deauthed_users)
+    app.rq_fast.enqueue(scan_for_deauthed_users)
     return jsonify(status='ok')
 
 
@@ -501,26 +501,6 @@ def users_unauthed_endpoint():
     if not config.DEBUG:
         limit_to_localhost()
     return jsonify(user_ids=get_unauthed_users())
-
-
-@app.route('/users/push_register', methods=['POST'])
-def push_register_endpoint():
-    """ask a set of userids to re-register via push"""
-    if not config.DEBUG:
-        limit_to_localhost()
-
-    try:
-        payload = request.get_json(silent=True)
-        user_ids = payload.get('user_ids', [])
-    except Exception as e:
-        print(e)
-        raise InvalidUsage('bad-request')
-    else:
-        for user_id in user_ids:
-            send_push_register(user_id)
-
-    return jsonify(status='ok')
-
 
 @app.route('/user/phone-number/blacklist', methods=['POST'])
 def user_phone_number_blacklist_endpoint():
@@ -648,7 +628,7 @@ def blacklist_user_endpoint():
 def get_missing_txs_endpoint():
     if not config.DEBUG:
         limit_to_localhost()
-    app.rq.enqueue(count_missing_txs)
+    app.rq_slow.enqueue(count_missing_txs)
     return jsonify(status='ok')
 
 
@@ -675,7 +655,7 @@ def migrate_restored_user():
 
 
 @app.route('/rq/jobs/count', methods=['GET'])
-def get_rq_q_length():
+def get_rq_q_length_endpoint():
     # TODO remove me later
     if not config.DEBUG:
         limit_to_localhost()
@@ -686,4 +666,14 @@ def get_rq_q_length():
         print('there are currently %s jobs in the %s queue' % (q.count, queue_name))
         gauge_metric('rq_queue_len', q.count, 'queue_name:%s' % queue_name)
     return jsonify(status='ok')
+
+
+@app.route('/users/reregister', methods=['GET'])
+def reregister_users_endpoint():
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    app.rq_slow.enqueue(re_register_all_users)
+    return jsonify(status='ok')
+
 

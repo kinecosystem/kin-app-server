@@ -1,10 +1,10 @@
-[program:kinappworker]
+[program:kinappworker-fast]
 directory=/opt/kin-app-server/kinappserver
-command=rq worker kinappserver-{{deployment_env}} --url redis://{{redis_endpoint}}:6379
+command=rq worker kinappserver-{{deployment_env}}-fast --url redis://{{redis_endpoint}}:6379
 autostart=true
 autorestart=true
-stderr_logfile=/var/log/kinappworker.err.log
-stdout_logfile=/var/log/kinappworker.out.log
+stderr_logfile=/var/log/kinappworker_fast.err.log
+stdout_logfile=/var/log/kinappworker_fast.out.log
 stopasgroup=true
 environment=
     FLASK_APP=kinappserver,

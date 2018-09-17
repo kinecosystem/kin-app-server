@@ -1180,3 +1180,27 @@ def count_missing_txs():
 
     print('missing txs: %s' % missing_txs)
     gauge_metric('missing-txs', len(missing_txs))
+
+
+def re_register_all_users():
+    """sends a push message to all users with a phone"""
+    all_phoned_users = User.query.filter(User.enc_phone_number != None).filter(User.deactivated == False).all()
+    print('sending register to %s users' % len(all_phoned_users))
+    counter = 0
+    for user in all_phoned_users:
+        if counter == 100:
+            print('stopping after 100 users')
+            return
+
+        if user.os_type != OS_ANDROID:
+            print('skipping user with ios client')
+            continue
+        user_app_data = get_user_app_data(user.user_id)
+        from distutils.version import LooseVersion
+        if user_app_data.app_ver is None or LooseVersion(user_app_data.app_ver) < LooseVersion('1.2.1'):
+            print('skipping user with client ver %s' % user_app_data.app_ver)
+            continue
+
+        sleep(0.1)  # lets not choke the server
+        send_push_register(user.user_id)
+        counter = counter + 1
