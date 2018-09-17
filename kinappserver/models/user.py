@@ -1180,3 +1180,12 @@ def count_missing_txs():
 
     print('missing txs: %s' % missing_txs)
     gauge_metric('missing-txs', len(missing_txs))
+
+
+def re_register_all_users():
+    """sends a push message to all users with a phone"""
+    all_phoned_users = User.query.filter(User.enc_phone_number != None).filter(User.deactivated == False).all()
+    print('sending register to %s users' % len(all_phoned_users))
+    for user in all_phoned_users:
+        sleep(0.1) # lets not choke the server
+        send_push_register(user.user_id)

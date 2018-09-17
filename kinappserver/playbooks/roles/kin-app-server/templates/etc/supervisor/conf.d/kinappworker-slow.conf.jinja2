@@ -1,0 +1,13 @@
+[program:kinappworker-slow]
+directory=/opt/kin-app-server/kinappserver
+command=rq worker kinappserver-{{deployment_env}}-slow --url redis://{{redis_endpoint}}:6379
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/kinappworker_slow.err.log
+stdout_logfile=/var/log/kinappworker_slow.out.log
+stopasgroup=true
+environment=
+    FLASK_APP=kinappserver,
+    ENV={{ deployment_env }},
+    STELLAR_ACCOUNT_SID={{ play_hosts.index(inventory_hostname) }},
+    LC_ALL=C.UTF-8

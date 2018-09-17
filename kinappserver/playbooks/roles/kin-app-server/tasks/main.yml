@@ -96,8 +96,14 @@
 
 - name: template the supervisord config file
   template:
-    src: "{{ role_path }}/templates/etc/supervisor/conf.d/kinappworker.conf.jinja2"
-    dest: /etc/supervisor/conf.d/kinappworker.conf
+    src: "{{ role_path }}/templates/etc/supervisor/conf.d/kinappworker-fast.conf.jinja2"
+    dest: /etc/supervisor/conf.d/kinappworker-fast.conf
+    mode:
+
+- name: template the supervisord config file
+  template:
+    src: "{{ role_path }}/templates/etc/supervisor/conf.d/kinappworker-slow.conf.jinja2"
+    dest: /etc/supervisor/conf.d/kinappworker-slow.conf
     mode:
 
 - name: update supervisor
