@@ -165,7 +165,7 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 403)
         self.assertEqual(data['reason'], 'user_deactivated')
 
 if __name__ == '__main__':
