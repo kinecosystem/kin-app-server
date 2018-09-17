@@ -79,3 +79,17 @@ def update_tx_ts(tx_hash, timestamp):
     tx.update_at = timestamp
     db.session.add(tx)
     db.session.commit()
+
+
+def get_user_tx_report(user_id):
+    """return a json with all the interesting user-tx stuff"""
+    print('getting user tx report for %s' % user_id)
+    user_tx_report = {}
+    try:
+        txs = list_user_transactions(user_id)
+        for tx in txs:
+            user_tx_report[tx.tx_hash] = {'amount': tx.amount, 'in': tx.incoming_tx, 'date': tx.update_at, 'info': tx.tx_info, 'address': tx.remote_address}
+
+    except Exception as e:
+        print('caught exception in get_user_tx_report:%s' % e)
+    return user_tx_report
