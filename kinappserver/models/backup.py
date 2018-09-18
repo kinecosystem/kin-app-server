@@ -62,7 +62,6 @@ def store_backup_hints(user_id, hints):
     try:
         ubh = get_user_backup_hints_by_enc_phone(enc_phone_number)
         print('user backup hints already exist for enc_phone_number %s, updating data.' % enc_phone_number)
-        increment_metric('reregister')
     except Exception as e:
         ubh = PhoneBackupHints()
     try:

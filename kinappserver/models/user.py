@@ -144,6 +144,8 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
 
         # get/create an auth token for this user
         get_token_obj_by_user_id(user_id)
+    else:
+        increment_metric('reregister')
 
     return is_new_user
 
