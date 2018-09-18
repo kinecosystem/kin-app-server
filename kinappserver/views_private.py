@@ -661,7 +661,7 @@ def get_rq_q_length_endpoint():
         limit_to_localhost()
 
     from rq import Queue
-    for queue_name in ['kinappserver-%s' % config.DEPLOYMENT_ENV]:
+    for queue_name in ['kinappserver-%s-fast' % config.DEPLOYMENT_ENV,'kinappserver-%s-slow' % config.DEPLOYMENT_ENV]:
         q = Queue(queue_name, connection=app.redis)
         print('there are currently %s jobs in the %s queue' % (q.count, queue_name))
         gauge_metric('rq_queue_len', q.count, 'queue_name:%s' % queue_name)
