@@ -28,7 +28,7 @@
 
 - name: Template eshu-backend configuration
   template:
-    src="{{ role_path }}/templates/config/config.yaml.j2
+    src="{{ role_path }}/templates/config/config.yml.j2"
     dest=/opt/eshu/config.yml
 
 - name: Download eshu-backend

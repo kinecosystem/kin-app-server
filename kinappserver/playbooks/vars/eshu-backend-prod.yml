@@ -59,7 +59,7 @@ apps:
         queueName: eshu-queue-release
         bindingKey: eshu-key-release
         queueArgs:
-          x-dead-letter-exchange: eshu-release-exchange.dead
+          x-dead-letter-exchange: eshu-exchange-release.dead
           x-max-priority: 2
 
       dispatcher:
