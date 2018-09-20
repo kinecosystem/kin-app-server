@@ -33,7 +33,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
-    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, re_register_all_users
+    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, re_register_all_users, get_tx_totals
 
 
 @app.route('/health', methods=['GET'])
@@ -674,6 +674,15 @@ def reregister_users_endpoint():
         limit_to_localhost()
 
     app.rq_slow.enqueue(re_register_all_users)
+    return jsonify(status='ok')
+
+
+@app.route('/tx/total', methods=['GET'])
+def total_kins_endpoint():
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    get_tx_totals()
     return jsonify(status='ok')
 
 

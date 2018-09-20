@@ -93,3 +93,13 @@ def get_user_tx_report(user_id):
     except Exception as e:
         print('caught exception in get_user_tx_report:%s' % e)
     return user_tx_report
+
+
+def get_tx_totals():
+    totals = {'to_public': 0, 'from_public': 0}
+    prep_stat = 'select sum(amount) from transaction where incoming_tx=false;'
+    totals['to_public'] = db.engine.execute(prep_stat).scalar()
+    prep_stat = 'select sum(amount) from transaction where incoming_tx=true;'
+    totals['from_public'] = db.engine.execute(prep_stat).scalar()
+
+    return totals

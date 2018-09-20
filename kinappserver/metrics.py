@@ -25,6 +25,20 @@ def report_bh_balance():
     requests.get(URL_PREFIX + '/blackhawk/account/balance')
 
 
+def report_tx_total():
+    response = requests.get(URL_PREFIX + '/tx/total')
+    try:
+        to_public = len(json.loads(response.text)['to_public'])
+        from_public = len(json.loads(response.text)['from_public'])
+    except Exception as e:
+        print('cant collect tx totals')
+        pass
+
+    public_kin = to_public - from_public
+    metric = 'public_kin'
+    statsd.gauge(metric, public_kin, tags=['app:kinit,env:%s' % os.environ['ENV']])
+
+
 def report_unauthed_user_count():
     """tracks the current number of unauthed users"""
     count = -1
@@ -42,3 +56,4 @@ def report_unauthed_user_count():
 report_inventory()
 report_bh_balance()
 report_unauthed_user_count()
+report_tx_total()
