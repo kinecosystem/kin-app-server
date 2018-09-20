@@ -682,7 +682,7 @@ def total_kins_endpoint():
     if not config.DEBUG:
         limit_to_localhost()
 
-    get_tx_totals()
-    return jsonify(status='ok')
+
+    return jsonify(status='ok', total=get_tx_totals())
 
 

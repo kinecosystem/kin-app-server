@@ -28,15 +28,16 @@ def report_bh_balance():
 def report_tx_total():
     response = requests.get(URL_PREFIX + '/tx/total')
     try:
-        to_public = len(json.loads(response.text)['to_public'])
-        from_public = len(json.loads(response.text)['from_public'])
+        to_public = (json.loads(response.text)['total']['to_public'])
+        from_public = (json.loads(response.text)['total']['from_public'])
+        public_kin = to_public - from_public
+        metric = 'public_kin'
+        statsd.gauge(metric, public_kin, tags=['app:kinit,env:%s' % os.environ['ENV']])
     except Exception as e:
         print('cant collect tx totals')
         pass
 
-    public_kin = to_public - from_public
-    metric = 'public_kin'
-    statsd.gauge(metric, public_kin, tags=['app:kinit,env:%s' % os.environ['ENV']])
+
 
 
 def report_unauthed_user_count():
