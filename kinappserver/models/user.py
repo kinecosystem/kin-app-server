@@ -1190,9 +1190,6 @@ def re_register_all_users():
     print('sending register to %s users' % len(all_phoned_users))
     counter = 0
     for user in all_phoned_users:
-        if counter == 100:
-            print('stopping after 100 users')
-            return
 
         if user.os_type != OS_ANDROID:
             print('skipping user with ios client')

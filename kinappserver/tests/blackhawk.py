@@ -46,12 +46,18 @@ class Tester(unittest.TestCase):
                             data=json.dumps({
                                 'account_id': '14334',
                                 'username': 'kinitapp@kik.com',
-                                'password': '<PASSWORD HERE>',
+                                'password': '<PASSWORD_HERE>',
                                 'digital_signature': 'Kinit App'
                             }),
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        resp = self.app.get('/blackhawk/account/balance')
+        self.assertEqual(resp.status_code, 200)
+
+
+
 
         offer = { 'id': '0',
                   'type': 'gift-card',
