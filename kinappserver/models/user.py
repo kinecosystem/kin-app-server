@@ -222,11 +222,11 @@ def update_user_app_version(user_id, app_ver):
         raise InvalidUsage('cant set user app data')
 
 
-def set_should_solve_captcha(user_id):
+def set_should_solve_captcha(user_id, show=True):
     """sets the should solve captcha"""
     try:
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
-        userAppData.should_solve_captcha = True
+        userAppData.should_solve_captcha = show
         db.session.add(userAppData)
         db.session.commit()
     except Exception as e:

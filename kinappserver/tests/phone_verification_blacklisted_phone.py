@@ -176,8 +176,8 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         data = json.loads(resp.data)
         print('post task results response: %s' % data)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['reason'], 'blacklisted')
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(data['reason'], 'denied')
 
 
         # send task results - should fail - user blacklisted
@@ -192,8 +192,8 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         data = json.loads(resp.data)
         print('post task results response: %s' % data)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['reason'], 'blacklisted')
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(data['reason'], 'denied')
 
 if __name__ == '__main__':
     unittest.main()

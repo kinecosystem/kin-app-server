@@ -81,7 +81,7 @@ def get_address_by_phone_api():
 
     if is_userid_blacklisted(user_id):
         print('blocked user_id %s from matching p2p - user_id blacklisted' % user_id)
-        return jsonify(status='error', reason='no_match')
+        return jsonify(status='error', reason='no_match'), status.HTTP_404_NOT_FOUND
 
     address = match_phone_number_to_address(phone_number, user_id)
     if not address:
@@ -268,7 +268,7 @@ def post_user_task_results_endpoint():
 
     if user_deactivated(user_id):
         print('user %s deactivated. rejecting submission' % user_id)
-        return jsonify(status='error', reason='user_deactivated'), status.HTTP_403_FORBIDDEN
+        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
@@ -444,25 +444,25 @@ def get_next_task():
     # dont serve users with no phone number
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
         print('blocking user %s from getting tasks: phone not verified' % user_id)
-        return jsonify(tasks=[], reason='user_not_phone_verified')
+        return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it blocked?
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting tasks - blocked prefix' % user_id)
-        return jsonify(tasks=[], reason='phone_prefix_not supported')
+        return jsonify(tasks=[], reason='denied'),  status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it from a blocked country?
     if should_block_user_by_country_code(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting tasks - blocked country code' % user_id)
-        return jsonify(tasks=[], reason='country_code_not_supported')
+        return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     if user_deactivated(user_id):
         print('user %s is deactivated. returning empty task array' % user_id)
-        return jsonify(tasks=[], reason='user_deactivated')
+        return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     tasks = get_tasks_for_user(user_id, get_source_ip(request))
     if len(tasks) == 1:
@@ -760,20 +760,20 @@ def get_offers_api():
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting offers - blocked prefix' % user_id)
-        return jsonify(offers=[], status='error', reason='phone prefix blacklisted')
+        return jsonify(offers=[], status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it in the phone-prefix white list? if not, just dont return offers
     if not should_allow_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         print('blocked user_id %s from getting offers - not in whitelist' % user_id)
-        return jsonify(offers=[], status='error', reason='phone prefix not whitelitest')
+        return jsonify(offers=[], status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it from a blocked country?
     if should_block_user_by_country_code(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting offers - blocked country code' % user_id)
-        return jsonify(offers=[], status='error', reason='country_code_not_supported')
+        return jsonify(offers=[], status='error', reason='denied'),  status.HTTP_403_FORBIDDEN
 
     return jsonify(offers=get_offers_for_user(user_id))
 
@@ -793,29 +793,29 @@ def book_offer_api():
     if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
         print('user %s is not authenticated. rejecting book request' % user_id)
         increment_metric('rejected-on-auth')
-        return jsonify(status='error', reason='auth-failed'), status.HTTP_400_BAD_REQUEST
+        return jsonify(status='error', reason='denied'),  status.HTTP_403_FORBIDDEN
 
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
         print('blocking user (%s) results - didnt pass phone_verification' % user_id)
-        return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
+        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it blocked?
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from booking goods - blocked prefix' % user_id)
-        return jsonify(tasks=[], reason='phone_prefix_not supported')
+        return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it from a blocked country?
     if should_block_user_by_country_code(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
         print('blocked user_id %s from booking goods - blocked country code' % user_id)
-        return jsonify(tasks=[], reason='country_code_not_supported')
+        return jsonify(tasks=[], reason='denied'),  status.HTTP_403_FORBIDDEN
 
     if is_userid_blacklisted(user_id):
         print('blocked user_id %s from booking goods - user_id blacklisted' % user_id)
-        return jsonify(tasks=[], reason='blacklisted')
+        return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     order_id, error_code = create_order(user_id, offer_id)
     if order_id:
@@ -1019,11 +1019,11 @@ def compensate_truex_activity(user_id):
 
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
         print('blocking user (%s) results - didnt pass phone_verification' % user_id)
-        return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_400_BAD_REQUEST
+        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
     if user_deactivated(user_id):
         print('user %s deactivated. rejecting submission' % user_id)
-        return jsonify(status='error', reason='user_deactivated'), status.HTTP_400_BAD_REQUEST
+        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
     if reject_premature_results(user_id):
         print('compensate_truex_activity: should never happen - premature task submission')

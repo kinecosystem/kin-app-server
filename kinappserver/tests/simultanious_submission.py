@@ -31,7 +31,7 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_task_results(self):
+    def test_task_results_simul(self):
         """test storting task reults"""
 
         # add a task
