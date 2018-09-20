@@ -86,7 +86,7 @@
 
   vars:
    bash_aliases:
-     - { alias: '_env', command: 'echo "kinappserver"' }
+     - { alias: '_env', command: 'echo "kinappserver-stage"' }
      - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
      - { alias: '_grepworker-fast', command: 'cat /var/log/kinappworker_fast.err.log|grep '}
      - { alias: '_grepworker-slow', command: 'cat /var/log/kinappworker_slow.err.log|grep '}
