@@ -38,6 +38,7 @@ test:
 	python kinappserver/tests/utils_test.py
 	python kinappserver/tests/phone_verification_blacklisted_phone.py
 	python kinappserver/tests/blacklisted_phone_numbers.py
+	python kinappserver/tests/captcha.py
 
 all:
 	install test

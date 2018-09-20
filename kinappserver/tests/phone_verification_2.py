@@ -245,7 +245,7 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 403)
         self.assertEqual(data['reason'], 'user_deactivated')
 
         # get user 2s current tasks - it should be '2', because the task history was migrated when the user was deactivated
@@ -270,7 +270,7 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('should fail - task was already submitted')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 403)
 
         # should fail for task id 1
         resp = self.app.post('/user/task/results',
@@ -284,7 +284,7 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('should fail - task was already submitted')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 403)
 
         # should succeed for task id 2
         resp = self.app.post('/user/task/results',

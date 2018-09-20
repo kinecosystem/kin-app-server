@@ -66,3 +66,5 @@ BLOCKED_COUNTRY_CODES = "[]"
 TRUEX_BLACKLISTED_TASKIDS = '[]'
 
 MAX_NUM_REGISTRATIONS_PER_NUMBER = 2  # keep this value at 2 for the test
+APK_PACKAGE_NAME = 'org.kinecosystem.kinit'
+CAPTCHA_STALE_THRESHOLD_SECS = 60
