@@ -25,7 +25,7 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_register_with_verification(self):
+    def test_register_with_verification2(self):
         """test registration scenarios"""
         userid = str(uuid.uuid4())
         resp = self.app.post('/user/register',
@@ -150,9 +150,9 @@ class Tester(unittest.TestCase):
         resp = self.app.get('/user/tasks', headers=headers)
         data = json.loads(resp.data)
         print('data: %s' % data)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 403)
         self.assertEqual(data['tasks'], [])
-        self.assertEqual(data['reason'], 'user_deactivated')
+        self.assertEqual(data['reason'], 'denied')
 
         # send task results - should fail - user deactivated
         resp = self.app.post('/user/task/results',
@@ -165,8 +165,8 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(data['reason'], 'user_deactivated')
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(data['reason'], 'denied')
 
 if __name__ == '__main__':
     unittest.main()

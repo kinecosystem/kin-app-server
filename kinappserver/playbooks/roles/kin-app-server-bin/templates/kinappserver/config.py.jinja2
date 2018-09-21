@@ -2,6 +2,7 @@
 # Its a jinja2 file, meant to be processed by Ansible. By default, the debug mode is set to True,
 # and the debug values are hard-coded. Production values must be provided via the playbook.
 
+APK_PACKAGE_NAME = "org.kinecosystem.kinit"
 DEPLOYMENT_ENV = "{{deployment_env}}"
 DEBUG = {{ debug | default('True') }}
 DB_CONNSTR = "{{ db_connstr }}"
@@ -70,3 +71,5 @@ BLOCKED_COUNTRY_CODES = "{{ blocked_country_codes }}"
 TRUEX_BLACKLISTED_TASKIDS = "{{ truex_blacklisted_taskids }}"
 
 MAX_NUM_REGISTRATIONS_PER_NUMBER = "{{ max_num_registrations_per_number }}"
+
+CAPTCHA_STALE_THRESHOLD_SECS = 60

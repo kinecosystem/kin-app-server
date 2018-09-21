@@ -270,7 +270,7 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 403)
         sleep(8)  # give the thread enough time to complete before the db connection is shutdown
 
 

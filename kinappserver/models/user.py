@@ -206,6 +206,8 @@ class UserAppData(db.Model):
     next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=True)  # the memo for the user's next task.
     ip_address = db.Column(INET) # the user's last known ip
     country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
+    should_solve_captcha = db.Column(db.Boolean, unique=False, default=False)
+    captcha_history = db.Column(db.JSON)
 
 
 def update_user_app_version(user_id, app_ver):
@@ -218,6 +220,50 @@ def update_user_app_version(user_id, app_ver):
     except Exception as e:
         print(e)
         raise InvalidUsage('cant set user app data')
+
+
+def set_should_solve_captcha(user_id, show=True):
+    """sets the should solve captcha"""
+    try:
+        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
+        userAppData.should_solve_captcha = show
+        db.session.add(userAppData)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('cant set user should_solve_captcha')
+
+
+def should_pass_captcha(user_id):
+    return UserAppData.query.filter_by(user_id=user_id).one().should_solve_captcha
+
+
+def captcha_solved(user_id):
+    """lower the captcha flag for this user and add it to the history"""
+    try:
+        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
+        now = arrow.utcnow().timestamp
+        if not userAppData.should_solve_captcha:
+            print('captcha_solved: user %s doesnt need to solve captcha' % user_id)
+            return
+
+        userAppData.should_solve_captcha = False
+
+        # save previous hints
+        if userAppData.captcha_history is None:
+            userAppData.captcha_history = [{'date': now, 'app_ver': userAppData.app_ver}]
+        else:
+            userAppData.captcha_history.append({'date': now, 'app_ver ': userAppData.app_ver})
+        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
+        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(userAppData, "captcha_history")
+
+        db.session.add(userAppData)
+        db.session.commit()
+    except Exception as e:
+        print('failed to mark captcha solved for user_id %s' % user_id)
+        print(e)
 
 
 def update_ip_address(user_id, ip_address):
@@ -858,7 +904,7 @@ def get_user_report(user_id):
         user_report['country_iso_code'] = user_app_data.country_iso_code
         user_report['auth_token'] = {}
         user_report['auth_token']['sent_date'] = str(push_token_entry.send_date)
-        user_report['auth_token']['ack_data'] = str(push_token_entry.ack_date)
+        user_report['auth_token']['ack_date'] = str(push_token_entry.ack_date)
         user_report['auth_token']['authenticated'] = str(push_token_entry.authenticated)
         user_report['auth_token']['token'] = str(push_token_entry.auth_token)
         user_report['package_id'] = str(user.package_id)
@@ -1045,7 +1091,7 @@ def should_allow_user_by_phone_prefix(user_id):
     try:
         phone_number = get_unenc_phone_number_by_user_id(user_id)
         if not phone_number:
-            print('should_allow_user_by_phone_prefix - no phone number. allowing users')
+            print('should_allow_user_by_phone_prefix - no phone number. allowing user')
             return True
 
         for prefix in app.allowed_phone_prefixes:

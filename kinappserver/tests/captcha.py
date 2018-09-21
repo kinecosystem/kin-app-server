@@ -6,7 +6,7 @@ import simplejson as json
 import testing.postgresql
 
 import kinappserver
-from kinappserver import db
+from kinappserver import db, models
 
 
 USER_ID_HEADER = "X-USERID"
@@ -31,7 +31,7 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_task_results_other_user(self):
+    def test_captcha(self):
         """test storting task reults"""
 
         # add a task
@@ -149,12 +149,12 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        userid1 = uuid.uuid4()
+        userid = uuid.uuid4()
 
         # register an android with a token
         resp = self.app.post('/user/register',
                             data=json.dumps({
-                            'user_id': str(userid1),
+                            'user_id': str(userid),
                             'os': 'android',
                             'device_model': 'samsung8',
                             'device_id': '234234',
@@ -165,29 +165,19 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid1), str(userid1)))
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
 
         resp = self.app.post('/user/auth/ack',
-                            data=json.dumps({
-                            'token': str(userid1)}),
-                            headers={USER_ID_HEADER: str(userid1)},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # user1 updates his phone number to the server after client-side verification
-        phone_num = '+9720528802120'
-        resp = self.app.post('/user/firebase/update-id-token',
-                    data=json.dumps({
-                        'token': 'fake-token',
-                        'phone_number': phone_num}),
-                    headers={USER_ID_HEADER: str(userid1)},
-                    content_type='application/json')
+                             data=json.dumps({
+                                 'token': str(userid)}),
+                             headers={USER_ID_HEADER: str(userid)},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         sleep(1)
 
         # get the user's current tasks
-        headers = {USER_ID_HEADER: userid1}
+        headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/tasks', headers=headers)
         data = json.loads(resp.data)
         print('data: %s' % data)
@@ -195,6 +185,21 @@ class Tester(unittest.TestCase):
         print('next task id: %s' % data['tasks'][0]['id'])
         print('next task start date: %s' % data['tasks'][0]['start_date'])
         self.assertEqual(data['tasks'][0]['id'], '0')
+        self.assertEqual(data['show_captcha'], False)
+
+        # raise the captcha flag
+        models.set_should_solve_captcha(str(userid))
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        print('data: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id: %s' % data['tasks'][0]['id'])
+        print('next task start date: %s' % data['tasks'][0]['start_date'])
+        self.assertEqual(data['tasks'][0]['id'], '0')
+        self.assertEqual(data['show_captcha'], True)
 
         # send task results
         resp = self.app.post('/user/task/results',
@@ -204,62 +209,99 @@ class Tester(unittest.TestCase):
                             'results': {'2234': 'werw', '5345': '345345'},
                             'send_push': False
                             }),
-                            headers={USER_ID_HEADER: str(userid1)},
+                            headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 403)  # no captcha provided
 
-        userid2 = uuid.uuid4()
-
-        sleep(10)  # give it time to process
-
-        # register an android with a token
-        resp = self.app.post('/user/register',
-                            data=json.dumps({
-                            'user_id': str(userid2),
-                            'os': 'android',
-                            'device_model': 'samsung8',
-                            'device_id': '234234',
-                            'time_zone': '05:00',
-                            'token': 'fake_token',
-                            'app_ver': '1.0'}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid2), str(userid2)))
-
-        resp = self.app.post('/user/auth/ack',
-                            data=json.dumps({
-                            'token': str(userid2)}),
-                            headers={USER_ID_HEADER: str(userid2)},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # user2 updates his phone number to the server after client-side verification - using the same phone number
-        phone_num = '+9720528802120'
-        resp = self.app.post('/user/firebase/update-id-token',
-                    data=json.dumps({
-                        'token': 'fake-token',
-                        'phone_number': phone_num}),
-                    headers={USER_ID_HEADER: str(userid2)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # send task results for task 0 again
+        # send task results - again but this time with captcha
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '0',
                             'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
                             'results': {'2234': 'werw', '5345': '345345'},
-                            'send_push': False
+                            'send_push': False,
+                            'captcha_token': 'asdadasdasdasd'
                             }),
-                            headers={USER_ID_HEADER: str(userid2)},
+                            headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 200)  # resubmission of results, should be detected and return okay.
+        self.assertEqual(resp.status_code, 200)  # captcha will succeed in stage
 
+        res = db.engine.execute("""select captcha_history from user_app_data where user_id='%s'""" % userid)
+        history = res.fetchall()[0][0]
+        print('captcha history: %s' % history)
+        self.assertEqual(len(history), 1)  # 1 captchas in the history
 
+        # get the user's current tasks - this time there should be no captcha
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        print('data: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id: %s' % data['tasks'][0]['id'])
+        print('next task start date: %s' % data['tasks'][0]['start_date'])
+        self.assertEqual(data['tasks'][0]['id'], '1')
+        self.assertEqual(data['show_captcha'], False)
+
+        # send task results - dont provide captcha, should work
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id': '1',
+                            'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
+                            'results': {'2234': 'werw', '5345': '345345'},
+                            'send_push': False
+                            }),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
+        print('post task results response: %s' % json.loads(resp.data))
+        self.assertEqual(resp.status_code, 200)
+
+        # raise the captcha flag again
+        models.set_should_solve_captcha(str(userid))
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        print('data: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id: %s' % data['tasks'][0]['id'])
+        print('next task start date: %s' % data['tasks'][0]['start_date'])
+        self.assertEqual(data['tasks'][0]['id'], '2')
+        self.assertEqual(data['show_captcha'], True)
+
+        # send task results
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id': '2',
+                            'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
+                            'results': {'2234': 'werw', '5345': '345345'},
+                            'send_push': False
+                            }),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
+        print('post task results response: %s' % json.loads(resp.data))
+        self.assertEqual(resp.status_code, 403)  # no captcha provided
+
+        # send task results - again but this time with captcha
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id': '2',
+                            'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
+                            'results': {'2234': 'werw', '5345': '345345'},
+                            'send_push': False,
+                            'captcha_token': 'asdadasdasdasd'
+                            }),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
+        print('post task results response: %s' % json.loads(resp.data))
+        self.assertEqual(resp.status_code, 200)  # captcha will succeed in stage
+
+        res = db.engine.execute("""select captcha_history from user_app_data where user_id='%s'""" % userid)
+        history = res.fetchall()[0][0]
+        print('captcha history: %s' % history)
+        self.assertEqual(len(history), 2)  # 2 captchas in the history
 
 
 

@@ -152,6 +152,8 @@ cred = credentials.Certificate(service_account_file_path)
 firebase_admin.initialize_app(cred)
 app.firebase_admin = firebase_admin
 
+app.recaptcha_secret = ssm.get_ssm_value('/config/%s/recaptcha/secret' % config.DEPLOYMENT_ENV)
+
 # figure out blocked prefixes - if this fail, crash the server
 from ast import literal_eval
 app.blocked_phone_prefixes = literal_eval(config.BLOCKED_PHONE_PREFIXES)

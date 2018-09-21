@@ -8,6 +8,7 @@ import phonenumbers
 import redis
 import json
 import random
+import arrow
 
 
 from kinappserver import config, app
@@ -305,3 +306,50 @@ def find_max_task(completed_tasks):
         if int(task) > max_task:
             max_task = int(task)
     return max_task
+
+
+def passed_captcha(captcha_token):
+    """get a recaptcha result"""
+    try:
+        params = {
+            'secret': app.recaptcha_secret,
+            'response': captcha_token,
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded", "charset": "utf-8"}
+        res = requests.post('https://www.google.com/recaptcha/api/siteverify', params=params, headers=headers)
+        res.raise_for_status()
+    except Exception as e:
+        #TODO add retry
+        print('caught exception (%s) getting captcha results from google')
+        return False
+    else:
+        try:
+            captcha_result = json.loads(res.text)
+
+            if config.DEBUG:
+                print('setting fake successful captcha results for debug configuration')
+                captcha_result ={'apk_package_name': config.APK_PACKAGE_NAME, 'challenge_ts': str(arrow.utcnow()), 'success': True}
+
+            apk_name = captcha_result.get('apk_package_name', None)
+            challenge_ts = captcha_result.get('challenge_ts', None)
+            captcha_success = captcha_result.get('success', None)
+            if None in (apk_name, challenge_ts, captcha_success) and not config.DEBUG:
+                print('missing fields in captcah result')
+                return False
+
+            if apk_name != config.APK_PACKAGE_NAME:
+                print('failed captcha results: invalid apk name: %s' % captcha_result['apk_package_name'])
+                return False
+
+            captcha_secs_ago = (arrow.get(challenge_ts) - arrow.utcnow()).total_seconds()
+            if captcha_secs_ago > config.CAPTCHA_STALE_THRESHOLD_SECS:
+                print('failed captcha results: solved %s secs ago' % captcha_secs_ago)
+                return False
+
+            if captcha_success:
+                return True
+
+        except Exception as e:
+            print('failed processing captcha. e: %s' % e)
+
+    return False
