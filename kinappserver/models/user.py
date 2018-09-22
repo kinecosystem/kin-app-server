@@ -206,8 +206,9 @@ class UserAppData(db.Model):
     next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=True)  # the memo for the user's next task.
     ip_address = db.Column(INET) # the user's last known ip
     country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
-    should_solve_captcha = db.Column(db.Boolean, unique=False, default=False)
+    should_solve_captcha = db.Column(db.Boolean, unique=False, default=False) # obsolete, to be removed
     captcha_history = db.Column(db.JSON)
+    should_solve_captcha_ternary = db.Column(db.Integer, unique=False, default=-1, nullable=False)  # -1 = no captcha, 0 = show captcha on next task, 1 = captcha required
 
 
 def update_user_app_version(user_id, app_ver):
@@ -222,20 +223,48 @@ def update_user_app_version(user_id, app_ver):
         raise InvalidUsage('cant set user app data')
 
 
-def set_should_solve_captcha(user_id, show=True):
-    """sets the should solve captcha"""
+def set_should_solve_captcha(user_id, value=0):
+    """sets the should solve captcha. note that client version isn't checked here
+
+    normally, you would set this value to zero, to show captcha on the next (not current) task.
+    setting it to 1 might cause a (temporary) client error, when the client attempts to submit
+    a (stale) task w/o a captcha, although one is required. it'll be fine on the next attempt.
+    """
     try:
+
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
-        userAppData.should_solve_captcha = show
+        userAppData.should_solve_captcha_ternary = value
         db.session.add(userAppData)
         db.session.commit()
     except Exception as e:
         print(e)
-        raise InvalidUsage('cant set user should_solve_captcha')
+        raise InvalidUsage('cant set user should_solve_captcha_ternary')
+    else:
+        return True
+
+
+def autoswitch_captcha(user_id):
+    """promotes user's captcha state from 0 to 1, iff it was 0"""
+    statement = '''update public.user_app_data set should_solve_captcha_ternary = 1 where public.user_app_data.user_id = '%s' and public.user_app_data.should_solve_captcha_ternary = 0;'''
+    db.engine.execute(statement % user_id)
 
 
 def should_pass_captcha(user_id):
-    return UserAppData.query.filter_by(user_id=user_id).one().should_solve_captcha
+    """returns True iff the client must pass captcha test. older clients are auto-exempt"""
+
+    user_app_data = UserAppData.query.filter_by(user_id=user_id).one()
+    client_version = user_app_data.app_ver
+    ternary = user_app_data.should_solve_captcha_ternary
+    os_type = get_user_os_type(user_id)
+
+    if os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion(config.CAPTCHA_MIN_CLIENT_VERSION_ANDROID):
+        return False
+    if os_type == OS_IOS:  # all ios clients are exempt
+        return False
+
+    if ternary is not None and ternary > 0:
+        return True
+    return False
 
 
 def captcha_solved(user_id):
@@ -243,11 +272,11 @@ def captcha_solved(user_id):
     try:
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
         now = arrow.utcnow().timestamp
-        if not userAppData.should_solve_captcha:
+        if userAppData.should_solve_captcha_ternary < 1:
             print('captcha_solved: user %s doesnt need to solve captcha' % user_id)
             return
 
-        userAppData.should_solve_captcha = False
+        userAppData.should_solve_captcha_ternary = -1 # reset back to -1 (doesn't need to pass captcha)
 
         # save previous hints
         if userAppData.captcha_history is None:

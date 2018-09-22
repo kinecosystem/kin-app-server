@@ -693,7 +693,7 @@ def user_set_captcha_endpoint():
     try:
         payload = request.get_json(silent=True)
         user_ids = payload.get('user_ids')
-        should_show = payload.get('set_captcha')
+        should_show = payload.get('set_captcha', 0)
     except Exception as e:
         print('failed to process user-set-captcha')
     else:
