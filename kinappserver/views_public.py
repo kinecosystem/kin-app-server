@@ -471,7 +471,7 @@ def get_next_task():
     try:
         # handle unprintable chars...
         print('tasks returned for user %s: %s' % (user_id, [t['id'] for t in tasks]))
-        #print('tasks for user %s: %s' % (user_id, tasks))
+        print('tasks for user %s: %s' % (user_id, tasks))
     except Exception as e:
         print('cant print returned tasks for user %s' % user_id)
         print(e)
