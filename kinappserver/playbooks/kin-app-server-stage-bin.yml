@@ -44,7 +44,7 @@
    api_server_url: 'https://stage.kinitapp.com'
    use_payment_service_phone_number_prefix: '+'
    use_payment_service_percent_of_users: 100
-   block_onboarding_android_version: 1.2.6
+   block_onboarding_android_version: 1.2.5
    block_onboarding_ios_version: 1.0.0
    blocked_phone_prefixes: "['+55']"
    allowed_phone_prefixes: "['+1','+44','+972']"
