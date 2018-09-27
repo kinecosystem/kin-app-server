@@ -667,15 +667,21 @@ def register_api():
 
             # turn off phone verfication for older clients:
             disable_phone_verification = False
+            disable_backup_nag = False
             if os == OS_ANDROID and LooseVersion(app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_ANDROID_VERSION):
                     disable_phone_verification = True
+                    disable_backup_nag = True
             elif os == OS_IOS and LooseVersion(app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_IOS_VERSION):
                     disable_phone_verification = True
+                    disable_backup_nag = True
 
             global_config = get_global_config()
             if disable_phone_verification:
                 print('disabling phone verification for registering userid %s' % user_id)
                 global_config['phone_verification_enabled'] = False
+            if disable_backup_nag:
+                print('disabling backup nag for registering userid %s' % user_id)
+                global_config['backup_nag'] = False
 
             # return global config - the user doesn't have user-specific config (yet)
             return jsonify(status='ok', config=global_config)
