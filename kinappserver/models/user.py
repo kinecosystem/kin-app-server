@@ -949,6 +949,9 @@ def get_user_report(user_id):
         user_report['screen_d'] = user.screen_d
         user_report['user_agent'] = user.user_agent
         user_report['truex_user_id'] = user.truex_user_id
+        user_report['captcha_data'] = {}
+        user_report['captcha_data']['should_solve_captcha'] = user_app_data.should_solve_captcha_ternary
+        user_report['captcha_data']['history'] = user_app_data.captcha_history
 
         if user.enc_phone_number:
             ubh = get_user_backup_hints_by_enc_phone(user.enc_phone_number)
