@@ -43,6 +43,13 @@ class Tester(unittest.TestCase):
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider': 
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
+                  'post_task_actions':[{'type': 'external-url',
+                                        'text': 'please vote mofos',
+                                        'text_ok': 'yes! register!',
+                                        'text_cancel': 'no thanks mofos',
+                                        'url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                                        'icon_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                                        'campaign_name': 'buy-moar-underwear'}],
                   'items': [
                     {
                      'id': '435', 

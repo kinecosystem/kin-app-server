@@ -148,6 +148,7 @@ class Task(db.Model):
     delay_days = db.Column(db.Integer(), nullable=False, primary_key=False)
     min_client_version_android = db.Column(db.String(80), nullable=False, primary_key=False)
     min_client_version_ios = db.Column(db.String(80), nullable=False, primary_key=False)
+    post_task_actions = db.Column(db.JSON)
 
     def __repr__(self):
         return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, video_url: %s, min_to_complete: %s, start_date: %s, delay_days: %s, min_client_version_android: %s, min_client_version_ios %s>' % \
@@ -284,6 +285,7 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['start_date'] = int(shifted_ts if shifted_ts is not None else arrow.utcnow().timestamp)
     task_json['min_client_version_android'] = task.min_client_version_android or DEFAULT_MIN_CLIENT_VERSION
     task_json['min_client_version_ios'] = task.min_client_version_ios or DEFAULT_MIN_CLIENT_VERSION
+    task_json['post_task_actions'] = [] if not task.post_task_actions else task.post_task_actions
 
     return task_json
 
@@ -296,6 +298,7 @@ def add_task(task_json):
             if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating', 'tip', 'dual_image']:
                 print('invalid item type:%s ' % item['type'])
                 raise InvalidUsage('cant add task with invalid item-type')
+
 
             # test validity of quiz items
             if item.get('quiz_data', None):
@@ -349,6 +352,16 @@ def add_task(task_json):
                     if image_url is not None and not test_image(image_url):
                         print('failed to verify task result image_url: %s' % image_url)
                         fail_flag = True
+
+            post_task_actions = task_json.get('post_task_actions', None)
+            if post_task_actions:
+                for action in post_task_actions:
+                    if action.get('type') == 'external-url':
+                        icon_url = action.get('icon_url', None)
+                        if icon_url and not test_image(icon_url):
+                            print('icon_url url - %s - could not be verified' % icon_url)
+                            fail_flag = True
+
             print('done testing accessibility of task urls')
 
         if fail_flag:
@@ -370,6 +383,7 @@ def add_task(task_json):
         task.start_date = arrow.get(task_json['start_date'])
         task.min_client_version_ios = task_json.get('min_client_version_ios', DEFAULT_MIN_CLIENT_VERSION)
         task.min_client_version_android = task_json.get('min_client_version_android', DEFAULT_MIN_CLIENT_VERSION)
+        task.post_task_actions = task_json.get('post_task_actions', None)
         db.session.add(task)
         db.session.commit()
     except Exception as e:
