@@ -32,7 +32,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
-    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, captcha_solved, get_user_tz, autoswitch_captcha
+    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, captcha_solved, get_user_tz, autoswitch_captcha, automatically_raise_captcha_flag
 
 
 
@@ -400,7 +400,8 @@ def post_user_task_results_endpoint():
             raise InternalError('cant save results for userid %s' % user_id)
     try:
         memo = get_and_replace_next_task_memo(user_id)
-        autoswitch_captcha(user_id)  # sets captcha for the next task, if primed to do so
+        autoswitch_captcha(user_id)  # changes captcha flag from 0 to 1 if 0
+        automatically_raise_captcha_flag(user_id)  # sets the captcha flag every so-many tasks
         split_payment(address, task_id, send_push, user_id, memo, delta)
 
     except Exception as e:
@@ -1008,7 +1009,8 @@ def truex_callback_endpoint():
         if not res:
             print('failed to pay user %s for truex activity' % user_id)
 
-        autoswitch_captcha(user_id)  # sets captcha for the next task, if primed to do so
+        autoswitch_captcha(user_id)  # changes captcha flag from 0 to 1 if 0
+        automatically_raise_captcha_flag(user_id)  # sets the captcha flag every so-many tasks
     except Exception as e:
         print('unhandled exception in truex process. exception: %s' % e)
         return TRUEX_CALLBACK_RECOVERABLE_ERROR
