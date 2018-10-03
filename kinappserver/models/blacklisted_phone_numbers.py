@@ -6,9 +6,10 @@ class BlacklistedEncPhoneNumber(db.Model):
     """the PhoneBackupHints model holds (for each userid) the sid of the questions selected by the user for the recent-most backup.
     """
     enc_phone_number = db.Column('enc_phone_number', db.String(200), primary_key=True, nullable=False) # cant be a foreign key because its not unique in user.
+    added_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
 
     def __repr__(self):
-        return '<enc_phone_number: %s>' % self.enc_phone_number
+        return '<enc_phone_number: %s, added_at: %s>' % (self.enc_phone_number, self.added_at)
 
 
 def is_phone_number_blacklisted(phone_number):
