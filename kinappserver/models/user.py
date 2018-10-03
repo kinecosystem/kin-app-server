@@ -207,7 +207,6 @@ class UserAppData(db.Model):
     next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=True)  # the memo for the user's next task.
     ip_address = db.Column(INET) # the user's last known ip
     country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
-    should_solve_captcha = db.Column(db.Boolean, unique=False, default=False) # obsolete, to be removed
     captcha_history = db.Column(db.JSON)
     should_solve_captcha_ternary = db.Column(db.Integer, unique=False, default=-1, nullable=False)  # -1 = no captcha, 0 = show captcha on next task, 1 = captcha required
 
