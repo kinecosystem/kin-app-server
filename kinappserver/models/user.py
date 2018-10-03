@@ -1300,14 +1300,14 @@ def automatically_raise_captcha_flag(user_id):
 
     os_type = get_user_os_type(user_id)
     if os_type == OS_IOS:
-        print('not raising captcha for ios device %s' % user_id)
+        #print('not raising captcha for ios device %s' % user_id)
         return
 
     # get the user's current task
     # and also the captcha status and history - all are in the user_app_data
     uad = get_user_app_data(user_id)
     if uad.should_solve_captcha_ternary != -1:
-        print('raise_captcha_if_needed: user %s captcha flag already at %s. doing nothing' % (user_id, uad.should_solve_captcha_ternary))
+        #print('raise_captcha_if_needed: user %s captcha flag already at %s. doing nothing' % (user_id, uad.should_solve_captcha_ternary))
         return
 
     max_task = find_max_task(json.loads(uad.completed_tasks))
