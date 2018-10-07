@@ -200,7 +200,7 @@ def get_user_goods_report(user_id):
     try:
         from .transaction import Transaction
         for good in db.session.query(Good, Transaction).filter(Transaction.user_id == user_id).filter(Good.tx_hash == Transaction.tx_hash):
-            user_goods_report[good[0].sid] = {'user_id': good[1].user_id, 'offer_id': good[0].offer_id, 'tx_hash': good[0].tx_hash, 'created_at': str(good[0].created_at), 'amount': good[1].amount}
+            user_goods_report[good[0].sid] = {'user_id': good[1].user_id, 'offer_id': good[0].offer_id, 'tx_hash': good[0].tx_hash, 'created_at': str(good[0].created_at), 'value': good[0].value, 'amount': good[1].amount}
     except Exception as e:
         print('caught exception in get_user_goods_report:%s' % e)
     return user_goods_report
