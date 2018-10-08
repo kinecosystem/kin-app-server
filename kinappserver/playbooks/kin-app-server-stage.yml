@@ -45,7 +45,7 @@
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: True
    phone_verification_required: False
-   p2p_transfers_enabled: True
+   p2p_transfers_enabled: False
    p2p_min_tasks: 0
    p2p_min_kin_amount: 0
    p2p_max_kin_amount: 200
