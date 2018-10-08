@@ -1,6 +1,6 @@
 from .transaction import *
 from .user import *
-from .task import *
+from .task2 import *
 from .offer import *
 from .order import *
 from .good import *
@@ -15,3 +15,4 @@ from .email_template import *
 from .truex_blacklisted_user import *
 from .blacklisted_phone_numbers import *
 from .system_config import *
+from .category import *

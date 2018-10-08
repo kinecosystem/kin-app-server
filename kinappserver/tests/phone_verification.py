@@ -27,6 +27,21 @@ class Tester(unittest.TestCase):
 
     def test_register_with_verification2(self):
         """test registration scenarios"""
+
+        cat = {'id': '0',
+          'title': 'cat-title',
+           'skip_image_test': True,
+           'ui_data': {'color': "#123",
+                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         userid = str(uuid.uuid4())
         resp = self.app.post('/user/register',
             data=json.dumps({
@@ -112,6 +127,8 @@ class Tester(unittest.TestCase):
 
         task0 = {
           'id': '0',
+          "cat_id": '0',
+          "position": 0,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',

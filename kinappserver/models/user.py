@@ -3,7 +3,7 @@ from sqlalchemy_utils import UUIDType
 from sqlalchemy.dialects.postgresql import INET
 
 from kinappserver import db, config, app
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS, find_max_task
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS, random_percent
 from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_country_IS_supported
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
@@ -136,12 +136,18 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     if is_new_user:
         user_app_data = UserAppData()
         user_app_data.user_id = user_id
+<<<<<<< HEAD
         user_app_data.completed_tasks = '[]'
         user_app_data.completed_tasks_dict = {}
         user_app_data.app_ver = app_ver
         user_app_data.next_task_ts = arrow.utcnow().timestamp
         user_app_data.next_task_ts_dict = {}
         user_app_data.next_task_memo = generate_memo()
+=======
+        user_app_data.completed_tasks_dict = {}
+        user_app_data.app_ver = app_ver
+        user_app_data.next_task_ts_dict = {}
+>>>>>>> task2.0 initial commit
         user_app_data.next_task_memo_dict = {}
         db.session.add(user_app_data)
         db.session.commit()
@@ -212,9 +218,11 @@ class UserAppData(db.Model):
     next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=True)  # the memo for the user's next task.
     next_task_memo_dict = db.Column(db.JSON)
     ip_address = db.Column(INET) # the user's last known ip
+    ip_address = db.Column(INET)  # the user's last known ip
     country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
     captcha_history = db.Column(db.JSON)
     should_solve_captcha_ternary = db.Column(db.Integer, unique=False, default=0, nullable=False)  # -1 = no captcha, 0 = show captcha on next task, 1 = captcha required
+
 
 
 def update_user_app_version(user_id, app_ver):
@@ -326,30 +334,39 @@ def get_user_country_code(user_id):
     return UserAppData.query.filter_by(user_id=user_id).one().country_iso_code  # can be null
 
 
-def get_next_task_memo(user_id):
-    """returns the next memo for this user"""
+def get_next_task_memo(user_id, cat_id):
+    """returns the next memo for this user and cat_id"""
     next_memo = None
     try:
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
-        next_memo = userAppData.next_task_memo
+        next_memo = userAppData.next_task_memo_dict.get(cat_id, None)
         if next_memo is None:
             # set an initial value
+<<<<<<< HEAD
             return get_and_replace_next_task_memo(user_id)
+=======
+            return get_and_replace_next_task_memo(user_id, cat_id)
+>>>>>>> task2.0 initial commit
     except Exception as e:
-        print(e)
-        raise InvalidUsage('cant get next memo')
+        raise InvalidUsage('cant get next memo. exception:%s' % e)
     else:
         return next_memo
 
 
-def get_and_replace_next_task_memo(user_id):
+def get_and_replace_next_task_memo(user_id, task_id):
     """return the next memo for this user and replace it with another"""
-    next_memo = None
+
     try:
-        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
-        next_memo = userAppData.next_task_memo
-        userAppData.next_task_memo = generate_memo()
-        db.session.add(userAppData)
+        next_memo = generate_memo()
+        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
+        from .task2 import get_cat_id_for_task_id
+        user_app_data.next_task_memo_dict[get_cat_id_for_task_id(task_id)] = next_memo
+
+        db.session.add(user_app_data)
+        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
+        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(user_app_data, "next_task_memo_dict")
         db.session.commit()
     except Exception as e:
         print(e)
@@ -363,7 +380,7 @@ def list_all_users_app_data():
     response = {}
     users = UserAppData.query.order_by(UserAppData.user_id).all()
     for user in users:
-        response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at, 'completed_tasks': user.completed_tasks}
+        response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at, 'completed_tasks': user.completed_tasks_dict}
     return response
 
 
@@ -504,36 +521,49 @@ def send_compensated_push(user_id, amount, task_title):
     return True
 
 
-def store_next_task_results_ts(user_id, timestamp_str):
-    """stores the given ts for the given user for later retrieval"""
+def store_next_task_results_ts(user_id, task_id, timestamp_str, cat_id=None):
+    """stores the given ts for the given user and task_id for later retrieval
+
+    if cat_id is given, ignore the task_id.
+    """
     try:
+        if cat_id is None:
+            from .task2 import get_cat_id_for_task_id
+            cat_id = get_cat_id_for_task_id(task_id)
+
         # stored as string, can be None
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
-        user_app_data.next_task_ts = timestamp_str
+        user_app_data.next_task_ts_dict[cat_id] = timestamp_str
         db.session.add(user_app_data)
+
+        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
+        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(user_app_data, "next_task_ts_dict")
         db.session.commit()
     except Exception as e:
-        print(e)
-        raise InvalidUsage('cant set task result ts')
+        raise InvalidUsage('cant set task result ts. e:%s' % e)
 
 
-def get_next_task_results_ts(user_id):
-    """return the task_result_ts field for the given user"""
+def get_next_task_results_ts(user_id, cat_id):
+    """return the task_result_ts field for the given user and task category"""
     try:
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
         if user_app_data is None:
             return None
-        return user_app_data.next_task_ts  # can be None
+        return user_app_data.next_task_ts_dict.get(cat_id, 0)  # can be None
     except Exception as e:
-        print(e)
-        print('cant get task result ts')
+        print('cant get task result ts. e: %s' % e)
         raise InvalidUsage('cant get task result ts')
 
 
 def get_users_for_engagement_push(scheme):
-    """get user_ids for an engagement scheme"""
+    """get user_ids for an engagement scheme
+
+    TASKS2.0 fix this function - it only looks at category '0'
+    """
     from datetime import datetime, timedelta
-    from kinappserver.models import get_tasks_for_user
+    from kinappserver.models import get_next_tasks_for_user
     now = arrow.utcnow().shift(seconds=60).timestamp  # add a small timeshift to account for calculation time
     user_ids = {OS_IOS: [], OS_ANDROID: []}
 
@@ -562,13 +592,13 @@ def get_users_for_engagement_push(scheme):
                     continue
 
                 # filter out users with no tasks AND ALSO users with future tasks:
-                tasks = get_tasks_for_user(user.user_id)
-                if tasks == []:
+                tasks_dict = get_next_tasks_for_user(user.user_id)
+                if  tasks_dict['0'] == []:
                     print('skipping user %s - no active task, now: %s' % (user.user_id, now))
                     continue
 
-                next_task_ts = tasks[0]['start_date']
-                if tasks[0]['start_date'] > now:
+                next_task_ts =  tasks_dict['0'][0]['start_date']
+                if  tasks_dict['0'][0]['start_date'] > now:
                     print('skipping user %s - next task is due at %s, now: %s' % (user.user_id, next_task_ts, now))
                     continue
 
@@ -613,13 +643,13 @@ def get_users_for_engagement_push(scheme):
                     print('skipping user %s - country not supported' % user.user_id)
                     continue
 
-                tasks = get_tasks_for_user(user.user_id)
-                if tasks == []:
+                tasks_dict = get_next_tasks_for_user(user.user_id)
+                if tasks_dict['0'] == []:
                     print('skipping user %s - no active task, now: %s' % (user.user_id, now))
                     continue
 
-                next_task_ts = tasks[0]['start_date']
-                if tasks[0]['start_date'] > now:
+                next_task_ts = tasks_dict['0'][0]['start_date']
+                if  tasks_dict['0'][0]['start_date'] > now:
                     print('skipping user %s - next task is due at %s, now: %s' % (user.user_id, next_task_ts, now))
                     continue
 
@@ -831,7 +861,7 @@ def deactivate_by_enc_phone_number(enc_phone_number, new_user_id, activate_user=
                 # deactivate and copy task_history
                 db.engine.execute("update public.user set deactivated=true where enc_phone_number='%s' and user_id='%s'" % (enc_phone_number, user_id_to_deactivate))
 
-                completed_tasks_query = "update user_app_data set completed_tasks = Q.col1, next_task_ts = Q.col2 from (select completed_tasks as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(new_user_id))
+                completed_tasks_query = "update user_app_data set completed_tasks_dict = Q.col1, next_task_ts = Q.col2 from (select completed_tasks_dict as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(new_user_id))
                 db.engine.execute(completed_tasks_query)
 
                 # also delete the new user's history and plant the old user's history instead
@@ -855,7 +885,7 @@ def get_associated_user_ids(user_id):
         return [str(user.user_id) for user in users]
 
 
-def nuke_user_data(phone_number, nuke_all = False):
+def nuke_user_data(phone_number, nuke_all=False):
     """nuke user's data by phone number. by default only nuke the active user"""
     # find the active user with this number:
     if nuke_all:
@@ -866,10 +896,12 @@ def nuke_user_data(phone_number, nuke_all = False):
         print('nuking the active user with the phone number: %s' % phone_number)
         user_ids = [get_active_user_id_by_phone(phone_number)]
     for user_id in user_ids:
-        db.engine.execute("delete from good where tx_hash in (select tx_hash from transaction where user_id='%s')" % (user_id))
-        db.engine.execute("delete from public.transaction where user_id='%s'" % (user_id))
-        db.engine.execute("delete from public.user_task_results where user_id='%s'" % (user_id))
-        db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\'' % (user_id))
+        db.engine.execute("delete from good where tx_hash in (select tx_hash from transaction where user_id='%s')" % user_id)
+        db.engine.execute("delete from public.transaction where user_id='%s'" % user_id)
+        db.engine.execute("delete from public.user_task_results where user_id='%s'" % user_id)
+        db.engine.execute('''update public.user_app_data set completed_tasks_dict='{}'::json where user_id=\'%s\'''' % user_id)
+        db.engine.execute('''update public.user_app_data set next_task_memo_dict='{}'::json where user_id=\'%s\'''' % user_id)
+        db.engine.execute('''update public.user_app_data set next_task_ts_dict='{}'::json where user_id=\'%s\'''' % user_id)
 
     # also erase the backup hints for the phone
     db.engine.execute("delete from phone_backup_hints where enc_phone_number='%s'" % app.encryption.encrypt(phone_number))
@@ -889,7 +921,7 @@ def get_user_config(user_id):
         if not user_app_data:
             print('could not customize user config. disabling p2p txs for this user')
             global_config['p2p_enabled'] = False
-        elif len(user_app_data.completed_tasks) < config.P2P_MIN_TASKS:
+        elif len(user_app_data.completed_tasks_dict.values()) < config.P2P_MIN_TASKS:
             global_config['p2p_enabled'] = False
 
     # turn off phone verification for older clients:
@@ -946,8 +978,9 @@ def get_user_report(user_id):
         user_report['onboarded'] = str(user.onboarded)
         user_report['public_address'] = user.public_address
         user_report['deactivated'] = str(user.deactivated)
-        user_report['completed_tasks'] = user_app_data.completed_tasks
-        user_report['next_task_ts'] = user_app_data.next_task_ts
+        user_report['completed_tasks'] = user_app_data.completed_tasks_dict
+        user_report['next_task_ts'] = user_app_data.next_task_ts_dict
+        user_report['next_task_memo'] = user_app_data.next_task_memo_dict
         user_report['last_app_launch'] = user_app_data.update_at
         user_report['ip_addr'] = user_app_data.ip_address
         user_report['country_iso_code'] = user_app_data.country_iso_code
@@ -1035,19 +1068,6 @@ def restore_user_by_address(current_user_id, address):
     return original_user_id
 
 
-def fix_user_task_history(user_id):
-    #TODO add try-catch
-    """ find this user's phone number make sure this user_id has the most updated task history"""
-    enc_phone_number = get_enc_phone_number_by_user_id(user_id)
-    # find the user_id that has the most tasks and copy it
-    prepared_stmt = '''select public.user_app_data.completed_tasks from public.user, public.user_app_data where public.user.user_id=public.user_app_data.user_id and public.user.enc_phone_number='%s' order by cast(user_app_data.completed_tasks as varchar) desc limit 1;'''
-    results = db.engine.execute(prepared_stmt % (enc_phone_number))
-    completed_tasks = results.fetchone()[0]
-    print('planting completed_tasks into user_id %s: %s' % (user_id, completed_tasks))
-    db.engine.execute("delete from public.user_task_results where user_id='%s';" % UUID(user_id))
-    db.engine.execute('update public.user_app_data set completed_tasks=\'"%s"\' where user_id=\'%s\';' % (str(completed_tasks), UUID(user_id)))
-
-
 def migrate_restored_user_data(temp_user_id, restored_user_id):
     """copy some of the fresher, device-related fields into a restored user"""
     try:
@@ -1082,25 +1102,6 @@ def migrate_restored_user_data(temp_user_id, restored_user_id):
         return False
     else:
         return True
-
-
-def fix_user_completed_tasks(user_id):
-    user_app_data = get_user_app_data(user_id)
-    print('user tasks:%s' % user_app_data.completed_tasks)
-    try:
-        json.loads(user_app_data.completed_tasks)
-    except Exception as e:
-        print('detected bad completed tasks')
-        #convert the bad tasks into good tasks:
-        fixed_tasks = json.dumps(user_app_data.completed_tasks)
-        print('the fix tasks: %s' % fixed_tasks)
-        #write the tasks back to the db:
-        user_app_data.completed_tasks = fixed_tasks
-        db.session.add(user_app_data)
-        db.session.commit()
-    else:
-        print('nothing to fix')
-    return
 
 
 def should_block_user_by_client_version(user_id):
@@ -1296,8 +1297,8 @@ def re_register_all_users():
 
 def automatically_raise_captcha_flag(user_id):
     """this function will raise ths given user_id's captcha flag if the time is right.
-
-    note that this function will set the flag to 0, so the captcha will only be presented on the n+1 task
+    ATM we're selecting users by random with 20% chance and cooldown.
+    TODO for task2.0, figure out WHEN is the right time to do this
     """
     if not config.CAPTCHA_AUTO_RAISE:
         return
@@ -1314,8 +1315,8 @@ def automatically_raise_captcha_flag(user_id):
         #print('raise_captcha_if_needed: user %s captcha flag already at %s. doing nothing' % (user_id, uad.should_solve_captcha_ternary))
         return
 
-    max_task = find_max_task(json.loads(uad.completed_tasks))
-    if max_task % config.CAPTCHA_TASK_MODULO == 0:
+    # 20% of the users will need to solve captcha, but never twice in the same <configurable time>
+    if random_percent() < 20:
         # ensure the last captcha wasnt solved today
         now = arrow.utcnow()
         recent_captcha = 0 if uad.captcha_history is None else max([item['date'] for item in uad.captcha_history])
@@ -1323,13 +1324,78 @@ def automatically_raise_captcha_flag(user_id):
         last_captcha_secs_ago = (now - arrow.get(recent_captcha)).total_seconds()
         if last_captcha_secs_ago > config.CAPTCHA_SAFETY_COOLDOWN_SECS:
             # more than a day ago, so raise:
-            print('raise_captcha_if_needed:  user %s, current task_id = %s, last captcha was %s secs ago, so raising flag' % (user_id, max_task, last_captcha_secs_ago))
+            print('raise_captcha_if_needed:  user %s, last captcha was %s secs ago, so raising flag' % (user_id, last_captcha_secs_ago))
             set_should_solve_captcha(user_id)
         #else:
         #    print('raise_captcha_if_needed: user %s, current task_id = %s, last captcha was %s secs ago, so not raising flag' % (user_id, max_task, last_captcha_secs_ago))
 
 
-def add_task_to_completed_tasks(user_id, task_id):
+def get_personalized_categories_header_message(user_id):
+    """returns a user-specific message to be shown in the categories page"""
+    #TODO add code here
+    return {'title': 'good morning Shay Baz!', 'subtitle': 'here is your subtitle'}
+
+
+def migrate_user_to_tasks2(user_id):
+    """this function migrates user data from tasks1.0 to tasks2.0
+
+    a user can only migrate once.
+
+    Specifically: the user completed_tasks, next_task_ts and next_task_memo must be reformed.
+    - previously completed tasks must be kept, but mapped into their category
+    - for each category, the next_ts must be set to the beginning of the epoch
+    - a next memo must be calculated for each category
+    """
+    from .category import get_all_cat_ids
+    all_cat_ids = get_all_cat_ids()
+    uad = get_user_app_data(user_id)
+
+    if '0' in uad.completed_tasks_dict.keys():
+        print('migrate_user_to_tasks2: user %s was already migrated' % user_id)
+        return
+
+    # create a dict of arrays (for all currently existing categories)
+    new_completed_tasks_dict = {}
+    for cat_id in all_cat_ids:
+        new_completed_tasks_dict[cat_id] = []
+
+    # populate the dict with previously solved tasks
+    print('migrate_user_to_tasks2: task 1.0 tasks: %s' % uad.completed_tasks)
+    completed_tasks = json.loads(uad.completed_tasks)
+    for task_id in completed_tasks:
+        new_completed_tasks_dict[task_id_to_category_id(task_id)].append(task_id)
+    uad.completed_tasks_dict = new_completed_tasks_dict
+
+    # create and populate dicts for memos and ts's
+    epoch_start = arrow.get('0').timestamp
+    next_task_ts_dict = {}
+    next_task_memo_dict = {}
+    for cat_id in all_cat_ids:
+        next_task_ts_dict[cat_id] = epoch_start
+        next_task_memo_dict[cat_id] = generate_memo()
+    uad.next_task_ts_dict = next_task_ts_dict
+    uad.next_task_memo_dict = next_task_memo_dict
+
+    db.session.add(uad)
+    # turns out sqlalchemy cant detect json updates, and requires manual flagging:
+    # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(uad, "completed_tasks_dict")
+    flag_modified(uad, "next_task_ts_dict")
+    flag_modified(uad, "next_task_memo_dict")
+    db.session.commit()
+
+    print('migrated user_id %s to tasks2.0: tasks: %s, ts: %s, memo: %s' % (user_id, uad.completed_tasks_dict , uad.next_task_ts_dict, uad.next_task_memo_dict))
+
+
+def task_id_to_category_id(task_id):
+    """this function maps task_ids to their category_id, for migration (only)"""
+    #TODO map tasks to categories here
+    return '0'
+
+
+def add_task_to_completed_tasks1(user_id, task_id):
+    """DEBUG - to be used only for task2.0 tests. remove afterwards"""
     user_app_data = get_user_app_data(user_id)
     completed_tasks = json.loads(user_app_data.completed_tasks)
 
@@ -1343,15 +1409,3 @@ def add_task_to_completed_tasks(user_id, task_id):
     return True
 
 
-def remove_task_from_completed_tasks(user_id, task_id):
-    user_app_data = get_user_app_data(user_id)
-    completed_tasks = json.loads(user_app_data.completed_tasks)
-
-    if task_id not in completed_tasks:
-        print('task_id %s not in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
-    else:
-        completed_tasks.remove(task_id)
-        user_app_data.completed_tasks = json.dumps(completed_tasks)
-        db.session.add(user_app_data)
-        db.session.commit()
-    return True

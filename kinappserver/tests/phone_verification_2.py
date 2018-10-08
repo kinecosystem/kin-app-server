@@ -34,6 +34,20 @@ class Tester(unittest.TestCase):
         print('db_status: %s' % data)
         self.assertEqual(resp.status_code, 200)
 
+        cat = {'id': '0',
+          'title': 'cat-title',
+          'skip_image_test': True,
+          'ui_data': {'color': "#123",
+                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
 
         userid = str(uuid.uuid4())
         resp = self.app.post('/user/register',
@@ -94,6 +108,8 @@ class Tester(unittest.TestCase):
         # add a bunch of tasks
         task0 = {
             'id': '0',
+            "cat_id": '0',
+            "position": 0,
             'title': 'do you know horses?',
             'desc': 'horses_4_dummies',
             'type': 'questionnaire',
@@ -129,6 +145,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         task0['id'] = '1'
+        task0['position'] = 1
 
         resp = self.app.post('/task/add',
                              data=json.dumps({
@@ -138,6 +155,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         task0['id'] = '2'
+        task0['position'] = 2
 
         resp = self.app.post('/task/add',
                              data=json.dumps({
@@ -164,7 +182,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['tasks'][0]['id'], '0')
+        self.assertEqual(data['tasks']['0'][0]['id'], '0')
 
         # send task results - should succeed
         resp = self.app.post('/user/task/results',
@@ -185,7 +203,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['tasks'][0]['id'], '1')
+        self.assertEqual(data['tasks']['0'][0]['id'], '1')
 
         # send task results - should succeed
         resp = self.app.post('/user/task/results',
@@ -206,8 +224,8 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['tasks'][0]['id'], '2')
-        next_submission_time = data['tasks'][0]['start_date']
+        self.assertEqual(data['tasks']['0'][0]['id'], '2')
+        next_submission_time = data['tasks']['0'][0]['start_date']
 
         print('sleeping a few seconds to allow txs to completed for the first user...')
         sleep(15)
@@ -258,8 +276,8 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['tasks'][0]['id'], '2')
-        self.assertEqual(data['tasks'][0]['start_date'], next_submission_time)
+        self.assertEqual(data['tasks']['0'][0]['id'], '2')
+        self.assertEqual(data['tasks']['0'][0]['start_date'], next_submission_time)
 
         # send task results - should fail for task id 0
         resp = self.app.post('/user/task/results',

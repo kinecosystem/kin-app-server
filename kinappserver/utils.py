@@ -245,8 +245,8 @@ def print_creation_statement():
     """prints out db creation statement. useful"""
     from sqlalchemy.schema import CreateTable
     from sqlalchemy.dialects import postgresql
-    from .models import BlackhawkCard, BlackhawkOffer, BlackhawkCreds, UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, \
-        EmailTemplate, TruexBlacklistedUser, BlacklistedEncPhoneNumber, Task, SystemConfig
+    from .models import BlackhawkCard, BlackhawkOffer, BlackhawkCreds, UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, \ 
+        EmailTemplate, TruexBlacklistedUser, BlacklistedEncPhoneNumber, Task2, Task, SystemConfig, Category
     print(CreateTable(User.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(UserAppData.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(BlackhawkCard.__table__).compile(dialect=postgresql.dialect()))
@@ -260,6 +260,8 @@ def print_creation_statement():
     print(CreateTable(BlacklistedEncPhoneNumber.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(Task.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(SystemConfig.__table__).compile(dialect=postgresql.dialect()))
+    print(CreateTable(Task2.__table__).compile(dialect=postgresql.dialect()))
+    print(CreateTable(Category.__table__).compile(dialect=postgresql.dialect()))
 
 
 def random_string(length=8):
@@ -267,7 +269,7 @@ def random_string(length=8):
 
 
 def random_percent():
-    return random.randint(1, 100)
+    return random.randint(0, 100)
 
 
 def read_json_from_cache(key):
@@ -301,14 +303,6 @@ def write_payment_data_to_cache(memo, user_id, task_id, timestamp, send_push=Tru
 def read_payment_data_from_cache(memo):
     data = read_json_from_cache('memo:%s' % memo)
     return data['user_id'], data['task_id'], data['timestamp'], data['send_push']
-
-
-def find_max_task(completed_tasks):
-    max_task = -1 # because if there are no tasks, we want to get -1 +1 = task no. 0
-    for task in completed_tasks:
-        if int(task) > max_task:
-            max_task = int(task)
-    return max_task
 
 
 def passed_captcha(captcha_token):
@@ -356,3 +350,14 @@ def passed_captcha(captcha_token):
             print('failed processing captcha. e: %s' % e)
 
     return False
+
+
+def get_country_code_by_ip(ip_addr):
+    try:
+        if not ip_addr:
+            return None
+        return app.geoip_reader.get(ip_addr)['country']['iso_code']
+    except Exception as e:
+        print('cant convert ip %s to country code' % ip)
+
+        return None

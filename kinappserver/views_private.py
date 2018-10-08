@@ -20,6 +20,7 @@ from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, in
     sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
     add_task, get_tasks_for_user, is_onboarded, \
+    store_task_results, add_task, add_category, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
     create_tx, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
@@ -31,7 +32,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_task_results, get_user_config, get_user_report, get_user_tx_report, get_user_goods_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
     get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
-    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
+    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
     blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, re_register_all_users, get_tx_totals, set_should_solve_captcha, add_task_to_completed_tasks, \
     remove_task_from_completed_tasks, switch_task_ids, delete_task, block_user_from_truex_tasks, unblock_user_from_truex_tasks, set_update_available_below, set_force_update_below
@@ -40,20 +41,6 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
 @app.route('/health', methods=['GET'])
 def get_health():
     """health endpoint"""
-    return jsonify(status='ok')
-
-
-@app.route('/user/tasks/fix', methods=['POST'])
-def fix_user_tasks_endpoint():
-    #TODO REMVOE THIS
-    '''temp endpoit to add txs for users with nissing txs'''
-    if not config.DEBUG:
-        limit_to_localhost()
-
-    payload = request.get_json(silent=True)
-
-    user_id = payload.get('user_id', None)
-    fix_user_completed_tasks(user_id)
     return jsonify(status='ok')
 
 
@@ -573,6 +560,7 @@ def skip_wait_endpoint():
     try:
         payload = request.get_json(silent=True)
         user_id = payload.get('user_id', None)
+        cat_id = payload.get('cat_id', None)
         next_ts = payload.get('next_ts', 1)  # optional
         if user_id is None:
             raise InvalidUsage('bad-request')
@@ -580,7 +568,7 @@ def skip_wait_endpoint():
         print(e)
         raise InvalidUsage('bad-request')
     else:
-        store_next_task_results_ts(user_id, next_ts)
+        store_next_task_results_ts(user_id, 'fake_task_id', next_ts, cat_id)
 
     increment_metric('skip-wait')
     return jsonify(status='ok')
@@ -604,6 +592,25 @@ def send_auth_token_api():
         send_push_auth_token(user_id, force_send=True)
 
     return jsonify(status='ok')
+
+
+@app.route('/category/add', methods=['POST'])
+def add_category_endpoint():
+    """used to add categories to the db"""
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    payload = request.get_json(silent=True)
+
+    try:
+        task = payload.get('category', None)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if add_category(task):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to add category')
 
 
 @app.route('/task/add', methods=['POST'])

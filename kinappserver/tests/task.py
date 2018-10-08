@@ -32,13 +32,31 @@ class Tester(unittest.TestCase):
 
     def test_task_storing(self):
         """test storting and getting tasks"""
-        task = {  'id': '0',
+
+
+
+        cat = {'id': '0',
+          'title': 'cat-title',
+          'ui_data': {'color': "#something",
+                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        task = {  'id': 0,
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'questionnaire',
+                  'position': 0,
+                  'cat_id': '0',
                   'price': 2000,
                   'min_to_complete': 2,
-                  'skip_image_test': False,
+                  'skip_image_test': True,  # TODO revert back to False
                   'start_date': '2013-05-11T21:23:58.970460+00:00',
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider': 
@@ -102,13 +120,36 @@ class Tester(unittest.TestCase):
         self.assertNotEqual(resp.status_code, 200)
 
 
-        quiz_task = { 'id': '1',
+        # try to insert another task in the same position:
+        task['id'] = 'should_fail'
+        task['position'] = 0
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+
+        # try to insert another task in the same position:
+        task['id'] = '10'
+        task['position'] = 5
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+
+        quiz_task = { 'id': 1,
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'quiz',
+                  'position': 1,
+                  'cat_id': '0',
                   'price': 2000,
                   'min_to_complete': 2,
-                  'skip_image_test': False,
+                  'skip_image_test': True,  # TODO revert back to False
                   'start_date': '2013-05-11T21:23:58.970460+00:00',
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider':
@@ -171,16 +212,36 @@ class Tester(unittest.TestCase):
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/tasks', headers=headers)
+        print(resp.data)
         data = json.loads(resp.data)
-        print(data)
         self.assertEqual(resp.status_code, 200)
-        self.assertNotEqual(data['tasks'][0]['memo'], None)
+        self.assertNotEqual(data['tasks']['0'][0]['memo'], None)
         self.assertEqual(models.get_user_task_results(userid), [])
 
+        resp = self.app.post('/user/completed_tasks/add',
+                                data=json.dumps({
+                                    'user_id': str(userid),
+                                    'task_id': '10'}),
+                                    headers={USER_ID_HEADER: str(userid)},
+                                content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
+        resp = self.app.post('/user/completed_tasks/remove',
+                                data=json.dumps({
+                                    'user_id': str(userid),
+                                    'task_id': '10'}),
+                                    headers={USER_ID_HEADER: str(userid)},
+                                content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
-
-
+        # try to remove again
+        resp = self.app.post('/user/completed_tasks/remove',
+                                data=json.dumps({
+                                    'user_id': str(userid),
+                                    'task_id': '10'}),
+                                    headers={USER_ID_HEADER: str(userid)},
+                                content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
 if __name__ == '__main__':
     unittest.main()

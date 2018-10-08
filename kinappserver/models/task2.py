@@ -6,7 +6,7 @@ from ast import literal_eval
 
 from kinappserver import db, config, app
 from kinappserver.push import send_please_upgrade_push
-from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url, find_max_task, increment_metric
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url, get_country_code_by_ip, increment_metric
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts, get_user_os_type, get_user_app_data, get_unenc_phone_number_by_user_id
 from .truex_blacklisted_user import is_user_id_blacklisted_for_truex
 
@@ -23,9 +23,9 @@ class UserTaskResults(db.Model):
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
 
-def reject_premature_results(user_id):
+def reject_premature_results(user_id, task_id):
     """determine whether the results were submitted prematurely"""
-    next_task_ts = get_next_task_results_ts(user_id)
+    next_task_ts = get_next_task_results_ts(user_id, get_task_by_id(task_id)['cat_id'])
     if next_task_ts is None:
         return False
     
@@ -33,7 +33,7 @@ def reject_premature_results(user_id):
     results_valid_at = arrow.get(next_task_ts)
 
     if results_valid_at > now:
-        print('rejecting results. will only be valid in %s seconds' % (results_valid_at - now).total_seconds() )
+        print('rejecting results. will only be valid in %s seconds' % (results_valid_at - now).total_seconds())
         return True
     return False
 
@@ -46,6 +46,11 @@ def calculate_timeshift(user_id, delay_days=1):
     seconds_to_midnight = seconds_to_local_nth_midnight(user_tz, delay_days)
     print('seconds to next local midnight: %s for user_id %s with tz %s' % (seconds_to_midnight, user_id, user_tz))
     return seconds_to_midnight
+
+
+# TODO add cache
+def get_cat_id_for_task_id(task_id):
+    return get_task_by_id(task_id)['cat_id']
 
 
 def store_task_results(user_id, task_id, results):
@@ -80,10 +85,21 @@ def store_task_results(user_id, task_id, results):
         if user_app_data is None:
             print('cant retrieve user app data for user:%s' % user_id)
             raise InternalError('cant retrieve user app data for user:%s' % user_id)
-        completed_tasks = json.loads(user_app_data.completed_tasks)
-        completed_tasks.append(task_id)
-        user_app_data.completed_tasks = json.dumps(completed_tasks)
+
+        cat_id = get_cat_id_for_task_id(task_id)
+        if not cat_id:
+            print('cant find cat_id for task_id %s' % task_id)
+            raise InternalError('cant find cat_id for task_id %s' % task_id)
+
+        if cat_id in completed_tasks:
+            user_app_data.completed_tasks_dict[cat_id].append(task_id)
+        else:
+            user_app_data.completed_tasks_dict[cat_id] = [task_id]
         db.session.add(user_app_data)
+        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
+        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(user_app_data, "completed_tasks_dict")
         db.session.commit()
 
         print('wrote user_app_data.completed_tasks for userid: %s' % user_id)
@@ -111,7 +127,7 @@ def store_task_results(user_id, task_id, results):
 
         print('next valid submission time for user %s, (previous task id %s) in shifted_ts: %s' % (user_id, task_id, shifted_ts))
 
-        store_next_task_results_ts(user_id, shifted_ts)
+        store_next_task_results_ts(user_id, task_id, shifted_ts)
 
         return True
     except Exception as e:
@@ -144,19 +160,23 @@ def get_task_results(task_id):
     return results_dict
 
 
-class Task(db.Model):
+class Task2(db.Model):
     """the Task class represent a single task"""
+    category_id = db.Column('category_id', db.String(40), db.ForeignKey("category.category_id"), primary_key=False, nullable=False)
     task_id = db.Column(db.String(40), nullable=False, primary_key=True)
+    position = db.Column(db.Integer(), nullable=False, primary_key=False)
     task_type = db.Column(db.String(40), nullable=False, primary_key=True)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
-    desc = db.Column(db.String(200), nullable=False, primary_key=False)
+    description = db.Column(db.String(200), nullable=False, primary_key=False)
     price = db.Column(db.Integer(), nullable=False, primary_key=False)
     video_url = db.Column(db.String(100), nullable=True, primary_key=False)
     min_to_complete = db.Column(db.Float(), nullable=False, primary_key=False)
     provider_data = db.Column(db.JSON)
+    excluded_country_codes = db.Column(db.JSON, default=[])
     tags = db.Column(db.JSON)
     items = db.Column(db.JSON)
     start_date = db.Column(ArrowType)
+    expiration_date = db.Column(ArrowType, nullable=True) # no need to expose to client
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     delay_days = db.Column(db.Integer(), nullable=False, primary_key=False)
     min_client_version_android = db.Column(db.String(80), nullable=False, primary_key=False)
@@ -165,55 +185,90 @@ class Task(db.Model):
 
     def __repr__(self):
         return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, video_url: %s, min_to_complete: %s, start_date: %s, delay_days: %s, min_client_version_android: %s, min_client_version_ios %s>' % \
-               (self.task_id, self.task_type, self.title, self.desc, self.price, self.video_url, self.min_to_complete, self.start_data, self.delay_days, self.min_client_version_android, self.min_client_version_ios)
+               (self.task_id, self.task_type, self.title, self.description, self.price, self.video_url, self.min_to_complete, self.start_data, self.delay_days, self.min_client_version_android, self.min_client_version_ios)
 
 
 def list_all_task_data():
     """returns a dict of all the tasks"""
     response = {}
-    tasks = Task.query.order_by(Task.task_id).all()
+    tasks = Task2.query.order_by(Task2.task_id).all()
     for task in tasks:
         response[task.task_id] = {'task_id': task.task_id, 'task_type': task.task_type, 'title': task.title}
     return response
 
 
-def get_tasks_for_user(user_id, source_ip=None):
-    """return an array of the current tasks for this user or empty array if there are
-        no more tasks in the db.
+def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id, user_country_code):
+    """returns the next task id that:
+     1. belongs to the given cat_id
+     2. is yet un-answered by the user
+     3. is not filtered by country_code
 
-       there are 3 outcomes here:
-        - either this user has no pre-existing results -> gets the first task
-        - or the user completed all the available tasks -> gets an empty array
-        - or the user gets the next task (which is len(completed-tasks)
-    """
+     if the next task_id requires an upgrade, send push and return an empty set
+     if no task can be matched return an empty set
+     """
 
-    user_app_data = get_user_app_data(user_id)
-
-    # by default, the next task is just the 'next integer' one.
-    # however, in some cases we want to skip a task, which requires special processing:
-    completed_tasks = json.loads(user_app_data.completed_tasks)
-    next_task_id = str(int(find_max_task(completed_tasks))+1)
-
-    while should_skip_task(user_id, next_task_id, source_ip):
-        print('skipping task %s for userid %s' % (next_task_id, user_id))
-        next_task_id = str(int(next_task_id) + 1)
-
-    next_task_ts = get_next_task_results_ts(user_id)
-    next_task = get_task_by_id(next_task_id, next_task_ts)
-
-    if next_task is None:  # no more tasks atm...
-        return []
+    print('completed_tasks:%s' % completed_tasks)
+    completed_tasks_for_cat_id = completed_tasks.get(cat_id, None)
+    if not completed_tasks_for_cat_id:
+        remove_previous_tasks_clause = ''
     else:
-        # does the user's client support this task?
-        os_type = get_user_os_type(user_id)
-        if not can_support_task(os_type, user_app_data.app_ver, next_task):
-            # client does NOT support the next task, so return an empty array and push a notification
-            print('user %s, client os:%s client_ver:%s does not support the next task. returning empty array' % (user_id, os_type, user_app_data.app_ver))
+        # oh man, this is ugly: convert ['0','1'] to ["\'0\'", ...] and then to "\'0\',\'1\',\'2\'"
+        completed_tasks_for_cat_id = ["\'%s\'" % id for id in completed_tasks_for_cat_id]
+        remove_previous_tasks_clause = '''and task2.task_id not in (%s)''' % (",".join(completed_tasks_for_cat_id))
+    # get ALL the unsolved task_ids for the category
+    stmt = '''SELECT task2.task_id FROM task2 WHERE task2.category_id='%s' %s order by task2.position;''' % (cat_id, remove_previous_tasks_clause)
+    print(stmt)
+    res = db.engine.execute(stmt)
+    unsolved_task_ids = [item[0] for item in res.fetchall()]
+    print('unsolved tasks for cat_id %s: %s' % (cat_id, unsolved_task_ids))
+
+    # go over all the yet-unsolved tasks and get the first valid one
+    for task_id in unsolved_task_ids:
+        task = get_task_by_id(task_id)
+
+        # skip country-blocked tasks
+        if user_country_code in task['excluded_country_codes']:
+            # we're skipping this task
+            print('skipping task_id %s for user %s with country-code %s' % (task_id, user_id, user_country_code))
+            continue
+
+        if not can_support_task(os_type, app_ver, task):
             send_please_upgrade_push(user_id)
             return []
 
-        else:
-            return [next_task]
+        print('next_task_id_for_category: returning task_ids %s for cat_id %s and user_id %s' % (task_id, cat_id, user_id))
+        return [task_id]
+    # no tasks available
+    print('next_task_id_for_category: no available tasks for user_id %s in cat_id %s' % (user_id, cat_id))
+    return []
+
+
+def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
+    """this function returns the next immediate task for the given user in all the categories, or just the specified category (if given).
+    - the returned tasks will bear this format: {'cat_id': [task1, task2]}
+    - if a source_ip was provided, the returned tasks will be filtered for country code
+    - if there are no more tasks, an empty array will be returned (per category)
+    - if the next task (in each category) requires upgrade, the function will send a push message to inform the user (with a cooldown).
+    """
+    tasks_per_category = {}
+    user_app_data = get_user_app_data(user_id)
+    os_type = get_user_os_type(user_id)
+    app_ver = user_app_data.app_ver
+    from .category import get_all_cat_ids
+    for cat_id in cat_ids or get_all_cat_ids():
+        print('getting tasks for cat-id: %s' % cat_id)
+        task_ids = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip)) # returns just one task in a list or empty list
+        tasks_per_category[cat_id] = [get_task_by_id(task_id) for task_id in task_ids]
+        # plant the memo and start date in the first task of the category:
+        from .user import get_next_task_memo
+        from .user import get_next_task_results_ts
+        if len(tasks_per_category[cat_id]) > 0:
+            tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
+            tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
+
+        print('tasks_per_category: %s' % tasks_per_category)
+
+    return tasks_per_category
 
 
 def should_skip_truex_task(user_id, task_id, source_ip=None):
@@ -277,17 +332,20 @@ def can_support_task(os_type, app_ver, task):
 def get_task_by_id(task_id, shifted_ts=None):
     """return the json representation of the task or None if no such task exists"""
 
-    task = Task.query.filter_by(task_id=task_id).first()
+    task = Task2.query.filter_by(task_id=task_id).first()
     if task is None:
         return None
 
     # build the json object:
     task_json = {}
     task_json['id'] = task_id
+    task_json['cat_id'] = task.category_id
+    task_json['position'] = task.position
     task_json['title'] = task.title
     task_json['type'] = task.task_type
-    task_json['desc'] = task.desc
+    task_json['desc'] = task.description
     task_json['price'] = task.price
+    task_json['excluded_country_codes'] = task.excluded_country_codes
     if task.video_url is not None:
         task_json['video_url'] = task.video_url
     task_json['min_to_complete'] = task.min_to_complete
@@ -304,6 +362,23 @@ def get_task_by_id(task_id, shifted_ts=None):
 
 
 def add_task(task_json):
+
+    def is_position_taken(cat_id, position):
+        """determines whether there is already a task at the given category and position"""
+        try:
+            Task2.query.filter(Task2.category_id == cat_id).filter(Task2.position == position).one()
+        except Exception as e:
+            return False
+        else:
+            return True
+
+    try:
+        print('trying to add task...')
+        # sanity for task data
+        for item in task_json['items']:
+            if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating', 'tip', 'dual_image']:
+                print('invalid item type:%s ' % item['type'])
+                raise InvalidUsage('cant add task with invalid item-type')
 
     task_id = task_json['id']
     print('trying to add task with id %s...' % task_id)
@@ -398,27 +473,36 @@ def add_task(task_json):
             print('cant verify the images - aborting')
             raise InvalidUsage('cant verify images')
 
-    task = Task()
-    task.delay_days = task_json.get('delay_days', 1)  # default is 1
-    task.task_id = task_json['id']
-    task.task_type = task_json['type']
-    task.title = task_json['title']
-    task.desc = task_json['desc']
-    task.price = int(task_json['price'])
-    task.video_url = task_json.get('video_url', None)
-    task.min_to_complete = float(task_json['min_to_complete'])
-    task.provider_data = task_json['provider']
-    task.tags = task_json['tags']
-    task.items = task_json['items']
-    task.start_date = arrow.get(task_json['start_date'])
-    task.min_client_version_ios = task_json.get('min_client_version_ios', DEFAULT_MIN_CLIENT_VERSION)
-    task.min_client_version_android = task_json.get('min_client_version_android', DEFAULT_MIN_CLIENT_VERSION)
-    task.post_task_actions = task_json.get('post_task_actions', None)
-
     try:
         if delete_prior_to_adding:
-            task_to_delete = Task.query.filter_by(task_id=task_json['id']).first()
+            task_to_delete = Task2.query.filter_by(task_id=task_json['id']).first()
             db.session.delete(task_to_delete)
+
+        task = Task2()
+        task.delay_days = task_json.get('delay_days', 1)  # default is 1
+        task.task_id = task_json['id']
+        task.category_id = task_json['cat_id']
+        position = task_json['position']
+        if is_position_taken(task.category_id, position):
+            print('cant insert task_id %s at cat_id %s and position %s - already taken' % (task.task_id, task.category_id, position))
+            raise InvalidUsage('cant insert task - position taken')
+        else:
+            task.position = position  # TODO allocate position automatically at some point
+        task.task_type = task_json['type']
+        task.title = task_json['title']
+        task.description = task_json['desc']
+        task.price = int(task_json['price'])
+        task.video_url = task_json.get('video_url', None)
+        task.min_to_complete = float(task_json['min_to_complete'])
+        task.provider_data = task_json['provider']
+        task.tags = task_json['tags']
+        task.items = task_json['items']
+        task.start_date = arrow.get(task_json['start_date'])
+        task.excluded_country_codes = task_json.get('excluded_country_codes', [])
+        task.expiration_date = task_json.get('expiration_date', None)
+        task.min_client_version_ios = task_json.get('min_client_version_ios', DEFAULT_MIN_CLIENT_VERSION)
+        task.min_client_version_android = task_json.get('min_client_version_android', DEFAULT_MIN_CLIENT_VERSION)
+        task.post_task_actions = task_json.get('post_task_actions', None)
 
         db.session.add(task)
         db.session.commit()
@@ -434,7 +518,7 @@ def delete_task(task_id):
         print('no task with id %s in the db' % task_id)
         raise InvalidUsage('task_id %s doesnt exist - cant delete' % task_id)
 
-    task_to_delete = Task.query.filter_by(task_id=task_id).first()
+    task_to_delete = Task2.query.filter_by(task_id=task_id).first()
     db.session.delete(task_to_delete)
     db.session.commit()
 
@@ -445,13 +529,13 @@ def set_delay_days(delay_days, task_id=None):
         task_id = int(task_id)
 
     where_clause = '' if not task_id else 'where task_id=\'%s\'' % task_id
-    db.engine.execute("update task set delay_days=%d %s" % (int(delay_days), where_clause))  # safe
+    db.engine.execute("update task2 set delay_days=%d %s" % (int(delay_days), where_clause))  # safe
     return True
 
 
 def get_reward_for_task(task_id):
     """return the amount of kin reward associated with this task"""
-    task = Task.query.filter_by(task_id=task_id).first()
+    task = Task2.query.filter_by(task_id=task_id).first()
     if not task:
         raise InternalError('no such task_id: %s' % task_id)
     return task.price
@@ -459,7 +543,7 @@ def get_reward_for_task(task_id):
 
 def get_task_delay(task_id):
     """return the amount of delay associated with this task"""
-    task = Task.query.filter_by(task_id=task_id).first()
+    task = Task2.query.filter_by(task_id=task_id).first()
     if not task:
         raise InternalError('no such task_id: %s' % task_id)
     return task.delay_days
@@ -467,7 +551,7 @@ def get_task_delay(task_id):
 
 def get_task_type(task_id):
     """get the tasks type"""
-    task = Task.query.filter_by(task_id=task_id).first()
+    task = Task2.query.filter_by(task_id=task_id).first()
     if not task:
         raise InternalError('no such task_id: %s' % task_id)
     return task.task_type
@@ -475,11 +559,11 @@ def get_task_type(task_id):
 
 def get_task_details(task_id):
     """return a dict with some of the given taskid's metadata"""
-    task = Task.query.filter_by(task_id=task_id).first()
+    task = Task2.query.filter_by(task_id=task_id).first()
     if not task:
         print('cant find task with task_id %s. using default text' % task_id)
         return {'title': 'Delayed Kin', 'desc': '', 'provider': {"image_url": "https://cdn.kinitapp.com/brand_img/poll_logo_kin.png", "name": "Kinit Team"}}
-    return {'title': task.title, 'desc': task.desc, 'provider': task.provider_data}
+    return {'title': task.title, 'desc': task.description, 'provider': task.provider_data}
 
 
 def handle_task_results_resubmission(user_id, task_id):
@@ -506,28 +590,28 @@ def handle_task_results_resubmission(user_id, task_id):
     return memo, user_id
 
 
-def get_truex_activity(user_id, remote_ip, user_agent):
+def get_truex_activity(user_id, cat_id, remote_ip, user_agent):
     """returns a truex activity for the user if she is allowed one now"""
 
     tasks = []
 
     # is the next task of type 'truex'?
     try:
-        tasks = get_tasks_for_user(user_id)
+        tasks = get_next_tasks_for_user(user_id, remote_ip, cat_id)
     except Exception as e:
         print('cant get activity - no such user %s' % user_id)
 
-    if tasks == []:
+    if tasks[cat_id] == []:
         print('cant get activity: no next task')
         return None
 
-    if tasks[0]['type'] != TASK_TYPE_TRUEX:
+    if tasks[0]['tasks'][0]['type'] != TASK_TYPE_TRUEX:
         print('cant get activity: user\'s next task isnt truex')
         return None
 
     # is the user eligible for a task now?
     now = arrow.utcnow()
-    next_task_ts = get_next_task_results_ts(user_id)
+    next_task_ts = get_next_task_results_ts(user_id, cat_id)
     if next_task_ts and now < arrow.get(next_task_ts):
         print('cant get truex activity: now: %s user\'s tx: %s' % (now, arrow.get(next_task_ts)))
         return None
@@ -557,3 +641,53 @@ def switch_task_ids(task_id1, task_id2):
 
     stmt = '''update task set task_id='%s' where task_id='%s';'''
     db.engine.execute('BEGIN;' + stmt % (temp_task_id, task_id1) + stmt % (task_id1, task_id2) + stmt % (task_id2, temp_task_id) + 'COMMIT;')
+
+def add_task_to_completed_tasks(user_id, task_id):
+    user_app_data = get_user_app_data(user_id)
+    completed_tasks = user_app_data.completed_tasks
+    from .task2 import get_task_by_id
+    task = get_task_by_id(task_id)
+    if not task:
+        print('cant find task with id %s' % task_id)
+        raise InvalidUsage('no such task %s' % task_id)
+
+    cat_id = task['cat_id']
+    if cat_id in completed_tasks and task_id in completed_tasks[cat_id]:
+        print('task_id %s already in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
+    else:
+        if cat_id not in completed_tasks:
+            completed_tasks[cat_id] = []
+        completed_tasks[cat_id].append(task_id)
+        user_app_data.completed_tasks = completed_tasks
+        db.session.add(user_app_data)
+        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
+        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(user_app_data, "completed_tasks_dict")
+        db.session.commit()
+        print(user_app_data.completed_tasks)
+        return True
+
+
+def remove_task_from_completed_tasks(user_id, task_id):
+    user_app_data = get_user_app_data(user_id)
+    completed_tasks = user_app_data.completed_tasks_dict
+    print(completed_tasks)
+    from .task2 import get_task_by_id
+    task = get_task_by_id(task_id)
+    if not task:
+        raise InvalidUsage('no such task %s' % task_id)
+
+    cat_id = task['cat_id']
+    if cat_id not in completed_tasks or task_id not in completed_tasks[cat_id]:
+        print('task_id %s not in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
+    else:
+        completed_tasks[cat_id].remove(task_id)
+        user_app_data.completed_tasks_dict = completed_tasks
+        db.session.add(user_app_data)
+        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
+        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(user_app_data, "completed_tasks_dict")
+        db.session.commit()
+        return True

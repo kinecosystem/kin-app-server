@@ -36,7 +36,9 @@ class Tester(unittest.TestCase):
 
         # add a task
         task0 = {
-          'id': '0', 
+          'id': '0',
+            "cat_id": '0',
+            "position": 0,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
@@ -64,7 +66,9 @@ class Tester(unittest.TestCase):
         }
 
         task1 = {
-          'id': '1', 
+          'id': '1',
+            "cat_id": '0',
+            "position": 1,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
@@ -93,6 +97,8 @@ class Tester(unittest.TestCase):
 
         task2 = {
           'id': '2',
+            "cat_id": '0',
+            "position": 2,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',

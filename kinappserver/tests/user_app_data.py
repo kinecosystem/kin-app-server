@@ -74,6 +74,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         print(models.list_all_users_app_data())
+        # this user_config function:
+        print(models.get_user_config(str(userid)))
 
 
 if __name__ == '__main__':
