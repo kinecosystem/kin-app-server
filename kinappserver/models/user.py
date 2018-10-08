@@ -1323,3 +1323,47 @@ def automatically_raise_captcha_flag(user_id):
         #else:
         #    print('raise_captcha_if_needed: user %s, current task_id = %s, last captcha was %s secs ago, so not raising flag' % (user_id, max_task, last_captcha_secs_ago))
 
+
+def fix_user_history():
+    # get all user_ids with phone_number that are not deactivated
+    users = User.query.filter_by(deactivated=False).filter(User.enc_phone_number != None).all()
+    for user in users:
+        user_id = user.user_id
+        print('fixing user_id %s' % user_id)
+        statement = '''select task_id from user_task_results where user_id='%s';'''
+        results = db.engine.execute(statement % user_id)
+        task_ids = results.fetchall()
+        print('user_id %s: submitted task ids: %s' % (user_id, task_ids))
+        # submitted task ids: [('0',), ('2',), ('1',)]
+
+        fixed_items = []
+        for item in task_ids:
+            # skip some items
+            if item[0] in ('160', '159', '-1'):
+                continue
+
+            fixed_items.append(item[0])
+        print('fixed_items: %s' % fixed_items) # ['0','2','1']
+
+        # now, plant the fixed list of tasks back into the completed_tasks field
+        user_app_data = get_user_app_data(user_id)
+        user_app_data.completed_tasks = json.dumps(fixed_items)
+        db.session.add(user_app_data)
+        db.session.commit()
+        increment_metric('fixed-user')
+
+
+def fix_user_history2(user_id, task_id):
+    user_app_data = get_user_app_data(user_id)
+    completed_tasks = json.loads(user_app_data.completed_tasks)
+    if task_id == '160':
+        print('ignoring task_id 160 for user_id %s' % user_id)
+        return False
+    if task_id in completed_tasks:
+        print('found task_id %s in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
+    else:
+        completed_tasks.append(task_id)
+        user_app_data.completed_tasks = json.dumps(completed_tasks)
+        db.session.add(user_app_data)
+        db.session.commit()
+        return True
