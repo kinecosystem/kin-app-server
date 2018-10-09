@@ -34,7 +34,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
     blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, re_register_all_users, get_tx_totals, set_should_solve_captcha, add_task_to_completed_tasks, \
-    remove_task_from_completed_tasks
+    remove_task_from_completed_tasks, switch_task_ids
 
 
 @app.route('/health', methods=['GET'])
@@ -771,5 +771,20 @@ def remove_task_from_completed_tasks_endpoint():
     task_id = payload.get('task_id', None)
 
     remove_task_from_completed_tasks(user_id, task_id)
+
+    return jsonify(status='ok')
+
+
+@app.route('/tasks/switch_ids', methods=['POST'])
+def switch_task_ids_endpoint():
+    if not config.DEBUG:
+        limit_to_acl()
+        limit_to_password()
+
+    payload = request.get_json(silent=True)
+    task_id1 = payload.get('task_id1', None)
+    task_id2 = payload.get('task_id2', None)
+
+    switch_task_ids(task_id1, task_id2)
 
     return jsonify(status='ok')

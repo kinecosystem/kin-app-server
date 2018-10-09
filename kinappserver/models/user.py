@@ -1335,7 +1335,7 @@ def add_task_to_completed_tasks(user_id, task_id):
         user_app_data.completed_tasks = json.dumps(completed_tasks)
         db.session.add(user_app_data)
         db.session.commit()
-        return True
+    return True
 
 
 def remove_task_from_completed_tasks(user_id, task_id):
@@ -1349,4 +1349,4 @@ def remove_task_from_completed_tasks(user_id, task_id):
         user_app_data.completed_tasks = json.dumps(completed_tasks)
         db.session.add(user_app_data)
         db.session.commit()
-        return True
+    return True

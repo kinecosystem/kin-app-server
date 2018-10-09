@@ -489,3 +489,24 @@ def get_truex_activity(user_id, remote_ip, user_agent):
     from kinappserver.truex import get_activity
     #TODO should we get/convert screen size to window size? also should we bother with density?
     return get_activity(user_id, remote_ip, user_agent)  # returns status, activity
+
+
+def switch_task_ids(task_id1, task_id2):
+    """replaces two task ids in the db"""
+    task1 = get_task_by_id(task_id1)
+    task2 = get_task_by_id(task_id2)
+
+    # pick some random, unused task_id
+    import random
+    while True:
+        temp_task_id = str(random.randint(900000, 999999))
+        if not get_task_by_id(temp_task_id):
+            break
+
+    if None in (task1, task2):
+        print('cant find task_id(s) (%s,%s)' % (task_id1, task_id2))
+        raise InvalidUsage('no such task_id')
+
+    stmt = '''update task set task_id='%s' where task_id='%s';'''
+    db.engine.execute('BEGIN;' + stmt % (temp_task_id, task_id1) + stmt % (task_id1, task_id2) + stmt % (task_id2, temp_task_id) + 'COMMIT;')
+    return
