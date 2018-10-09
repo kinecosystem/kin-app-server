@@ -291,32 +291,45 @@ def get_task_by_id(task_id, shifted_ts=None):
 
 
 def add_task(task_json):
-    try:
-        print('trying to add task...')
-        # sanity for task data
-        for item in task_json['items']:
-            if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating', 'tip', 'dual_image']:
-                print('invalid item type:%s ' % item['type'])
-                raise InvalidUsage('cant add task with invalid item-type')
+
+    task_id = task_json['id']
+    print('trying to add task with id %s...' % task_id)
+
+    delete_prior_to_adding = False
+
+    # does the task_id already exist?
+    if get_task_by_id(task_id):
+        if not bool(task_json.get('overwrite', False)):
+            print('cant add task with id %s - already exists. provide the overwrite flag to overwrite the task' % task_id)
+            raise InvalidUsage('task_id %s already exists' % task_id)
+        else:
+            print('task %s already exists - overwriting it' % task_id)
+            delete_prior_to_adding = True
 
 
-            # test validity of quiz items
-            if item.get('quiz_data', None):
-                # the task must be of type quiz
-                if not task_json['type'] == 'quiz':
-                        raise InvalidUsage('found quiz_data for a non-quiz task type')
+    # sanity for task data
+    for item in task_json['items']:
+        if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating', 'tip', 'dual_image']:
+            print('invalid item type:%s ' % item['type'])
+            raise InvalidUsage('cant add task with invalid item-type')
 
-                # quiz_data must have answer_id, explanation and reward and they must not be empty
-                answer_id = item['quiz_data']['answer_id']
-                exp = item['quiz_data']['explanation']
-                reward = item['quiz_data']['reward']
-                if '' in (answer_id, exp, reward):
-                    raise InvalidUsage('empty fields in one of answer_id, exp, reward')
 
-                # the answer_id must match a an answer in the item results
-                if answer_id not in [result['id'] for result in item['results']]:
-                    raise InvalidUsage('answer_id %s does not match answer_ids %s' % (answer_id, [result['id'] for result in item['results']]))
+        # test validity of quiz items
+        if item.get('quiz_data', None):
+            # the task must be of type quiz
+            if not task_json['type'] == 'quiz':
+                    raise InvalidUsage('found quiz_data for a non-quiz task type')
 
+            # quiz_data must have answer_id, explanation and reward and they must not be empty
+            answer_id = item['quiz_data']['answer_id']
+            exp = item['quiz_data']['explanation']
+            reward = item['quiz_data']['reward']
+            if '' in (answer_id, exp, reward):
+                raise InvalidUsage('empty fields in one of answer_id, exp, reward')
+
+            # the answer_id must match a an answer in the item results
+            if answer_id not in [result['id'] for result in item['results']]:
+                raise InvalidUsage('answer_id %s does not match answer_ids %s' % (answer_id, [result['id'] for result in item['results']]))
 
         fail_flag = False
         skip_image_test = task_json.get('skip_image_test', False)
@@ -368,30 +381,45 @@ def add_task(task_json):
             print('cant verify the images - aborting')
             raise InvalidUsage('cant verify images')
 
-        task = Task()
-        task.delay_days = task_json.get('delay_days', 1)  # default is 1
-        task.task_id = task_json['id']
-        task.task_type = task_json['type']
-        task.title = task_json['title']
-        task.desc = task_json['desc']
-        task.price = int(task_json['price'])
-        task.video_url = task_json.get('video_url', None)
-        task.min_to_complete = float(task_json['min_to_complete'])
-        task.provider_data = task_json['provider']
-        task.tags = task_json['tags']
-        task.items = task_json['items']
-        task.start_date = arrow.get(task_json['start_date'])
-        task.min_client_version_ios = task_json.get('min_client_version_ios', DEFAULT_MIN_CLIENT_VERSION)
-        task.min_client_version_android = task_json.get('min_client_version_android', DEFAULT_MIN_CLIENT_VERSION)
-        task.post_task_actions = task_json.get('post_task_actions', None)
+    task = Task()
+    task.delay_days = task_json.get('delay_days', 1)  # default is 1
+    task.task_id = task_json['id']
+    task.task_type = task_json['type']
+    task.title = task_json['title']
+    task.desc = task_json['desc']
+    task.price = int(task_json['price'])
+    task.video_url = task_json.get('video_url', None)
+    task.min_to_complete = float(task_json['min_to_complete'])
+    task.provider_data = task_json['provider']
+    task.tags = task_json['tags']
+    task.items = task_json['items']
+    task.start_date = arrow.get(task_json['start_date'])
+    task.min_client_version_ios = task_json.get('min_client_version_ios', DEFAULT_MIN_CLIENT_VERSION)
+    task.min_client_version_android = task_json.get('min_client_version_android', DEFAULT_MIN_CLIENT_VERSION)
+    task.post_task_actions = task_json.get('post_task_actions', None)
+
+    try:
+        if delete_prior_to_adding:
+            task_to_delete = Task.query.filter_by(task_id=task_json['id']).first()
+            db.session.delete(task_to_delete)
+
         db.session.add(task)
         db.session.commit()
-    except Exception as e:
-        print(e)
-        print('cant add task to db with id %s' % task_json['id'])
-        return False
-    else:
         return True
+    except Exception as e:
+        print('cant add task to db with id %s. exception: %s' % (task_json['id'], e))
+        db.session.rollback()
+        return False
+
+
+def delete_task(task_id):
+    if not get_task_by_id(task_id):
+        print('no task with id %s in the db' % task_id)
+        raise InvalidUsage('task_id %s doesnt exist - cant delete' % task_id)
+
+    task_to_delete = Task.query.filter_by(task_id=task_id).first()
+    db.session.delete(task_to_delete)
+    db.session.commit()
 
 
 def set_delay_days(delay_days, task_id=None):
@@ -496,6 +524,10 @@ def switch_task_ids(task_id1, task_id2):
     task1 = get_task_by_id(task_id1)
     task2 = get_task_by_id(task_id2)
 
+    if None in (task1, task2):
+        print('cant find task_id(s) (%s,%s)' % (task_id1, task_id2))
+        raise InvalidUsage('no such task_id')
+
     # pick some random, unused task_id
     import random
     while True:
@@ -503,10 +535,6 @@ def switch_task_ids(task_id1, task_id2):
         if not get_task_by_id(temp_task_id):
             break
 
-    if None in (task1, task2):
-        print('cant find task_id(s) (%s,%s)' % (task_id1, task_id2))
-        raise InvalidUsage('no such task_id')
 
     stmt = '''update task set task_id='%s' where task_id='%s';'''
     db.engine.execute('BEGIN;' + stmt % (temp_task_id, task_id1) + stmt % (task_id1, task_id2) + stmt % (task_id2, temp_task_id) + 'COMMIT;')
-    return

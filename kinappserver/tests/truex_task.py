@@ -33,7 +33,7 @@ class Tester(unittest.TestCase):
 
     def test_truex_task(self):
         """test storting and getting tasks"""
-        task0 = {  'id': 0,
+        task0 = {  'id': '0',
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'nottruex',
@@ -47,7 +47,7 @@ class Tester(unittest.TestCase):
                   'items': [{'type': 'text'}]
             }
 
-        task1 = {  'id': 1,
+        task1 = {  'id': '1',
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'truex',
@@ -62,7 +62,7 @@ class Tester(unittest.TestCase):
             }
 
 
-        task2 = {  'id': 2,
+        task2 = {  'id': '2',
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'truex',

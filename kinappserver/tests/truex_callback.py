@@ -61,7 +61,7 @@ class Tester(unittest.TestCase):
 
         # TODO establish trust for this address
 
-        task0 = {'id': 0,
+        task0 = {'id': '0',
                  'title': 'do you know horses?',
                  'desc': 'horses_4_dummies',
                  'type': 'truex',

@@ -32,7 +32,7 @@ class Tester(unittest.TestCase):
 
     def test_task_storing(self):
         """test storting and getting tasks"""
-        task = {  'id': 0,
+        task = {  'id': '0',
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'questionnaire',
@@ -75,8 +75,32 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        # add the same task again. this should fail
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task}),
+                            headers={},
+                            content_type='application/json')
+        self.assertNotEqual(resp.status_code, 200)
 
-        quiz_task = { 'id': 1,
+        # add the same task again but add the overwrite flag. this should not fail
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task, task['overwrite']: True}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # add the same task again but add the overwrite flag. this should not fail
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task, task['overwrite']: False}),
+                            headers={},
+                            content_type='application/json')
+        self.assertNotEqual(resp.status_code, 200)
+
+
+        quiz_task = { 'id': '1',
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'quiz',
