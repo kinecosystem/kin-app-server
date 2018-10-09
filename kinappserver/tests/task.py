@@ -84,17 +84,19 @@ class Tester(unittest.TestCase):
         self.assertNotEqual(resp.status_code, 200)
 
         # add the same task again but add the overwrite flag. this should not fail
+        task['overwrite'] = True
         resp = self.app.post('/task/add',
                             data=json.dumps({
-                            'task': task, task['overwrite']: True}),
+                            'task': task, }),
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # add the same task again but add the overwrite flag. this should not fail
+        # add the same task again but add the overwrite flag with False. this should fail
+        task['overwrite'] = False
         resp = self.app.post('/task/add',
                             data=json.dumps({
-                            'task': task, task['overwrite']: False}),
+                            'task': task, }),
                             headers={},
                             content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)

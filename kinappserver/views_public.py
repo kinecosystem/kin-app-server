@@ -5,7 +5,7 @@ from threading import Thread
 from uuid import UUID
 
 from flask import request, jsonify, abort
-from kinappserver.views_common import get_source_ip, extract_headers
+from kinappserver.views_common import get_source_ip, extract_headers, limit_to_acl
 from flask_api import status
 import redis_lock
 import arrow
@@ -152,8 +152,8 @@ def set_user_phone_number_endpoint():
             print('could not extract phone in debug')
             return jsonify(status='error', reason='no_phone_number')
 
-    # limit the number of registrations a single phone number can do.
-    if count_registrations_for_phone_number(phone) > int(config.MAX_NUM_REGISTRATIONS_PER_NUMBER) - 1:
+    # limit the number of registrations a single phone number can do, unless they come from the ACL
+    if not limit_to_acl(return_bool=True) and count_registrations_for_phone_number(phone) > int(config.MAX_NUM_REGISTRATIONS_PER_NUMBER) - 1:
         print('rejecting registration from user_id %s and phone number %s - too many re-registrations' % (user_id, phone))
         increment_metric("reject-too-many_registrations")
         abort(403)

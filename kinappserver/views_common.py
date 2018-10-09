@@ -3,7 +3,7 @@ code that's common to both public and private apis
 """
 
 from flask import request, jsonify, abort
-from kinappserver.utils import InvalidUsage, InternalError
+from kinappserver.utils import InvalidUsage, InternalError, increment_metric
 from kinappserver import app, ssm
 from .models import is_in_acl
 
@@ -47,16 +47,30 @@ def limit_to_localhost():
         abort(403)
 
 
-def limit_to_acl():
-    """aborts unauthorized requests for sensitive APIs (nginx specific). allow on DEBUG"""
+def limit_to_acl(return_bool=False):
+    """aborts unauthorized requests for sensitive APIs (nginx specific). allow on DEBUG
+
+    the optional 'return_bool' flag governs whether the function aborts the request (default) or
+    just returns a boolean.
+    """
     source_ip = request.headers.get('X-Forwarded-For', None)
     if not source_ip:
+        increment_metric('not-in-acl')
         print('missing expected header')
+        increment_metric('not-in-acl')
+        if return_bool:
+            return False
         abort(403)
-        pass
+
     if not is_in_acl(source_ip):
+        if return_bool:
+            return False
         print('%s is not in ACL, rejecting' % source_ip)
+        increment_metric('not-in-acl')
         abort(403)
+
+    if return_bool:
+        return True
 
 
 def limit_to_password():

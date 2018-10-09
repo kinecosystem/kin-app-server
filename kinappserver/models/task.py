@@ -315,34 +315,38 @@ def add_task(task_json):
 
 
         # test validity of quiz items
-        if item.get('quiz_data', None):
-            # the task must be of type quiz
-            if not task_json['type'] == 'quiz':
-                    raise InvalidUsage('found quiz_data for a non-quiz task type')
+        try:
+            if item.get('quiz_data', None):
+                # the task must be of type quiz
+                if not task_json['type'] == 'quiz':
+                        raise InvalidUsage('found quiz_data for a non-quiz task type')
 
-            # quiz_data must have answer_id, explanation and reward and they must not be empty
-            answer_id = item['quiz_data']['answer_id']
-            exp = item['quiz_data']['explanation']
-            reward = item['quiz_data']['reward']
-            if '' in (answer_id, exp, reward):
-                raise InvalidUsage('empty fields in one of answer_id, exp, reward')
+                # quiz_data must have answer_id, explanation and reward and they must not be empty
+                answer_id = item['quiz_data']['answer_id']
+                exp = item['quiz_data']['explanation']
+                reward = item['quiz_data']['reward']
+                if '' in (answer_id, exp, reward):
+                    raise InvalidUsage('empty fields in one of answer_id, exp, reward')
 
-            # the answer_id must match a an answer in the item results
-            if answer_id not in [result['id'] for result in item['results']]:
-                raise InvalidUsage('answer_id %s does not match answer_ids %s' % (answer_id, [result['id'] for result in item['results']]))
+                # the answer_id must match a an answer in the item results
+                if answer_id not in [result['id'] for result in item['results']]:
+                    raise InvalidUsage('answer_id %s does not match answer_ids %s' % (answer_id, [result['id'] for result in item['results']]))
 
-        fail_flag = False
-        skip_image_test = task_json.get('skip_image_test', False)
+            fail_flag = False
+            skip_image_test = task_json.get('skip_image_test', False)
 
-        if task_json['type'] == 'video_questionnaire':
-            video_url = task_json.get('video_url', None)
-            if video_url is None:
-                print('missing video_url in video_questionnaire')
-                raise InvalidUsage('no video_url field in the video_questionnaire!')
-            elif not skip_image_test:
-                    if not test_url(video_url):
-                        print('failed to get the video url: %s' % video_url)
-                        fail_flag = True
+            if task_json['type'] == 'video_questionnaire':
+                video_url = task_json.get('video_url', None)
+                if video_url is None:
+                    print('missing video_url in video_questionnaire')
+                    raise InvalidUsage('no video_url field in the video_questionnaire!')
+                elif not skip_image_test:
+                        if not test_url(video_url):
+                            print('failed to get the video url: %s' % video_url)
+                            fail_flag = True
+        except Exception as e:
+            print('failed to verify the quiz data. aborting')
+            raise InvalidUsage('cant verify quiz data for task_id %s' % task_id)
 
         if not skip_image_test:
             print('testing accessibility of task urls (this can take a few seconds...)')

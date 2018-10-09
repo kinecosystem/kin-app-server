@@ -13,8 +13,8 @@ class ACL(db.Model):
 
 
 def is_in_acl(ip_addr):
-    """replaces the old token with a new one"""
-    card = ACL.query.filter_by(ip_addr=ip_addr).first()
-    if not card:
+    """returns true if the given ip is in the acl"""
+    item = ACL.query.filter_by(ip_addr=ip_addr).first()
+    if not item:
         return False
     return True
