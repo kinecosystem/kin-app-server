@@ -55,11 +55,10 @@ def limit_to_acl(return_bool=False):
     """
     source_ip = request.headers.get('X-Forwarded-For', None)
     if not source_ip:
-        increment_metric('not-in-acl')
         print('missing expected header')
-        increment_metric('not-in-acl')
         if return_bool:
             return False
+        increment_metric('not-in-acl')
         abort(403)
 
     if not is_in_acl(source_ip):
