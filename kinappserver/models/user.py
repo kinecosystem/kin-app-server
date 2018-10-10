@@ -1211,61 +1211,53 @@ def count_registrations_for_phone_number(phone_number):
     return count if count else 0
 
 
-def count_missing_txs():
+def count_missing_txs(filename):
     """counts the number of users with missing txs in their data == users we owe money to"""
 
-    missing_txs = []
+    f = open(filename, "a")
+    f.write('getting all uncompensated txs...')
+    try:
+        missing_txs = []
 
-    # get the list of tasks and their rewards:
-    tasks_d = {}
-    res = db.engine.execute('SELECT task_id, price from public.task')
-    tasks = res.fetchall()
-    for task in tasks:
-        tasks_d[task[0]] = task[1]
+        # get the list of tasks and their rewards:
+        tasks_d = {}
+        res = db.engine.execute('SELECT task_id, price from public.task')
+        tasks = res.fetchall()
+        for task in tasks:
+            tasks_d[task[0]] = task[1]
 
-    # get all the phone numbers in the system
-    res2 = db.engine.execute('SELECT distinct enc_phone_number from public.user where enc_phone_number is not null')
-    distinct_enc_phone_numbers = res2.fetchall()
+        # get all the phone numbers in the system
+        res2 = db.engine.execute('SELECT distinct enc_phone_number from public.user where enc_phone_number is not null')
+        distinct_enc_phone_numbers = res2.fetchall()
 
-    compensated_task_ids_query = '''select t2.tx_info->>'task_id' as task_id from public.user t1 inner join transaction t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
-    completed_task_ids_query = '''select t2.task_id from public.user t1 inner join user_task_results t2 on t1.user_id=t2.user_id where t1.enc_phone_number='%s';'''
+        uncompensated_tasks_for_number = '''select task_id, user_id from user_task_results where user_id in (select user_id from public.user where enc_phone_number='%s') and task_id not in (select tx_info->>'task_id' from transaction where user_id in (select user_id from public.user where enc_phone_number='%s') and incoming_tx=false);'''
+        # for each phone number, find the uncompensated tasks
+        for enc_number in distinct_enc_phone_numbers:
+            print('checking phone number: %s' % enc_number)
+            try:
+                enc_number = enc_number[0]
+                sleep(0.1)  # lets not kill the db
 
-    # for each phone number, find
-    for enc_number in distinct_enc_phone_numbers:
-        try:
-            if len(missing_txs) > 500:
-                # stop here no need to go over more than 500.
-                break
+                if len(missing_txs) > 100:
+                    # stop here no need to go over more than 500.
+                    break
 
-            sleep(0.1)  # lets not kill the db
-            enc_number = enc_number[0]
+                res3 = db.engine.execute(uncompensated_tasks_for_number % (enc_number, enc_number))  # safe
+                res3 = res3.fetchall()
+                for item in res3:
+                    print('found uncompensated task_id %s for user_id %s' % (item[0], item[1]))
+                    missing_txs.append({'enc_number': enc_number, 'task_id': item[1], 'reward': tasks_d[item[1]]})
+                    missing_txs = missing_txs + 1
+            except Exception as e:
+                print('exception while processing enc_phone_number: %s' % enc_number)
 
-            compensated_tasks = []
-            res3 = db.engine.execute(compensated_task_ids_query % enc_number)  # safe
-            res = res3.fetchall()
-            for item in res:
-                compensated_tasks.append(item[0])
-
-            completed = []
-            res4 = db.engine.execute(completed_task_ids_query % enc_number)  # safe
-            res = res4.fetchall()
-            for item in res:
-                completed.append(item[0])
-
-            uncompensated = list(set(completed) - set(compensated_tasks))
-            if len(uncompensated) != 0:
-                print('found uncompensated tasks: %s for number %s' % (uncompensated, enc_number))
-                # get the active user id for that phone number
-                res5 = db.engine.execute("SELECT user_id from public.user where enc_phone_number='%s' and deactivated=false" % enc_number)
-                active_user_id = res5.fetchone()[0]
-                for task_id in uncompensated:
-                    reward = tasks_d[task_id]
-                    missing_txs.append({'user_id': active_user_id, 'task_id': task_id, 'reward': reward})
-        except Exception as e:
-            print('exception while processing enc_phone_number: %s' % enc_number)
-
-    print('missing txs: %s' % missing_txs)
-    gauge_metric('missing-txs', len(missing_txs))
+        print('missing txs: %s' % missing_txs)
+        f.write(str(missing_txs))
+        f.write('done!')
+        gauge_metric('missing-txs', len(missing_txs))
+    except Exception as e:
+        print('caught exception: %s' % e)
+        f.write('caught exception: %s' % e)
 
 
 def re_register_all_users():

@@ -684,8 +684,10 @@ def blacklist_user_endpoint():
 def get_missing_txs_endpoint():
     if not config.DEBUG:
         limit_to_localhost()
-    app.rq_slow.enqueue(count_missing_txs)
-    return jsonify(status='ok')
+    from tempfile import NamedTemporaryFile
+    results_filename = NamedTemporaryFile(delete=False).name
+    app.rq_slow.enqueue_call(func=count_missing_txs, args=(results_filename,))
+    return jsonify(status='ok', filename=results_filename)
 
 
 @app.route('/users/migrate-restored-user', methods=['POST'])
