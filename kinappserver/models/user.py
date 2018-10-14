@@ -137,9 +137,12 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
         user_app_data = UserAppData()
         user_app_data.user_id = user_id
         user_app_data.completed_tasks = '[]'
+        user_app_data.completed_tasks_dict = {}
         user_app_data.app_ver = app_ver
         user_app_data.next_task_ts = arrow.utcnow().timestamp
+        user_app_data.next_task_ts_dict = {}
         user_app_data.next_task_memo = generate_memo()
+        user_app_data.next_task_memo_dict = {}
         db.session.add(user_app_data)
         db.session.commit()
 
@@ -203,8 +206,11 @@ class UserAppData(db.Model):
     app_ver = db.Column(db.String(40), primary_key=False, nullable=False)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     completed_tasks = db.Column(db.JSON)
+    completed_tasks_dict = db.Column(db.JSON)
     next_task_ts = db.Column(db.String(40), primary_key=False, nullable=True)  # the ts for th next task, can be None
+    next_task_ts_dict = db.Column(db.JSON)
     next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=True)  # the memo for the user's next task.
+    next_task_memo_dict = db.Column(db.JSON)
     ip_address = db.Column(INET) # the user's last known ip
     country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
     captcha_history = db.Column(db.JSON)
@@ -328,7 +334,7 @@ def get_next_task_memo(user_id):
         next_memo = userAppData.next_task_memo
         if next_memo is None:
             # set an initial value
-            return get_and_replace_next_task_memo()
+            return get_and_replace_next_task_memo(user_id)
     except Exception as e:
         print(e)
         raise InvalidUsage('cant get next memo')
@@ -687,7 +693,7 @@ def set_user_phone_number(user_id, number):
         deactivate_by_enc_phone_number(encrypted_number, user_id)
 
     except Exception as e:
-        print('cant add phone number to user_id: %s. Exception: %s' % (user_id, e))
+        print('cant add phone number %s to user_id: %s. Exception: %s' % (number, user_id, e))
         raise
 
 
