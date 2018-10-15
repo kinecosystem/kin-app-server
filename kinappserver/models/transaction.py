@@ -58,7 +58,7 @@ def get_memo_for_user_ids(user_ids, task_id):
     """"return the memo of the transaction or None for the given list of user_ids and task_id
 
     this function tries to find the memo of for the tx that relates to the given task_id and
-    given user_ids. only one memo is returned along with its associated user_id. or (None, None).
+    any of the given user_ids. only one memo is returned along with its associated user_id. or (None, None).
     """
     user_ids = "\',\'".join(user_ids)
     task_id = int(task_id)  # sanitize input
