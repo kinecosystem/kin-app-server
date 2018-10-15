@@ -660,6 +660,8 @@ def register_api():
             else:
                 print('updated userid %s data' % user_id)
 
+            #TODO find a way to dry up this code which is redundant with get_user_config()
+
             # turn off phone verfication for older clients:
             disable_phone_verification = False
             disable_backup_nag = False
@@ -677,6 +679,17 @@ def register_api():
             if disable_backup_nag:
                 print('disabling backup nag for registering userid %s' % user_id)
                 global_config['backup_nag'] = False
+
+            if os == OS_ANDROID:
+                if LooseVersion(app_ver) < LooseVersion(config.FORCE_UPDATE_BELOW_VERSION_ANDROID):
+                    global_config['force_update'] = True
+                if LooseVersion(app_ver) < LooseVersion(config.IS_UPDATE_AVAILABLE_BELOW_VERSION_ANDROID):
+                    global_config['is_update_available'] = True
+            elif os == OS_IOS:
+                if LooseVersion(app_ver) < LooseVersion(config.FORCE_UPDATE_BELOW_VERSION_IOS):
+                    global_config['force_update'] = True
+                if LooseVersion(app_ver) < LooseVersion(config.IS_UPDATE_AVAILABLE_BELOW_VERSION_IOS):
+                    global_config['is_update_available'] = True
 
             # return global config - the user doesn't have user-specific config (yet)
             return jsonify(status='ok', config=global_config)

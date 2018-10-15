@@ -903,13 +903,13 @@ def get_user_config(user_id):
         disable_backup_nag = True
 
     if os_type == OS_ANDROID:
-        if LooseVersion(user_app_data.app_ver) < LooseVersion(config.FORCE_UPGRADE_BELOW_VERSION_ANDROID):
-            global_config['force_upgrade'] = True
+        if LooseVersion(user_app_data.app_ver) < LooseVersion(config.FORCE_UPDATE_BELOW_VERSION_ANDROID):
+            global_config['force_update'] = True
         if LooseVersion(user_app_data.app_ver) < LooseVersion(config.IS_UPDATE_AVAILABLE_BELOW_VERSION_ANDROID):
             global_config['is_update_available'] = True
     elif os_type == OS_IOS:
-        if LooseVersion(user_app_data.app_ver) < LooseVersion(config.FORCE_UPGRADE_BELOW_VERSION_IOS):
-            global_config['force_upgrade'] = True
+        if LooseVersion(user_app_data.app_ver) < LooseVersion(config.FORCE_UPDATE_BELOW_VERSION_IOS):
+            global_config['force_update'] = True
         if LooseVersion(user_app_data.app_ver) < LooseVersion(config.IS_UPDATE_AVAILABLE_BELOW_VERSION_IOS):
             global_config['is_update_available'] = True
 
