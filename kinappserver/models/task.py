@@ -6,7 +6,7 @@ from ast import literal_eval
 
 from kinappserver import db, config, app
 from kinappserver.push import send_please_upgrade_push
-from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url, find_max_task
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url, find_max_task, increment_metric
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts, get_user_os_type, get_user_app_data, get_unenc_phone_number_by_user_id
 from .truex_blacklisted_user import is_user_id_blacklisted_for_truex
 
@@ -52,14 +52,27 @@ def store_task_results(user_id, task_id, results):
     """store the results provided by the user"""
     # reject hackers trying to send task results too soon
 
-
     try:
         # store the results
-        user_task_results = UserTaskResults()
-        user_task_results.user_id = user_id
-        user_task_results.task_id = task_id
-        user_task_results.results = results
-        db.session.add(user_task_results)
+
+        try:
+            user_task_results = UserTaskResults()
+            user_task_results.user_id = user_id
+            user_task_results.task_id = task_id
+            user_task_results.results = results
+            db.session.add(user_task_results)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            # this code handles the unlikely event that a user already had task results for this task, so rather
+            # than INSERT, we UPDATE.
+            print('store_task_results - failed to insert results. attempting to update instead. error:%s' % e)
+            previous_task_results = UserTaskResults.query.filter_by(user_id=user_id).filter_by(task_id=task_id).first()
+            previous_task_results.results = results
+            db.session.add(previous_task_results)
+            db.session.commit()
+            print('store_task_results: overwritten user_id %s task %s results' % (user_id, task_id))
+            increment_metric('overwrite-task-results')
 
         # write down the completed task-id
         from kinappserver.models import UserAppData
@@ -486,7 +499,9 @@ def handle_task_results_resubmission(user_id, task_id):
     from kinappserver.models import get_memo_for_user_ids
 
     from .user import get_associated_user_ids
+    #print('trying to detect task re-submission for task-id %s and user_id %s' % (task_id, user_id))
     associated_user_ids = get_associated_user_ids(user_id)
+    #print('all associated user_ids: %s' % associated_user_ids)
     memo, user_id = get_memo_for_user_ids(associated_user_ids, task_id)
     return memo, user_id
 

@@ -31,7 +31,7 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_task_results_resubmission(self):
+    def test_task_results(self):
         """test storting task reults"""
 
         # add a task
@@ -63,61 +63,7 @@ class Tester(unittest.TestCase):
             }]
         }
 
-        task1 = {
-          'id': '1', 
-          'title': 'do you know horses?',
-          'desc': 'horses_4_dummies',
-          'type': 'questionnaire',
-          'price': 1,
-          'min_to_complete': 2,
-          'skip_image_test': True,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
-          'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
-          'provider': 
-            {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
-          'items': [
-            {
-             'id': '435',
-             'text': 'what animal is this?',
-             'type': 'textimage',
-                 'results': [
-                        {'id': '235',
-                         'text': 'a horse!',
-                         'image_url': 'cdn.helllo.com/horse.jpg'},
-                            {'id': '2465436',
-                         'text': 'a cat!',
-                         'image_url': 'cdn.helllo.com/kitty.jpg'},
-                         ],
-            }]
-        }
 
-        task2 = {
-          'id': '2',
-          'title': 'do you know horses?',
-          'desc': 'horses_4_dummies',
-          'type': 'questionnaire',
-          'price': 1,
-          'min_to_complete': 2,
-           'skip_image_test': True,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
-          'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
-          'provider':
-            {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
-          'items': [
-            {
-             'id': '435',
-             'text': 'what animal is this?',
-             'type': 'textimage',
-                 'results': [
-                        {'id': '235',
-                         'text': 'a horse!',
-                         'image_url': 'cdn.helllo.com/horse.jpg'},
-                            {'id': '2465436',
-                         'text': 'a cat!',
-                         'image_url': 'cdn.helllo.com/kitty.jpg'},
-                         ],
-            }]
-        }
 
 
         resp = self.app.post('/task/add',
@@ -127,27 +73,6 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        resp = self.app.post('/task/add',
-                            data=json.dumps({
-                            'task': task1}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        resp = self.app.post('/task/add',
-                            data=json.dumps({
-                            'task': task2}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # set the delay_days on all the tasks to zero
-        resp = self.app.post('/task/delay_days',
-                            data=json.dumps({
-                            'days': 0}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
 
         userid = uuid.uuid4()
 
@@ -168,13 +93,14 @@ class Tester(unittest.TestCase):
         db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
 
         resp = self.app.post('/user/auth/ack',
-                            data=json.dumps({
-                            'token': str(userid)}),
-                            headers={USER_ID_HEADER: str(userid)},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'token': str(userid)}),
+                             headers={USER_ID_HEADER: str(userid)},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        sleep(1)
+        # using sql, insert task results for task_id 0
+        db.engine.execute("""insert into public.user_task_results values('%s','%s','%s');""" % (str(userid), '0', json.dumps({'a': '1'})))
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
@@ -199,21 +125,6 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
-
-        sleep(15) # give the tx time to happen
-
-        # send same results again
-        resp = self.app.post('/user/task/results',
-                            data=json.dumps({
-                            'id': '0',
-                            'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
-                            'results': {'2234': 'werw', '5345': '345345'},
-                            'send_push': False
-                            }),
-                            headers={USER_ID_HEADER: str(userid)},
-                            content_type='application/json')
-        print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
 
 
 

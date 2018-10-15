@@ -209,6 +209,9 @@ class Tester(unittest.TestCase):
         self.assertEqual(data['tasks'][0]['id'], '2')
         next_submission_time = data['tasks'][0]['start_date']
 
+        print('sleeping a few seconds to allow txs to completed for the first user...')
+        sleep(15)
+
         # different user updates his number to the same number, should work - and deactivate the previous user
         print('user 2 updates to the same number as user 1...')
         phone_num = '+9720528802120'
@@ -272,7 +275,7 @@ class Tester(unittest.TestCase):
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 400)
 
-        # should fail for task id 1
+        # should also fail for task id 1
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '1',
