@@ -28,7 +28,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     handle_task_results_resubmission, reject_premature_results, get_address_by_userid,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users, user_exists, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
+    scan_for_deauthed_users, user_exists, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, get_next_tasks_for_user, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \

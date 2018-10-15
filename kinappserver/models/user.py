@@ -136,19 +136,14 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     if is_new_user:
         user_app_data = UserAppData()
         user_app_data.user_id = user_id
-<<<<<<< HEAD
         user_app_data.completed_tasks = '[]'
         user_app_data.completed_tasks_dict = {}
         user_app_data.app_ver = app_ver
         user_app_data.next_task_ts = arrow.utcnow().timestamp
         user_app_data.next_task_ts_dict = {}
         user_app_data.next_task_memo = generate_memo()
-=======
-        user_app_data.completed_tasks_dict = {}
-        user_app_data.app_ver = app_ver
-        user_app_data.next_task_ts_dict = {}
->>>>>>> task2.0 initial commit
         user_app_data.next_task_memo_dict = {}
+        user_app_data.app_ver = app_ver
         db.session.add(user_app_data)
         db.session.commit()
 
@@ -340,27 +335,21 @@ def get_next_task_memo(user_id, cat_id):
     try:
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
         next_memo = userAppData.next_task_memo_dict.get(cat_id, None)
-        if next_memo is None:
-            # set an initial value
-<<<<<<< HEAD
-            return get_and_replace_next_task_memo(user_id)
-=======
-            return get_and_replace_next_task_memo(user_id, cat_id)
->>>>>>> task2.0 initial commit
+        if next_memo is None:  # set a value
+            return get_and_replace_next_task_memo(user_id, task_id='fake_task_id', cat_id=cat_id)
     except Exception as e:
         raise InvalidUsage('cant get next memo. exception:%s' % e)
     else:
         return next_memo
 
 
-def get_and_replace_next_task_memo(user_id, task_id):
+def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
     """return the next memo for this user and replace it with another"""
-
     try:
         next_memo = generate_memo()
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
-        from .task2 import get_cat_id_for_task_id
-        user_app_data.next_task_memo_dict[get_cat_id_for_task_id(task_id)] = next_memo
+        cat_id = cat_id if cat_id else task_id_to_category_id(task_id)
+        user_app_data.next_task_memo_dict[cat_id] = next_memo
 
         db.session.add(user_app_data)
         # turns out sqlalchemy cant detect json updates, and requires manual flagging:
