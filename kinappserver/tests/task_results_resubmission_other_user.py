@@ -257,7 +257,8 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid2)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)  # resubmission of results, should be detected and return error.
+        self.assertEqual(json.loads(resp.data)['info'], 'already_compensated')
+        self.assertEqual(resp.status_code, 200)  # resubmission of results, should be detected and return error.
 
 
 

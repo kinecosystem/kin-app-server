@@ -35,6 +35,10 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, captcha_solved, get_user_tz, autoswitch_captcha, automatically_raise_captcha_flag
 
 
+def get_payment_lock_name(user_id, task_id):
+    """generate a user and task specific lock for payments."""
+    return "pay:%s-%s" % (user_id, task_id)
+
 
 @app.route('/user/app-launch', methods=['POST'])
 def app_launch():
@@ -392,6 +396,11 @@ def post_user_task_results_endpoint():
     if not store_task_results(user_id, task_id, results):
             raise InternalError('cant save results for userid %s' % user_id)
     try:
+        # create a redis lock to prevent multiple payments for the same user_id and task_id:
+        if not redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id), expire=60).acquire(blocking=False):
+            print('aborting payment - user %s currently being payed for task_id %s' % (user_id, task_id))
+            return jsonify(status='error', reason='already_compensating'), status.HTTP_400_BAD_REQUEST
+
         memo = get_and_replace_next_task_memo(user_id)
         autoswitch_captcha(user_id)  # changes captcha flag from 0 to 1 if 0
         automatically_raise_captcha_flag(user_id)  # sets the captcha flag every so-many tasks
@@ -728,6 +737,10 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
     finally:  # TODO dont do this if we fail with the tx
         if tx_hash and send_push:
+            try:
+                redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
+            except Exception as e:
+                print('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
             send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
 
 
@@ -1247,6 +1260,12 @@ def payment_service_callback_endpoint():
 
                 create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
                 increment_metric('payment-callback-success')
+
+                try:
+                    redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
+                except Exception as e:
+                    print('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
+
                 if tx_hash and send_push:
                         send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
             else:
@@ -1257,6 +1276,7 @@ def payment_service_callback_endpoint():
             print('should never happen: unhandled callback from the payment service: %s' % payload)
 
     except Exception as e:
+
         increment_metric('payment-callback-error')
         print('failed processing the payment service callback')
         print(e)

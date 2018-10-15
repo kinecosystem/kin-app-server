@@ -273,7 +273,8 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('should fail - task was already submitted')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(json.loads(resp.data)['info'], 'already_compensated')
+        self.assertEqual(resp.status_code, 200)
 
         # should also fail for task id 1
         resp = self.app.post('/user/task/results',
@@ -287,7 +288,8 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('should fail - task was already submitted')
         print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(json.loads(resp.data)['info'], 'already_compensated')
+        self.assertEqual(resp.status_code, 200)
 
         # should succeed for task id 2
         resp = self.app.post('/user/task/results',
