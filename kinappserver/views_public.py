@@ -326,7 +326,7 @@ def post_user_task_results_endpoint():
         print('detected resubmission by user_id %s of previously payed-for task id %s by user_id: %s . memo:%s' % (task_id, user_id, compensated_user_id, memo))
         # this task was already submitted - and compensated, so just re-return the memo to the user.
         increment_metric('already-compensated')
-        return jsonify(status='error', reason='already_compensated'), status.HTTP_400_BAD_REQUEST
+        return jsonify(status='ok', info='already_compensated')
 
     task_data = get_task_by_id(task_id)  # need the task itself to correctly process the results
 
