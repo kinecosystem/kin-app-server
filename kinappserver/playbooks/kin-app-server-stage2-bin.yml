@@ -11,7 +11,7 @@
      ENV: stage
      STELLAR_ACCOUNT_SID: "{{ play_hosts.index(inventory_hostname) }}" # sets the host's index within the play
    debug: True
-   nginx_domain: stage.kinitapp.com
+   nginx_domain: stage2.kinitapp.com
    db_connstr: "postgresql://{{lookup('aws_ssm', '/config/stage/sql/userpassword')}}@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage"
    redis_endpoint: 'kin-app-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
    redis_port: 6379
@@ -41,7 +41,7 @@
    blackhawk_purchases_enabled: False
    blackhawk_critical_balance_threshold: 50
    payment_service_url: 'http://stage.payments.kinitapp.com:4999'
-   api_server_url: 'https://stage.kinitapp.com'
+   api_server_url: 'https://stage2.kinitapp.com'
    use_payment_service_phone_number_prefix: '+'
    use_payment_service_percent_of_users: 100
    block_onboarding_android_version: 1.2.5
@@ -51,4 +51,7 @@
    blocked_country_codes: "[]"
    truex_blacklisted_taskids: "[]"
    max_num_registrations_per_number: 9999
-   
+   force_update_below_version_android: '1.0'
+   force_update_below_version_ios: '1.0'
+   is_update_available_below_version_android: '1.0'
+   is_update_available_below_version_ios: '1.0'

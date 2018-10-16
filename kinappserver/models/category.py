@@ -33,17 +33,16 @@ def add_category(cat_json):
             delete_prior_to_insertion = True
 
 
-
     fail_flag = False
     skip_image_test = cat_json.get('skip_image_test', False)
 
     if not skip_image_test:
         if not test_image(cat_json['ui_data']['image_url']):
-            print("cat verify image url: %s" % cat_json['image_url'])
+            print("cat verify image url: %s" % cat_json['ui_data']['image_url'])
             fail_flag = True
 
         if not test_image(cat_json['ui_data']['header_image_url']):
-            print("cat verify image url: %s" % cat_json['image_url'])
+            print("cat verify image url: %s" % cat_json['ui_data']['header_image_url'])
             fail_flag = True
     if fail_flag:
         print('could not verify urls. aborting')

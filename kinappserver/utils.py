@@ -306,7 +306,7 @@ def read_payment_data_from_cache(memo):
 
 
 def passed_captcha(captcha_token):
-    """get a recaptcha result"""
+    """get and parse a re-captcha result"""
     try:
         params = {
             'secret': app.recaptcha_secret,
@@ -331,7 +331,7 @@ def passed_captcha(captcha_token):
             challenge_ts = captcha_result.get('challenge_ts', None)
             captcha_success = captcha_result.get('success', None)
             if None in (apk_name, challenge_ts, captcha_success) and not config.DEBUG:
-                print('missing fields in captcah result')
+                print('missing fields in captcha result')
                 return False
 
             if apk_name != config.APK_PACKAGE_NAME:
@@ -358,6 +358,6 @@ def get_country_code_by_ip(ip_addr):
             return None
         return app.geoip_reader.get(ip_addr)['country']['iso_code']
     except Exception as e:
-        print('cant convert ip %s to country code' % ip)
+        print('cant convert ip %s to country code' % ip_addr)
 
         return None

@@ -34,50 +34,21 @@ class Tester(unittest.TestCase):
     def test_categories_task_logic(self):
         """test categories/task logic"""
 
-        # add 3 categories
-        cat = {'id': '0',
-          'title': 'cat-title',
-               "skip_image_test": True,
-          'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+        for i in range(5):
+            # add 5 categories
+            cat = {'id': '%s' % i,
+              'title': 'cat-title',
+                   "skip_image_test": True,
+              'ui_data': {'color': "#123",
+                          'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                          'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
 
-        resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        cat2 = {'id': '1',
-          'title': 'cat-title2',
-               "skip_image_test": True,
-          'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
-
-        resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat2}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        cat3 = {'id': '2',
-          'title': 'cat-title3',
-               "skip_image_test": True,
-          'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
-
-        resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat3}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        print('all cat_ids: %s' % models.get_all_cat_ids())
+            resp = self.app.post('/category/add',
+                                data=json.dumps({
+                                'category': cat}),
+                                headers={},
+                                content_type='application/json')
+            self.assertEqual(resp.status_code, 200)
 
         task = {
             'id': '0',
@@ -109,16 +80,19 @@ class Tester(unittest.TestCase):
                 }]
         }
 
+        id = 0
         for i in range(5):
             for j in range(5):
-                task['id'] = i
-                task['position'] = j
+                task['id'] = str(id)
+                task['position'] = int(j)
+                task['cat_id'] = str(i)
                 resp = self.app.post('/task/add',
                                     data=json.dumps({
                                     'task': task}),
                                     headers={},
                                     content_type='application/json')
                 self.assertEqual(resp.status_code, 200)
+                id = id + 1
 
         userid = uuid.uuid4()
 
@@ -144,13 +118,6 @@ class Tester(unittest.TestCase):
                              headers={USER_ID_HEADER: str(userid)},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        # set tasks1.0-style tasks into the db
-        db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\';' % (str(userid)))
-        models.add_task_to_completed_tasks1(str(userid), '0')
-
-        # migrate the user to task2.0
-        models.migrate_user_to_tasks2(str(userid))
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
@@ -158,59 +125,11 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['tasks']['0'], [])
-        self.assertEqual(data['tasks']['1'], [])
-        self.assertEqual(data['tasks']['2'], [])
-
-        # lets add a task that that user already solved.
-
-
-
-
-        userid = uuid.uuid4()
-
-        # register an android with a token
-        resp = self.app.post('/user/register',
-                            data=json.dumps({
-                            'user_id': str(userid),
-                            'os': 'android',
-                            'device_model': 'samsung8',
-                            'device_id': '234234',
-                            'time_zone': '05:00',
-                            'token': 'fake_token',
-                            'app_ver': '1.0'}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
-
-        resp = self.app.post('/user/auth/ack',
-                             data=json.dumps({
-                                 'token': str(userid)}),
-                             headers={USER_ID_HEADER: str(userid)},
-                             content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # set tasks1.0-style tasks into the db
-        db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\';' % (str(userid)))
-        models.add_task_to_completed_tasks1(str(userid), '0')
-
-        # migrate the user to task2.0
-        models.migrate_user_to_tasks2(str(userid))
-
-        # get the user's current tasks - should not receive task id 0
-        headers = {USER_ID_HEADER: userid}
-        resp = self.app.get('/user/tasks', headers=headers)
-        data = json.loads(resp.data)
-        print('data: %s' % data)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(data['tasks']['0']), 1)  # returns one task
-        self.assertEqual(data['tasks']['0'][0]['id'], '1')  # task no. 1 because zero was already returned
-        self.assertEqual(data['tasks']['1'], [])
-        self.assertEqual(data['tasks']['2'], [])
-
-
+        self.assertNotEqual(data['tasks']['0'], [])
+        self.assertNotEqual(data['tasks']['1'], [])
+        self.assertNotEqual(data['tasks']['2'], [])
+        self.assertNotEqual(data['tasks']['3'], [])
+        self.assertNotEqual(data['tasks']['4'], [])
 
 if __name__ == '__main__':
     unittest.main()
