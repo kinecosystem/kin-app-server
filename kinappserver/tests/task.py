@@ -48,7 +48,7 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        task = {  'id': 0,
+        task = {  'id': '0',
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'questionnaire',
@@ -141,7 +141,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-        quiz_task = { 'id': 1,
+        quiz_task = { 'id': '1',
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'quiz',

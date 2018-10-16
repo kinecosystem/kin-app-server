@@ -32,14 +32,9 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, get_next_tasks_for_user, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
-<<<<<<< HEAD
-    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, captcha_solved, get_user_tz, autoswitch_captcha, automatically_raise_captcha_flag, \
-    should_force_update, is_update_available
-=======
     update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, \
     captcha_solved, get_user_tz, autoswitch_captcha, automatically_raise_captcha_flag, get_personalized_categories_header_message, get_categories_for_user, \
-    migrate_user_to_tasks2
->>>>>>> task2.0 initial commit
+    migrate_user_to_tasks2, should_force_update, is_update_available
 
 def get_payment_lock_name(user_id, task_id):
     """generate a user and task specific lock for payments."""
@@ -405,16 +400,12 @@ def post_user_task_results_endpoint():
     if not store_task_results(user_id, task_id, results):
             raise InternalError('cant save results for userid %s' % user_id)
     try:
-<<<<<<< HEAD
         # create a redis lock to prevent multiple payments for the same user_id and task_id:
         if not redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id), expire=60).acquire(blocking=False):
             print('aborting payment - user %s currently being payed for task_id %s' % (user_id, task_id))
             return jsonify(status='error', reason='already_compensating'), status.HTTP_400_BAD_REQUEST
 
-        memo = get_and_replace_next_task_memo(user_id)
-=======
         memo = get_and_replace_next_task_memo(user_id, task_id)
->>>>>>> task2.0 initial commit
         autoswitch_captcha(user_id)  # changes captcha flag from 0 to 1 if 0
         automatically_raise_captcha_flag(user_id)  # sets the captcha flag every so-many tasks
         split_payment(address, task_id, send_push, user_id, memo, delta)

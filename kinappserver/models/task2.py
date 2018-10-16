@@ -630,13 +630,13 @@ def switch_task_ids(task_id1, task_id2):
         if not get_task_by_id(temp_task_id):
             break
 
-
     stmt = '''update task set task_id='%s' where task_id='%s';'''
     db.engine.execute('BEGIN;' + stmt % (temp_task_id, task_id1) + stmt % (task_id1, task_id2) + stmt % (task_id2, temp_task_id) + 'COMMIT;')
 
+
 def add_task_to_completed_tasks(user_id, task_id):
     user_app_data = get_user_app_data(user_id)
-    completed_tasks = user_app_data.completed_tasks
+    completed_tasks = user_app_data.completed_tasks_dict
     from .task2 import get_task_by_id
     task = get_task_by_id(task_id)
     if not task:

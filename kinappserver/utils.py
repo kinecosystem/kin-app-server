@@ -245,8 +245,7 @@ def print_creation_statement():
     """prints out db creation statement. useful"""
     from sqlalchemy.schema import CreateTable
     from sqlalchemy.dialects import postgresql
-    from .models import BlackhawkCard, BlackhawkOffer, BlackhawkCreds, UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, \ 
-        EmailTemplate, TruexBlacklistedUser, BlacklistedEncPhoneNumber, Task2, Task, SystemConfig, Category
+    from .models import BlackhawkCard, BlackhawkOffer, BlackhawkCreds, UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, EmailTemplate, TruexBlacklistedUser, BlacklistedEncPhoneNumber, Task2, SystemConfig, Category
     print(CreateTable(User.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(UserAppData.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(BlackhawkCard.__table__).compile(dialect=postgresql.dialect()))
@@ -258,7 +257,7 @@ def print_creation_statement():
     print(CreateTable(EmailTemplate.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(TruexBlacklistedUser.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(BlacklistedEncPhoneNumber.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(Task.__table__).compile(dialect=postgresql.dialect()))
+    print(CreateTable(Task2.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(SystemConfig.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(Task2.__table__).compile(dialect=postgresql.dialect()))
     print(CreateTable(Category.__table__).compile(dialect=postgresql.dialect()))

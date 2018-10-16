@@ -159,7 +159,7 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        task['id'] = 1
+        task['id'] = '1'
         task['position'] = 1
         resp = self.app.post('/task/add',
                             data=json.dumps({
