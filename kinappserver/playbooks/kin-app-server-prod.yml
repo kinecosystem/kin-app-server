@@ -64,10 +64,6 @@
    blocked_country_codes: "['BR']"
    truex_blacklisted_taskids: "['103']"
    max_num_registrations_per_number: 10
-   force_update_below_version_android: '1.0'
-   force_update_below_version_ios: '1.0'
-   is_update_available_below_version_android: '1.0'
-   is_update_available_below_version_ios: '1.0'
 
    bash_aliases:
      - { alias: '_env', command: 'echo "kinappserver-prod"' }

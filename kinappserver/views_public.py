@@ -32,8 +32,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
-    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, captcha_solved, get_user_tz, autoswitch_captcha, automatically_raise_captcha_flag
-
+    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, captcha_solved, get_user_tz, autoswitch_captcha, automatically_raise_captcha_flag, \
+    should_force_update, is_update_available
 
 def get_payment_lock_name(user_id, task_id):
     """generate a user and task specific lock for payments."""
@@ -689,16 +689,12 @@ def register_api():
                 print('disabling backup nag for registering userid %s' % user_id)
                 global_config['backup_nag'] = False
 
-            if os == OS_ANDROID:
-                if LooseVersion(app_ver) < LooseVersion(config.FORCE_UPDATE_BELOW_VERSION_ANDROID):
-                    global_config['force_update'] = True
-                if LooseVersion(app_ver) < LooseVersion(config.IS_UPDATE_AVAILABLE_BELOW_VERSION_ANDROID):
-                    global_config['is_update_available'] = True
-            elif os == OS_IOS:
-                if LooseVersion(app_ver) < LooseVersion(config.FORCE_UPDATE_BELOW_VERSION_IOS):
-                    global_config['force_update'] = True
-                if LooseVersion(app_ver) < LooseVersion(config.IS_UPDATE_AVAILABLE_BELOW_VERSION_IOS):
-                    global_config['is_update_available'] = True
+            if should_force_update(os, app_ver):
+                global_config['force_update'] = True
+
+            if is_update_available(os, app_ver):
+                global_config['is_update_available'] = True
+
 
             # return global config - the user doesn't have user-specific config (yet)
             return jsonify(status='ok', config=global_config)

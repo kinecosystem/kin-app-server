@@ -902,16 +902,12 @@ def get_user_config(user_id):
         disable_phone_verification = True
         disable_backup_nag = True
 
-    if os_type == OS_ANDROID:
-        if LooseVersion(user_app_data.app_ver) < LooseVersion(config.FORCE_UPDATE_BELOW_VERSION_ANDROID):
-            global_config['force_update'] = True
-        if LooseVersion(user_app_data.app_ver) < LooseVersion(config.IS_UPDATE_AVAILABLE_BELOW_VERSION_ANDROID):
-            global_config['is_update_available'] = True
-    elif os_type == OS_IOS:
-        if LooseVersion(user_app_data.app_ver) < LooseVersion(config.FORCE_UPDATE_BELOW_VERSION_IOS):
-            global_config['force_update'] = True
-        if LooseVersion(user_app_data.app_ver) < LooseVersion(config.IS_UPDATE_AVAILABLE_BELOW_VERSION_IOS):
-            global_config['is_update_available'] = True
+    from .system_config import should_force_update, is_update_available
+    if should_force_update(os_type, user_app_data.app_ver):
+        global_config['force_update'] = True
+
+    if is_update_available(os_type, user_app_data.app_ver):
+        global_config['is_update_available'] = True
 
     if disable_phone_verification:
         print('disabling phone verification for userid %s' % user_id)

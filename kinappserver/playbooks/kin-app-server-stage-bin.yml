@@ -51,7 +51,3 @@
    blocked_country_codes: "[]"
    truex_blacklisted_taskids: "[]"
    max_num_registrations_per_number: 9999
-   force_update_below_version_android: '2.0'
-   force_update_below_version_ios: '2.0'
-   is_update_available_below_version_android: '2.0'
-   is_update_available_below_version_ios: '2.0'
