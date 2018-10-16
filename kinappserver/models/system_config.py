@@ -78,6 +78,7 @@ def set_force_update_below(os_type, app_ver):
         sysconfig.block_clients_below_version_ios = app_ver
     db.session.add(sysconfig)
     db.session.commit()
+    print('set force-update-below for os_type %s to %s' % (os_type, app_ver))
 
 
 def set_update_available_below(os_type, app_ver):
@@ -94,3 +95,4 @@ def set_update_available_below(os_type, app_ver):
         sysconfig.update_available_below_version_ios = app_ver
     db.session.add(sysconfig)
     db.session.commit()
+    print('set update-available-below for os_type %s to %s' % (os_type, app_ver))
