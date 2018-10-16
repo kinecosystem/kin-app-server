@@ -11,6 +11,7 @@ import random
 import arrow
 
 
+
 from kinappserver import config, app
 
 
@@ -360,3 +361,14 @@ def get_country_code_by_ip(ip_addr):
         print('cant convert ip %s to country code' % ip_addr)
 
         return None
+
+
+def commit_json_changed_to_orm(obj_to_commit, changed_fields_list):
+    from kinappserver import db
+    # turns out sqlalchemy cant detect json updates, and requires manual flagging:
+    # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
+    from sqlalchemy.orm.attributes import flag_modified
+    for field_name in changed_fields_list:
+        flag_modified(obj_to_commit, field_name)
+    db.session.add(obj_to_commit)
+    db.session.commit()

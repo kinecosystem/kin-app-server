@@ -415,7 +415,7 @@ def post_user_task_results_endpoint():
         print('failed to reward task %s at address %s' % (task_id, address))
 
     increment_metric('task_completed')
-    return jsonify(status='ok', memo=str(memo))
+    return jsonify(status='ok', memo=str(memo), show_captcha=should_pass_captcha(user_id))
 
 
 def split_payment(address, task_id, send_push, user_id, memo, delta):
@@ -494,7 +494,7 @@ def get_next_task_internal(cat_ids=[]):
     except Exception as e:
         print('cant print returned tasks for user %s. exception: %s' % (user_id, e))
 
-    return jsonify(tasks=tasks_by_categories, show_captcha=should_pass_captcha(user_id), tz=str(get_user_tz(user_id)))
+    return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)))
 
 
 @app.route('/user/transactions', methods=['GET'])
