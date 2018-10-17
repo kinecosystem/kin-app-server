@@ -1304,8 +1304,8 @@ def automatically_raise_captcha_flag(user_id):
         #print('raise_captcha_if_needed: user %s captcha flag already at %s. doing nothing' % (user_id, uad.should_solve_captcha_ternary))
         return
 
-    # 20% of the users will need to solve captcha, but never twice in the same <configurable time>
-    if random_percent() < 20:
+    # every time a user completed X tasks mod CAPTCHA_TASK_MODULO == 0, but never twice in the same <configurable time>
+    if (count_completed_tasks(user_id) % config.CAPTCHA_TASK_MODULO == 0):
         # ensure the last captcha wasnt solved today
         now = arrow.utcnow()
         recent_captcha = 0 if uad.captcha_history is None else max([item['date'] for item in uad.captcha_history])
