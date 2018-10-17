@@ -847,10 +847,10 @@ def deactivate_by_enc_phone_number(enc_phone_number, new_user_id, activate_user=
                 print('warning: too many user_ids to deactivate were found: %s' % user_ids_to_deactivate)
 
             for user_id_to_deactivate in user_ids_to_deactivate:
-                # deactivate and copy task_history
+                # deactivate and copy task_history and next_task_ts
                 db.engine.execute("update public.user set deactivated=true where enc_phone_number='%s' and user_id='%s'" % (enc_phone_number, user_id_to_deactivate))
 
-                completed_tasks_query = "update user_app_data set completed_tasks_dict = Q.col1, next_task_ts = Q.col2 from (select completed_tasks_dict as col1, next_task_ts as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(new_user_id))
+                completed_tasks_query = "update user_app_data set completed_tasks_dict = Q.col1, next_task_ts_dict = Q.col2 from (select completed_tasks_dict as col1, next_task_ts_dict as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(new_user_id))
                 db.engine.execute(completed_tasks_query)
 
                 # also delete the new user's history and plant the old user's history instead

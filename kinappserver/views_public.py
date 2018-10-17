@@ -403,7 +403,7 @@ def post_user_task_results_endpoint():
         # create a redis lock to prevent multiple payments for the same user_id and task_id:
         if not redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id), expire=60).acquire(blocking=False):
             print('aborting payment - user %s currently being payed for task_id %s' % (user_id, task_id))
-            return jsonify(status='error', reason='already_compensating'), status.HTTP_400_BAD_REQUEST
+            return jsonify(status='error', info='already_compensating'), status.HTTP_400_BAD_REQUEST
 
         memo = get_and_replace_next_task_memo(user_id, task_id)
         autoswitch_captcha(user_id)  # changes captcha flag from 0 to 1 if 0
