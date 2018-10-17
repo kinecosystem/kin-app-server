@@ -51,7 +51,9 @@ class Tester(unittest.TestCase):
 
         # add a task
         task0 = {
-          'id': '0', 
+          'id': '0',
+          'cat_id': '0',
+          'position': 0,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
@@ -123,9 +125,9 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        print('next task id: %s' % data['tasks'][0]['id'])
-        print('next task start date: %s' % data['tasks'][0]['start_date'])
-        self.assertEqual(data['tasks'][0]['id'], '0')
+        print('next task id: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
+        self.assertEqual(data['tasks']['0'][0]['id'], '0')
 
 
         # send task results

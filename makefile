@@ -11,6 +11,8 @@ install-travis:
 test:
 	export LC_ALL=C
 	python kinappserver/tests/category.py
+	python kinappserver/tests/captcha.py
+	python kinappserver/tests/category_auto_flag.py
 	python kinappserver/tests/migrate_user_to_tasks2.py
 	python kinappserver/tests/book_and_redeem.py
 	python kinappserver/tests/task_results_resubmission_other_user.py

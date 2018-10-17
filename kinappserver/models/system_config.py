@@ -18,7 +18,7 @@ def get_system_config():
     try:
         return db.session.query(SystemConfig).one()
     except Exception as e:
-        print('get_block_clients_below_version: cant find sysconfig in the db. returning default value')
+        print('get_system_config: cant find sysconfig in the db. returning default value')
         return None
 
 
