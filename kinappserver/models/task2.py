@@ -670,3 +670,6 @@ def remove_task_from_completed_tasks(user_id, task_id):
         commit_json_changed_to_orm(user_app_data, ['completed_tasks_dict'])
 
     return True
+
+def count_immidiate_tasks(completed_tasks):
+    """given a cat_id and position"""

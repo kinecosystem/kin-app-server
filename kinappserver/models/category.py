@@ -101,8 +101,7 @@ def get_categories_for_user(user_id):
     # get the number of currently available tasks for the user:
     #TODO fill this in later with actual data
 
-    import random
     for cat_id in all_cats.keys():
-        all_cats[cat_id]['available_tasks_count'] = random.randint(0, 2)
+        all_cats[cat_id]['available_tasks_count'] = len(all_cats[cat_id])
 
     return [cat for cat in all_cats.values()]
