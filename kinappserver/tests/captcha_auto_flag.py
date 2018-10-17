@@ -135,7 +135,7 @@ class Tester(unittest.TestCase):
         print('next task id: %s' % data['tasks']['0'][0]['id'])
         print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
         self.assertEqual(data['tasks']['0'][0]['id'], '0')
-        self.assertEqual(data['show_captcha'], False)
+
 
         # send task results for task 0 - will raise the captcha flag to 0
         resp = self.app.post('/user/task/results',
@@ -149,6 +149,7 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)  # no captcha provided
+        self.assertEqual(data['show_captcha'], False)
 
         # get the user's current tasks - this time there should be no captcha
         headers = {USER_ID_HEADER: userid}
@@ -159,7 +160,7 @@ class Tester(unittest.TestCase):
         print('next task id: %s' % data['tasks']['0'][0]['id'])
         print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
         self.assertEqual(data['tasks']['0'][0]['id'], '1')
-        self.assertEqual(data['show_captcha'], False)
+
 
         # send task results for task 1 - dont provide captcha, should work, will auto-raise the captcha flag to 1
         resp = self.app.post('/user/task/results',
@@ -173,6 +174,7 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['show_captcha'], False)
 
 
         # send task results for task 2, should require captcha so lets not send it and fail:

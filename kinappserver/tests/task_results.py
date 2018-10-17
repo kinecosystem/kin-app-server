@@ -6,7 +6,7 @@ import simplejson as json
 import testing.postgresql
 
 import kinappserver
-from kinappserver import db
+from kinappserver import db, models
 
 
 USER_ID_HEADER = "X-USERID"
@@ -34,19 +34,20 @@ class Tester(unittest.TestCase):
     def test_task_results(self):
         """test storting task reults"""
 
-        cat = {'id': '0',
-          'title': 'cat-title',
-               "skip_image_test": True,
-          'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+        for cat_id in range(2):
+            cat = {'id': str(cat_id),
+              'title': 'cat-title',
+                   "skip_image_test": True,
+              'ui_data': {'color': "#123",
+                          'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                          'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
 
-        resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
+            resp = self.app.post('/category/add',
+                                data=json.dumps({
+                                'category': cat}),
+                                headers={},
+                                content_type='application/json')
+            self.assertEqual(resp.status_code, 200)
 
         # add a task
         task0 = {
@@ -161,6 +162,16 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        task2['position'] = 0
+        task2['id'] = '3'
+        task2['cat_id'] = '1'
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task2}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         # set the delay_days on all the tasks to zero
         resp = self.app.post('/task/delay_days',
                             data=json.dumps({
@@ -195,6 +206,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         sleep(1)
+
+        self.assertEqual(0, models.count_completed_tasks(str(userid)))
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
@@ -265,10 +278,21 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        print('next task id: %s' % data['tasks']['0'][0]['id'])
+        print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
         print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
 
         self.assertEqual(data['tasks']['0'][0]['id'], '2')
+        self.assertEqual(data['tasks']['1'][0]['id'], '3')
+
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id': '3',
+                            'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
+                            'results': {'2234': 'werw', '5345': '345345'},
+                            'send_push': False
+                            }),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
 
         # the next start date should be at least 24 hours into the future:
         import arrow
@@ -289,6 +313,9 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 403)
+
+        print('total completed tasks for user_id: %s ' % models.count_completed_tasks(str(userid)))
+        self.assertEqual(3, models.count_completed_tasks(str(userid)))
         sleep(8)  # give the thread enough time to complete before the db connection is shutdown
 
 

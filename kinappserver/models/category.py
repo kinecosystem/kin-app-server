@@ -21,7 +21,8 @@ def get_all_cat_ids():
 
 def add_category(cat_json):
     """"adds a category to the db based on the given json"""
-    cat_id = cat_json['id']
+    cat_id = str(cat_json['id'])
+    print('trying to add category with id %s' % cat_id)
     overwrite_flag = bool(cat_json.get('overwrite', False))
     delete_prior_to_insertion = False
 

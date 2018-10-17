@@ -1398,3 +1398,9 @@ def add_task_to_completed_tasks1(user_id, task_id):
     return True
 
 
+def count_completed_tasks(user_id):
+    total_completed_tasks = 0
+    user_app_data = get_user_app_data(user_id)
+    for tasks_in_categories in user_app_data.completed_tasks_dict.values():
+        total_completed_tasks = total_completed_tasks + len(tasks_in_categories)
+    return total_completed_tasks

@@ -91,7 +91,7 @@ def store_task_results(user_id, task_id, results):
             print('cant find cat_id for task_id %s' % task_id)
             raise InternalError('cant find cat_id for task_id %s' % task_id)
 
-        if cat_id in completed_tasks:
+        if cat_id in user_app_data.completed_tasks_dict:
             user_app_data.completed_tasks_dict[cat_id].append(task_id)
         else:
             user_app_data.completed_tasks_dict[cat_id] = [task_id]
@@ -372,7 +372,7 @@ def add_task(task_json):
         else:
             return True
 
-    task_id = task_json['id']
+    task_id = str(task_json['id'])
     print('trying to add task with id %s...' % task_id)
 
     delete_prior_to_adding = False
@@ -472,8 +472,8 @@ def add_task(task_json):
 
         task = Task2()
         task.delay_days = task_json.get('delay_days', 1)  # default is 1
-        task.task_id = task_json['id']
-        task.category_id = task_json['cat_id']
+        task.task_id = task_id
+        task.category_id = str(task_json['cat_id'])
         position = task_json['position']
         if is_position_taken(task.category_id, position):
             print('cant insert task_id %s at cat_id %s and position %s - already taken' % (task.task_id, task.category_id, position))
@@ -500,7 +500,7 @@ def add_task(task_json):
         db.session.commit()
         return True
     except Exception as e:
-        print('cant add task to db with id %s. exception: %s' % (task_json['id'], e))
+        print('cant add task to db with id %s. exception: %s' % (task_id, e))
         db.session.rollback()
         return False
 
