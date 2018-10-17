@@ -6,7 +6,7 @@ from ast import literal_eval
 
 from kinappserver import db, config, app
 from kinappserver.push import send_please_upgrade_push
-from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url, get_country_code_by_ip, increment_metric
+from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url, get_country_code_by_ip, increment_metric, commit_json_changed_to_orm
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts, get_user_os_type, get_user_app_data, get_unenc_phone_number_by_user_id
 from .truex_blacklisted_user import is_user_id_blacklisted_for_truex
 
@@ -95,12 +95,8 @@ def store_task_results(user_id, task_id, results):
             user_app_data.completed_tasks_dict[cat_id].append(task_id)
         else:
             user_app_data.completed_tasks_dict[cat_id] = [task_id]
-        db.session.add(user_app_data)
-        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
-        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
-        from sqlalchemy.orm.attributes import flag_modified
-        flag_modified(user_app_data, "completed_tasks_dict")
-        db.session.commit()
+
+        commit_json_changed_to_orm(user_app_data, ['completed_tasks_dict'])
 
         print('wrote user_app_data.completed_tasks for userid: %s' % user_id)
 
@@ -651,12 +647,7 @@ def add_task_to_completed_tasks(user_id, task_id):
             completed_tasks[cat_id] = []
         completed_tasks[cat_id].append(task_id)
         user_app_data.completed_tasks = completed_tasks
-        db.session.add(user_app_data)
-        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
-        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
-        from sqlalchemy.orm.attributes import flag_modified
-        flag_modified(user_app_data, "completed_tasks_dict")
-        db.session.commit()
+        commit_json_changed_to_orm(user_app_data, ['completed_tasks_dict'])
         print(user_app_data.completed_tasks)
         return True
 
@@ -676,10 +667,6 @@ def remove_task_from_completed_tasks(user_id, task_id):
     else:
         completed_tasks[cat_id].remove(task_id)
         user_app_data.completed_tasks_dict = completed_tasks
-        db.session.add(user_app_data)
-        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
-        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
-        from sqlalchemy.orm.attributes import flag_modified
-        flag_modified(user_app_data, "completed_tasks_dict")
-        db.session.commit()
-        return True
+        commit_json_changed_to_orm(user_app_data, ['completed_tasks_dict'])
+
+    return True

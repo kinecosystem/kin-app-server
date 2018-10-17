@@ -354,9 +354,9 @@ class Tester(unittest.TestCase):
         res = db.engine.execute("""select captcha_history from user_app_data where user_id='%s'""" % userid)
         history = res.fetchall()[0][0]
         print('captcha history: %s' % history)
-        self.assertEqual(len(history), 2)  # 1 captchas in the history
+        self.assertEqual(len(history), 2)  # 2 captchas in the history
 
-        # lower the captcha flag to -1 - should not require captch
+        # lower the captcha flag to -1 - should not require captcha
         models.set_should_solve_captcha(str(userid), -1)
 
         # send task results - captcha not needed and not provided - should succeed

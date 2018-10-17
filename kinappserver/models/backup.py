@@ -1,7 +1,6 @@
 
-from kinappserver import db, app
-from kinappserver.utils import InternalError
-from kinappserver.utils import InvalidUsage , increment_metric
+from kinappserver import db
+from kinappserver.utils import InvalidUsage
 MINIMAL_BACKUP_HINTS = 2
 import arrow
 
@@ -64,22 +63,26 @@ def store_backup_hints(user_id, hints):
         print('user backup hints already exist for enc_phone_number %s, updating data.' % enc_phone_number)
     except Exception as e:
         ubh = PhoneBackupHints()
+
     try:
-        # save previous hints
+        # save previous hints (if they exist)
         if ubh.hints is not None:
             if ubh.previous_hints is None:
                 ubh.previous_hints = [{'date': arrow.get(ubh.updated_at).timestamp, 'hints': ubh.hints}]
             else:
                 ubh.previous_hints.append({'date': arrow.get(ubh.updated_at).timestamp, 'hints': ubh.hints})
+
             # turns out sqlalchemy cant detect json updates, and requires manual flagging:
             # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
             from sqlalchemy.orm.attributes import flag_modified
-            flag_modified(ubh, "previous_hints")
+            flag_modified(ubh, 'previous_hints')
+
 
         ubh.hints = hints
         ubh.enc_phone_number = enc_phone_number
         db.session.add(ubh)
         db.session.commit()
+
     except Exception as e:
         print('failed to store user backup hints with enc_phone_number: %s' % enc_phone_number)
         print(e)

@@ -3,7 +3,7 @@ from sqlalchemy_utils import UUIDType
 from sqlalchemy.dialects.postgresql import INET
 
 from kinappserver import db, config, app
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS, random_percent
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS, commit_json_changed_to_orm
 from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_country_IS_supported
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
@@ -292,13 +292,9 @@ def captcha_solved(user_id):
             userAppData.captcha_history = [{'date': now, 'app_ver': userAppData.app_ver}]
         else:
             userAppData.captcha_history.append({'date': now, 'app_ver ': userAppData.app_ver})
-        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
-        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
-        from sqlalchemy.orm.attributes import flag_modified
-        flag_modified(userAppData, "captcha_history")
+        print('writing to captcha history: %s' % userAppData.captcha_history)
+        commit_json_changed_to_orm(userAppData, ['captcha_history'])
 
-        db.session.add(userAppData)
-        db.session.commit()
     except Exception as e:
         print('failed to mark captcha solved for user_id %s' % user_id)
         print(e)
@@ -350,13 +346,7 @@ def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
         cat_id = cat_id if cat_id else task_id_to_category_id(task_id)
         user_app_data.next_task_memo_dict[cat_id] = next_memo
-
-        db.session.add(user_app_data)
-        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
-        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
-        from sqlalchemy.orm.attributes import flag_modified
-        flag_modified(user_app_data, "next_task_memo_dict")
-        db.session.commit()
+        commit_json_changed_to_orm(user_app_data, ['next_task_memo_dict'])
     except Exception as e:
         print(e)
         raise InvalidUsage('cant set next memo')
@@ -525,11 +515,7 @@ def store_next_task_results_ts(user_id, task_id, timestamp_str, cat_id=None):
         user_app_data.next_task_ts_dict[cat_id] = timestamp_str
         db.session.add(user_app_data)
 
-        # turns out sqlalchemy cant detect json updates, and requires manual flagging:
-        # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
-        from sqlalchemy.orm.attributes import flag_modified
-        flag_modified(user_app_data, "next_task_ts_dict")
-        db.session.commit()
+        commit_json_changed_to_orm(user_app_data, ['next_task_ts_dict'])
     except Exception as e:
         raise InvalidUsage('cant set task result ts. e:%s' % e)
 
@@ -1365,14 +1351,7 @@ def migrate_user_to_tasks2(user_id):
     uad.next_task_ts_dict = next_task_ts_dict
     uad.next_task_memo_dict = next_task_memo_dict
 
-    db.session.add(uad)
-    # turns out sqlalchemy cant detect json updates, and requires manual flagging:
-    # https://stackoverflow.com/questions/30088089/sqlalchemy-json-typedecorator-not-saving-correctly-issues-with-session-commit/34339963#34339963
-    from sqlalchemy.orm.attributes import flag_modified
-    flag_modified(uad, "completed_tasks_dict")
-    flag_modified(uad, "next_task_ts_dict")
-    flag_modified(uad, "next_task_memo_dict")
-    db.session.commit()
+    commit_json_changed_to_orm(uad,['completed_tasks_dict', 'next_task_ts_dict', 'next_task_memo_dict'])
 
     print('migrated user_id %s to tasks2.0: tasks: %s, ts: %s, memo: %s' % (user_id, uad.completed_tasks_dict , uad.next_task_ts_dict, uad.next_task_memo_dict))
 
