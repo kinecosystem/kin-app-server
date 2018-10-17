@@ -31,8 +31,23 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_task_results(self):
-        """test storting task reults"""
+    def test_task_results_overwrite(self):
+        """test storting task results"""
+
+        for cat_id in range(2):
+            cat = {'id': str(cat_id),
+              'title': 'cat-title',
+                   "skip_image_test": True,
+              'ui_data': {'color': "#123",
+                          'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                          'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+
+            resp = self.app.post('/category/add',
+                                data=json.dumps({
+                                'category': cat}),
+                                headers={},
+                                content_type='application/json')
+            self.assertEqual(resp.status_code, 200)
 
         # add a task
         task0 = {
