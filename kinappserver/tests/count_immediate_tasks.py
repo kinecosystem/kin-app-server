@@ -30,7 +30,7 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_task_results(self):
+    def test_count_immediate_tasks(self):
         """test storting task results"""
 
         # add a task
@@ -119,6 +119,8 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+
+
         # start testing by adding tasks with various categories
         add_task_to_test(task, cat_id=0,task_id=0,position=0,delay_days=0)
         self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
@@ -136,12 +138,86 @@ class Tester(unittest.TestCase):
         task['min_client_version_android'] = '2.0'
         add_task_to_test(task, cat_id=1, task_id=5, position=3, delay_days=0)
         self.assertEqual(models.count_immediate_tasks(str(userid)), 5)
-        # reset the versions back to 1.0
+
+        # nuke tasks - lets start testing exclude-by-country
         task['min_client_version_ios'] = '1.0'
         task['min_client_version_android'] = '1.0'
+        db.engine.execute("""delete from task2;""")
+
         # set limit on country code - the client should not be affected
-        add_task_to_test(task, cat_id=1, task_id=6, position=4, delay_days=0, excluded_country_codes=['IL'])
-        self.assertEqual(models.count_immediate_tasks(str(userid)), 6)
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0, excluded_country_codes=['IL'])
+        # user doesn't have any ip, so should get the task:
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        # set user's ip address to an iserali address. should no longer get the task
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % ('199.203.79.137', str(userid)))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
+        # set user's ip address to an american address - should now be served to user
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % ('50.196.205.141', str(userid)))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        # add another task with both US and IL excluded - should not be served to user (currently with US ip)
+        add_task_to_test(task, cat_id=1, task_id=1, position=1, delay_days=0, excluded_country_codes=['IL', 'US'])
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        # back to israeli ip - should still not be served to user
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % ('199.203.79.137', str(userid)))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
+        db.engine.execute("""update public.user_app_data set ip_address=null where user_id='%s';""" % (str(userid)))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+
+
+        # nuke tasks - lets start testing delay days
+        db.engine.execute("""delete from task2;""")
+
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=1)
+        # first task is always available
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        add_task_to_test(task, cat_id=0, task_id=1, position=1, delay_days=1)
+        # the delay days on the first task should block the 2nd task
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        add_task_to_test(task, cat_id=0, task_id=2, position=2, delay_days=0)
+        # the 3rd task makes no difference
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        add_task_to_test(task, cat_id=1, task_id=3, position=0, delay_days=1)
+        # another task in a different category does get counted
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+        add_task_to_test(task, cat_id=1, task_id=4, position=1, delay_days=1)
+        # the delay days on the first task should block the 2nd task in the 2nd category
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+
+        db.engine.execute("""update task2 set delay_days=0 where task_id='0';""")
+        # now, cat_id has 2 immediate tasks
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 3)
+
+        # mark some unrelated task. should make no difference
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['9']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 3)
+
+        # mark task no. 0. the number will drop to 2 (task ids 1, 3)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+
+        # mark tasks no. 0,1,2, the number will drop to 1 (only cat 2 tasks remain)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+
+        # mark tasks no. 3,4  the number will drop to 1 (only cat 1 tasks remain)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'1': ['3', '4']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        return
+
+        # mark tasks no. 0,3,4  the number will drop to 1 (only cat 1 tasks remain)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'1': ['3', '4'], '0': ['0']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+
+        # mark tasks no. 0,1,3,4  the number will drop to 1 (only cat 1 tasks remain)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'1': ['3', '4'], '0': ['0', '1']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+
+
+        # mark all tasks in both cats - nothing should remain
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3', '4']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
+
+
 
 
 

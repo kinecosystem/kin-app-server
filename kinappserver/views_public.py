@@ -494,6 +494,10 @@ def get_next_task_internal(cat_ids=[]):
     except Exception as e:
         print('cant print returned tasks for user %s. exception: %s' % (user_id, e))
 
+    # undict the tasks if a specific cat_id was requested
+    print('tasks_by_categories %s' % tasks_by_categories)
+    tasks_by_categories = tasks_by_categories[cat_ids[0]] if len(cat_ids) == 1 else tasks_by_categories
+
     return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)))
 
 

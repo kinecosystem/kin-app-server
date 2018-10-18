@@ -271,12 +271,16 @@ class Tester(unittest.TestCase):
                             'id': '1',
                             'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
                             'results': {'2234': 'werw', '5345': '345345'},
+                            'captcha_token': '23234',
                             'send_push': False
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
 
-        sleep(5)
+        print('data: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+
+        sleep(10)
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
