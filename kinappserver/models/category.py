@@ -102,6 +102,6 @@ def get_categories_for_user(user_id):
     #TODO fill this in later with actual data
 
     for cat_id in all_cats.keys():
-        all_cats[cat_id]['available_tasks_count'] = len(all_cats[cat_id])
+        all_cats[cat_id]['available_tasks_count'] = len(all_cats[cat_id]) #TODO this needs to be correctly calculated - some code already exists
 
     return [cat for cat in all_cats.values()]

@@ -32,7 +32,7 @@ class Tester(unittest.TestCase):
         self.postgresql.stop()
 
     def test_task_results(self):
-        """test storting task reults"""
+        """test storting task results"""
 
         for cat_id in range(2):
             cat = {'id': str(cat_id),
@@ -191,7 +191,7 @@ class Tester(unittest.TestCase):
                             'device_id': '234234',
                             'time_zone': '05:00',
                             'token': 'fake_token',
-                            'app_ver': '1.0'}),
+                            'app_ver': '2.0'}),
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -208,6 +208,8 @@ class Tester(unittest.TestCase):
         sleep(1)
 
         self.assertEqual(0, models.count_completed_tasks(str(userid)))
+
+        print('count_immediate_tasks before first submission: %s' % models.count_immediate_tasks(str(userid)))
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
@@ -232,9 +234,11 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
+
         sleep(8) # give the thread enough time to complete before the db connection is shutdown
 
-        #print(model.list_all_users_results_data())
+
+        print('count_immediate_tasks after first submission: %s' % models.count_immediate_tasks(str(userid)))
 
         # get user tx history - should have 1 items
         resp = self.app.get('/user/transactions', headers={USER_ID_HEADER: str(userid)})
@@ -272,11 +276,12 @@ class Tester(unittest.TestCase):
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
 
+        sleep(5)
+
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/tasks', headers=headers)
         data = json.loads(resp.data)
-        print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
         print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
         print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
@@ -316,7 +321,11 @@ class Tester(unittest.TestCase):
 
         print('total completed tasks for user_id: %s ' % models.count_completed_tasks(str(userid)))
         self.assertEqual(3, models.count_completed_tasks(str(userid)))
+
+        print('count_immediate_tasks: %s' % models.count_immediate_tasks(str(userid)))
+
         sleep(8)  # give the thread enough time to complete before the db connection is shutdown
+
 
 
 if __name__ == '__main__':

@@ -999,7 +999,6 @@ def get_unauthed_users():
 def restore_user_by_address(current_user_id, address):
     """given the user_id and the address, restore the device associated with this phone number to the given address"""
 
-
     # 1. find the phone number associated with this user_id
     #    and ensure the phone number has hints: deny restore from numbers with no hints.
     curr_enc_phone_number = get_enc_phone_number_by_user_id(current_user_id)

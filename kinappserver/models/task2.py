@@ -203,7 +203,6 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
      if no task can be matched return an empty set
      """
 
-    print('completed_tasks:%s' % completed_tasks)
     completed_tasks_for_cat_id = completed_tasks.get(cat_id, None)
     if not completed_tasks_for_cat_id:
         remove_previous_tasks_clause = ''
@@ -671,5 +670,86 @@ def remove_task_from_completed_tasks(user_id, task_id):
 
     return True
 
-def count_immidiate_tasks(completed_tasks):
-    """given a cat_id and position"""
+
+def count_immediate_tasks(user_id):
+    """given the user's task history, calculate how many tasks are readily avilable for each category"""
+    # this function needs to take into account the following things:
+    # 1. which tasks were already solved by the user
+    # 2. the delay_days for each task
+    # 3. the client's os type and app_ver
+    # 4. the user's last recorded ip address
+    immediate_tasks_count = 0
+    now = arrow.utcnow()
+    user_app_data = get_user_app_data(user_id)
+    completed_tasks = user_app_data.completed_tasks_dict
+    os_type = get_user_os_type(user_id)
+    app_ver = user_app_data.app_ver
+    country_code = get_country_code_by_ip(user_app_data.ip_address)
+
+    tasks_per_category = get_next_tasks_for_user(user_id)
+    print(tasks_per_category)
+    for cat_id in tasks_per_category.keys():
+        if tasks_per_category[cat_id] == []:
+            # no tasks available. skip.
+            pass
+        elif tasks_per_category[cat_id][0]['start_date'] > now.timestamp:
+            # the first task isn't available now, so skip.
+            pass
+        else:
+            filtered_unsolved_tasks_for_user_and_cat = get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_tasks.get(cat_id, []), os_type, app_ver, country_code, user_id)
+            immediate_tasks_count_for_cat_id = calculate_immediate_tasks(filtered_unsolved_tasks_for_user_and_cat)
+            print('counted %s immediate tasks for cat_id %s' % (immediate_tasks_count_for_cat_id, cat_id))
+            immediate_tasks_count = immediate_tasks_count + immediate_tasks_count_for_cat_id
+
+    print('count_immediate_tasks for user_id %s - %s' % (user_id, immediate_tasks_count))
+    return immediate_tasks_count
+
+
+def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_for_category, os_type, client_version, user_country_code, user_id):
+    """for the given category_id returns list of tasks, in order, with their delay days excluding previously completed tasks"""
+
+    # calculate a sql clause to remove previously submitted tasks, if such exist
+    remove_previous_tasks_clause = ''
+    if completed_task_ids_for_category:
+        completed_tasks_for_cat_id = ["\'%s\'" % id for id in completed_task_ids_for_category]
+        remove_previous_tasks_clause = '''and task2.task_id not in (%s)''' % (",".join(completed_tasks_for_cat_id))
+
+    stmt = '''select task_id, delay_days, min_client_version_android, min_client_version_ios, excluded_country_codes from Task2 where category_id='%s' %s order by position;''' % (cat_id, remove_previous_tasks_clause)
+    print(stmt)
+    res = db.engine.execute(stmt)
+
+    # exclude mismatching tasks - client version
+    unsolved_tasks = []
+    if os_type == OS_IOS:
+        client_version_index = 3
+    else:
+        client_version_index = 2
+    from distutils.version import LooseVersion
+    for task in [item for item in res.fetchall()]:
+        skip_task = False
+        if LooseVersion(task[client_version_index]) > LooseVersion(client_version):
+            print('detected a task (%s) that doesnt match the users os_type and app_ver. user_id %s' % (task[0], user_id))
+            skip_task = True
+        if task[4] not in (None, []) and user_country_code and user_country_code in task[4]:
+            print('detected a task (%s) that cant be served to user because of country code. user_id %s' % (task[0], user_id))
+            # the task is limited to a specific country, and the user's country is different
+            skip_task = True
+
+        if not skip_task:
+            unsolved_tasks.append(task)
+
+    return unsolved_tasks
+
+
+def calculate_immediate_tasks(filtered_unsolved_tasks_for_user):
+    """return the number of immediate tasks in the given tasks array"""
+    total_tasks = 0
+    for task in filtered_unsolved_tasks_for_user:
+        if task.delay_days == 0:
+            total_tasks = total_tasks + 1
+        else:
+            break
+    return total_tasks
+
+
+
