@@ -210,7 +210,7 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
         completed_tasks_for_cat_id = ["\'%s\'" % id for id in completed_tasks_for_cat_id]
         remove_previous_tasks_clause = '''and task2.task_id not in (%s)''' % (",".join(completed_tasks_for_cat_id))
     # get ALL the unsolved task_ids for the category
-    stmt = '''SELECT task2.task_id FROM task2 WHERE task2.category_id='%s' %s order by task2.position;''' % (cat_id, remove_previous_tasks_clause)
+    stmt = '''SELECT task2.task_id FROM task2 WHERE task2.category_id='%s' %s order by task2.position, task2.task_start_date;''' % (cat_id, remove_previous_tasks_clause)
     print(stmt)
     res = db.engine.execute(stmt)
     unsolved_task_ids = [item[0] for item in res.fetchall()]
@@ -220,19 +220,25 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
     for task_id in unsolved_task_ids:
         task = get_task_by_id(task_id)
 
+        # skip inactive ad-hoc tasks
+        if not is_task_active(task_id):
+            print('skipping task_id %s - inactive ad-hoc task' % task_id)
+            continue
+
         # skip country-blocked tasks
         if user_country_code in task['excluded_country_codes']:
             # we're skipping this task
             print('skipping task_id %s for user %s with country-code %s' % (task_id, user_id, user_country_code))
             continue
 
-        if not can_support_task(os_type, app_ver, task):
+        if not can_client_support_task(os_type, app_ver, task):
             send_please_upgrade_push(user_id)
             return []
 
+        # return the first valid task:
         print('next_task_id_for_category: returning task_ids %s for cat_id %s and user_id %s' % (task_id, cat_id, user_id))
         return [task_id]
-    # no tasks available
+    # ...no tasks available
     print('next_task_id_for_category: no available tasks for user_id %s in cat_id %s' % (user_id, cat_id))
     return []
 
@@ -311,7 +317,7 @@ def should_skip_task(user_id, task_id, source_ip):
     return False
 
 
-def can_support_task(os_type, app_ver, task):
+def can_client_support_task(os_type, app_ver, task):
     """ returns true if the client with the given os_type and app_ver can correctly handle the given task"""
     from distutils.version import LooseVersion
     if os_type == OS_ANDROID:
@@ -319,7 +325,7 @@ def can_support_task(os_type, app_ver, task):
             return True
     elif LooseVersion(app_ver) >= LooseVersion(task.get('min_client_version_ios')):
             return True
-    print('can_support_task: task min version: %s, the client app version: %s' % (task.get('min_client_version_android'), app_ver))
+    print('can_client_support_task: task min version: %s, the client app version: %s' % (task.get('min_client_version_android'), app_ver))
     return False
 
 
@@ -348,8 +354,8 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['items'] = task.items
     task_json['updated_at'] = arrow.get(task.update_at).timestamp
     task_json['start_date'] = int(shifted_ts if shifted_ts is not None else arrow.get(0).timestamp)  # return 0 if no shift was requested
-    task_json['task_start_date']= task.task_start_date
-    task_json['task_expiration_date'] = task.task_expiration_date
+    task_json['task_start_date'] = str(task.task_start_date) if task.task_start_date else None
+    task_json['task_expiration_date'] = str(task.task_expiration_date) if task.task_expiration_date else None
     task_json['min_client_version_android'] = task.min_client_version_android or DEFAULT_MIN_CLIENT_VERSION
     task_json['min_client_version_ios'] = task.min_client_version_ios or DEFAULT_MIN_CLIENT_VERSION
     task_json['post_task_actions'] = [] if not task.post_task_actions else task.post_task_actions
@@ -359,14 +365,14 @@ def get_task_by_id(task_id, shifted_ts=None):
 
 def add_task(task_json):
 
-    def is_position_taken(cat_id, position):
+    def is_position_taken(cat_id, pos):
         """determines whether there is already a task at the given category and position"""
 
-        if position == -1:
+        if pos == -1:
             # position -1 is shared among all ad-hoc tasks
             return True
         try:
-            Task2.query.filter(Task2.category_id == cat_id).filter(Task2.position == position).one()
+            Task2.query.filter(Task2.category_id == cat_id).filter(Task2.position == pos).one()
         except Exception as e:
             return False
         else:
@@ -396,6 +402,7 @@ def add_task(task_json):
         if None in (task_expiration_date, task_start_date):
             print('cant add ad-hoc task w/o expiration/start date')
             raise InvalidUsage('cant add ad-hoc task w/o start/expiration dates')
+        print('adding ad-hoc task with start-date: %s and expiration-date: %s' % (task_start_date, task_expiration_date))
     elif is_position_taken(category_id, position) and not overwrite_task:
             print('cant insert task_id %s at cat_id %s and position %s - position already taken' % (task_id, category_id, position))
             raise InvalidUsage('cant insert task - position taken')
@@ -405,7 +412,6 @@ def add_task(task_json):
         if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating', 'tip', 'dual_image']:
             print('invalid item type:%s ' % item['type'])
             raise InvalidUsage('cant add task with invalid item-type')
-
 
         # test validity of quiz items
         try:
@@ -499,7 +505,7 @@ def add_task(task_json):
         task.items = task_json['items']
         task.excluded_country_codes = task_json.get('excluded_country_codes', [])
         task.task_start_date = task_start_date  # required for ad-hoc
-        task.expiration_date = task_expiration_date  # required for ad-hoc
+        task.task_expiration_date = task_expiration_date  # required for ad-hoc
         task.min_client_version_ios = task_json.get('min_client_version_ios', DEFAULT_MIN_CLIENT_VERSION)
         task.min_client_version_android = task_json.get('min_client_version_android', DEFAULT_MIN_CLIENT_VERSION)
         task.post_task_actions = task_json.get('post_task_actions', None)
@@ -691,6 +697,7 @@ def count_immediate_tasks(user_id):
     # 2. the delay_days for each task
     # 3. the client's os type and app_ver
     # 4. the user's last recorded ip address
+    #TODO add adhoc tasks here
     immediate_tasks_count = 0
     now = arrow.utcnow()
     user_app_data = get_user_app_data(user_id)
@@ -727,7 +734,7 @@ def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_fo
         completed_tasks_for_cat_id = ["\'%s\'" % id for id in completed_task_ids_for_category]
         remove_previous_tasks_clause = '''and task2.task_id not in (%s)''' % (",".join(completed_tasks_for_cat_id))
 
-    stmt = '''select task_id, delay_days, min_client_version_android, min_client_version_ios, excluded_country_codes from Task2 where category_id='%s' %s order by position;''' % (cat_id, remove_previous_tasks_clause)
+    stmt = '''select task_id, delay_days, min_client_version_android, min_client_version_ios, excluded_country_codes from Task2 where category_id='%s' %s order by position, task_start_date;''' % (cat_id, remove_previous_tasks_clause)
     print(stmt)
     res = db.engine.execute(stmt)
 
@@ -740,9 +747,14 @@ def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_fo
     from distutils.version import LooseVersion
     for task in [item for item in res.fetchall()]:
         skip_task = False
+
+        if not is_task_active(task[0]):
+            skip_task = True
+
         if LooseVersion(task[client_version_index]) > LooseVersion(client_version):
             print('detected a task (%s) that doesnt match the users os_type and app_ver. user_id %s' % (task[0], user_id))
             skip_task = True
+
         if task[4] not in (None, []) and user_country_code and user_country_code in task[4]:
             print('detected a task (%s) that cant be served to user because of country code. user_id %s' % (task[0], user_id))
             # the task is limited to a specific country, and the user's country is different
@@ -774,4 +786,17 @@ def calculate_immediate_tasks(filtered_unsolved_tasks_for_user):
     return total_tasks
 
 
+def is_task_active(task_id):
+    """"determines whether the task with the given id is active.
 
+    Static tasks are always active.
+    Ad-hoc tasks are active only if their task__start_date has passed
+    and theor task_expiration_date has yet to pass
+    """
+    task_json = get_task_by_id(task_id)
+    if task_json['position'] != -1:
+        return True
+
+    if arrow.get(task_json['task_start_date']) < arrow.utcnow() < arrow.get(task_json['task_expiration_date']):
+        return True
+    return False
