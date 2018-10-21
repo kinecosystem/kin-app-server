@@ -45,7 +45,6 @@ class Tester(unittest.TestCase):
           'price': 1,
           'skip_image_test': True,
           'min_to_complete': 2,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
           'provider': 
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
@@ -75,7 +74,6 @@ class Tester(unittest.TestCase):
           'price': 1,
           'skip_image_test': True,
           'min_to_complete': 2,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
           'provider': 
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
@@ -105,7 +103,6 @@ class Tester(unittest.TestCase):
           'price': 1,
           'skip_image_test': True,
           'min_to_complete': 2,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
           'provider':
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},

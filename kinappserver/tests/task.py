@@ -7,6 +7,7 @@ import testing.postgresql
 
 import kinappserver
 from kinappserver import db, models
+import arrow
 
 
 USER_ID_HEADER = "X-USERID"
@@ -56,8 +57,7 @@ class Tester(unittest.TestCase):
                   'cat_id': '0',
                   'price': 2000,
                   'min_to_complete': 2,
-                  'skip_image_test': True,  # TODO revert back to False
-                  'start_date': '2013-05-11T21:23:58.970460+00:00',
+                  'skip_image_test': False, # test link-checking code
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider': 
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
@@ -92,6 +92,8 @@ class Tester(unittest.TestCase):
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        task['skip_image_test'] = True  # once is enough
 
         # add the same task again. this should fail
         resp = self.app.post('/task/add',
@@ -149,8 +151,7 @@ class Tester(unittest.TestCase):
                   'cat_id': '0',
                   'price': 2000,
                   'min_to_complete': 2,
-                  'skip_image_test': True,  # TODO revert back to False
-                  'start_date': '2013-05-11T21:23:58.970460+00:00',
+                  'skip_image_test': False,
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider':
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
@@ -180,7 +181,6 @@ class Tester(unittest.TestCase):
                             'task': quiz_task}),
                             headers={},
                             content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.status_code, 200)
 
         print(models.list_all_task_data())
@@ -217,6 +217,32 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertNotEqual(data['tasks']['0'][0]['memo'], None)
         self.assertEqual(models.get_user_task_results(userid), [])
+
+        # try to add an ad hoc task w/o start/expiration dates:
+        task['position'] = -1
+        task['id'] = 2
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task}),
+                            headers={},
+                            content_type='application/json')
+        self.assertNotEqual(resp.status_code, 200)
+
+        task['task_start_date'] = str(arrow.utcnow())
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task}),
+                            headers={},
+                            content_type='application/json')
+        self.assertNotEqual(resp.status_code, 200)
+
+        task['task_expiration_date'] = str(arrow.utcnow())
+        resp = self.app.post('/task/add',
+                            data=json.dumps({
+                            'task': task}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
         resp = self.app.post('/user/completed_tasks/add',
                                 data=json.dumps({

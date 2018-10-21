@@ -160,7 +160,7 @@ class Task2(db.Model):
     """the Task class represent a single task"""
     category_id = db.Column('category_id', db.String(40), db.ForeignKey("category.category_id"), primary_key=False, nullable=False)
     task_id = db.Column(db.String(40), nullable=False, primary_key=True)
-    position = db.Column(db.Integer(), nullable=False, primary_key=False)
+    position = db.Column(db.Integer(), nullable=False, primary_key=False) # -1 for ad-hoc tasks. multiple tasks can have -1.
     task_type = db.Column(db.String(40), nullable=False, primary_key=True)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
     description = db.Column(db.String(200), nullable=False, primary_key=False)
@@ -171,8 +171,8 @@ class Task2(db.Model):
     excluded_country_codes = db.Column(db.JSON, default=[])
     tags = db.Column(db.JSON)
     items = db.Column(db.JSON)
-    start_date = db.Column(ArrowType)
-    expiration_date = db.Column(ArrowType, nullable=True) # no need to expose to client
+    task_start_date = db.Column(ArrowType, nullable=True)  # governs when the task is available (only used in ad-hoc tasks)
+    task_expiration_date = db.Column(ArrowType, nullable=True)  # a task with expiration is an ad-hoc task
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     delay_days = db.Column(db.Integer(), nullable=False, primary_key=False)
     min_client_version_android = db.Column(db.String(80), nullable=False, primary_key=False)
@@ -180,8 +180,7 @@ class Task2(db.Model):
     post_task_actions = db.Column(db.JSON)
 
     def __repr__(self):
-        return '<task_id: %s, task_type: %s, title: %s, desc: %s, price: %s, video_url: %s, min_to_complete: %s, start_date: %s, delay_days: %s, min_client_version_android: %s, min_client_version_ios %s>' % \
-               (self.task_id, self.task_type, self.title, self.description, self.price, self.video_url, self.min_to_complete, self.start_data, self.delay_days, self.min_client_version_android, self.min_client_version_ios)
+        return '<task_id: %s, task_type: %s, title: %s' % (self.task_id, self.task_type, self.title)
 
 
 def list_all_task_data():
@@ -349,6 +348,8 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['items'] = task.items
     task_json['updated_at'] = arrow.get(task.update_at).timestamp
     task_json['start_date'] = int(shifted_ts if shifted_ts is not None else arrow.get(0).timestamp)  # return 0 if no shift was requested
+    task_json['task_start_date']= task.task_start_date
+    task_json['task_expiration_date'] = task.task_expiration_date
     task_json['min_client_version_android'] = task.min_client_version_android or DEFAULT_MIN_CLIENT_VERSION
     task_json['min_client_version_ios'] = task.min_client_version_ios or DEFAULT_MIN_CLIENT_VERSION
     task_json['post_task_actions'] = [] if not task.post_task_actions else task.post_task_actions
@@ -360,6 +361,10 @@ def add_task(task_json):
 
     def is_position_taken(cat_id, position):
         """determines whether there is already a task at the given category and position"""
+
+        if position == -1:
+            # position -1 is shared among all ad-hoc tasks
+            return True
         try:
             Task2.query.filter(Task2.category_id == cat_id).filter(Task2.position == position).one()
         except Exception as e:
@@ -367,20 +372,33 @@ def add_task(task_json):
         else:
             return True
 
+    delete_prior_to_adding = False
     task_id = str(task_json['id'])
     print('trying to add task with id %s...' % task_id)
 
-    delete_prior_to_adding = False
+    position = int(task_json['position'])
+    task_start_date = task_json.get('task_start_date', None)
+    task_expiration_date = task_json.get('task_expiration_date', None)
+    category_id = task_json['cat_id']
+    overwrite_task = task_json.get('overwrite', False)
 
     # does the task_id already exist?
     if get_task_by_id(task_id):
-        if not bool(task_json.get('overwrite', False)):
+        if not overwrite_task:
             print('cant add task with id %s - already exists. provide the overwrite flag to overwrite the task' % task_id)
             raise InvalidUsage('task_id %s already exists' % task_id)
         else:
             print('task %s already exists - overwriting it' % task_id)
             delete_prior_to_adding = True
 
+    # sanity for position
+    if position == -1:
+        if None in (task_expiration_date, task_start_date):
+            print('cant add ad-hoc task w/o expiration/start date')
+            raise InvalidUsage('cant add ad-hoc task w/o start/expiration dates')
+    elif is_position_taken(category_id, position) and not overwrite_task:
+            print('cant insert task_id %s at cat_id %s and position %s - position already taken' % (task_id, category_id, position))
+            raise InvalidUsage('cant insert task - position taken')
 
     # sanity for task data
     for item in task_json['items']:
@@ -468,13 +486,8 @@ def add_task(task_json):
         task = Task2()
         task.delay_days = task_json.get('delay_days', 1)  # default is 1
         task.task_id = task_id
-        task.category_id = str(task_json['cat_id'])
-        position = task_json['position']
-        if is_position_taken(task.category_id, position):
-            print('cant insert task_id %s at cat_id %s and position %s - already taken' % (task.task_id, task.category_id, position))
-            raise InvalidUsage('cant insert task - position taken')
-        else:
-            task.position = position  # TODO allocate position automatically at some point
+        task.category_id = category_id
+        task.position = position  # unique in category, except for ad-hocs which are always -1. TODO allocate position automatically for non adhocs
         task.task_type = task_json['type']
         task.title = task_json['title']
         task.description = task_json['desc']
@@ -484,9 +497,9 @@ def add_task(task_json):
         task.provider_data = task_json['provider']
         task.tags = task_json['tags']
         task.items = task_json['items']
-        task.start_date = arrow.get(task_json['start_date'])
         task.excluded_country_codes = task_json.get('excluded_country_codes', [])
-        task.expiration_date = task_json.get('expiration_date', None)
+        task.task_start_date = task_start_date  # required for ad-hoc
+        task.expiration_date = task_expiration_date  # required for ad-hoc
         task.min_client_version_ios = task_json.get('min_client_version_ios', DEFAULT_MIN_CLIENT_VERSION)
         task.min_client_version_android = task_json.get('min_client_version_android', DEFAULT_MIN_CLIENT_VERSION)
         task.post_task_actions = task_json.get('post_task_actions', None)
