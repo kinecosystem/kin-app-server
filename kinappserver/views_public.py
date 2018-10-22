@@ -33,7 +33,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, get_next_tasks_for_user, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
     update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, \
-    captcha_solved, get_user_tz, autoswitch_captcha, automatically_raise_captcha_flag, get_personalized_categories_header_message, get_categories_for_user, \
+    captcha_solved, get_user_tz, do_captcha_stuff, get_personalized_categories_header_message, get_categories_for_user, \
     migrate_user_to_tasks2, should_force_update, is_update_available
 
 def get_payment_lock_name(user_id, task_id):
@@ -406,8 +406,7 @@ def post_user_task_results_endpoint():
             return jsonify(status='error', info='already_compensating'), status.HTTP_400_BAD_REQUEST
 
         memo = get_and_replace_next_task_memo(user_id, task_id)
-        autoswitch_captcha(user_id)  # changes captcha flag from 0 to 1 if 0
-        automatically_raise_captcha_flag(user_id)  # sets the captcha flag every so-many tasks
+        do_catpcha_stuff(user_id) # raise captcha flag if needed
         split_payment(address, task_id, send_push, user_id, memo, delta)
 
     except Exception as e:
@@ -1042,8 +1041,7 @@ def truex_callback_endpoint():
         if not res:
             print('failed to pay user %s for truex activity' % user_id)
 
-        autoswitch_captcha(user_id)  # changes captcha flag from 0 to 1 if 0
-        automatically_raise_captcha_flag(user_id)  # sets the captcha flag every so-many tasks
+        do_catpcha_stuff(user_id)  # raise captcha flag if needed
     except Exception as e:
         print('unhandled exception in truex process. exception: %s' % e)
         return TRUEX_CALLBACK_RECOVERABLE_ERROR

@@ -300,6 +300,46 @@ def captcha_solved(user_id):
         print(e)
 
 
+def do_catpcha_stuff(user_id):
+    autoswitch_captcha(user_id)
+    automatically_raise_captcha_flag(user_id)
+
+
+def automatically_raise_captcha_flag(user_id):
+    """this function will raise ths given user_id's captcha flag if the time is right.
+    ATM we're selecting users by random with 20% chance and cooldown.
+    TODO for task2.0, figure out WHEN is the right time to do this
+    """
+    if not config.CAPTCHA_AUTO_RAISE:
+        return
+
+    os_type = get_user_os_type(user_id)
+    if os_type == OS_IOS:
+        # print('not raising captcha for ios device %s' % user_id)
+        return
+
+    # get the user's current task
+    # and also the captcha status and history - all are in the user_app_data
+    uad = get_user_app_data(user_id)
+    if uad.should_solve_captcha_ternary != -1:
+        # print('raise_captcha_if_needed: user %s captcha flag already at %s. doing nothing' % (user_id, uad.should_solve_captcha_ternary))
+        return
+
+    # every time a user completed X tasks mod CAPTCHA_TASK_MODULO == 0, but never twice in the same <configurable time>
+    if (count_completed_tasks(user_id) % config.CAPTCHA_TASK_MODULO == 0):
+        # ensure the last captcha wasnt solved today
+        now = arrow.utcnow()
+        recent_captcha = 0 if uad.captcha_history is None else max([item['date'] for item in uad.captcha_history])
+        print(recent_captcha)
+        last_captcha_secs_ago = (now - arrow.get(recent_captcha)).total_seconds()
+        if last_captcha_secs_ago > config.CAPTCHA_SAFETY_COOLDOWN_SECS:
+            # more than a day ago, so raise:
+            print('raise_captcha_if_needed:  user %s, last captcha was %s secs ago, so raising flag' % (user_id, last_captcha_secs_ago))
+            set_should_solve_captcha(user_id)
+        # else:
+        #    print('raise_captcha_if_needed: user %s, current task_id = %s, last captcha was %s secs ago, so not raising flag' % (user_id, max_task, last_captcha_secs_ago))
+
+
 def update_ip_address(user_id, ip_address):
     try:
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
@@ -1267,41 +1307,6 @@ def re_register_all_users():
         sleep(0.1)  # lets not choke the server
         send_push_register(user.user_id)
         counter = counter + 1
-
-
-def automatically_raise_captcha_flag(user_id):
-    """this function will raise ths given user_id's captcha flag if the time is right.
-    ATM we're selecting users by random with 20% chance and cooldown.
-    TODO for task2.0, figure out WHEN is the right time to do this
-    """
-    if not config.CAPTCHA_AUTO_RAISE:
-        return
-
-    os_type = get_user_os_type(user_id)
-    if os_type == OS_IOS:
-        #print('not raising captcha for ios device %s' % user_id)
-        return
-
-    # get the user's current task
-    # and also the captcha status and history - all are in the user_app_data
-    uad = get_user_app_data(user_id)
-    if uad.should_solve_captcha_ternary != -1:
-        #print('raise_captcha_if_needed: user %s captcha flag already at %s. doing nothing' % (user_id, uad.should_solve_captcha_ternary))
-        return
-
-    # every time a user completed X tasks mod CAPTCHA_TASK_MODULO == 0, but never twice in the same <configurable time>
-    if (count_completed_tasks(user_id) % config.CAPTCHA_TASK_MODULO == 0):
-        # ensure the last captcha wasnt solved today
-        now = arrow.utcnow()
-        recent_captcha = 0 if uad.captcha_history is None else max([item['date'] for item in uad.captcha_history])
-        print(recent_captcha)
-        last_captcha_secs_ago = (now - arrow.get(recent_captcha)).total_seconds()
-        if last_captcha_secs_ago > config.CAPTCHA_SAFETY_COOLDOWN_SECS:
-            # more than a day ago, so raise:
-            print('raise_captcha_if_needed:  user %s, last captcha was %s secs ago, so raising flag' % (user_id, last_captcha_secs_ago))
-            set_should_solve_captcha(user_id)
-        #else:
-        #    print('raise_captcha_if_needed: user %s, current task_id = %s, last captcha was %s secs ago, so not raising flag' % (user_id, max_task, last_captcha_secs_ago))
 
 
 def get_personalized_categories_header_message(user_id):
