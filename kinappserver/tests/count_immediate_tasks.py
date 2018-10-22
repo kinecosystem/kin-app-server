@@ -4,6 +4,7 @@ import uuid
 
 import simplejson as json
 import testing.postgresql
+import arrow
 
 import kinappserver
 from kinappserver import db, models
@@ -32,6 +33,7 @@ class Tester(unittest.TestCase):
 
     def test_count_immediate_tasks(self):
         """test storting task results"""
+        now = arrow.utcnow()
 
         # add a task
         task = {
@@ -65,11 +67,14 @@ class Tester(unittest.TestCase):
             }]
         }
 
-        def add_task_to_test(task, cat_id, task_id, position, delay_days=0, excluded_country_codes=None):
+        def add_task_to_test(task, cat_id, task_id, position, delay_days=0, excluded_country_codes=None, task_start_date=None, task_expiration_date=None):
             task['position'] = position
             task['id'] = str(task_id)
             task['cat_id'] = str(cat_id)
             task['delay_days'] = delay_days
+            if position == -1:
+                task['task_start_date'] = task_start_date
+                task['task_expiration_date'] = task_expiration_date
             if excluded_country_codes:
                 task['excluded_country_codes'] = excluded_country_codes
             resp = self.app.post('/task/add',
@@ -79,7 +84,12 @@ class Tester(unittest.TestCase):
                                  content_type='application/json')
             self.assertEqual(resp.status_code, 200)
 
+        def nuke_user_data_and_taks():
+            db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': [], '1': []}),))
+            db.engine.execute("""delete from task2;""")
+
         for cat_id in range(2):
+            print('adding category %s...' % cat_id)
             cat = {'id': str(cat_id),
               'title': 'cat-title',
                    "skip_image_test": True,
@@ -118,10 +128,9 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-
-
+        nuke_user_data_and_taks()
         # start testing by adding tasks with various categories
-        add_task_to_test(task, cat_id=0,task_id=0,position=0,delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=0,position=0, delay_days=0)
         self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
         add_task_to_test(task, cat_id=0, task_id=1, position=1, delay_days=0)
         self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
@@ -141,7 +150,7 @@ class Tester(unittest.TestCase):
         # nuke tasks - lets start testing exclude-by-country
         task['min_client_version_ios'] = '1.0'
         task['min_client_version_android'] = '1.0'
-        db.engine.execute("""delete from task2;""")
+        nuke_user_data_and_taks()
 
         # set limit on country code - the client should not be affected
         add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0, excluded_country_codes=['IL'])
@@ -164,24 +173,35 @@ class Tester(unittest.TestCase):
 
 
         # nuke tasks - lets start testing delay days
-        db.engine.execute("""delete from task2;""")
+        nuke_user_data_and_taks()
 
+        # add the first task, which is always available - regardless of the delay_days
         add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=1)
-        # first task is always available
+        # first task is always available - should have 1 task
         self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+
+        # add the 2nd task in the same category. should be blocked by the delay days
         add_task_to_test(task, cat_id=0, task_id=1, position=1, delay_days=1)
         # the delay days on the first task should block the 2nd task
         self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+
+        # add the 3rd task. shuld still be blocked by the first task
         add_task_to_test(task, cat_id=0, task_id=2, position=2, delay_days=0)
         # the 3rd task makes no difference
         self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+
+        # add the first task on the 2nd category. should be available
         add_task_to_test(task, cat_id=1, task_id=3, position=0, delay_days=1)
         # another task in a different category does get counted
         self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+
+        # add another task on the 2nd category. should be blocked by the first task
         add_task_to_test(task, cat_id=1, task_id=4, position=1, delay_days=1)
         # the delay days on the first task should block the 2nd task in the 2nd category
         self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
 
+        # update the delay days on the first task of the first category.
+        # should now open up the 2nd task on the first category
         db.engine.execute("""update task2 set delay_days=0 where task_id='0';""")
         # now, cat_id has 2 immediate tasks
         self.assertEqual(models.count_immediate_tasks(str(userid)), 3)
@@ -190,35 +210,126 @@ class Tester(unittest.TestCase):
         db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['9']}),))
         self.assertEqual(models.count_immediate_tasks(str(userid)), 3)
 
-        # mark task no. 0. the number will drop to 2 (task ids 1, 3)
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=1, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=2, position=1, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=3, position=2, delay_days=0)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 3)
+
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=1, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=2, position=1, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=3, position=2, delay_days=1)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 3)
+
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=1, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=2, position=1, delay_days=1)
+        add_task_to_test(task, cat_id=0, task_id=3, position=2, delay_days=1)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=1, position=0, delay_days=1)
+        add_task_to_test(task, cat_id=0, task_id=2, position=1, delay_days=1)
+        add_task_to_test(task, cat_id=0, task_id=3, position=2, delay_days=1)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+
+
+        # delay days = 0
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=1, position=1, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=2, position=2, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=3, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=4, position=1, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=5, position=2, delay_days=0)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 6)
         db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0']}),))
-        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
-
-        # mark tasks no. 0,1,2, the number will drop to 1 (only cat 2 tasks remain)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 5)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 4)
         db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2']}),))
-        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
-
-        # mark tasks no. 3,4  the number will drop to 1 (only cat 1 tasks remain)
-        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'1': ['3', '4']}),))
-        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
-        return
-
-        # mark tasks no. 0,3,4  the number will drop to 1 (only cat 1 tasks remain)
-        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'1': ['3', '4'], '0': ['0']}),))
-        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
-
-        # mark tasks no. 0,1,3,4  the number will drop to 1 (only cat 1 tasks remain)
-        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'1': ['3', '4'], '0': ['0', '1']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 3)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3']}),))
         self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
-
-
-        # mark all tasks in both cats - nothing should remain
         db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3', '4']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3', '4', '5']}),))
         self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
 
 
+        # delay days = 1
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=1)
+        add_task_to_test(task, cat_id=0, task_id=1, position=1, delay_days=1)
+        add_task_to_test(task, cat_id=0, task_id=2, position=2, delay_days=1)
+        add_task_to_test(task, cat_id=1, task_id=3, position=0, delay_days=1)
+        add_task_to_test(task, cat_id=1, task_id=4, position=1, delay_days=1)
+        add_task_to_test(task, cat_id=1, task_id=5, position=2, delay_days=1)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3', '4']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3', '4', '5']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
 
+        # mixed delay days , and delay days = 2 should make no difference
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=2)
+        add_task_to_test(task, cat_id=0, task_id=1, position=1, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=2, position=2, delay_days=2)
+        add_task_to_test(task, cat_id=1, task_id=3, position=0, delay_days=2)
+        add_task_to_test(task, cat_id=1, task_id=4, position=1, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=5, position=2, delay_days=2)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)  # 1 + 1
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 3)  # 2 + 1
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)  # 1 + 1
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)  # 0 + 1
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)  # 0 + 2
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3', '4']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 1)  # 0 + 1
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['0', '1', '2'], '1': ['3', '4', '5']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)  # 0 + 0
 
+        # throw in a couple of ad-hoc tasks
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=2)
+        add_task_to_test(task, cat_id=0, task_id=1, position=1, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=2, position=2, delay_days=2)
+        add_task_to_test(task, cat_id=1, task_id=3, position=0, delay_days=2)
+        add_task_to_test(task, cat_id=1, task_id=4, position=1, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=5, position=2, delay_days=2)
+        # add 2 active ad-hoc tasks
+        add_task_to_test(task, cat_id=0, task_id=6, position=-1, delay_days=0, task_start_date=str(now.shift(hours=-1)), task_expiration_date=str(now.shift(hours=1)))
+        add_task_to_test(task, cat_id=1, task_id=7, position=-1, delay_days=0, task_start_date=str(now.shift(hours=-1)), task_expiration_date=str(now.shift(hours=1)))
+        # 2 yet-inactive ad-hoc tasks
+        add_task_to_test(task, cat_id=0, task_id=8, position=-1, delay_days=0, task_start_date=str(now.shift(hours=+10)), task_expiration_date=str(now.shift(hours=11)))
+        add_task_to_test(task, cat_id=1, task_id=9, position=-1, delay_days=0, task_start_date=str(now.shift(hours=+10)), task_expiration_date=str(now.shift(hours=11)))
+        # 2 already-inactive ad-hoc tasks
+        add_task_to_test(task, cat_id=0, task_id=10, position=-1, delay_days=0, task_start_date=str(now.shift(hours=-10)), task_expiration_date=str(now.shift(hours=-9)))
+        add_task_to_test(task, cat_id=1, task_id=11, position=-1, delay_days=0, task_start_date=str(now.shift(hours=-10)), task_expiration_date=str(now.shift(hours=-9)))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 4)  # [6,0],[7,3]
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['6']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 3)  # [0],[7,3]
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['6'], '1': ['7']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)  # [0],[3]
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['6', '0'], '1': ['7']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 3)  # [1,2],[3]
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['6', '0'], '1': ['7', '3']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 4)  # [1,2],[4,5]
+        db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['6', '0', '1', '2', '3'], '1': ['7', '3', '4', '5']}),))
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)  # [], []
 
 if __name__ == '__main__':
     unittest.main()

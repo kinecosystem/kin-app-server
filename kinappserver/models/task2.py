@@ -380,12 +380,11 @@ def add_task(task_json):
 
     delete_prior_to_adding = False
     task_id = str(task_json['id'])
-    print('trying to add task with id %s...' % task_id)
-
     position = int(task_json['position'])
     task_start_date = task_json.get('task_start_date', None)
     task_expiration_date = task_json.get('task_expiration_date', None)
     category_id = task_json['cat_id']
+    print('trying to add task with id %s to cat_id %s at position %s...' % (task_id, category_id, position))
     overwrite_task = task_json.get('overwrite', False)
     fail_flag = False
     skip_image_test = task_json.get('skip_image_test', False)
@@ -708,10 +707,11 @@ def count_immediate_tasks(user_id):
     country_code = get_country_code_by_ip(user_app_data.ip_address)
 
     tasks_per_category = get_next_tasks_for_user(user_id)
-    print(tasks_per_category)
+    print('tasks-per-cat: %s' % tasks_per_category)
     for cat_id in tasks_per_category.keys():
         if tasks_per_category[cat_id] == []:
             # no tasks available. skip.
+            print('skipping cat_id %s - no tasks' % cat_id)
             pass
         elif tasks_per_category[cat_id][0]['start_date'] > now.timestamp:
             # the first task isn't available now, so skip.
