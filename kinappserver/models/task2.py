@@ -387,6 +387,8 @@ def add_task(task_json):
     task_expiration_date = task_json.get('task_expiration_date', None)
     category_id = task_json['cat_id']
     overwrite_task = task_json.get('overwrite', False)
+    fail_flag = False
+    skip_image_test = task_json.get('skip_image_test', False)
 
     # does the task_id already exist?
     if get_task_by_id(task_id):
@@ -431,54 +433,53 @@ def add_task(task_json):
                 if answer_id not in [result['id'] for result in item['results']]:
                     raise InvalidUsage('answer_id %s does not match answer_ids %s' % (answer_id, [result['id'] for result in item['results']]))
 
-            fail_flag = False
-            skip_image_test = task_json.get('skip_image_test', False)
-
-            if task_json['type'] == 'video_questionnaire':
-                video_url = task_json.get('video_url', None)
-                if video_url is None:
-                    print('missing video_url in video_questionnaire')
-                    raise InvalidUsage('no video_url field in the video_questionnaire!')
-                elif not skip_image_test:
-                        if not test_url(video_url):
-                            print('failed to get the video url: %s' % video_url)
-                            fail_flag = True
         except Exception as e:
             print('failed to verify the quiz data. aborting')
             raise InvalidUsage('cant verify quiz data for task_id %s' % task_id)
 
-        if not skip_image_test:
-            print('testing accessibility of task urls (this can take a few seconds...)')
-            # ensure all urls are accessible:
-            image_url = task_json['provider'].get('image_url')
-            if image_url:
-                if not test_image(image_url):
-                    print('image url - %s - could not be verified' % image_url)
+    # video questionnaire
+    if task_json['type'] == 'video_questionnaire':
+        video_url = task_json.get('video_url', None)
+        if video_url is None:
+            print('missing video_url in video_questionnaire')
+            raise InvalidUsage('no video_url field in the video_questionnaire!')
+        elif not skip_image_test:
+            if not test_url(video_url):
+                print('failed to get the video url: %s' % video_url)
+                fail_flag = True
+
+    if not skip_image_test:
+        print('testing accessibility of task urls (this can take a few seconds...)')
+        # ensure all urls are accessible:
+        image_url = task_json['provider'].get('image_url')
+        if image_url:
+            if not test_image(image_url):
+                print('image url - %s - could not be verified' % image_url)
+                fail_flag = True
+
+        # test image_url within item results
+        items = task_json['items']
+        for item in items:
+            image_url = item.get('image_url', None)
+            if image_url is not None and not test_image(image_url):
+                print('failed to verify task image_url: %s' % image_url)
+                fail_flag = True
+            for res in item['results']:
+                image_url = res.get('image_url', None)
+                if image_url is not None and not test_image(image_url):
+                    print('failed to verify task result image_url: %s' % image_url)
                     fail_flag = True
 
-            # test image_url within item results
-            items = task_json['items']
-            for item in items:
-                image_url = item.get('image_url', None)
-                if image_url is not None and not test_image(image_url):
-                    print('failed to verify task image_url: %s' % image_url)
-                    fail_flag = True
-                for res in item['results']:
-                    image_url = res.get('image_url', None)
-                    if image_url is not None and not test_image(image_url):
-                        print('failed to verify task result image_url: %s' % image_url)
+        post_task_actions = task_json.get('post_task_actions', None)
+        if post_task_actions:
+            for action in post_task_actions:
+                if action.get('type') == 'external-url':
+                    icon_url = action.get('icon_url', None)
+                    if icon_url and not test_image(icon_url):
+                        print('icon_url url - %s - could not be verified' % icon_url)
                         fail_flag = True
 
-            post_task_actions = task_json.get('post_task_actions', None)
-            if post_task_actions:
-                for action in post_task_actions:
-                    if action.get('type') == 'external-url':
-                        icon_url = action.get('icon_url', None)
-                        if icon_url and not test_image(icon_url):
-                            print('icon_url url - %s - could not be verified' % icon_url)
-                            fail_flag = True
-
-            print('done testing accessibility of task urls')
+        print('done testing accessibility of task urls')
 
         if fail_flag:
             print('cant verify the images - aborting')
