@@ -111,7 +111,17 @@
 - name: update supervisor
   supervisorctl:
     name: kinappserver
-    state: present
+    state: restarted
+
+- name: update supervisor
+  supervisorctl:
+    name: kinappworker-fast
+    state: restarted
+
+- name: update supervisor
+  supervisorctl:
+    name: kinappworker-slow
+    state: restarted
 
 - name: template the nginx kinappserver config file
   template:
@@ -122,6 +132,11 @@
   template:
     src: templates/etc/nginx/sites-enabled/default
     dest: /etc/nginx/sites-enabled/default
+
+- name: service nginx restart
+  service:
+    name: nginx
+    state: restarted
 
 # there's a dedicated play for restarting supervisor and nginx
 # which removes the servers from the load-balancer and does it one-by-one. once

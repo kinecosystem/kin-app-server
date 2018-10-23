@@ -9,7 +9,7 @@
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
   roles:
-    - franklinkim.environment
+    - weareinteractive.environment
     - Datadog.datadog
     - kin-app-server
     - igor_mukhin.bash_aliases

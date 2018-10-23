@@ -61,7 +61,7 @@ def app_launch():
     update_user_app_version(user_id, app_ver)
 
     # enable this once tasks 2.0 is ready
-    #migrate_user_to_tasks2(user_id)
+    migrate_user_to_tasks2(user_id)
 
     # send auth token if needed
     send_push_auth_token(user_id)
