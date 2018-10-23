@@ -263,7 +263,6 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
     app_ver = user_app_data.app_ver
     from .category import get_all_cat_ids
     for cat_id in cat_ids or get_all_cat_ids():
-        print('getting tasks for cat-id: %s' % cat_id)
         task_ids = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip))  # returns just one task in a list or empty list
         tasks_per_category[cat_id] = [get_task_by_id(task_id) for task_id in task_ids]
         # plant the memo and start date in the first task of the category:
@@ -273,7 +272,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
             tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
             tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
 
-        print('tasks_per_category: %s' % tasks_per_category)
+        print('tasks_per_category: tasks for user %s for cat_id %s: %s' % (user_id, cat_id, tasks_per_category))
 
     return tasks_per_category
 
@@ -821,5 +820,15 @@ def is_task_active(task_id):
         return True
 
     if arrow.get(task_json['task_start_date']) < arrow.utcnow() < arrow.get(task_json['task_expiration_date']):
+        return True
+    return False
+
+
+def should_reject_out_of_order_tasks(user_id, task_id, request_source_ip):
+    """ensures that the given task_id is indeed next in the user's task list"""
+    cat_id = get_cat_id_for_task_id(task_id)
+    # this implementation is too naive and does not take into account things like time-sensitive tasks
+    tasks_per_category = get_next_tasks_for_user(user_id, request_source_ip, [cat_id])
+    if task_id != tasks_per_category[cat_id][0]['id']:
         return True
     return False

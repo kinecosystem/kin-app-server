@@ -34,7 +34,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
     update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, \
     captcha_solved, get_user_tz, do_captcha_stuff, get_personalized_categories_header_message, get_categories_for_user, \
-    migrate_user_to_tasks2, should_force_update, is_update_available
+    migrate_user_to_tasks2, should_force_update, is_update_available, should_reject_out_of_order_tasks
 
 def get_payment_lock_name(user_id, task_id):
     """generate a user and task specific lock for payments."""
@@ -314,6 +314,12 @@ def post_user_task_results_endpoint():
         print('rejecting user %s task %s results' % (user_id, task_id))
         increment_metric('premature_task_results')
         return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_403_FORBIDDEN
+
+    # TODO fix this once we decide how to do it. see discussion here: https://kinecosystem.slack.com/archives/GB6HMS7EE/p1540291140000100
+    #if should_reject_out_of_order_tasks(user_id, task_id, get_source_ip(request)):
+    #    print('rejecting user %s task %s results - out of order' % (user_id, task_id))
+    #    increment_metric('out-of-order-task')
+    #    return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
     delta = 0  # change in the total kin reward for this task
 

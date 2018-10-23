@@ -10,6 +10,7 @@ install-travis:
 
 test:
 	export LC_ALL=C
+	# python kinappserver/tests/task_results_out_of_order.py # disabled until we decide how to handle this
 	python kinappserver/tests/category.py
 	python kinappserver/tests/ad-hoc-task.py
 	python kinappserver/count_immediate_tasks.py
