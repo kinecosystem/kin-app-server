@@ -1,6 +1,6 @@
 - cron:
     name: "gather periodic data about missing txs"
-    job: '#curl localhost:80/internal/users/missing-txs'
+    job: 'curl localhost:80/internal/users/missing-txs'
     hour: "*" # run every hour
   run_once: true # runs on one machine of the 2
 
