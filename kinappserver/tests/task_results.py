@@ -6,7 +6,7 @@ import simplejson as json
 import testing.postgresql
 
 import kinappserver
-from kinappserver import db
+from kinappserver import db, models
 
 
 USER_ID_HEADER = "X-USERID"
@@ -271,6 +271,9 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 403)
+
+        models.count_missing_txs()
+
         sleep(8)  # give the thread enough time to complete before the db connection is shutdown
 
 

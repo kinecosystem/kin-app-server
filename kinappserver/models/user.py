@@ -255,6 +255,7 @@ def autoswitch_captcha(user_id):
     db.engine.execute(statement % user_id)
 
 
+
 def should_pass_captcha(user_id):
     """returns True iff the client must pass captcha test. older clients are auto-exempt"""
 
@@ -1224,53 +1225,15 @@ def count_registrations_for_phone_number(phone_number):
     return count if count else 0
 
 
-def count_missing_txs(filename):
+def count_missing_txs():
     """counts the number of users with missing txs in their data == users we owe money to"""
-
-    f = open(filename, "a")
-    f.write('getting all uncompensated txs...')
-    try:
-        missing_txs = []
-
-        # get the list of tasks and their rewards:
-        tasks_d = {}
-        res = db.engine.execute('SELECT task_id, price from public.task')
-        tasks = res.fetchall()
-        for task in tasks:
-            tasks_d[task[0]] = task[1]
-
-        # get all the phone numbers in the system
-        res2 = db.engine.execute('SELECT distinct enc_phone_number from public.user where enc_phone_number is not null')
-        distinct_enc_phone_numbers = res2.fetchall()
-
-        uncompensated_tasks_for_number = '''select task_id, user_id from user_task_results where user_id in (select user_id from public.user where enc_phone_number='%s') and task_id not in (select tx_info->>'task_id' from transaction where user_id in (select user_id from public.user where enc_phone_number='%s') and incoming_tx=false);'''
-        # for each phone number, find the uncompensated tasks
-        for enc_number in distinct_enc_phone_numbers:
-            print('checking phone number: %s' % enc_number)
-            try:
-                enc_number = enc_number[0]
-                sleep(0.1)  # lets not kill the db
-
-                if len(missing_txs) > 100:
-                    # stop here no need to go over more than 500.
-                    break
-
-                res3 = db.engine.execute(uncompensated_tasks_for_number % (enc_number, enc_number))  # safe
-                res3 = res3.fetchall()
-                for item in res3:
-                    print('found uncompensated task_id %s for user_id %s' % (item[0], item[1]))
-                    missing_txs.append({'enc_number': enc_number, 'task_id': item[1], 'reward': tasks_d[item[1]]})
-                    missing_txs = missing_txs + 1
-            except Exception as e:
-                print('exception while processing enc_phone_number: %s' % enc_number)
-
-        print('missing txs: %s' % missing_txs)
-        f.write(str(missing_txs))
-        f.write('done!')
-        gauge_metric('missing-txs', len(missing_txs))
-    except Exception as e:
-        print('caught exception: %s' % e)
-        f.write('caught exception: %s' % e)
+    from datetime import datetime
+    todays_date = str(datetime.today()).split(' ')[0] + '%%'  # convert to sql date format with LIKE '2018-10-12%', double the '%' sign for escaping.
+    sql_stmt = '''SELECT count(*) FROM user_task_results u left join transaction t on u.user_id = t.user_id where t.tx_hash is null  and u.update_at::varchar LIKE '%s';''' % todays_date
+    missing_txs_today = db.engine.execute(sql_stmt)
+    missing_txs_today = missing_txs_today.scalar()
+    print('missing txs today: %s' % missing_txs_today)
+    gauge_metric('missing-txs', missing_txs_today)
 
 
 def re_register_all_users():
