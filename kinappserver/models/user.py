@@ -300,7 +300,7 @@ def captcha_solved(user_id):
         print(e)
 
 
-def do_catpcha_stuff(user_id):
+def do_captcha_stuff(user_id):
     autoswitch_captcha(user_id)
     automatically_raise_captcha_flag(user_id)
 
@@ -573,12 +573,11 @@ def get_next_task_results_ts(user_id, cat_id):
 
 
 def get_users_for_engagement_push(scheme):
-    """get user_ids for an engagement scheme
-
-    TASKS2.0 fix this function - it only looks at category '0'
-    """
+    """get user_ids for an engagement scheme"""
+    #TODO refactor - make it dry
     from datetime import datetime, timedelta
-    from kinappserver.models import get_next_tasks_for_user
+    from .task2 import count_immediate_tasks
+
     now = arrow.utcnow().shift(seconds=60).timestamp  # add a small timeshift to account for calculation time
     user_ids = {OS_IOS: [], OS_ANDROID: []}
 
@@ -588,7 +587,7 @@ def get_users_for_engagement_push(scheme):
 
     if scheme == 'engage-recent':
         # get all user_ids that:
-        # (1) have active tasks and 
+        # (1) have active tasks and
         # (2) did not log in today and
         # (3) last login was sometimes in the last 4 days
         today = datetime.date(datetime.today())
@@ -607,14 +606,9 @@ def get_users_for_engagement_push(scheme):
                     continue
 
                 # filter out users with no tasks AND ALSO users with future tasks:
-                tasks_dict = get_next_tasks_for_user(user.user_id)
-                if  tasks_dict['0'] == []:
-                    print('skipping user %s - no active task, now: %s' % (user.user_id, now))
-                    continue
 
-                next_task_ts =  tasks_dict['0'][0]['start_date']
-                if  tasks_dict['0'][0]['start_date'] > now:
-                    print('skipping user %s - next task is due at %s, now: %s' % (user.user_id, next_task_ts, now))
+                if count_immediate_tasks(user.user_id) == 0:
+                    print('skipping user %s - no active task, now: %s' % (user.user_id, now))
                     continue
 
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
@@ -641,7 +635,7 @@ def get_users_for_engagement_push(scheme):
 
     elif scheme == 'engage-week':
         # get all tokens that:
-        # (1) have active tasks and 
+        # (1) have active tasks and
         # (2) logged in exactly a week ago
         # (3) last login was sometimes in the last 4 days
         seven_days_ago = datetime.date(datetime.today() + timedelta(days=-7))
@@ -658,14 +652,8 @@ def get_users_for_engagement_push(scheme):
                     print('skipping user %s - country not supported' % user.user_id)
                     continue
 
-                tasks_dict = get_next_tasks_for_user(user.user_id)
-                if tasks_dict['0'] == []:
+                if count_immediate_tasks(user.user_id) == 0:
                     print('skipping user %s - no active task, now: %s' % (user.user_id, now))
-                    continue
-
-                next_task_ts = tasks_dict['0'][0]['start_date']
-                if  tasks_dict['0'][0]['start_date'] > now:
-                    print('skipping user %s - next task is due at %s, now: %s' % (user.user_id, next_task_ts, now))
                     continue
 
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
@@ -674,7 +662,7 @@ def get_users_for_engagement_push(scheme):
                 if seven_days_ago != last_active_date:
                     print('skipping user %s: last active not seven days ago, now: %s' % (user.user_id, now))
                     continue
-            
+
                 print('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
                 if user.os_type == OS_IOS:
                     user_ids[OS_IOS].append(user.push_token)
@@ -1367,7 +1355,7 @@ def task_id_to_category_id(task_id):
 
 
 def add_task_to_completed_tasks1(user_id, task_id):
-    """DEBUG - to be used only for task2.0 tests. remove afterwards"""
+    """DEBUG - to be used only for task2.0 migration tests. remove afterwards"""
     user_app_data = get_user_app_data(user_id)
     completed_tasks = json.loads(user_app_data.completed_tasks)
 

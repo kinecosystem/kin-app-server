@@ -24,7 +24,9 @@ class Tester(unittest.TestCase):
         self.postgresql = testing.postgresql.Postgresql()
         kinappserver.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url()
         kinappserver.app.testing = True
+
         self.app = kinappserver.app.test_client()
+        self.app_config = kinappserver.config
         db.drop_all()
         db.create_all()
 
@@ -34,6 +36,9 @@ class Tester(unittest.TestCase):
     def test_count_immediate_tasks(self):
         """test storting task results"""
         now = arrow.utcnow()
+
+        US_IP_ADDRESS = '50.196.205.141'
+        ISRAEL_IP_ADDRESS = '199.203.79.137'
 
         # add a task
         task = {
@@ -67,11 +72,18 @@ class Tester(unittest.TestCase):
             }]
         }
 
-        def add_task_to_test(task, cat_id, task_id, position, delay_days=0, excluded_country_codes=None, task_start_date=None, task_expiration_date=None):
+        def add_task_to_test(task, cat_id, task_id, position, delay_days=0, excluded_country_codes=None, task_start_date=None, task_expiration_date=None, task_type=None):
+            import copy
+            task = copy.deepcopy(task)
+
             task['position'] = position
             task['id'] = str(task_id)
             task['cat_id'] = str(cat_id)
             task['delay_days'] = delay_days
+            if task_type:
+                task['type'] = task_type
+            else:
+                task['type'] = 'textimage'
             if position == -1:
                 task['task_start_date'] = task_start_date
                 task['task_expiration_date'] = task_expiration_date
@@ -85,8 +97,11 @@ class Tester(unittest.TestCase):
             self.assertEqual(resp.status_code, 200)
 
         def nuke_user_data_and_taks():
-            db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': [], '1': []}),))
+            db.engine.execute("update user_app_data set completed_tasks_dict=%s;", (json.dumps({'0': [], '1': []}),))
             db.engine.execute("""delete from task2;""")
+            db.engine.execute("""delete from truex_blacklisted_user;""")
+            self.app_config.TRUEX_BLACKLISTED_TASKIDS = "[]"
+            db.engine.execute("""update public.user_app_data set ip_address=null;""")
 
         for cat_id in range(2):
             print('adding category %s...' % cat_id)
@@ -105,6 +120,7 @@ class Tester(unittest.TestCase):
             self.assertEqual(resp.status_code, 200)
 
         userid = uuid.uuid4()
+        userid_ios = uuid.uuid4()
         # register an android with a token
         resp = self.app.post('/user/register',
                              data=json.dumps({
@@ -119,7 +135,22 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        # register an ios with a token
+        resp = self.app.post('/user/register',
+                             data=json.dumps({
+                                 'user_id': str(userid_ios),
+                                 'os': 'iOS',
+                                 'device_model': 'iphone9',
+                                 'device_id': '234234',
+                                 'time_zone': '05:00',
+                                 'token': 'fake_token',
+                                 'app_ver': '1.0'}),
+                             headers={},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid_ios), str(userid_ios)))
 
         resp = self.app.post('/user/auth/ack',
                              data=json.dumps({
@@ -128,9 +159,91 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        resp = self.app.post('/user/auth/ack',
+                             data=json.dumps({
+                                 'token': str(userid_ios)}),
+                             headers={USER_ID_HEADER: str(userid_ios)},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # test an ios client with Truex task
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0, task_type='truex')
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0, task_type='truex')
+        self.assertEqual(models.count_immediate_tasks(str(userid_ios)), 0)
+
+        # test an ios client with non-Truex-related task
+        nuke_user_data_and_taks()
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0)
+        self.assertEqual(models.count_immediate_tasks(str(userid_ios)), 2)
+
+        # test an ios client with Truex-related task - should skip these tasks
+        nuke_user_data_and_taks()
+        self.app_config.TRUEX_BLACKLISTED_TASKIDS = "['1','0']"
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0)
+        self.assertEqual(models.count_immediate_tasks(str(userid_ios)), 0)
+
+        # test a US android client with a Truex task
+        nuke_user_data_and_taks()
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (US_IP_ADDRESS, str(userid)))
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0, task_type='truex')
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0, task_type='truex')
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+
+        # test a US android client with a truex-related task
+        nuke_user_data_and_taks()
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (US_IP_ADDRESS, str(userid)))
+        self.app_config.TRUEX_BLACKLISTED_TASKIDS = "['1','0']"
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+
+        # test a non-US android client with a truex task
+        nuke_user_data_and_taks()
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (ISRAEL_IP_ADDRESS, str(userid)))
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0, task_type='truex')
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0, task_type='truex')
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
+
+        # test a non-US android client that's blacklisted with a truex task
+        nuke_user_data_and_taks()
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (ISRAEL_IP_ADDRESS, str(userid)))
+        db.engine.execute("""insert into truex_blacklisted_user values('%s')""" % str(userid))
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0, task_type='truex')
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0, task_type='truex')
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
+
+        # test a US android client that's blacklisted with a truex-related task
+        nuke_user_data_and_taks()
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (US_IP_ADDRESS, str(userid)))
+        db.engine.execute("""insert into truex_blacklisted_user values('%s')""" % str(userid))
+        self.app_config.TRUEX_BLACKLISTED_TASKIDS = "['1','0']"
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
+
+        # test a US android client that's blacklisted with a truex task
+        nuke_user_data_and_taks()
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (US_IP_ADDRESS, str(userid)))
+        db.engine.execute("""insert into truex_blacklisted_user values('%s')""" % str(userid))
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0, task_type='truex')
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0, task_type='truex')
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
+
+        # test a non-US android client that's blacklisted with a truex-related task
+        nuke_user_data_and_taks()
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (ISRAEL_IP_ADDRESS, str(userid)))
+        db.engine.execute("""insert into truex_blacklisted_user values('%s')""" % str(userid))
+        self.app_config.TRUEX_BLACKLISTED_TASKIDS = "['1','0']"
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0)
+        add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
+
         nuke_user_data_and_taks()
         # start testing by adding tasks with various categories
-        add_task_to_test(task, cat_id=0, task_id=0,position=0, delay_days=0)
+        add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0)
         self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
         add_task_to_test(task, cat_id=0, task_id=1, position=1, delay_days=0)
         self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
@@ -157,16 +270,16 @@ class Tester(unittest.TestCase):
         # user doesn't have any ip, so should get the task:
         self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
         # set user's ip address to an iserali address. should no longer get the task
-        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % ('199.203.79.137', str(userid)))
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (ISRAEL_IP_ADDRESS, str(userid)))
         self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
         # set user's ip address to an american address - should now be served to user
-        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % ('50.196.205.141', str(userid)))
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (US_IP_ADDRESS, str(userid)))
         self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
         # add another task with both US and IL excluded - should not be served to user (currently with US ip)
         add_task_to_test(task, cat_id=1, task_id=1, position=1, delay_days=0, excluded_country_codes=['IL', 'US'])
         self.assertEqual(models.count_immediate_tasks(str(userid)), 1)
         # back to israeli ip - should still not be served to user
-        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % ('199.203.79.137', str(userid)))
+        db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (ISRAEL_IP_ADDRESS, str(userid)))
         self.assertEqual(models.count_immediate_tasks(str(userid)), 0)
         db.engine.execute("""update public.user_app_data set ip_address=null where user_id='%s';""" % (str(userid)))
         self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
@@ -330,6 +443,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(models.count_immediate_tasks(str(userid)), 4)  # [1,2],[4,5]
         db.engine.execute("update user_app_data set completed_tasks_dict=%s", (json.dumps({'0': ['6', '0', '1', '2', '3'], '1': ['7', '3', '4', '5']}),))
         self.assertEqual(models.count_immediate_tasks(str(userid)), 0)  # [], []
+
+
 
 if __name__ == '__main__':
     unittest.main()

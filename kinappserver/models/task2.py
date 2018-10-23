@@ -225,6 +225,12 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
             print('skipping task_id %s - inactive ad-hoc task' % task_id)
             continue
 
+        # skip truex and truex-related tasks
+        if should_skip_task(user_id, task_id, None, user_country_code):
+            # we're skipping this task
+            print('skipping truex-related task_id %s for user %s' % (task_id, user_id))
+            continue
+
         # skip country-blocked tasks
         if user_country_code in task['excluded_country_codes']:
             # we're skipping this task
@@ -244,8 +250,9 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
 
 
 def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
-    """this function returns the next immediate task for the given user in all the categories, or just the specified category (if given).
-    - the returned tasks will bear this format: {'cat_id': [task1, task2]}
+    """this function returns the next task for the given user in each the categories, or just the specified category (if given).
+    - the returned tasks will bear this format: {'cat_id': [task1]}
+    - this function returns the next task in each category EVEN IF it is in the future
     - if a source_ip was provided, the returned tasks will be filtered for country code
     - if there are no more tasks, an empty array will be returned (per category)
     - if the next task (in each category) requires upgrade, the function will send a push message to inform the user (with a cooldown).
@@ -271,7 +278,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
     return tasks_per_category
 
 
-def should_skip_truex_task(user_id, task_id, source_ip=None):
+def should_skip_truex_task(user_id, task_id, source_ip=None, country_code=None):
     if get_user_os_type(user_id) == OS_IOS:
         print('skipping truex task %s for ios user %s' % (task_id, user_id))
         return True
@@ -290,6 +297,9 @@ def should_skip_truex_task(user_id, task_id, source_ip=None):
         except Exception as e:
             print('should_skip_task: could not figure out country from source ip %s' % source_ip)
             pass
+    elif country_code and country_code != 'US':
+        print('detected non-US country_code - skipping truex task')
+        return True
 
     # TODO cache results here
     # skip selected user_ids
@@ -298,16 +308,16 @@ def should_skip_truex_task(user_id, task_id, source_ip=None):
         return True
 
 
-def should_skip_task(user_id, task_id, source_ip):
+def should_skip_task(user_id, task_id, source_ip, country_code=None):
     """determines whether to skip the given task_id for the given user_id"""
     try:
         # skip truex for iOS devices, non-american android
         if get_task_type(task_id) == TASK_TYPE_TRUEX:
-            if should_skip_truex_task(user_id, task_id, source_ip):
+            if should_skip_truex_task(user_id, task_id, source_ip, country_code):
                 return True
         else:  # not truex
             # skip special truex-related tasks for users that skipped the truex task
-            if task_id in literal_eval(config.TRUEX_BLACKLISTED_TASKIDS) and should_skip_truex_task(user_id, task_id, source_ip):
+            if task_id in literal_eval(config.TRUEX_BLACKLISTED_TASKIDS) and should_skip_truex_task(user_id, task_id, source_ip, country_code):
                 print('skipping blacklisted truex task %s' % task_id)
                 return True
 
@@ -707,19 +717,19 @@ def count_immediate_tasks(user_id):
     country_code = get_country_code_by_ip(user_app_data.ip_address)
 
     tasks_per_category = get_next_tasks_for_user(user_id)
-    print('tasks-per-cat: %s' % tasks_per_category)
     for cat_id in tasks_per_category.keys():
         if tasks_per_category[cat_id] == []:
             # no tasks available. skip.
-            print('skipping cat_id %s - no tasks' % cat_id)
+            #print('skipping cat_id %s - no tasks' % cat_id)
             pass
         elif tasks_per_category[cat_id][0]['start_date'] > now.timestamp:
             # the first task isn't available now, so skip.
             pass
         else:
+            # the first task in the category is guaranteed to be available
             filtered_unsolved_tasks_for_user_and_cat = get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_tasks.get(cat_id, []), os_type, app_ver, country_code, user_id)
             immediate_tasks_count_for_cat_id = calculate_immediate_tasks(filtered_unsolved_tasks_for_user_and_cat)
-            print('counted %s immediate tasks for cat_id %s' % (immediate_tasks_count_for_cat_id, cat_id))
+            #print('counted %s immediate tasks for cat_id %s' % (immediate_tasks_count_for_cat_id, cat_id))
             immediate_tasks_count = immediate_tasks_count + immediate_tasks_count_for_cat_id
 
     print('count_immediate_tasks for user_id %s - %s' % (user_id, immediate_tasks_count))
@@ -728,6 +738,7 @@ def count_immediate_tasks(user_id):
 
 def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_for_category, os_type, client_version, user_country_code, user_id):
     """for the given category_id returns list of tasks, in order, with their delay days excluding previously completed tasks"""
+    from distutils.version import LooseVersion
 
     # calculate a sql clause to remove previously submitted tasks, if such exist
     remove_previous_tasks_clause = ''
@@ -745,21 +756,32 @@ def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_fo
         client_version_index = 3
     else:
         client_version_index = 2
-    from distutils.version import LooseVersion
+
     for task in [item for item in res.fetchall()]:
         skip_task = False
+        task_id = task[0]
+        excluded_country_codes = task[4]
 
-        if not is_task_active(task[0]):
+        # filter out ad-hoc tasks that have expired or yet to be active
+        if not is_task_active(task_id):
             skip_task = True
 
+        # filter out truex tasks if the user is in the truex blacklist
+        if should_skip_task(user_id, task_id, None, user_country_code):
+            print('skipping task %s - its either truex or truex-related' % task_id)
+            skip_task = True
+
+        # filter out tasks that dont match the client's version
         if LooseVersion(task[client_version_index]) > LooseVersion(client_version):
-            print('detected a task (%s) that doesnt match the users os_type and app_ver. user_id %s' % (task[0], user_id))
+            print('detected a task (%s) that doesnt match the users os_type and app_ver. user_id %s' % (task_id, user_id))
             skip_task = True
 
-        if task[4] not in (None, []) and user_country_code and user_country_code in task[4]:
-            print('detected a task (%s) that cant be served to user because of country code. user_id %s' % (task[0], user_id))
+        # filter out tasks that dont match the user's country code
+        if excluded_country_codes not in (None, []) and user_country_code and user_country_code in excluded_country_codes:
+            print('detected a task (%s) that cant be served to user because of country code. user_id %s' % (task_id, user_id))
             # the task is limited to a specific country, and the user's country is different
             skip_task = True
+
         #TODO TASKS2.0 add Truex blacklist into the mix
 
         if not skip_task:

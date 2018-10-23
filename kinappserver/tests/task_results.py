@@ -324,6 +324,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(3, models.count_completed_tasks(str(userid)))
 
         print('count_immediate_tasks: %s' % models.count_immediate_tasks(str(userid)))
+        print('get_next_tasks_for_user: %s' % models.get_next_tasks_for_user(str(userid)))
 
         sleep(8)  # give the thread enough time to complete before the db connection is shutdown
 

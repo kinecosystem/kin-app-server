@@ -406,7 +406,7 @@ def post_user_task_results_endpoint():
             return jsonify(status='error', info='already_compensating'), status.HTTP_400_BAD_REQUEST
 
         memo = get_and_replace_next_task_memo(user_id, task_id)
-        do_catpcha_stuff(user_id) # raise captcha flag if needed
+        do_captcha_stuff(user_id) # raise captcha flag if needed
         split_payment(address, task_id, send_push, user_id, memo, delta)
 
     except Exception as e:
@@ -1041,7 +1041,7 @@ def truex_callback_endpoint():
         if not res:
             print('failed to pay user %s for truex activity' % user_id)
 
-        do_catpcha_stuff(user_id)  # raise captcha flag if needed
+        do_captcha_stuff(user_id)  # raise captcha flag if needed
     except Exception as e:
         print('unhandled exception in truex process. exception: %s' % e)
         return TRUEX_CALLBACK_RECOVERABLE_ERROR
