@@ -32,6 +32,7 @@ class Tester(unittest.TestCase):
 
     def test_category_storing(self):
         """test storting and getting tasks with categories"""
+
         cat = {'id': '1',
           'title': 'cat-title',
           'ui_data': {'color': "#123",
@@ -115,13 +116,24 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # get the user's current tasks
+        # get the user's current categories
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/categories', headers=headers)
         print('user categories: %s ' % resp.data)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
 
+        category_extra_data_dict = {'title': 'a title', 'subtitle': 'a subtitle'}
+        db.engine.execute("""insert into system_config values (1,'1','1','1','1')""");
+        db.engine.execute("update system_config set categories_extra_data=%s;", (json.dumps(category_extra_data_dict),))
+
+        # get the user's current categories
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/categories', headers=headers)
+        print('user categories: %s ' % resp.data)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['header_message'], category_extra_data_dict)
 
 
 

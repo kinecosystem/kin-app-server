@@ -11,14 +11,14 @@ class SystemConfig(db.Model):
     block_clients_below_version_ios = db.Column('block_clients_below_version_ios', db.String(100), nullable=False, primary_key=False)
     update_available_below_version_android = db.Column('update_available_below_version_android', db.String(100), nullable=False, primary_key=False)
     update_available_below_version_ios = db.Column('update_available_below_version_ios', db.String(100), nullable=False, primary_key=False)
-
+    categories_extra_data = db.Column(db.JSON)  # all sorts of extra global data pertaining to categories
 
 #TODO cache this to sace sql access
 def get_system_config():
     try:
         return db.session.query(SystemConfig).one()
     except Exception as e:
-        print('get_system_config: cant find sysconfig in the db. returning default value')
+        print('get_system_config: cant find sysconfig in the db. returning default value. e:%s' % e)
         return None
 
 
@@ -96,3 +96,11 @@ def set_update_available_below(os_type, app_ver):
     db.session.add(sysconfig)
     db.session.commit()
     print('set update-available-below for os_type %s to %s' % (os_type, app_ver))
+
+
+def get_categories_extra_data():
+    sys_config = get_system_config()
+    if sys_config is None or sys_config.categories_extra_data is None:
+        # return some hard coded default value
+        return {'title': 'Welcome to Kinit!', 'subtitle': 'Ready to earn some KINs?'}
+    return sys_config.categories_extra_data

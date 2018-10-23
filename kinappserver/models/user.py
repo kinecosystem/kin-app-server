@@ -1297,10 +1297,12 @@ def re_register_all_users():
         counter = counter + 1
 
 
+# TODO cache this
 def get_personalized_categories_header_message(user_id):
     """returns a user-specific message to be shown in the categories page"""
-    #TODO add code here
-    return {'title': 'good morning Shay Baz!', 'subtitle': 'here is your subtitle'}
+    # nothing to personalize yet - just return the text from the db.
+    from .system_config import get_categories_extra_data
+    return get_categories_extra_data()
 
 
 def migrate_user_to_tasks2(user_id):
