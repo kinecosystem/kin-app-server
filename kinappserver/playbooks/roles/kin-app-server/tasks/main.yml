@@ -32,6 +32,8 @@
        - git
        - supervisor
        - python3-pip
+       - postgresql
+       - postgresql-contrib
 
 - name: pip Install uwsgi
   pip:
