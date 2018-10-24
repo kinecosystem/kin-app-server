@@ -23,6 +23,7 @@ class Good(db.Model):
     tx_hash = db.Column('tx_hash', db.String(100), db.ForeignKey("transaction.tx_hash"), primary_key=False, nullable=True)
     created_at = db.Column(ArrowType)
     updated_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
+    extra_info = db.Column(db.JSON) # for additional, schemaless date
 
     def __repr__(self):
         return '<sid: %s, offer_id: %s, order_id: %s, type: %s, tx_hash: %s, created_at: %s,' \
