@@ -271,9 +271,10 @@ def track_orders():
 def merchant_code_to_offer_id(merchant_code, card_id, order_id):
     """convert the merchant_code from blackhawk into an offer id in our db"""
     for offer in get_bh_offers():
-        # compare against the merchant template id, as that's what the api actually returns and not
-        # the merchant code
-        if offer.merchant_template_id == merchant_code:
+        # compare against *both* the merchant_code -
+        # and the merchant template id, as that's what the api actually returns and not the merchant code
+        # edit: 24/10/18 looks like they started using the merchant code now.
+        if (offer.merchant_template_id == merchant_code) or (offer.merchant_code == merchant_code):
             return offer.offer_id
 
     print('ERROR: unknown merchant_code %s - cant convert card id %s in order %s' % (merchant_code, card_id, order_id))
