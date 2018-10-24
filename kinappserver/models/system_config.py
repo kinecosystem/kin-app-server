@@ -11,7 +11,7 @@ class SystemConfig(db.Model):
     block_clients_below_version_ios = db.Column('block_clients_below_version_ios', db.String(100), nullable=False, primary_key=False)
     update_available_below_version_android = db.Column('update_available_below_version_android', db.String(100), nullable=False, primary_key=False)
     update_available_below_version_ios = db.Column('update_available_below_version_ios', db.String(100), nullable=False, primary_key=False)
-
+    categories_extra_data = db.Column(db.JSON)  # all sorts of extra global data pertaining to categories
 
 #TODO cache this to sace sql access
 def get_system_config():
