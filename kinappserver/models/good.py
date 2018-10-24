@@ -30,7 +30,7 @@ class Good(db.Model):
                ' updated_at: %s>' % (self.sid, self.offer_id, self.order_id, self.good_type, self.tx_hash, self.created_at, self.updated_at)
 
 
-def create_good(offer_id, good_type, value):
+def create_good(offer_id, good_type, value, extra_info=None):
     """creates a new good-instance for the given offer_id with the given value"""
     if not offer_id:
         print('refusing to create good with offer_id: %s' % offer_id)
@@ -47,6 +47,8 @@ def create_good(offer_id, good_type, value):
         good.good_type = good_type
         good.value = value
         good.created_at = now
+        if extra_info:
+            good.extra_info = extra_info
         db.session.add(good)
         db.session.commit()
     except Exception as e:

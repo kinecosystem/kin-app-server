@@ -254,7 +254,7 @@ def track_orders():
                 card_id = card['id']
                 order_id = card['order']['id']
 
-                if create_good(merchant_code_to_offer_id(merchant_code, card_id, order_id), 'code', code):
+                if create_good(merchant_code_to_offer_id(merchant_code, card_id, order_id), 'code', code, extra_info={'bh_card_id': card_id}):
                     print('created good with code %s for card_id %s' % (code, card_id))
                     increment_metric('bh_card_processed')
                 else:
