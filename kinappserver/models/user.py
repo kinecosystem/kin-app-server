@@ -606,7 +606,7 @@ def get_users_for_engagement_push(scheme):
 
                 # filter out users with no tasks AND ALSO users with future tasks:
 
-                if count_immediate_tasks(user.user_id) == 0:
+                if sum(item for item in count_immediate_tasks(user.user_id).keys()) == 0:
                     log.info('skipping user %s - no active task, now: %s' % (user.user_id, now))
                     continue
 
@@ -650,7 +650,7 @@ def get_users_for_engagement_push(scheme):
                     log.info('skipping user %s - country not supported' % user.user_id)
                     continue
 
-                if count_immediate_tasks(user.user_id) == 0:
+                if sum(item for item in count_immediate_tasks(user.user_id).keys()) == 0:
                     log.info('skipping user %s - no active task, now: %s' % (user.user_id, now))
                     continue
 
@@ -1097,7 +1097,7 @@ def migrate_restored_user_data(temp_user_id, restored_user_id):
         db.session.add(restored_user_app_data)
         db.session.commit()
     except Exception as e:
-        print('failed to migrate resteod used data. e=%s' % e)
+        log.error('failed to migrate resteod used data. e=%s' % e)
         return False
     else:
         return True

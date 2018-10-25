@@ -28,7 +28,7 @@ def get_activity(user_id, remote_ip, user_agent, window_width=None, window_heigh
         resp = requests.get(url)
         resp.raise_for_status()
     except Exception as e:
-        print('failed to get an activity from truex: %s' % e)
+        log.error('failed to get an activity from truex: %s' % e)
         return None
     else:
         # process the response:
@@ -77,7 +77,7 @@ def generate_truex_url(network_user_id, remote_ip, client_request_id, user_agent
     try:
         url = TRUEX_GET_ACTIVITY_URL + '?%s' % urlencode(data)
     except Exception as e:
-        print('failed to encode truex request')
+        log.error('failed to encode truex request')
         return None
 
     return url

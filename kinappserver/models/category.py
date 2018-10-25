@@ -98,10 +98,10 @@ def get_categories_for_user(user_id):
     if not user_exists(user_id):
         raise InvalidUsage('no such user_id %s' % user_id)
     all_cats = list_all_categories()
-    # get the number of currently available tasks for the user:
-    #TODO fill this in later with actual data
 
+    from .task2 import count_immediate_tasks
+    immediate_tasks = count_immediate_tasks(user_id)
     for cat_id in all_cats.keys():
-        all_cats[cat_id]['available_tasks_count'] = len(all_cats[cat_id]) #TODO this needs to be correctly calculated - some code already exists
+        all_cats[cat_id]['available_tasks_count'] = immediate_tasks[cat_id]
 
     return [cat for cat in all_cats.values()]

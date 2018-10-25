@@ -53,13 +53,13 @@ def get_from_server(path):
 
 def assertEqual(a,b):
     if a != b:
-        print('failed assert of (%s) and (%b)' % (a,b))
+        log.error('failed assert of (%s) and (%b)' % (a,b))
         raise Exception("Assertion failed")
 
 
 def assertNotEqual(a,b):
     if a == b:
-        print('failed assert of (%s) and (%b)' % (a,b))
+        log.error('failed assert of (%s) and (%b)' % (a,b))
         raise Exception("Assertion failed")
 
 

@@ -706,10 +706,10 @@ def migrate_restored_user():
         restored_user_id = payload.get('restored_user_id', None)
         temp_user_id = payload.get('temp_user_id', None)
     except Exception as e:
-        print('failed to process migrate-restored-user')
+        log.error('failed to process migrate-restored-user')
 
     if not migrate_restored_user_data(temp_user_id, restored_user_id):
-        print('failed to migrate restored user data from %s to %s' % (temp_user_id, restored_user_id))
+        log.error('failed to migrate restored user data from %s to %s' % (temp_user_id, restored_user_id))
         return jsonify(status='error')
     else:
         send_push_register(restored_user_id)
@@ -758,7 +758,7 @@ def user_set_captcha_endpoint():
         user_ids = payload.get('user_ids')
         should_show = payload.get('set_captcha', 0)
     except Exception as e:
-        print('failed to process user-set-captcha')
+        log.error('failed to process user-set-captcha')
     else:
         for user_id in user_ids:
             print('user_set_captcha_endpoint: setting user_id %s to %s' % (user_id, should_show))

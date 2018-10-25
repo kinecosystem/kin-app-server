@@ -34,7 +34,7 @@ def reject_premature_results(user_id, task_id):
     results_valid_at = arrow.get(next_task_ts)
 
     if results_valid_at > now:
-        print('rejecting results. will only be valid in %s seconds' % (results_valid_at - now).total_seconds())
+        log.info('rejecting results. will only be valid in %s seconds' % (results_valid_at - now).total_seconds())
         return True
     return False
 
@@ -42,10 +42,10 @@ def reject_premature_results(user_id, task_id):
 def calculate_timeshift(user_id, delay_days=1):
     """calculate the time shift (in seconds) needed for cooldown, for this user"""
     from .user import get_user_tz
-    print('calculating timeshift for user_id: %s' % user_id)
+    log.info('calculating timeshift for user_id: %s' % user_id)
     user_tz = get_user_tz(user_id)
     seconds_to_midnight = seconds_to_local_nth_midnight(user_tz, delay_days)
-    print('seconds to next local midnight: %s for user_id %s with tz %s' % (seconds_to_midnight, user_id, user_tz))
+    log.info('seconds to next local midnight: %s for user_id %s with tz %s' % (seconds_to_midnight, user_id, user_tz))
     return seconds_to_midnight
 
 
@@ -72,12 +72,12 @@ def store_task_results(user_id, task_id, results):
             db.session.rollback()
             # this code handles the unlikely event that a user already had task results for this task, so rather
             # than INSERT, we UPDATE.
-            print('store_task_results - failed to insert results. attempting to update instead. error:%s' % e)
+            log.info('store_task_results - failed to insert results. attempting to update instead. error:%s' % e)
             previous_task_results = UserTaskResults.query.filter_by(user_id=user_id).filter_by(task_id=task_id).first()
             previous_task_results.results = results
             db.session.add(previous_task_results)
             db.session.commit()
-            print('store_task_results: overwritten user_id %s task %s results' % (user_id, task_id))
+            log.info('store_task_results: overwritten user_id %s task %s results' % (user_id, task_id))
             increment_metric('overwrite-task-results')
 
         # write down the completed task-id
@@ -99,7 +99,7 @@ def store_task_results(user_id, task_id, results):
 
         commit_json_changed_to_orm(user_app_data, ['completed_tasks_dict'])
 
-        print('wrote user_app_data.completed_tasks for userid: %s' % user_id)
+        log.info('wrote user_app_data.completed_tasks for userid: %s' % user_id)
 
         # calculate the next valid submission time, and store it:
         delay_days = None
@@ -116,19 +116,19 @@ def store_task_results(user_id, task_id, results):
 
         if delay_days is None or int(delay_days) == 0:
             shifted_ts = arrow.utcnow().timestamp
-            print('setting next task time to now (delay_days is: %s)' % delay_days)
+            log.info('setting next task time to now (delay_days is: %s)' % delay_days)
         else:
             shift_seconds = calculate_timeshift(user_id, delay_days)
             shifted_ts = arrow.utcnow().shift(seconds=shift_seconds).timestamp
-            print('setting next task time to %s seconds in the future' % shift_seconds)
+            log.info('setting next task time to %s seconds in the future' % shift_seconds)
 
-        print('next valid submission time for user %s, (previous task id %s) in shifted_ts: %s' % (user_id, task_id, shifted_ts))
+        log.info('next valid submission time for user %s, (previous task id %s) in shifted_ts: %s' % (user_id, task_id, shifted_ts))
 
         store_next_task_results_ts(user_id, task_id, shifted_ts)
 
         return True
     except Exception as e:
-        print('exception in store_task_results: %s', e)
+        log.error('exception in store_task_results: %s', e)
         raise InvalidUsage('cant store_task_results')
 
 
@@ -153,7 +153,6 @@ def get_task_results(task_id):
     results_dict = {}
     for entry in results:
         results_dict[str(entry.user_id)] = entry.results
-    print('results: %s' % results_dict)
     return results_dict
 
 
@@ -212,10 +211,10 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
         remove_previous_tasks_clause = '''and task2.task_id not in (%s)''' % (",".join(completed_tasks_for_cat_id))
     # get ALL the unsolved task_ids for the category
     stmt = '''SELECT task2.task_id FROM task2 WHERE task2.category_id='%s' %s order by task2.position, task2.task_start_date;''' % (cat_id, remove_previous_tasks_clause)
-    print(stmt)
+    log.info(stmt)
     res = db.engine.execute(stmt)
     unsolved_task_ids = [item[0] for item in res.fetchall()]
-    print('unsolved tasks for cat_id %s: %s' % (cat_id, unsolved_task_ids))
+    log.info('unsolved tasks for cat_id %s: %s' % (cat_id, unsolved_task_ids))
 
     # go over all the yet-unsolved tasks and get the first valid one
     for task_id in unsolved_task_ids:
@@ -223,19 +222,19 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
 
         # skip inactive ad-hoc tasks
         if not is_task_active(task_id):
-            print('skipping task_id %s - inactive ad-hoc task' % task_id)
+            log.info('skipping task_id %s - inactive ad-hoc task' % task_id)
             continue
 
         # skip truex and truex-related tasks
         if should_skip_task(user_id, task_id, None, user_country_code):
             # we're skipping this task
-            print('skipping truex-related task_id %s for user %s' % (task_id, user_id))
+            log.info('skipping truex-related task_id %s for user %s' % (task_id, user_id))
             continue
 
         # skip country-blocked tasks
         if user_country_code in task['excluded_country_codes']:
             # we're skipping this task
-            print('skipping task_id %s for user %s with country-code %s' % (task_id, user_id, user_country_code))
+            log.info('skipping task_id %s for user %s with country-code %s' % (task_id, user_id, user_country_code))
             continue
 
         if not can_client_support_task(os_type, app_ver, task):
@@ -243,10 +242,10 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
             return []
 
         # return the first valid task:
-        print('next_task_id_for_category: returning task_ids %s for cat_id %s and user_id %s' % (task_id, cat_id, user_id))
+        log.info('next_task_id_for_category: returning task_ids %s for cat_id %s and user_id %s' % (task_id, cat_id, user_id))
         return [task_id]
     # ...no tasks available
-    print('next_task_id_for_category: no available tasks for user_id %s in cat_id %s' % (user_id, cat_id))
+    log.info('next_task_id_for_category: no available tasks for user_id %s in cat_id %s' % (user_id, cat_id))
     return []
 
 
@@ -273,38 +272,38 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
             tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
             tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
 
-        print('tasks_per_category: tasks for user %s for cat_id %s: %s' % (user_id, cat_id, tasks_per_category))
+        log.info('tasks_per_category: tasks for user %s for cat_id %s: %s' % (user_id, cat_id, tasks_per_category))
 
     return tasks_per_category
 
 
 def should_skip_truex_task(user_id, task_id, source_ip=None, country_code=None):
     if get_user_os_type(user_id) == OS_IOS:
-        print('skipping truex task %s for ios user %s' % (task_id, user_id))
+        log.info('skipping truex task %s for ios user %s' % (task_id, user_id))
         return True
 
     unenc_phone_number = get_unenc_phone_number_by_user_id(user_id)
 
     if unenc_phone_number and unenc_phone_number.find('+1') != 0:
-        print('skipping truex task %s for prefix %s' % (task_id, unenc_phone_number[:3]))
+        log.info('skipping truex task %s for prefix %s' % (task_id, unenc_phone_number[:3]))
         return True
 
     if source_ip:
         try:
             if app.geoip_reader.get(source_ip)['country']['iso_code'] != 'US':
-                print('detected non-US source IP - skipping truex task')
+                log.info('detected non-US source IP - skipping truex task')
                 return True
         except Exception as e:
-            print('should_skip_task: could not figure out country from source ip %s' % source_ip)
+            log.warning('should_skip_task: could not figure out country from source ip %s' % source_ip)
             pass
     elif country_code and country_code != 'US':
-        print('detected non-US country_code - skipping truex task')
+        log.info('detected non-US country_code - skipping truex task')
         return True
 
     # TODO cache results here
     # skip selected user_ids
     if is_user_id_blacklisted_for_truex(user_id):
-        print('skipping truex task %s for blacklisted user %s' % (task_id, user_id))
+        log.info('skipping truex task %s for blacklisted user %s' % (task_id, user_id))
         return True
 
 
@@ -318,11 +317,11 @@ def should_skip_task(user_id, task_id, source_ip, country_code=None):
         else:  # not truex
             # skip special truex-related tasks for users that skipped the truex task
             if task_id in literal_eval(config.TRUEX_BLACKLISTED_TASKIDS) and should_skip_truex_task(user_id, task_id, source_ip, country_code):
-                print('skipping blacklisted truex task %s' % task_id)
+                log.info('skipping blacklisted truex task %s' % task_id)
                 return True
 
     except Exception as e:
-        print('caught exception in should_skip_task, defaulting to no. e=%s' % e)
+        log.error('caught exception in should_skip_task, defaulting to no. e=%s' % e)
 
     return False
 
@@ -335,7 +334,7 @@ def can_client_support_task(os_type, app_ver, task):
             return True
     elif LooseVersion(app_ver) >= LooseVersion(task.get('min_client_version_ios')):
             return True
-    print('can_client_support_task: task min version: %s, the client app version: %s' % (task.get('min_client_version_android'), app_ver))
+    log.info('can_client_support_task: task min version: %s, the client app version: %s' % (task.get('min_client_version_android'), app_ver))
     return False
 
 
@@ -394,7 +393,7 @@ def add_task(task_json):
     task_start_date = task_json.get('task_start_date', None)
     task_expiration_date = task_json.get('task_expiration_date', None)
     category_id = task_json['cat_id']
-    print('trying to add task with id %s to cat_id %s at position %s...' % (task_id, category_id, position))
+    log.info('trying to add task with id %s to cat_id %s at position %s...' % (task_id, category_id, position))
     overwrite_task = task_json.get('overwrite', False)
     fail_flag = False
     skip_image_test = task_json.get('skip_image_test', False)
@@ -405,7 +404,7 @@ def add_task(task_json):
             log.error('cant add task with id %s - already exists. provide the overwrite flag to overwrite the task' % task_id)
             raise InvalidUsage('task_id %s already exists' % task_id)
         else:
-            print('task %s already exists - overwriting it' % task_id)
+            log.info('task %s already exists - overwriting it' % task_id)
             delete_prior_to_adding = True
 
     # sanity for position
@@ -413,7 +412,7 @@ def add_task(task_json):
         if None in (task_expiration_date, task_start_date):
             log.error('cant add ad-hoc task w/o expiration/start date')
             raise InvalidUsage('cant add ad-hoc task w/o start/expiration dates')
-        print('adding ad-hoc task with start-date: %s and expiration-date: %s' % (task_start_date, task_expiration_date))
+        log.info('adding ad-hoc task with start-date: %s and expiration-date: %s' % (task_start_date, task_expiration_date))
     elif is_position_taken(category_id, position) and not overwrite_task:
             log.error('cant insert task_id %s at cat_id %s and position %s - position already taken' % (task_id, category_id, position))
             raise InvalidUsage('cant insert task - position taken')
@@ -421,7 +420,7 @@ def add_task(task_json):
     # sanity for task data
     for item in task_json['items']:
         if item['type'] not in ['textimage', 'text', 'textmultiple', 'textemoji', 'rating', 'tip', 'dual_image']:
-            print('invalid item type:%s ' % item['type'])
+            log.error('invalid item type:%s ' % item['type'])
             raise InvalidUsage('cant add task with invalid item-type')
 
         # test validity of quiz items
@@ -443,27 +442,27 @@ def add_task(task_json):
                     raise InvalidUsage('answer_id %s does not match answer_ids %s' % (answer_id, [result['id'] for result in item['results']]))
 
         except Exception as e:
-            print('failed to verify the quiz data. aborting')
+            log.error('failed to verify the quiz data. aborting')
             raise InvalidUsage('cant verify quiz data for task_id %s' % task_id)
 
     # video questionnaire
     if task_json['type'] == 'video_questionnaire':
         video_url = task_json.get('video_url', None)
         if video_url is None:
-            print('missing video_url in video_questionnaire')
+            log.error('missing video_url in video_questionnaire')
             raise InvalidUsage('no video_url field in the video_questionnaire!')
         elif not skip_image_test:
             if not test_url(video_url):
-                print('failed to get the video url: %s' % video_url)
+                log.error('failed to get the video url: %s' % video_url)
                 fail_flag = True
 
     if not skip_image_test:
-        print('testing accessibility of task urls (this can take a few seconds...)')
+        log.info('testing accessibility of task urls (this can take a few seconds...)')
         # ensure all urls are accessible:
         image_url = task_json['provider'].get('image_url')
         if image_url:
             if not test_image(image_url):
-                print('image url - %s - could not be verified' % image_url)
+                log.error('image url - %s - could not be verified' % image_url)
                 fail_flag = True
 
         # test image_url within item results
@@ -471,12 +470,12 @@ def add_task(task_json):
         for item in items:
             image_url = item.get('image_url', None)
             if image_url is not None and not test_image(image_url):
-                print('failed to verify task image_url: %s' % image_url)
+                log.error('failed to verify task image_url: %s' % image_url)
                 fail_flag = True
             for res in item['results']:
                 image_url = res.get('image_url', None)
                 if image_url is not None and not test_image(image_url):
-                    print('failed to verify task result image_url: %s' % image_url)
+                    log.error('failed to verify task result image_url: %s' % image_url)
                     fail_flag = True
 
         post_task_actions = task_json.get('post_task_actions', None)
@@ -531,7 +530,7 @@ def add_task(task_json):
 
 def delete_task(task_id):
     if not get_task_by_id(task_id):
-        print('no task with id %s in the db' % task_id)
+        log.error('no task with id %s in the db' % task_id)
         raise InvalidUsage('task_id %s doesnt exist - cant delete' % task_id)
 
     task_to_delete = Task2.query.filter_by(task_id=task_id).first()
@@ -599,9 +598,9 @@ def handle_task_results_resubmission(user_id, task_id):
     from kinappserver.models import get_memo_for_user_ids
 
     from .user import get_associated_user_ids
-    #print('trying to detect task re-submission for task-id %s and user_id %s' % (task_id, user_id))
+    #log.info('trying to detect task re-submission for task-id %s and user_id %s' % (task_id, user_id))
     associated_user_ids = get_associated_user_ids(user_id)
-    #print('all associated user_ids: %s' % associated_user_ids)
+    #log.info('all associated user_ids: %s' % associated_user_ids)
     memo, user_id = get_memo_for_user_ids(associated_user_ids, task_id)
     return memo, user_id
 
@@ -669,21 +668,21 @@ def add_task_to_completed_tasks(user_id, task_id):
 
     cat_id = task['cat_id']
     if cat_id in completed_tasks and task_id in completed_tasks[cat_id]:
-        print('task_id %s already in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
+        log.info('task_id %s already in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
     else:
         if cat_id not in completed_tasks:
             completed_tasks[cat_id] = []
         completed_tasks[cat_id].append(task_id)
         user_app_data.completed_tasks = completed_tasks
         commit_json_changed_to_orm(user_app_data, ['completed_tasks_dict'])
-        print(user_app_data.completed_tasks)
+        log.info('completed tasks: %s' % user_app_data.completed_tasks)
         return True
 
 
 def remove_task_from_completed_tasks(user_id, task_id):
     user_app_data = get_user_app_data(user_id)
     completed_tasks = user_app_data.completed_tasks_dict
-    print(completed_tasks)
+    log.info('completed tasks: %s' % user_app_data.completed_tasks)
     from .task2 import get_task_by_id
     task = get_task_by_id(task_id)
     if not task:
@@ -691,7 +690,7 @@ def remove_task_from_completed_tasks(user_id, task_id):
 
     cat_id = task['cat_id']
     if cat_id not in completed_tasks or task_id not in completed_tasks[cat_id]:
-        print('task_id %s not in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
+        log.error('task_id %s not in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
     else:
         completed_tasks[cat_id].remove(task_id)
         user_app_data.completed_tasks_dict = completed_tasks
@@ -701,14 +700,14 @@ def remove_task_from_completed_tasks(user_id, task_id):
 
 
 def count_immediate_tasks(user_id):
-    """given the user's task history, calculate how many tasks are readily avilable for each category"""
+    """given the user's task history, calculate how many tasks are readily avialable for each category"""
     # this function needs to take into account the following things:
     # 1. which tasks were already solved by the user
     # 2. the delay_days for each task
     # 3. the client's os type and app_ver
     # 4. the user's last recorded ip address
     #TODO add adhoc tasks here
-    immediate_tasks_count = 0
+    immediate_tasks_count = {}
     now = arrow.utcnow()
     user_app_data = get_user_app_data(user_id)
     completed_tasks = user_app_data.completed_tasks_dict
@@ -720,19 +719,19 @@ def count_immediate_tasks(user_id):
     for cat_id in tasks_per_category.keys():
         if tasks_per_category[cat_id] == []:
             # no tasks available. skip.
-            #print('skipping cat_id %s - no tasks' % cat_id)
-            pass
+            #log.info('skipping cat_id %s - no tasks' % cat_id)
+            immediate_tasks_count[cat_id] = 0
         elif tasks_per_category[cat_id][0]['start_date'] > now.timestamp:
             # the first task isn't available now, so skip.
-            pass
+            immediate_tasks_count[cat_id] = 0
         else:
             # the first task in the category is guaranteed to be available
             filtered_unsolved_tasks_for_user_and_cat = get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_tasks.get(cat_id, []), os_type, app_ver, country_code, user_id)
             immediate_tasks_count_for_cat_id = calculate_immediate_tasks(filtered_unsolved_tasks_for_user_and_cat)
-            #print('counted %s immediate tasks for cat_id %s' % (immediate_tasks_count_for_cat_id, cat_id))
-            immediate_tasks_count = immediate_tasks_count + immediate_tasks_count_for_cat_id
+            #log.info('counted %s immediate tasks for cat_id %s' % (immediate_tasks_count_for_cat_id, cat_id))
+            immediate_tasks_count[cat_id] = immediate_tasks_count + immediate_tasks_count_for_cat_id
 
-    print('count_immediate_tasks for user_id %s - %s' % (user_id, immediate_tasks_count))
+    log.info('count_immediate_tasks for user_id %s - %s' % (user_id, immediate_tasks_count))
     return immediate_tasks_count
 
 
@@ -747,7 +746,7 @@ def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_fo
         remove_previous_tasks_clause = '''and task2.task_id not in (%s)''' % (",".join(completed_tasks_for_cat_id))
 
     stmt = '''select task_id, delay_days, min_client_version_android, min_client_version_ios, excluded_country_codes from Task2 where category_id='%s' %s order by position, task_start_date;''' % (cat_id, remove_previous_tasks_clause)
-    print(stmt)
+    log.info('unsolved tasks sql stmt: %s' % stmt)
     res = db.engine.execute(stmt)
 
     # exclude mismatching tasks - client version

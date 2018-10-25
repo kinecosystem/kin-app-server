@@ -255,7 +255,7 @@ def post_user_task_results_endpoint():
         send_push = payload.get('send_push', True)
         captcha_token = payload.get('captcha_token', None) #optional
         if None in (user_id, task_id, address, results):
-            print('failed input checks on /user/task/results')
+            log.error('failed input checks on /user/task/results')
             raise InvalidUsage('bad-request')
         # TODO more input checks here
     except Exception as e:
@@ -417,7 +417,7 @@ def post_user_task_results_endpoint():
 
     except Exception as e:
         print('exception: %s' % e)
-        print('failed to reward task %s at address %s' % (task_id, address))
+        log.error('failed to reward task %s at address %s' % (task_id, address))
 
     increment_metric('task_completed')
     return jsonify(status='ok', memo=str(memo))
@@ -759,7 +759,7 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
             try:
                 redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
             except Exception as e:
-                print('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
+                log.error('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
             send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
 
 
@@ -1045,7 +1045,7 @@ def truex_callback_endpoint():
         print('paying user %s for truex activity' % user_id)
         res = compensate_truex_activity(user_id)
         if not res:
-            print('failed to pay user %s for truex activity' % user_id)
+            log.error('failed to pay user %s for truex activity' % user_id)
 
         do_captcha_stuff(user_id)  # raise captcha flag if needed
     except Exception as e:
@@ -1101,7 +1101,7 @@ def compensate_truex_activity(user_id):
         address = get_address_by_userid(user_id)
         reward_and_push(address, task_id, False, user_id, memo, delta=0)
     except Exception as e:
-        print('failed to reward truex task %s at address %s for user_id %s . exception: %s' % (task_id, address, user_id, e))
+        log.error('failed to reward truex task %s at address %s for user_id %s . exception: %s' % (task_id, address, user_id, e))
         raise(e)
 
     increment_metric('task_completed')
@@ -1157,7 +1157,7 @@ def email_backup_endpoint():
         print('email result: %s' % res)
         increment_metric('backup-email-sent-success')
     except Exception as e:
-        print('failed to sent backup email to %s. e:%s' % (to_address, e))
+        log.error('failed to sent backup email to %s. e:%s' % (to_address, e))
         increment_metric('backup-email-sent-failure')
     #TODO handle errors
 
@@ -1266,7 +1266,7 @@ def payment_service_callback_endpoint():
                     print('payment request for tx_hash: %s took %s seconds' % (tx_hash, request_duration_sec))
                     gauge_metric('payment-req-dur', request_duration_sec)
                 except Exception as e:
-                    print('failed to calculate payment request duration. e=%s' % e)
+                    log.error('failed to calculate payment request duration. e=%s' % e)
 
                 # slap the '1-kit' on the memo
                 memo = '1-kit-%s' % memo
@@ -1277,7 +1277,7 @@ def payment_service_callback_endpoint():
                 try:
                     redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
                 except Exception as e:
-                    print('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
+                    log.error('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
 
                 if tx_hash and send_push:
                         send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
@@ -1291,7 +1291,7 @@ def payment_service_callback_endpoint():
     except Exception as e:
 
         increment_metric('payment-callback-error')
-        print('failed processing the payment service callback')
+        log.error('failed processing the payment service callback')
         print(e)
         return jsonify(status='error', reason='internal_error')
 

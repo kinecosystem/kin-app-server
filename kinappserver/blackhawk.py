@@ -41,7 +41,7 @@ def parse_bh_response_message(resp):
             return response['message']
         except Exception as e:
             print(e)
-            print('failed to parse blackhawk api response')
+            log.error('failed to parse blackhawk api response')
             return None
 
 
@@ -91,7 +91,7 @@ def get_accounts_data_api(token):
                          data=escape_payload({'data[token]': token}))
     account_data = parse_bh_response_message(resp)
     if not account_data:
-        print('failed ot get account data with token: %s' % token)
+        log.error('failed ot get account data with token: %s' % token)
     return account_data
 
 
@@ -186,13 +186,13 @@ def order_gift_cards(merchant_code, merchant_template_id, denomination, num_of_c
 
     order_id = egift_start_order_api(token, merchant_code, merchant_template_id)
     if not order_id:
-        print('failed to create order')
+        log.error('failed to create order')
         return False
 
     for i in range(num_of_cards):
         card_id = egift_add_card_api(token, order_id, denomination)
         if not card_id:
-            print('failed to create card')
+            log.error('failed to create card')
             return False
         else:
             print('order_gift_cards: added a bh card with id: %s' % card_id)
@@ -200,7 +200,7 @@ def order_gift_cards(merchant_code, merchant_template_id, denomination, num_of_c
 
     returned_order_id = egift_complete_order_api(token, order_id, creds['account_id'], creds['digital_signature'])
     if not returned_order_id:
-        print('failed to complete order_id %s' % order_id)
+        log.error('failed to complete order_id %s' % order_id)
 
     # at this point, the card isn't ready yet. we need to monitor the order
     # until it is processed. in the meanwhile, lets store it in the db.
@@ -260,7 +260,7 @@ def track_orders():
                     print('created good with code %s for card_id %s' % (code, card_id))
                     increment_metric('bh_card_processed')
                 else:
-                    print('failed to convert bh card_id %s to good' % card_id)
+                    log.error('failed to convert bh card_id %s to good' % card_id)
                     increment_metric('bh_card_processing_failure')
 
             set_processed_orders(orders_dict[order_id])
@@ -301,13 +301,13 @@ def refresh_bh_auth_token(force=False):
 
     new_token = generate_auth_token_api(creds['username'], creds['password'])
     if not new_token:
-        print('failed to generate new token from bh')
+        log.error('failed to generate new token from bh')
         return False
 
     if replace_bh_token(new_token):
         print('replaced bh auth token in the db to: %s' % new_token)
     else:
-        print('failed to replace bh token in db')
+        log.error('failed to replace bh token in db')
         return False
 
     return True
