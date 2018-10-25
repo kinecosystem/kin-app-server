@@ -9,6 +9,7 @@ from kinappserver.views_common import get_source_ip, extract_headers, limit_to_a
 from flask_api import status
 import redis_lock
 import arrow
+import logging as log
 from distutils.version import LooseVersion
 from .utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
 
