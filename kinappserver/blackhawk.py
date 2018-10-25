@@ -20,6 +20,7 @@ from kinappserver.models import create_bh_card, list_unprocessed_orders, set_pro
 from kinappserver import config
 from kinappserver.utils import increment_metric, gauge_metric
 import urllib.parse
+import time
 
 HEADERS = {'Content-Type': 'application/x-www-form-urlencoded'}
 API_BASE_URI = 'https://api.omnicard.com/2.x'
@@ -228,6 +229,7 @@ def track_orders():
     unprocessed_orders = 0
 
     for order_id in orders_dict.keys():
+        time.sleep(1) # dont choke their api servers
         status = get_order_status_api(token, order_id)
         print('received status:%s for order_id:%s' % (status, order_id))
         if status == 'incomplete':
