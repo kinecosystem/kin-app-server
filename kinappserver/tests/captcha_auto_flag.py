@@ -125,6 +125,15 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
+        self.assertEqual(data['show_captcha'], False)
+
 
         # send task results for task 0 - will raise the captcha flag to 1 for the next task
         resp = self.app.post('/user/task/results',
@@ -139,7 +148,16 @@ class Tester(unittest.TestCase):
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)  # no captcha provided
         data = json.loads(resp.data)
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
         self.assertEqual(data['show_captcha'], True)
+
 
 
         # send task results for task 1 - dont provide captcha, should not work
@@ -156,6 +174,15 @@ class Tester(unittest.TestCase):
         self.assertNotEqual(resp.status_code, 200)
         data = json.loads(resp.data)
 
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
+        self.assertEqual(data['show_captcha'], True)
+
 
         # send task results for task 1 - this time provide captcha, should work
         resp = self.app.post('/user/task/results',
@@ -171,10 +198,17 @@ class Tester(unittest.TestCase):
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
         self.assertEqual(data['show_captcha'], False)
 
-
-        # send task results for task 2, should require captcha so lets not send it and fail:
+        # send task results for task 2, should not require captcha so lets not send it and fail:
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '2',
@@ -188,20 +222,37 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)  # no captcha needed
 
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
+        self.assertEqual(data['show_captcha'], False)
+
         # send task results for task 3:
         resp = self.app.post('/user/task/results',
                             data=json.dumps({
                             'id': '3',
                             'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
                             'results': {'2234': 'werw', '5345': '345345'},
-                            'send_push': False,
-                            'captcha_token': '24234'
+                            'send_push': False
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)  # no captcha needed
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
         self.assertEqual(data['show_captcha'], False)
 
 
@@ -211,14 +262,21 @@ class Tester(unittest.TestCase):
                             'id': '4',
                             'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
                             'results': {'2234': 'werw', '5345': '345345'},
-                            'send_push': False,
-                            'captcha_token': '24234'
+                            'send_push': False
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)  # no captcha needed
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
         self.assertEqual(data['show_captcha'], False)
 
        # send task results for task 5:
@@ -227,14 +285,21 @@ class Tester(unittest.TestCase):
                             'id': '5',
                             'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
                             'results': {'2234': 'werw', '5345': '345345'},
-                            'send_push': False,
-                            'captcha_token': '24234'
+                            'send_push': False
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         data = json.loads(resp.data)
-        self.assertEqual(resp.status_code, 200)  # no captcha needed
+        self.assertEqual(resp.status_code, 200)
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id in cat_id 0: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
         self.assertEqual(data['show_captcha'], False)
 
         # send task results for task 6:
@@ -243,15 +308,13 @@ class Tester(unittest.TestCase):
                                  'id': '6',
                                  'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
                                  'results': {'2234': 'werw', '5345': '345345'},
-                                 'send_push': False,
-                                 'captcha_token': '24234'
+                                 'send_push': False
                              }),
                              headers={USER_ID_HEADER: str(userid)},
                              content_type='application/json')
         print('post task results response: %s' % json.loads(resp.data))
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)  # no captcha needed
-        self.assertEqual(data['show_captcha'], False)
 
 
 
