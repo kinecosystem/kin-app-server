@@ -420,7 +420,7 @@ def post_user_task_results_endpoint():
         print('failed to reward task %s at address %s' % (task_id, address))
 
     increment_metric('task_completed')
-    return jsonify(status='ok', memo=str(memo), show_captcha=should_pass_captcha(user_id))
+    return jsonify(status='ok', memo=str(memo))
 
 
 def split_payment(address, task_id, send_push, user_id, memo, delta):
@@ -503,7 +503,7 @@ def get_next_task_internal(cat_ids=[]):
     print('tasks_by_categories %s' % tasks_by_categories)
     tasks_by_categories = tasks_by_categories[cat_ids[0]] if len(cat_ids) == 1 else tasks_by_categories
 
-    return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)))
+    return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id))
 
 
 @app.route('/user/transactions', methods=['GET'])
