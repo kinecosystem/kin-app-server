@@ -22,13 +22,13 @@ def get_all_cat_ids():
 def add_category(cat_json):
     """"adds a category to the db based on the given json"""
     cat_id = str(cat_json['id'])
-    print('trying to add category with id %s' % cat_id)
+    log.info('trying to add category with id %s' % cat_id)
     overwrite_flag = bool(cat_json.get('overwrite', False))
     delete_prior_to_insertion = False
 
     if get_cat_by_id(cat_id):
         if not overwrite_flag:
-            print('cant insert a category with id %s - one already exists' % cat_id)
+            log.error('cant insert a category with id %s - one already exists' % cat_id)
             raise InvalidUsage('cant overwrite category with id %s' % cat_id)
         else:
             delete_prior_to_insertion = True
@@ -39,11 +39,11 @@ def add_category(cat_json):
 
     if not skip_image_test:
         if not test_image(cat_json['ui_data']['image_url']):
-            print("cat verify image url: %s" % cat_json['ui_data']['image_url'])
+            log.error("cant verify image url: %s" % cat_json['ui_data']['image_url'])
             fail_flag = True
 
         if not test_image(cat_json['ui_data']['header_image_url']):
-            print("cat verify image url: %s" % cat_json['ui_data']['header_image_url'])
+            log.error("cant verify image url: %s" % cat_json['ui_data']['header_image_url'])
             fail_flag = True
     if fail_flag:
         print('could not verify urls. aborting')
@@ -61,7 +61,7 @@ def add_category(cat_json):
         db.session.add(category)
         db.session.commit()
     except Exception as e:
-        print('cant add category to db with id %s, e:' % (cat_id, e))
+        log.error('cant add category to db with id %s, e:' % (cat_id, e))
         return False
     else:
         return True

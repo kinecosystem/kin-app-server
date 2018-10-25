@@ -21,7 +21,7 @@ def blacklist_phone_by_user_id(user_id):
     from .user import get_enc_phone_number_by_user_id
     enc_phone_number = get_enc_phone_number_by_user_id(user_id)
     if not enc_phone_number:
-        print('blacklist_phone_by_user_id: no enc_number')
+        log.error('blacklist_phone_by_user_id: no enc_number')
         return False
 
     return blacklist_enc_phone_number(enc_phone_number)
@@ -38,7 +38,7 @@ def blacklist_phone_number(phone_number):
 
 def blacklist_enc_phone_number(enc_phone_number):
     if enc_phone_number in (None, ''):
-        print('cant blacklist phone number:%s' % enc_phone_number)
+        log.error('cant blacklist phone number:%s' % enc_phone_number)
         return False
 
     blacklisted_enc_phone_number = BlacklistedEncPhoneNumber()
@@ -47,8 +47,7 @@ def blacklist_enc_phone_number(enc_phone_number):
         db.session.add(blacklisted_enc_phone_number)
         db.session.commit()
     except Exception as e:
-        print('failed to store blacklisted_enc_phone_number with enc_phone_number: %s' % enc_phone_number)
-        print(e)
+        log.error('failed to store blacklisted_enc_phone_number with enc_phone_number: %s. e: %s' % (enc_phone_number, e))
         return False
     else:
         return True

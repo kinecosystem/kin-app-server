@@ -44,7 +44,7 @@ def create_token(user_id):
         db.session.add(push_auth_token)
         db.session.commit()
     except Exception as e:
-        print('cant add PushAuthToken to db with id %s. e:%s' % (user_id, e))
+        log.error('cant add PushAuthToken to db with id %s. e:%s' % (user_id, e))
     else:
         return push_auth_token
 
@@ -76,11 +76,11 @@ def ack_auth_token(user_id, token):
     try:
         push_auth_token = get_token_obj_by_user_id(user_id)
         if str(push_auth_token.auth_token) == str(token):
-            print('user_id %s successfully acked the push token' % user_id)
+            log.info('user_id %s successfully acked the push token' % user_id)
             set_ack_date(user_id)
             return True
     except Exception as e:
-        print('user_id %s failed to ack the (internal) push token: %s with this token %s' % (user_id, str(push_auth_token.auth_token), token))
+        log.error('user_id %s failed to ack the (internal) push token: %s with this token %s' % (user_id, str(push_auth_token.auth_token), token))
         return False
 
 
@@ -105,7 +105,7 @@ def print_auth_tokens():
     print('printing all auth tokens:')
     push_auth_tokens = PushAuthToken.query.all()
     for token in push_auth_tokens:
-        print(token)
+        log.info(token)
     return {str(token.user_id): str(token.auth_token) for token in push_auth_tokens}
 
 
@@ -125,7 +125,7 @@ def should_send_auth_token(user_id):
 
     # if more than AUTH_TOKEN_SEND_INTERVAL_DAYS passed, resend and refresh the token regardless of the current state
     elif (arrow.utcnow() - token_obj.send_date).total_seconds() > 60 * 60 * 24 * int(config.AUTH_TOKEN_SEND_INTERVAL_DAYS):
-        print('refreshing auth token for user %s' % user_id)
+        log.info('refreshing auth token for user %s' % user_id)
         refresh_token(user_id)
         return True
 
@@ -151,7 +151,7 @@ def scan_for_deauthed_users():
             sent_secs_ago = (now - send_date).total_seconds()
             ack_secs_ago = (now - ack_date).total_seconds()
             if 5 < sent_secs_ago < 10 and ack_secs_ago > 10:
-                print('scan_for_deauthed_users: marking user %s as unauthenticated. sent_secs_ago: %s' % (token.user_id, ack_secs_ago))
+                log.info('scan_for_deauthed_users: marking user %s as unauthenticated. sent_secs_ago: %s' % (token.user_id, ack_secs_ago))
                 deauth_user_ids.append(token.user_id)
 
     deauth_users(deauth_user_ids)
@@ -169,7 +169,7 @@ def deauth_users(user_ids):
         user_ids_string += ("\'%s\'," % user_id)
     user_ids_string = user_ids_string[:-1]
     prepared_string = "update push_auth_token set authenticated=false where user_id in (%s)" % (user_ids_string)
-    print('deauthing users: %s' % prepared_string)
+    log.info('deauthing users: %s' % prepared_string)
     db.engine.execute(prepared_string)  # safe
 
 
@@ -178,5 +178,5 @@ def validate_auth_token(user_id, auth_token):
     obj = get_token_obj_by_user_id(user_id)
     if str(obj.auth_token) == auth_token:
         return True
-    print('auth token validation failed for user_id %s and token %s' % (user_id , auth_token))
+    log.error('auth token validation failed for user_id %s and token %s' % (user_id, auth_token))
     return False

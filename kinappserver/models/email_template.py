@@ -25,5 +25,5 @@ def get_email_template_by_type(template_type):
         temp = EmailTemplate.query.filter_by(template_type=template_type).first()
         return {'template_type': temp.template_type, 'title': temp.title, 'body': temp.body, 'sent_from': temp.sent_from}
     except Exception as e:
-        print('failed to get email template %s. e:%s' % (template_type, e))
+        log.error('failed to get email template %s. e:%s' % (template_type, e))
         return None

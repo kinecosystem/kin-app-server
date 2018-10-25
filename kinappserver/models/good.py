@@ -33,11 +33,11 @@ class Good(db.Model):
 def create_good(offer_id, good_type, value, extra_info=None):
     """creates a new good-instance for the given offer_id with the given value"""
     if not offer_id:
-        print('refusing to create good with offer_id: %s' % offer_id)
+        log.error('refusing to create good with offer_id: %s' % offer_id)
         return False
 
     if does_code_exist(value):
-        print('refusing to create good with code: %s as it already exists in the db' % value)
+        log.error('refusing to create good with code: %s as it already exists in the db' % value)
         return False
 
     try:
@@ -52,8 +52,7 @@ def create_good(offer_id, good_type, value, extra_info=None):
         db.session.add(good)
         db.session.commit()
     except Exception as e:
-        print('failed to create a new good')
-        print(e)
+        log.error('failed to create a new good. e:%s' % e)
         raise InternalError('failed to create a new good')
     else:
         return True
@@ -107,7 +106,7 @@ def allocate_good(offer_id, order_id):
         db.session.flush()
     except Exception as e:
         db.session.rollback()
-        print('failed to allocate good with order_id: %s. exception: %s' % (order_id,e))
+        log.error('failed to allocate good with order_id: %s. exception: %s' % (order_id, e))
         raise InternalError('cant allocate good for order_id: %s' % order_id)
     else:
         return good.sid
@@ -131,7 +130,7 @@ def finalize_good(order_id, tx_hash):
             db.session.flush()
     except Exception as e:
         db.session.rollback()
-        print('failed to finalize good with order_id: %s. exception: %s' % (order_id,e))
+        log.error('failed to finalize good with order_id: %s. exception: %s' % (order_id, e))
         raise InternalError('cant finalize good for order_id: %s' % order_id)
     else:
         return True, good_res
@@ -146,7 +145,7 @@ def release_good(order_id):
         db.session.add(good)
         db.session.commit()
     except Exception as e:
-        print('failed to release good with order_id: %s' % order_id)
+        log.error('failed to release good with order_id: %s' % order_id)
         print(e)
         db.session.rollback()
         return False
@@ -168,7 +167,7 @@ def release_unclaimed_goods():
             release_good(good.order_id)
             released = released + 1
 
-    print('released %s goods' % released)
+    log.info('released %s goods' % released)
     return released
 
 
@@ -205,5 +204,5 @@ def get_user_goods_report(user_id):
         for good in db.session.query(Good, Transaction).filter(Transaction.user_id == user_id).filter(Good.tx_hash == Transaction.tx_hash):
             user_goods_report[good[0].sid] = {'user_id': good[1].user_id, 'offer_id': good[0].offer_id, 'tx_hash': good[0].tx_hash, 'created_at': str(good[0].created_at), 'value': good[0].value, 'amount': good[1].amount}
     except Exception as e:
-        print('caught exception in get_user_goods_report:%s' % e)
+        log.error('caught exception in get_user_goods_report:%s' % e)
     return user_goods_report
