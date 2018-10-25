@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+import logging as log
 from datadog import statsd
 from flask import config
 import os
@@ -62,7 +63,7 @@ def errors_to_string(errorcode):
     elif errorcode == ERROR_NO_GOODS:
         return 'no-goods'
     else:
-        print('should never happen')
+        log.error('should never happen')
         return 'unknown-error'
 
 
@@ -106,7 +107,7 @@ def extract_phone_number_from_firebase_id_token(id_token):
         decoded_token = auth.verify_id_token(id_token)
         phone_number = decoded_token['phone_number']
     except Exception as e:
-        print('failed to decode the firebase token: %s' % e)
+        log.error('failed to decode the firebase token: %s' % e)
     return phone_number
 
 
@@ -147,8 +148,7 @@ def test_url(url):
     try:
         requests.get(url).raise_for_status()
     except Exception as e:
-        print(e)
-        print('could not get url: %s' % url)
+        log.error('could not get url: %s' % (url, e))
         return False
     else:
         return True
@@ -165,7 +165,7 @@ def test_image(url):
     for resolution in ('hdpi', 'mdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi'):
         processed_url = split_path[0] + '/android/' + resolution + '/' + split_path[1]
         if not test_url(processed_url):
-            print('could not verify file at %s' % processed_url)
+            log.error('could not verify file at %s' % processed_url)
             fail_flag = True
 
     # ios
@@ -173,11 +173,11 @@ def test_image(url):
     for resolution in ('', '@2x', '@3x'):
         processed_url = split_path[0] + '/ios/' + split_path[1][:dot_index] + resolution + split_path[1][dot_index:]
         if not test_url(processed_url):
-            print('could not verify file at %s' % processed_url)
+            log.error('could not verify file at %s' % processed_url)
             fail_flag = True
 
     if fail_flag:
-        print('could not fully verify image %s' % url)
+        log.error('could not fully verify image %s' % url)
         return False
     return True
 
@@ -191,7 +191,7 @@ def sqlalchemy_pool_status():
     overflow = QueuePool.overflow(db.engine.pool)
     checkedout = QueuePool.checkedout(db.engine.pool)
 
-    print("Pool size: %d  Connections in pool: %d " \
+    log.info("Pool size: %d  Connections in pool: %d " \
            "Current Overflow: %d Current Checked out " \
            "connections: %d" % (pool_size, checkedin, overflow, checkedout))
     return {'pool_size': pool_size, 'checkedin': checkedin, 'overflow': overflow, 'checkedout': checkedout}
@@ -202,18 +202,18 @@ def parse_phone_number(number_to_parse, sender_number):
     #  first, try to parse the number as-is:
     parsed_number = parse_phone_number_naively(number_to_parse)
     if parsed_number:
-        print('parse_phone_number: naively parsed phone number')
+        log.info('parse_phone_number: naively parsed phone number')
         return parsed_number
 
     # try to parse with the sender's number as a clue
     if sender_number:
         parsed_number = parse_phone_number_by_sender_country_code(sender_number, number_to_parse)
         if parsed_number:
-            print('parse_phone_number: parsed phone number by sender_number')
+            log.info('parse_phone_number: parsed phone number by sender_number')
             return parsed_number
 
     # give up, just return the original number:
-    print('parse_phone_number: failed to parse phone number. returning raw number')
+    log.error('parse_phone_number: failed to parse phone number. returning raw number')
     return number_to_parse
 
 
@@ -222,7 +222,7 @@ def parse_phone_number_naively(number_to_parse):
     try:
         formatted_sent_number = phonenumbers.parse(number_to_parse, None)
     except phonenumbers.NumberParseException as e:
-        print('parse_phone_number_naively: cant parse number')
+        log.error('parse_phone_number_naively: cant parse number')
         return None
     else:
         return phonenumbers.format_number(formatted_sent_number, phonenumbers.PhoneNumberFormat.E164)
@@ -236,8 +236,8 @@ def parse_phone_number_by_sender_country_code(sender_number, number_to_parse):
         country_code = formatted_sender_number.country_code
         formatted_sent_number = phonenumbers.parse(number_to_parse, phonenumbers.region_code_for_country_code(country_code))
     except phonenumbers.NumberParseException as e:
-            print('parse_phone_number_by_sender_country_code: cant parse number with sender\'s country code')
-            return None
+        log.error('parse_phone_number_by_sender_country_code: cant parse number with sender\'s country code')
+        return None
     else:
         return phonenumbers.format_number(formatted_sent_number, phonenumbers.PhoneNumberFormat.E164)
 
@@ -247,21 +247,21 @@ def print_creation_statement():
     from sqlalchemy.schema import CreateTable
     from sqlalchemy.dialects import postgresql
     from .models import BlackhawkCard, BlackhawkOffer, BlackhawkCreds, UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, EmailTemplate, TruexBlacklistedUser, BlacklistedEncPhoneNumber, Task2, SystemConfig, Category
-    print(CreateTable(User.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(UserAppData.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(BlackhawkCard.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(BlackhawkCreds.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(BlackhawkOffer.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(ACL.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(BackupQuestion.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(PhoneBackupHints.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(EmailTemplate.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(TruexBlacklistedUser.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(BlacklistedEncPhoneNumber.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(Task2.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(SystemConfig.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(Task2.__table__).compile(dialect=postgresql.dialect()))
-    print(CreateTable(Category.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(User.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(UserAppData.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(BlackhawkCard.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(BlackhawkCreds.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(BlackhawkOffer.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(ACL.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(BackupQuestion.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(PhoneBackupHints.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(EmailTemplate.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(TruexBlacklistedUser.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(BlacklistedEncPhoneNumber.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(Task2.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(SystemConfig.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(Task2.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(Category.__table__).compile(dialect=postgresql.dialect()))
 
 
 def random_string(length=8):
@@ -275,24 +275,23 @@ def random_percent():
 def read_json_from_cache(key):
     try:
         data = app.redis.get(key)
-        print('data: %s' % data)
         if not data:
             raise InternalError('could not find key %s in cache' % key)
         return json.loads(data.decode())
     except Exception as e:
-        print('could not read json data from cache with key %s. e=%s. data=%s' % (key, e, data))
+        log.error('could not read json data from cache with key %s. e=%s. data=%s' % (key, e, data))
         return None
 
 
 def write_json_to_cache(key, val, ttl=30*60):
     if val is None:
-        print('write_json_to_cache: refusing to store None value')
+        log.error('write_json_to_cache: refusing to store None value')
         return False
     try:
         app.redis.setex(key, ttl, json.dumps(val))
         return True
     except Exception as e:
-        print('failed to write json data to cache with key %s and value %s. exception: %s' % (key, val, e))
+        log.error('failed to write json data to cache with key %s and value %s. exception: %s' % (key, val, e))
         return False
 
 
@@ -317,37 +316,37 @@ def passed_captcha(captcha_token):
         res.raise_for_status()
     except Exception as e:
         #TODO add retry
-        print('caught exception (%s) getting captcha results from google')
+        log.error('caught exception (%s) getting captcha results from google')
         return False
     else:
         try:
             captcha_result = json.loads(res.text)
 
             if config.DEBUG:
-                print('setting fake successful captcha results for debug configuration')
+                log.info('setting fake successful captcha results for debug configuration')
                 captcha_result ={'apk_package_name': config.APK_PACKAGE_NAME, 'challenge_ts': str(arrow.utcnow()), 'success': True}
 
             apk_name = captcha_result.get('apk_package_name', None)
             challenge_ts = captcha_result.get('challenge_ts', None)
             captcha_success = captcha_result.get('success', None)
             if None in (apk_name, challenge_ts, captcha_success) and not config.DEBUG:
-                print('missing fields in captcha result')
+                log.error('missing fields in captcha result')
                 return False
 
             if apk_name != config.APK_PACKAGE_NAME:
-                print('failed captcha results: invalid apk name: %s' % captcha_result['apk_package_name'])
+                log.error('failed captcha results: invalid apk name: %s' % captcha_result['apk_package_name'])
                 return False
 
             captcha_secs_ago = (arrow.get(challenge_ts) - arrow.utcnow()).total_seconds()
             if captcha_secs_ago > config.CAPTCHA_STALE_THRESHOLD_SECS:
-                print('failed captcha results: solved %s secs ago' % captcha_secs_ago)
+                log.error('failed captcha results: solved %s secs ago' % captcha_secs_ago)
                 return False
 
             if captcha_success:
                 return True
 
         except Exception as e:
-            print('failed processing captcha. e: %s' % e)
+            log.error('failed processing captcha. e: %s' % e)
 
     return False
 
@@ -358,7 +357,7 @@ def get_country_code_by_ip(ip_addr):
             return None
         return app.geoip_reader.get(ip_addr)['country']['iso_code']
     except Exception as e:
-        print('cant convert ip %s to country code' % ip_addr)
+        log.error('cant convert ip %s to country code' % ip_addr)
 
         return None
 
