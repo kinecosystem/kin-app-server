@@ -1,4 +1,5 @@
 import arrow
+import logging as log
 
 from kinappserver import db, config, stellar, utils
 from kinappserver.utils import InternalError, increment_metric, generate_memo

@@ -1,6 +1,7 @@
 
 from sqlalchemy_utils import UUIDType, ArrowType
 import arrow
+import logging as log
 import json
 from ast import literal_eval
 

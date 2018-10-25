@@ -1,6 +1,7 @@
 """The User model"""
 from sqlalchemy_utils import UUIDType
 from sqlalchemy.dialects.postgresql import INET
+import logging as log
 
 from kinappserver import db, config, app
 from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS, commit_json_changed_to_orm

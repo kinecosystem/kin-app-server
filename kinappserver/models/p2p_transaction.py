@@ -1,5 +1,6 @@
 """The model for the Kin App Server p2p transaction."""
 
+import logging as log
 from sqlalchemy_utils import UUIDType
 from sqlalchemy import desc
 import arrow

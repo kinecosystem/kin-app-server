@@ -1,4 +1,5 @@
 import arrow
+import logging as log
 
 from kinappserver import db
 from kinappserver.utils import InternalError

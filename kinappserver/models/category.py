@@ -1,6 +1,6 @@
 from kinappserver import db
 from kinappserver.utils import InvalidUsage, test_image
-
+import logging as log
 
 class Category(db.Model):
     """Categories group tasks with similar type/topics"""

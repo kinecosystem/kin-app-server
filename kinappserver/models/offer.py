@@ -1,6 +1,6 @@
 from kinappserver import db, config
 from kinappserver.utils import InvalidUsage, test_image, OS_ANDROID, OS_IOS
-
+import logging as log
 
 class Offer(db.Model):
     """the Offer class represent a single offer"""

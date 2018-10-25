@@ -1,5 +1,5 @@
 from kinappserver import db
-from sqlalchemy_utils import UUIDType
+import logging as log
 from kinappserver.utils import InvalidUsage, OS_ANDROID, OS_IOS
 from distutils.version import LooseVersion
 

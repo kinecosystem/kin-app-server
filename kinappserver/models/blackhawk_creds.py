@@ -1,6 +1,7 @@
 
 import datetime
 from kinappserver import db
+import logging as log
 
 
 class BlackhawkCreds(db.Model):
