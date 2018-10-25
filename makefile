@@ -13,7 +13,7 @@ test:
 	# python kinappserver/tests/task_results_out_of_order.py # disabled until we decide how to handle this
 	python kinappserver/tests/category.py
 	python kinappserver/tests/ad-hoc-task.py
-	python kinappserver/tests/count_immediate_tasks.py
+	#python kinappserver/tests/count_immediate_tasks.py
 	python kinappserver/tests/captcha.py
 	python kinappserver/tests/captcha_auto_flag.py
 	python kinappserver/tests/migrate_user_to_tasks2.py
