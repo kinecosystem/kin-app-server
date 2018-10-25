@@ -18,14 +18,14 @@ def get_system_config():
     try:
         return db.session.query(SystemConfig).one()
     except Exception as e:
-        print('get_system_config: cant find sysconfig in the db. returning default value. e:%s' % e)
+        log.warning('get_system_config: cant find sysconfig in the db. returning default value. e:%s' % e)
         return None
 
 
 def get_block_clients_below_version(os_type):
     sysconfig = get_system_config()
     if not sysconfig:
-        #print('cant find value for block-clients-below in the db. using default')
+        #log.error('cant find value for block-clients-below in the db. using default')
         return '0'
 
     if os_type == OS_ANDROID:
@@ -38,7 +38,7 @@ def get_block_clients_below_version(os_type):
 def update_available_below_version(os_type):
     sysconfig = get_system_config()
     if not sysconfig:
-        print('cant find value for update-available-below in the db. using default')
+        log.warning('cant find value for update-available-below in the db. using default')
         return '0'
 
     if os_type == OS_ANDROID:
@@ -78,7 +78,7 @@ def set_force_update_below(os_type, app_ver):
         sysconfig.block_clients_below_version_ios = app_ver
     db.session.add(sysconfig)
     db.session.commit()
-    print('set force-update-below for os_type %s to %s' % (os_type, app_ver))
+    log.info('set force-update-below for os_type %s to %s' % (os_type, app_ver))
 
 
 def set_update_available_below(os_type, app_ver):
@@ -95,7 +95,7 @@ def set_update_available_below(os_type, app_ver):
         sysconfig.update_available_below_version_ios = app_ver
     db.session.add(sysconfig)
     db.session.commit()
-    print('set update-available-below for os_type %s to %s' % (os_type, app_ver))
+    log.info('set update-available-below for os_type %s to %s' % (os_type, app_ver))
 
 
 def get_categories_extra_data():

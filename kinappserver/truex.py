@@ -38,7 +38,7 @@ def get_activity(user_id, remote_ip, user_agent, window_width=None, window_heigh
                 print('no activities returned for userid %s with remote_ip %s. re-trying with hardcoded ip...' % (user_id, remote_ip))
                 return get_activity(user_id, HARDCODED_CLIENT_IP, user_agent, window_width, window_height, screen_density, client_request_id)
             else:
-                print('cant get activity for userid %s with remote_ip: %s. bummer' % (user_id, remote_ip))
+                log.error('cant get activity for userid %s with remote_ip: %s. bummer' % (user_id, remote_ip))
                 return None
 
         # slap the network user_id onto the activity:

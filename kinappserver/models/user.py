@@ -107,14 +107,13 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
         try:
             return int(tz[:(tz.find(':'))])
         except Exception as e:
-            print('failed to parse timezone: %s. using default' % tz)
-            print(e)
+            log.error('failed to parse timezone: %s. using default. e: %s' % (tz, e))
             return int(DEFAULT_TIME_ZONE)
 
     is_new_user = False
     try:
         user = get_user(user_id)
-        print('user %s already exists, updating data' % user_id)
+        log.info('user %s already exists, updating data' % user_id)
     except Exception as e:
         user = User()
         is_new_user = True
@@ -177,7 +176,7 @@ def get_user_id_by_truex_user_id(truex_user_id):
         else:
             return user.user_id
     except Exception as e:
-        print('cant get user_id by truex_user_id. Exception: %s' % e)
+        log.error('cant get user_id by truex_user_id. Exception: %s' % e)
         raise
 
 
@@ -283,7 +282,7 @@ def captcha_solved(user_id):
         userAppData = UserAppData.query.filter_by(user_id=user_id).first()
         now = arrow.utcnow().timestamp
         if userAppData.should_solve_captcha_ternary < 1:
-            print('captcha_solved: user %s doesnt need to solve captcha' % user_id)
+            log.info('captcha_solved: user %s doesnt need to solve captcha' % user_id)
             return
 
         userAppData.should_solve_captcha_ternary = -1 # reset back to -1 (doesn't need to pass captcha)
@@ -293,12 +292,11 @@ def captcha_solved(user_id):
             userAppData.captcha_history = [{'date': now, 'app_ver': userAppData.app_ver}]
         else:
             userAppData.captcha_history.append({'date': now, 'app_ver ': userAppData.app_ver})
-        print('writing to captcha history: %s' % userAppData.captcha_history)
+        log.info('writing to captcha history: %s' % userAppData.captcha_history)
         commit_json_changed_to_orm(userAppData, ['captcha_history'])
 
     except Exception as e:
-        print('failed to mark captcha solved for user_id %s' % user_id)
-        print(e)
+        log.error('failed to mark captcha solved for user_id %s. e:%s' % (user_id, e))
 
 
 def do_captcha_stuff(user_id):
@@ -323,11 +321,11 @@ def automatically_raise_captcha_flag(user_id):
     # and also the captcha status and history - all are in the user_app_data
     uad = get_user_app_data(user_id)
     if uad.should_solve_captcha_ternary != -1:
-        # print('raise_captcha_if_needed: user %s captcha flag already at %s. doing nothing' % (user_id, uad.should_solve_captcha_ternary))
+        # log.info('raise_captcha_if_needed: user %s captcha flag already at %s. doing nothing' % (user_id, uad.should_solve_captcha_ternary))
         return
 
     # every time a user completed X tasks mod CAPTCHA_TASK_MODULO == 0, but never twice in the same <configurable time>
-    if (count_completed_tasks(user_id) % config.CAPTCHA_TASK_MODULO == 0):
+    if count_completed_tasks(user_id) % config.CAPTCHA_TASK_MODULO == 0:
         # ensure the last captcha wasnt solved today
         now = arrow.utcnow()
         recent_captcha = 0 if uad.captcha_history is None else max([item['date'] for item in uad.captcha_history])
@@ -335,10 +333,10 @@ def automatically_raise_captcha_flag(user_id):
         last_captcha_secs_ago = (now - arrow.get(recent_captcha)).total_seconds()
         if last_captcha_secs_ago > config.CAPTCHA_SAFETY_COOLDOWN_SECS:
             # more than a day ago, so raise:
-            print('raise_captcha_if_needed:  user %s, last captcha was %s secs ago, so raising flag' % (user_id, last_captcha_secs_ago))
+            log.info('raise_captcha_if_needed:  user %s, last captcha was %s secs ago, so raising flag' % (user_id, last_captcha_secs_ago))
             set_should_solve_captcha(user_id)
         # else:
-        #    print('raise_captcha_if_needed: user %s, current task_id = %s, last captcha was %s secs ago, so not raising flag' % (user_id, max_task, last_captcha_secs_ago))
+        #    log.info('raise_captcha_if_needed: user %s, current task_id = %s, last captcha was %s secs ago, so not raising flag' % (user_id, max_task, last_captcha_secs_ago))
 
 
 def update_ip_address(user_id, ip_address):
@@ -352,14 +350,14 @@ def update_ip_address(user_id, ip_address):
         try:
             userAppData.country_iso_code = app.geoip_reader.get(ip_address)['country']['iso_code']
         except Exception as e:
-            print('could not calc country iso code for %s' % ip_address)
+            log.error('could not calc country iso code for %s' % ip_address)
         db.session.add(userAppData)
         db.session.commit()
     except Exception as e:
-        print(e)
+        log.error('update_ip_address: e: %s' % e)
         raise InvalidUsage('cant set user ip address')
     else:
-        print('updated user %s ip to %s' % (user_id, ip_address))
+        log.info('updated user %s ip to %s' % (user_id, ip_address))
 
 
 def get_user_country_code(user_id):
@@ -433,7 +431,7 @@ def get_user_push_data(user_id):
     try:
         user = User.query.filter_by(user_id=user_id).first()
     except Exception as e:
-        print('Error: could not get push data for user %s' % user_id)
+        log.error('Error: could not get push data for user %s' % user_id)
         return None, None, None
     else:
         if user.os_type == OS_IOS:
@@ -447,7 +445,7 @@ def send_push_tx_completed(user_id, tx_hash, amount, task_id, memo):
     """send a message indicating that the tx has been successfully completed"""
     os_type, token, push_env = get_user_push_data(user_id)
     if token is None:
-        print('cant push to user %s: no push token' % user_id)
+        log.error('cant push to user %s: no push token' % user_id)
         return False
     if os_type == OS_IOS:
         from kinappserver.push import tx_completed_push_apns, generate_push_id
@@ -467,21 +465,21 @@ def send_push_auth_token(user_id, force_send=False):
     os_type, token, push_env = get_user_push_data(user_id)
     auth_token = get_token_by_user_id(user_id)
     if token is None:
-        print('cant push to user %s: no push token' % user_id)
+        log.error('cant push to user %s: no push token' % user_id)
         return False
     if os_type == OS_IOS:
         from kinappserver.push import auth_push_apns, generate_push_id
         push_send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)), push_env)
         push_send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)), push_env) # send twice?
-        print('sent apns auth token to user %s' % user_id)
+        log.info('sent apns auth token to user %s' % user_id)
     else:
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('auth_token', generate_push_id(), {'type': 'auth_token', 'user_id': str(user_id), 'token': str(auth_token)})
         push_send_gcm(token, payload, push_env)
-        print('sent gcm auth token to user %s' % user_id)
+        log.info('sent gcm auth token to user %s' % user_id)
 
     if not set_send_date(user_id):
-        print('could not set the send-date for auth-token for user_id: %s' % user_id)
+        log.error('could not set the send-date for auth-token for user_id: %s' % user_id)
 
     increment_metric('auth-token-sent')
 
@@ -492,17 +490,17 @@ def send_push_register(user_id):
     """send a message indicating that the client should re-register"""
     os_type, token, push_env = get_user_push_data(user_id)
     if token is None:
-        print('cant push to user %s: no push token' % user_id)
+        log.error('cant push to user %s: no push token' % user_id)
         return False
     if os_type == OS_IOS:
         from kinappserver.push import register_push_apns, generate_push_id
         push_send_apns(token, register_push_apns(generate_push_id()), push_env)
-        print('sent apns register to user %s' % user_id)
+        log.info('sent apns register to user %s' % user_id)
     else:
         from kinappserver.push import gcm_payload, generate_push_id
         payload = gcm_payload('register', generate_push_id(), {'type': 'register'})
         push_send_gcm(token, payload, push_env)
-        print('sent gcm register to user %s' % user_id)
+        log.info('sent gcm register to user %s' % user_id)
 
     increment_metric('register-push-sent')
 
@@ -514,7 +512,7 @@ def send_engagement_push(user_id, push_type):
     os_type, token, push_env = get_user_push_data(user_id)
 
     if token is None:
-        print('cant push to user %s: no push token' % user_id)
+        log.error('cant push to user %s: no push token' % user_id)
         return False
 
     if os_type == OS_IOS:
@@ -531,7 +529,7 @@ def send_compensated_push(user_id, amount, task_title):
     os_type, token, push_env = get_user_push_data(user_id)
 
     if token is None:
-        print('cant push to user %s: no push token' % user_id)
+        log.error('cant push to user %s: no push token' % user_id)
         return False
 
     if os_type == OS_IOS:
@@ -569,7 +567,7 @@ def get_next_task_results_ts(user_id, cat_id):
             return None
         return user_app_data.next_task_ts_dict.get(cat_id, 0)  # can be None
     except Exception as e:
-        print('cant get task result ts. e: %s' % e)
+        log.error('cant get task result ts. e: %s' % e)
         raise InvalidUsage('cant get task result ts')
 
 
@@ -599,38 +597,37 @@ def get_users_for_engagement_push(scheme):
             try:
                 from .blacklisted_phone_numbers import is_userid_blacklisted
                 if is_userid_blacklisted(user.user_id):
-                    print('skipping user %s - blacklisted' % user.user_id)
+                    log.info('skipping user %s - blacklisted' % user.user_id)
                     continue
 
                 if should_block_user_by_country_code(user.user_id):
-                    print('skipping user %s - country not supported' % user.user_id)
+                    log.info('skipping user %s - country not supported' % user.user_id)
                     continue
 
                 # filter out users with no tasks AND ALSO users with future tasks:
 
                 if count_immediate_tasks(user.user_id) == 0:
-                    print('skipping user %s - no active task, now: %s' % (user.user_id, now))
+                    log.info('skipping user %s - no active task, now: %s' % (user.user_id, now))
                     continue
 
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
                 last_active_date = datetime.date(last_active)
 
                 if today == last_active_date:
-                    print('skipping user %s: was active today. now: %s' % (user.user_id, now))
+                    log.info('skipping user %s: was active today. now: %s' % (user.user_id, now))
                     continue
                 if last_active_date < four_days_ago:
-                    print('skipping user %s: last active more than 4 days ago. now: %s' % (user.user_id, now))
+                    log.info('skipping user %s: last active more than 4 days ago. now: %s' % (user.user_id, now))
                     continue
 
-                print('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
+                log.info('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
                 if user.os_type == OS_IOS:
                     user_ids[OS_IOS].append(user.user_id)
                 else:
                     user_ids[OS_ANDROID].append(user.user_id)
 
             except Exception as e:
-                print('caught exception trying to calculate push for user %s' % user.user_id)
-                print(e)
+                log.error('caught exception trying to calculate push for user %s. e:%s' % (user.user_id, e))
                 continue
         return user_ids
 
@@ -646,37 +643,36 @@ def get_users_for_engagement_push(scheme):
             try:
                 from .blacklisted_phone_numbers import is_userid_blacklisted
                 if is_userid_blacklisted(user.user_id):
-                    print('skipping user %s - blacklisted' % user.user_id)
+                    log.info('skipping user %s - blacklisted' % user.user_id)
                     continue
 
                 if should_block_user_by_country_code(user.user_id):
-                    print('skipping user %s - country not supported' % user.user_id)
+                    log.info('skipping user %s - country not supported' % user.user_id)
                     continue
 
                 if count_immediate_tasks(user.user_id) == 0:
-                    print('skipping user %s - no active task, now: %s' % (user.user_id, now))
+                    log.info('skipping user %s - no active task, now: %s' % (user.user_id, now))
                     continue
 
                 last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
                 last_active_date = datetime.date(last_active)
 
                 if seven_days_ago != last_active_date:
-                    print('skipping user %s: last active not seven days ago, now: %s' % (user.user_id, now))
+                    log.info('skipping user %s: last active not seven days ago, now: %s' % (user.user_id, now))
                     continue
 
-                print('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
+                log.info('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
                 if user.os_type == OS_IOS:
                     user_ids[OS_IOS].append(user.push_token)
                 else:
                     user_ids[OS_ANDROID].append(user.push_token)
 
             except Exception as e:
-                print('caught exception trying to calculate push for user %s' % user.user_id)
-                print(e)
+                log.error('caught exception trying to calculate push for user %s. e:%s' % (user.user_id, e))
                 continue
         return user_ids
     else:
-        print('unknown scheme')
+        log.error('get_users_for_engagement_push - unknown scheme')
         return None
 
 
@@ -689,7 +685,7 @@ def get_userid_by_address(address):
         else:
             return user.user_id  # can be None
     except Exception as e:
-        print('cant get user userid by address. Exception: %s' % e)
+        log.error('cant get user userid by address. Exception: %s' % e)
         raise
 
 
@@ -702,7 +698,7 @@ def get_address_by_userid(user_id):
         else:
             return user.public_address  # can be None
     except Exception as e:
-        print('cant get address by user_id. Exception: %s' % e)
+        log.error('cant get address by user_id. Exception: %s' % e)
         raise
 
 
@@ -716,7 +712,7 @@ def set_user_phone_number(user_id, number):
             if user.enc_phone_number == encrypted_number:
                 return  # all good, do nothing
             else:
-                print('refusing to overwrite phone number for user_id %s' % user_id)
+                log.error('refusing to overwrite phone number for user_id %s' % user_id)
                 raise InvalidUsage('trying to overwrite an existing phone number with a different one')
         else:
             user.enc_phone_number = encrypted_number
@@ -727,7 +723,7 @@ def set_user_phone_number(user_id, number):
         deactivate_by_enc_phone_number(encrypted_number, user_id)
 
     except Exception as e:
-        print('cant add phone number %s to user_id: %s. Exception: %s' % (number, user_id, e))
+        log.error('cant add phone number %s to user_id: %s. Exception: %s' % (number, user_id, e))
         raise
 
 
@@ -740,7 +736,7 @@ def get_active_user_id_by_phone(phone_number):
         else:
             return user.user_id  # can be None
     except Exception as e:
-        print('cant get user address by phone. Exception: %s' % e)
+        log.error('cant get user address by phone. Exception: %s' % e)
         raise
 
 
@@ -752,7 +748,7 @@ def get_active_user_id_by_enc_phone(enc_phone_number):
         else:
             return user.user_id  # can be None
     except Exception as e:
-        print('cant get active user_id by enc phone. Exception: %s' % e)
+        log.error('cant get active user_id by enc phone. Exception: %s' % e)
         raise
 
 
@@ -761,7 +757,7 @@ def get_user_ids_by_enc_phone(enc_phone_number):
         users = User.query.filter_by(enc_phone_number=enc_phone_number).all()
         return [user.user_id for user in users]
     except Exception as e:
-        print('cant get user_ids by enc phone. Exception: %s' % e)
+        log.error('cant get user_ids by enc phone. Exception: %s' % e)
         raise
 
 
@@ -782,7 +778,7 @@ def get_enc_phone_number_by_user_id(user_id):
         else:
             return user.enc_phone_number  # can be None
     except Exception as e:
-        print('cant get user phone by user_id. Exception: %s' % e)
+        log.error('cant get user phone by user_id. Exception: %s' % e)
         raise
 
 
@@ -797,7 +793,7 @@ def get_all_user_id_by_phone(phone_number):
         users = User.query.filter_by(enc_phone_number=encrypted_number).all()
         return [user.user_id for user in users]
     except Exception as e:
-        print('cant get user(s) address by phone. Exception: %s' % e)
+        log.error('cant get user(s) address by phone. Exception: %s' % e)
         raise
 
 
@@ -829,12 +825,12 @@ def get_address_by_enc_phone_number(enc_phone_number):
     try:
         user = User.query.filter(User.enc_phone_number==enc_phone_number).filter_by(deactivated=False).first()
         if user is None:
-            print('cant find user for encrypted phone number: %s' % enc_phone_number)
+            log.error('cant find user for encrypted phone number: %s' % enc_phone_number)
             return None
         else:
             return user.public_address  # can be None
     except Exception as e:
-        print('cant get user address by phone. Exception: %s' % e)
+        log.error('cant get user address by phone. Exception: %s' % e)
         raise
 
 
@@ -873,7 +869,7 @@ def deactivate_by_enc_phone_number(enc_phone_number, new_user_id, activate_user=
                 db.engine.execute("update public.user_task_results set user_id='%s' where user_id='%s'" % (UUID(new_user_id), user_id_to_deactivate))
 
     except Exception as e:
-        print('cant deactivate_by_phone_number. Exception: %s' % e)
+        log.error('cant deactivate_by_phone_number. Exception: %s' % e)
         raise
 
 
@@ -1038,7 +1034,7 @@ def restore_user_by_address(current_user_id, address):
         from .backup import get_user_backup_hints_by_enc_phone
         hints = get_user_backup_hints_by_enc_phone(curr_enc_phone_number)
     except Exception as e:
-        print('cant get hints for enc_phone_number %s. e:%s' % (curr_enc_phone_number, e))
+        log.error('cant get hints for enc_phone_number %s. e:%s' % (curr_enc_phone_number, e))
         return None
     else:
         if hints == []:

@@ -23,7 +23,7 @@ def report_exceptions():
     try:
         previous_value = int(redis_con.get(redis_key))
     except Exception as e:
-        print('cant get previous value from reids. Exception %s. defaulting to 0' % e)
+        log.error('cant get previous value from reids. Exception %s. defaulting to 0' % e)
         previous_value = 0
 
     # evaluate

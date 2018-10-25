@@ -439,7 +439,7 @@ def split_payment(address, task_id, send_push, user_id, memo, delta):
                 print('using payment service for user_id %s' % user_id)
                 use_payment_service = True
     except Exception as e:
-        print('cant determine whether to use the payment service for user_id %s. defaulting to no' % user_id)
+        log.error('cant determine whether to use the payment service for user_id %s. defaulting to no' % user_id)
 
     if use_payment_service:
         reward_address_for_task_internal_payment_service(address, task_id, send_push, user_id, memo, delta)
@@ -497,7 +497,7 @@ def get_next_task_internal(cat_ids=[]):
         print('task_ids returned for user (for all cat_ids) %s: %s' % (user_id, all_task_ids))
         #print('tasks for user %s: %s' % (user_id, tasks))
     except Exception as e:
-        print('cant print returned tasks for user %s. exception: %s' % (user_id, e))
+        log.error('cant print returned tasks for user %s. exception: %s' % (user_id, e))
 
     # undict the tasks if a specific cat_id was requested
     print('tasks_by_categories %s' % tasks_by_categories)
@@ -549,7 +549,7 @@ def get_transactions_api():
             detailed_txs = detailed_txs[:MAX_TXS_PER_USER]
 
     except Exception as e:
-        print('cant get txs for user')
+        log.error('cant get txs for user')
         print(e)
         return jsonify(status='error', txs=[])
 
@@ -579,7 +579,7 @@ def user_redeemed_api():
             redeemed_goods.append({**good, **get_offer_details(good['offer_id'])})
 
     except Exception as e:
-        print('cant get redeemed items for user')
+        log.error('cant get redeemed items for user')
         print(e)
 
     return jsonify(status='ok', redeemed=redeemed_goods)

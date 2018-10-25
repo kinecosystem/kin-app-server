@@ -291,7 +291,7 @@ def refresh_bh_auth_token(force=False):
     """
     creds = get_bh_creds()
     if not creds:
-        print('cant get bh creds from db. bailing')
+        log.error('cant get bh creds from db. bailing')
         return False
     from datetime import datetime, timezone
     now = datetime.now(timezone.utc)

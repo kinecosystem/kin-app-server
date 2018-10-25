@@ -23,7 +23,7 @@ def get_ssm_parameter(param_name, kms_key_region='us-east-1'):
         res = ssm_client.get_parameter(Name=param_name, WithDecryption=True)
         return res['Parameter']['Value']
     except Exception as e:
-        print('cant get secure value: %s from ssm' % param_name)
+        log.error('cant get secure value: %s from ssm' % param_name)
         print(e)
         return None
 

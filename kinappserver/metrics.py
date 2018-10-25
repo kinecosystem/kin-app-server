@@ -13,7 +13,7 @@ def report_inventory():
     try:
         inventory = json.loads(response.text)['inventory']
     except Exception as e:
-        print('cant collect inventory')
+        log.error('cant collect inventory')
         pass
     for offer_id in inventory.keys():
         metric_name_unallocated = 'inventory-offerid-%s-unallocated' % offer_id
@@ -34,7 +34,7 @@ def report_tx_total():
         metric = 'public_kin'
         statsd.gauge(metric, public_kin, tags=['app:kinit,env:%s' % os.environ['ENV']])
     except Exception as e:
-        print('cant collect tx totals')
+        log.error('cant collect tx totals')
         pass
 
 
@@ -47,7 +47,7 @@ def report_unauthed_user_count():
     try:
         count = len(json.loads(response.text)['user_ids'])
     except Exception as e:
-        print('cant collect unauthed user count')
+        log.error('cant collect unauthed user count')
         pass
 
     metric = 'unauthed_user_count'

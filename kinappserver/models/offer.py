@@ -93,7 +93,7 @@ def add_offer(offer_json, set_active=False):
         if fail_flag:
             log.error('could not ensure accessibility of all urls. refusing to add offer')
             return False
-            log.info('done testing accessibility of offer urls')
+        log.info('done testing accessibility of offer urls')
 
     try:
         offer = Offer()

@@ -84,12 +84,12 @@ def store_task_results(user_id, task_id, results):
         from kinappserver.models import UserAppData
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
         if user_app_data is None:
-            print('cant retrieve user app data for user:%s' % user_id)
+            log.error('cant retrieve user app data for user:%s' % user_id)
             raise InternalError('cant retrieve user app data for user:%s' % user_id)
 
         cat_id = get_cat_id_for_task_id(task_id)
         if not cat_id:
-            print('cant find cat_id for task_id %s' % task_id)
+            log.error('cant find cat_id for task_id %s' % task_id)
             raise InternalError('cant find cat_id for task_id %s' % task_id)
 
         if cat_id in user_app_data.completed_tasks_dict:
@@ -112,7 +112,7 @@ def store_task_results(user_id, task_id, results):
         try:
             delay_days = get_task_delay(str(int(task_id) + 1))  # throws exception if no such task exists
         except Exception as e:
-            print('cant find task_delay for next task_id of %s' % task_id)
+            log.error('cant find task_delay for next task_id of %s' % task_id)
 
         if delay_days is None or int(delay_days) == 0:
             shifted_ts = arrow.utcnow().timestamp
@@ -402,7 +402,7 @@ def add_task(task_json):
     # does the task_id already exist?
     if get_task_by_id(task_id):
         if not overwrite_task:
-            print('cant add task with id %s - already exists. provide the overwrite flag to overwrite the task' % task_id)
+            log.error('cant add task with id %s - already exists. provide the overwrite flag to overwrite the task' % task_id)
             raise InvalidUsage('task_id %s already exists' % task_id)
         else:
             print('task %s already exists - overwriting it' % task_id)
@@ -411,11 +411,11 @@ def add_task(task_json):
     # sanity for position
     if position == -1:
         if None in (task_expiration_date, task_start_date):
-            print('cant add ad-hoc task w/o expiration/start date')
+            log.error('cant add ad-hoc task w/o expiration/start date')
             raise InvalidUsage('cant add ad-hoc task w/o start/expiration dates')
         print('adding ad-hoc task with start-date: %s and expiration-date: %s' % (task_start_date, task_expiration_date))
     elif is_position_taken(category_id, position) and not overwrite_task:
-            print('cant insert task_id %s at cat_id %s and position %s - position already taken' % (task_id, category_id, position))
+            log.error('cant insert task_id %s at cat_id %s and position %s - position already taken' % (task_id, category_id, position))
             raise InvalidUsage('cant insert task - position taken')
 
     # sanity for task data
@@ -491,7 +491,7 @@ def add_task(task_json):
         print('done testing accessibility of task urls')
 
         if fail_flag:
-            print('cant verify the images - aborting')
+            log.error('cant verify the images - aborting')
             raise InvalidUsage('cant verify images')
 
     try:
@@ -524,7 +524,7 @@ def add_task(task_json):
         db.session.commit()
         return True
     except Exception as e:
-        print('cant add task to db with id %s. exception: %s' % (task_id, e))
+        log.error('cant add task to db with id %s. exception: %s' % (task_id, e))
         db.session.rollback()
         return False
 
@@ -577,7 +577,7 @@ def get_task_details(task_id):
     """return a dict with some of the given taskid's metadata"""
     task = Task2.query.filter_by(task_id=task_id).first()
     if not task:
-        print('cant find task with task_id %s. using default text' % task_id)
+        log.error('cant find task with task_id %s. using default text' % task_id)
         return {'title': 'Delayed Kin', 'desc': '', 'provider': {"image_url": "https://cdn.kinitapp.com/brand_img/poll_logo_kin.png", "name": "Kinit Team"}}
     return {'title': task.title, 'desc': task.description, 'provider': task.provider_data}
 
@@ -615,21 +615,21 @@ def get_truex_activity(user_id, cat_id, remote_ip, user_agent):
     try:
         tasks = get_next_tasks_for_user(user_id, remote_ip, cat_id)
     except Exception as e:
-        print('cant get activity - no such user %s' % user_id)
+        log.error('cant get activity - no such user %s' % user_id)
 
     if tasks[cat_id] == []:
-        print('cant get activity: no next task')
+        log.error('cant get activity: no next task')
         return None
 
     if tasks[0]['tasks'][0]['type'] != TASK_TYPE_TRUEX:
-        print('cant get activity: user\'s next task isnt truex')
+        log.error('cant get activity: user\'s next task isnt truex')
         return None
 
     # is the user eligible for a task now?
     now = arrow.utcnow()
     next_task_ts = get_next_task_results_ts(user_id, cat_id)
     if next_task_ts and now < arrow.get(next_task_ts):
-        print('cant get truex activity: now: %s user\'s tx: %s' % (now, arrow.get(next_task_ts)))
+        log.error('cant get truex activity: now: %s user\'s tx: %s' % (now, arrow.get(next_task_ts)))
         return None
 
     # get truex activity for user:
@@ -644,7 +644,7 @@ def switch_task_ids(task_id1, task_id2):
     task2 = get_task_by_id(task_id2)
 
     if None in (task1, task2):
-        print('cant find task_id(s) (%s,%s)' % (task_id1, task_id2))
+        log.error('cant find task_id(s) (%s,%s)' % (task_id1, task_id2))
         raise InvalidUsage('no such task_id')
 
     # pick some random, unused task_id
@@ -664,7 +664,7 @@ def add_task_to_completed_tasks(user_id, task_id):
     from .task2 import get_task_by_id
     task = get_task_by_id(task_id)
     if not task:
-        print('cant find task with id %s' % task_id)
+        log.error('cant find task with id %s' % task_id)
         raise InvalidUsage('no such task %s' % task_id)
 
     cat_id = task['cat_id']

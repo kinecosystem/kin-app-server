@@ -257,7 +257,7 @@ def compensate_user_api():
         raise InvalidUsage('invalid param')
     public_address = get_address_by_userid(user_id)
     if not public_address:
-        print('cant compensate user %s - no public address' % user_id)
+        log.error('cant compensate user %s - no public address' % user_id)
         return jsonify(status='error', reason='no_public_address')
 
     user_tx_task_ids = [tx.tx_info.get('task_id', '-1') for tx in list_user_transactions(user_id)]
@@ -414,7 +414,7 @@ def user_tx_report_endpoint():
         if user_id:
             UUID(user_id)
     except Exception as e:
-        print('cant generate tx report for user_id: %s ' % user_id)
+        log.error('cant generate tx report for user_id: %s ' % user_id)
         return jsonify(error='invalid_userid')
 
     if user_id:
@@ -454,7 +454,7 @@ def user_goods_report_endpoint():
         if user_id:
             UUID(user_id)
     except Exception as e:
-        print('cant generate tx report for user_id: %s ' % user_id)
+        log.error('cant generate tx report for user_id: %s ' % user_id)
         return jsonify(error='invalid_userid')
 
     if user_id:
@@ -494,7 +494,7 @@ def user_report_endpoint():
         if user_id:
             UUID(user_id)
     except Exception as e:
-        print('cant generate report for user_id: %s ' % user_id)
+        log.error('cant generate report for user_id: %s ' % user_id)
         return jsonify(error='invalid_userid')
 
     if user_id:
