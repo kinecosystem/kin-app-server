@@ -402,7 +402,7 @@ def replenish_bh_cards_endpoint():
 
     # buys cards if needed
     from .blackhawk import replenish_bh_cards
-    app.rq_fast.enqueue_call(func=replenish_bh_cards, args=(True,), timeout=60*10)  # this can be a long-lasting request
+    app.rq_slow.enqueue_call(func=replenish_bh_cards, args=(True,))  # this can be a long-lasting request
     return jsonify(status='ok')
 
 
