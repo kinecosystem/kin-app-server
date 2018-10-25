@@ -729,7 +729,7 @@ def count_immediate_tasks(user_id):
             filtered_unsolved_tasks_for_user_and_cat = get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_tasks.get(cat_id, []), os_type, app_ver, country_code, user_id)
             immediate_tasks_count_for_cat_id = calculate_immediate_tasks(filtered_unsolved_tasks_for_user_and_cat)
             #log.info('counted %s immediate tasks for cat_id %s' % (immediate_tasks_count_for_cat_id, cat_id))
-            immediate_tasks_count[cat_id] = immediate_tasks_count + immediate_tasks_count_for_cat_id
+            immediate_tasks_count[cat_id] = immediate_tasks_count_for_cat_id
 
     log.info('count_immediate_tasks for user_id %s - %s' % (user_id, immediate_tasks_count))
     return immediate_tasks_count
