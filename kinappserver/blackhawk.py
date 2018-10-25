@@ -229,7 +229,7 @@ def track_orders():
     unprocessed_orders = 0
 
     for order_id in orders_dict.keys():
-        time.sleep(1)  # dont choke their api server
+        time.sleep(0.1)  # dont choke their api server
         status = get_order_status_api(token, order_id)
         print('received status:%s for order_id:%s' % (status, order_id))
         if status == 'incomplete':

@@ -1,6 +1,6 @@
 [program:kinappworker-fast]
 directory=/opt/kin-app-server/kinappserver
-command=rq worker kinappserver-{{deployment_env}}-fast --url redis://{{redis_endpoint}}:6379
+command=rq worker kinappserver-{{deployment_env}}-fast --url redis://{{redis_endpoint}}:6379 --logging_level=INFO
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/kinappworker_fast.err.log
