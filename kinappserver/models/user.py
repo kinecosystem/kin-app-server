@@ -803,7 +803,7 @@ def match_phone_number_to_address(phone_number, sender_user_id):
     sender_enc_phone_number = get_enc_phone_number_by_user_id(sender_user_id)
     if not sender_enc_phone_number:
         # should never happen while phone v. is active
-        print('should never happen: cant get user\'s phone number. user_id: %s' % sender_user_id)
+        log.error('should never happen: cant get user\'s phone number. user_id: %s' % sender_user_id)
 
     sender_unenc_phone_number = app.encryption.decrypt(sender_enc_phone_number)
     enc_phone_num_1 = app.encryption.encrypt(parse_phone_number(phone_number, sender_unenc_phone_number))
@@ -816,7 +816,7 @@ def match_phone_number_to_address(phone_number, sender_user_id):
         enc_phone_num_2 = app.encryption.encrypt('+972' + phone_number)
         parsed_address = get_address_by_enc_phone_number(enc_phone_num_2)
         if parsed_address:
-            print('match_phone_number_to_address: applied special israeli-number logic to parse number: %s' % enc_phone_num_2)
+            log.info('match_phone_number_to_address: applied special israeli-number logic to parse number: %s' % enc_phone_num_2)
 
     return parsed_address
 
@@ -843,7 +843,7 @@ def deactivate_by_enc_phone_number(enc_phone_number, new_user_id, activate_user=
     new_user_id = str(new_user_id)
 
     if activate_user: # used in backup-restore
-        print('activating user %s prior to deactivating all other user_ids' % new_user_id)
+        log.info('activating user %s prior to deactivating all other user_ids' % new_user_id)
         db.engine.execute("update public.user set deactivated=false where user_id='%s'" % new_user_id)
     try:
         # find candidates to de-activate (except user_id)
@@ -852,10 +852,10 @@ def deactivate_by_enc_phone_number(enc_phone_number, new_user_id, activate_user=
             return None  # nothing to do
         else:
             user_ids_to_deactivate = [user.user_id for user in users]
-            print('deactivating user_ids: %s:' % user_ids_to_deactivate)
+            log.info('deactivating user_ids: %s:' % user_ids_to_deactivate)
             # there should only ever be 1 at most, so log warning
             if len(user_ids_to_deactivate) > 1:
-                print('warning: too many user_ids to deactivate were found: %s' % user_ids_to_deactivate)
+                log.warning('warning: too many user_ids to deactivate were found: %s' % user_ids_to_deactivate)
 
             for user_id_to_deactivate in user_ids_to_deactivate:
                 # deactivate and copy task_history and next_task_ts
@@ -889,11 +889,11 @@ def nuke_user_data(phone_number, nuke_all=False):
     """nuke user's data by phone number. by default only nuke the active user"""
     # find the active user with this number:
     if nuke_all:
-        print('nuking all users with the phone number: %s' % phone_number)
+        log.info('nuking all users with the phone number: %s' % phone_number)
         user_ids = get_all_user_id_by_phone(phone_number)
     else:
         # only the active user
-        print('nuking the active user with the phone number: %s' % phone_number)
+        log.info('nuking the active user with the phone number: %s' % phone_number)
         user_ids = [get_active_user_id_by_phone(phone_number)]
     for user_id in user_ids:
         db.engine.execute("delete from good where tx_hash in (select tx_hash from transaction where user_id='%s')" % user_id)
@@ -919,7 +919,7 @@ def get_user_config(user_id):
     if config.P2P_TRANSFERS_ENABLED:
 
         if not user_app_data:
-            print('could not customize user config. disabling p2p txs for this user')
+            log.warning('could not customize user config. disabling p2p txs for this user')
             global_config['p2p_enabled'] = False
         elif len(user_app_data.completed_tasks_dict.values()) < config.P2P_MIN_TASKS:
             global_config['p2p_enabled'] = False
@@ -942,22 +942,22 @@ def get_user_config(user_id):
         global_config['is_update_available'] = True
 
     if disable_phone_verification:
-        print('disabling phone verification for userid %s' % user_id)
+        log.info('disabling phone verification for userid %s' % user_id)
         global_config['phone_verification_enabled'] = False
 
     if disable_backup_nag:
-        print('disabling backup nag for userid %s' % user_id)
+        log.info('disabling backup nag for userid %s' % user_id)
         global_config['backup_nag'] = False
 
 
-    print('user config for %s: %s' % (user_id, global_config))
+    log.info('user config for %s: %s' % (user_id, global_config))
 
     return global_config
 
 
 def get_user_report(user_id):
     """return a json with all the interesting user-data"""
-    print('getting user report for %s' % user_id)
+    log.info('getting user report for %s' % user_id)
     user_report = {}
     try:
         user = get_user(user_id)
@@ -1007,7 +1007,7 @@ def get_user_report(user_id):
                 user_report['backup']['updated_at'] = ubh.updated_at
 
     except Exception as e:
-        print('caught exception in get_user_report:%s' % e)
+        log.error('caught exception in get_user_report:%s' % e)
     return user_report
 
 
@@ -1028,7 +1028,7 @@ def restore_user_by_address(current_user_id, address):
     #    and ensure the phone number has hints: deny restore from numbers with no hints.
     curr_enc_phone_number = get_enc_phone_number_by_user_id(current_user_id)
     if not curr_enc_phone_number:
-        print('restore_user_by_address: cant find enc_phone_number for current user_id %s. aborting' % current_user_id)
+        log.error('restore_user_by_address: cant find enc_phone_number for current user_id %s. aborting' % current_user_id)
         return None
     try:
         from .backup import get_user_backup_hints_by_enc_phone
@@ -1038,20 +1038,20 @@ def restore_user_by_address(current_user_id, address):
         return None
     else:
         if hints == []:
-            print('no hints found for enc_phone_number %s. aborting' % curr_enc_phone_number)
+            log.error('no hints found for enc_phone_number %s. aborting' % curr_enc_phone_number)
             return None
         # else - found hints, okay to continue with the restore
 
     # 2. find the original user_id from the given address
     original_user_id = get_userid_by_address(address)
     if not original_user_id:
-        print('restore_user_by_address: cant find the original user_id for the given address. aborting')
+        log.error('restore_user_by_address: cant find the original user_id for the given address. aborting')
         return None
 
     # ensure the user_id actually belongs to the same phone number as the current user_id
     original_enc_phone_number = get_enc_phone_number_by_user_id(original_user_id)
     if not original_enc_phone_number or (original_enc_phone_number != curr_enc_phone_number):
-        print('restore_user_by_address: phone number mismatch. current=%s, original=%s' % (curr_enc_phone_number, original_enc_phone_number))
+        log.info('restore_user_by_address: phone number mismatch. current=%s, original=%s' % (curr_enc_phone_number, original_enc_phone_number))
         return None
 
     # 3. activate the original user, deactivate the current one and
@@ -1060,10 +1060,10 @@ def restore_user_by_address(current_user_id, address):
 
     # copy the (potentially new device data and new push token to the old user)
     if not migrate_restored_user_data(current_user_id, original_user_id):
-        print('restore_user_by_address: failed to migrate device-specific data from the temp user_id %s to the restored user-id %s' % (current_user_id, original_user_id))
+        log.error('restore_user_by_address: failed to migrate device-specific data from the temp user_id %s to the restored user-id %s' % (current_user_id, original_user_id))
 
     # 5. return the (now active) original user_id.
-    print('restore_user_by_address: successfully restored the original user_id: %s' % original_user_id)
+    log.info('restore_user_by_address: successfully restored the original user_id: %s' % original_user_id)
     return original_user_id
 
 
@@ -1110,16 +1110,16 @@ def should_block_user_by_client_version(user_id):
         os_type = get_user_os_type(user_id)
         client_version = get_user_app_data(user_id).app_ver
     except Exception as e:
-        print('should_block_user_by_client_version: cant get os_type/client version for user_id %s' % user_id)
+        log.error('should_block_user_by_client_version: cant get os_type/client version for user_id %s' % user_id)
         return False
     else:
         if os_type == OS_ANDROID:
             if LooseVersion(client_version) <= LooseVersion(config.BLOCK_ONBOARDING_ANDROID_VERSION):
-                print('should block android version (%s), config: %s' % (client_version, config.BLOCK_ONBOARDING_ANDROID_VERSION))
+                log.info('should block android version (%s), config: %s' % (client_version, config.BLOCK_ONBOARDING_ANDROID_VERSION))
                 return True
         else: # OS_IOS
             if LooseVersion(client_version) <= LooseVersion(config.BLOCK_ONBOARDING_IOS_VERSION):
-                print('should block ios version (%s), config: %s' % (client_version, config.BLOCK_ONBOARDING_IOS_VERSION))
+                log.info('should block ios version (%s), config: %s' % (client_version, config.BLOCK_ONBOARDING_IOS_VERSION))
                 return True
     return False
 
@@ -1130,10 +1130,10 @@ def should_block_user_by_phone_prefix(user_id):
         phone_number = get_unenc_phone_number_by_user_id(user_id)
         for prefix in app.blocked_phone_prefixes:
             if phone_number.find(prefix) == 0:
-                print('should_block_user_by_phone_prefix: should block user_id %s with phone number %s' % (user_id, phone_number))
+                log.info('should_block_user_by_phone_prefix: should block user_id %s with phone number %s' % (user_id, phone_number))
                 return True
     except Exception as e:
-        print('should_block_user_by_phone_prefix for userid %s: caught exception: %s' % (user_id, e))
+        log.error('should_block_user_by_phone_prefix for userid %s: caught exception: %s' % (user_id, e))
     return False
 
 
@@ -1142,16 +1142,16 @@ def should_allow_user_by_phone_prefix(user_id):
     try:
         phone_number = get_unenc_phone_number_by_user_id(user_id)
         if not phone_number:
-            print('should_allow_user_by_phone_prefix - no phone number. allowing user')
+            log.info('should_allow_user_by_phone_prefix - no phone number. allowing user')
             return True
 
         for prefix in app.allowed_phone_prefixes:
             if phone_number.find(prefix) == 0:
                 return True
     except Exception as e:
-        print('should_allow_user_by_phone_prefix for userid %s: caught exception: %s' % (user_id, e))
+        log.error('should_allow_user_by_phone_prefix for userid %s: caught exception: %s' % (user_id, e))
 
-    print('should_allow_user_by_phone_prefix: not allowing user_id %s with phone number %s' % (user_id, phone_number))
+    log.info('should_allow_user_by_phone_prefix: not allowing user_id %s with phone number %s' % (user_id, phone_number))
     return False
 
 
@@ -1160,16 +1160,16 @@ def should_block_user_by_country_code(user_id):
     try:
         country_code = get_user_country_code(user_id)
         if country_code in app.blocked_country_codes:
-            print('should_block_user_by_country_code: should block user_id %s with country_code %s' % (user_id, country_code))
+            log.info('should_block_user_by_country_code: should block user_id %s with country_code %s' % (user_id, country_code))
             return True
     except Exception as e:
-        print('should_block_user_by_country_code for userid %s: caught exception %s' % (user_id, e))
+        log.error('should_block_user_by_country_code for userid %s: caught exception %s' % (user_id, e))
         return False
 
 
 def delete_all_user_data(user_id, are_u_sure=False):
     """delete all user data from the db. this erases all the users associated with the same phone number"""
-    print('preparing to delete all info related to user_id %s' % user_id)
+    log.info('preparing to delete all info related to user_id %s' % user_id)
 
     delete_user_goods = '''delete from good where good.order_id in (select tx_info->>'memo' as order_id from transaction where user_id='%s');'''
     delete_user_transactions = '''delete from transaction where user_id='%s';'''
@@ -1185,35 +1185,35 @@ def delete_all_user_data(user_id, are_u_sure=False):
     # get all the user_ids associated with this user's phone number:
     enc_phone = get_enc_phone_number_by_user_id(user_id)
     if not enc_phone:
-        print('refusing to delete data for user with no phone number')
+        log.error('refusing to delete data for user with no phone number')
         return
     uids = get_user_ids_by_enc_phone(enc_phone)
-    print('WARNING: will delete all data of the following %s user_ids: %s' % (len(uids), uids))
+    log.info('WARNING: will delete all data of the following %s user_ids: %s' % (len(uids), uids))
     if not are_u_sure:
-        print('refusing to delete users. if youre sure, send with force flag')
+        log.error('refusing to delete users. if youre sure, send with force flag')
         return
 
     for uid in uids:
-        print('deleting all data related to user_id %s' % uid)
-        print('deleting goods...')
+        log.info('deleting all data related to user_id %s' % uid)
+        log.info('deleting goods...')
         db.engine.execute(delete_user_goods % uid)
-        print('deleting orders...')
+        log.info('deleting orders...')
         db.engine.execute(delete_user_orders % uid)
-        print('deleting txs...')
+        log.info('deleting txs...')
         db.engine.execute(delete_user_transactions % uid)
-        print('deleting p2p txs...')
+        log.info('deleting p2p txs...')
         db.engine.execute(delete_p2p_txs_sent % uid)
         db.engine.execute(delete_p2p_txs_received % uid)
-        print('deleting backup hints...')
+        log.info('deleting backup hints...')
         db.engine.execute(delete_phone_backup_hints % uid)
-        print('deleting task results...')
+        log.info('deleting task results...')
         db.engine.execute(delete_task_results % uid)
-        print('deleting auth tokens...')
+        log.info('deleting auth tokens...')
         db.engine.execute(delete_auth_token % uid)
-        print('deleting user data...')
+        log.info('deleting user data...')
         db.engine.execute(delete_app_data % uid)
         db.engine.execute(delete_user % uid)
-        print('done with user_id: %s' % uid)
+        log.info('done with user_id: %s' % uid)
 
 
 def count_registrations_for_phone_number(phone_number):
@@ -1231,23 +1231,23 @@ def count_missing_txs():
     sql_stmt = '''SELECT count(*) FROM user_task_results u left join transaction t on u.user_id = t.user_id where t.tx_hash is null  and u.update_at::varchar LIKE '%s';''' % todays_date
     missing_txs_today = db.engine.execute(sql_stmt)
     missing_txs_today = missing_txs_today.scalar()
-    print('missing txs today: %s' % missing_txs_today)
+    log.info('missing txs today: %s' % missing_txs_today)
     gauge_metric('missing-txs', missing_txs_today)
 
 def re_register_all_users():
     """sends a push message to all users with a phone"""
     all_phoned_users = User.query.filter(User.enc_phone_number != None).filter(User.deactivated == False).all()
-    print('sending register to %s users' % len(all_phoned_users))
+    log.info('sending register to %s users' % len(all_phoned_users))
     counter = 0
     for user in all_phoned_users:
 
         if user.os_type != OS_ANDROID:
-            print('skipping user with ios client')
+            log.info('skipping user with ios client')
             continue
         user_app_data = get_user_app_data(user.user_id)
         from distutils.version import LooseVersion
         if user_app_data.app_ver is None or LooseVersion(user_app_data.app_ver) < LooseVersion('1.2.1'):
-            print('skipping user with client ver %s' % user_app_data.app_ver)
+            log.info('skipping user with client ver %s' % user_app_data.app_ver)
             continue
 
         sleep(0.1)  # lets not choke the server
@@ -1278,7 +1278,7 @@ def migrate_user_to_tasks2(user_id):
     uad = get_user_app_data(user_id)
 
     if '0' in uad.completed_tasks_dict.keys():
-        print('migrate_user_to_tasks2: user %s was already migrated' % user_id)
+        log.info('migrate_user_to_tasks2: user %s was already migrated' % user_id)
         return
 
     # create a dict of arrays (for all currently existing categories)
@@ -1287,7 +1287,7 @@ def migrate_user_to_tasks2(user_id):
         new_completed_tasks_dict[cat_id] = []
 
     # populate the dict with previously solved tasks
-    print('migrate_user_to_tasks2: task 1.0 tasks: %s' % uad.completed_tasks)
+    log.info('migrate_user_to_tasks2: task 1.0 tasks: %s' % uad.completed_tasks)
     completed_tasks = json.loads(uad.completed_tasks)
     for task_id in completed_tasks:
         new_completed_tasks_dict[task_id_to_category_id(task_id)].append(task_id)
@@ -1303,9 +1303,9 @@ def migrate_user_to_tasks2(user_id):
     uad.next_task_ts_dict = next_task_ts_dict
     uad.next_task_memo_dict = next_task_memo_dict
 
-    commit_json_changed_to_orm(uad,['completed_tasks_dict', 'next_task_ts_dict', 'next_task_memo_dict'])
+    commit_json_changed_to_orm(uad, ['completed_tasks_dict', 'next_task_ts_dict', 'next_task_memo_dict'])
 
-    print('migrated user_id %s to tasks2.0: tasks: %s, ts: %s, memo: %s' % (user_id, uad.completed_tasks_dict , uad.next_task_ts_dict, uad.next_task_memo_dict))
+    log.info('migrated user_id %s to tasks2.0: tasks: %s, ts: %s, memo: %s' % (user_id, uad.completed_tasks_dict , uad.next_task_ts_dict, uad.next_task_memo_dict))
 
 
 def task_id_to_category_id(task_id):
@@ -1320,7 +1320,7 @@ def add_task_to_completed_tasks1(user_id, task_id):
     completed_tasks = json.loads(user_app_data.completed_tasks)
 
     if task_id in completed_tasks:
-        print('task_id %s already in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
+        log.info('task_id %s already in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
     else:
         completed_tasks.append(task_id)
         user_app_data.completed_tasks = json.dumps(completed_tasks)

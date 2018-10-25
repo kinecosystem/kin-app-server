@@ -484,10 +484,10 @@ def add_task(task_json):
                 if action.get('type') == 'external-url':
                     icon_url = action.get('icon_url', None)
                     if icon_url and not test_image(icon_url):
-                        print('icon_url url - %s - could not be verified' % icon_url)
+                        log.error('icon_url url - %s - could not be verified' % icon_url)
                         fail_flag = True
 
-        print('done testing accessibility of task urls')
+        log.info('done testing accessibility of task urls')
 
         if fail_flag:
             log.error('cant verify the images - aborting')
@@ -767,17 +767,17 @@ def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_fo
 
         # filter out truex tasks if the user is in the truex blacklist
         if should_skip_task(user_id, task_id, None, user_country_code):
-            print('skipping task %s - its either truex or truex-related' % task_id)
+            log.info('skipping task %s - its either truex or truex-related' % task_id)
             skip_task = True
 
         # filter out tasks that dont match the client's version
         if LooseVersion(task[client_version_index]) > LooseVersion(client_version):
-            print('detected a task (%s) that doesnt match the users os_type and app_ver. user_id %s' % (task_id, user_id))
+            log.info('detected a task (%s) that doesnt match the users os_type and app_ver. user_id %s' % (task_id, user_id))
             skip_task = True
 
         # filter out tasks that dont match the user's country code
         if excluded_country_codes not in (None, []) and user_country_code and user_country_code in excluded_country_codes:
-            print('detected a task (%s) that cant be served to user because of country code. user_id %s' % (task_id, user_id))
+            log.info('detected a task (%s) that cant be served to user because of country code. user_id %s' % (task_id, user_id))
             # the task is limited to a specific country, and the user's country is different
             skip_task = True
 

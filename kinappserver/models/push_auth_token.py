@@ -102,7 +102,7 @@ def get_token_by_user_id(user_id):
 
 
 def print_auth_tokens():
-    print('printing all auth tokens:')
+    log.info('printing all auth tokens:')
     push_auth_tokens = PushAuthToken.query.all()
     for token in push_auth_tokens:
         log.info(token)
@@ -155,7 +155,7 @@ def scan_for_deauthed_users():
                 deauth_user_ids.append(token.user_id)
 
     deauth_users(deauth_user_ids)
-    print('deauthed %s users' % len(deauth_user_ids))
+    log.info('deauthed %s users' % len(deauth_user_ids))
     return True
 
 

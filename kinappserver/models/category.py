@@ -46,7 +46,7 @@ def add_category(cat_json):
             log.error("cant verify image url: %s" % cat_json['ui_data']['header_image_url'])
             fail_flag = True
     if fail_flag:
-        print('could not verify urls. aborting')
+        log.error('could not verify urls. aborting')
         raise InvalidUsage('bad urls. bad!')
 
     try:
