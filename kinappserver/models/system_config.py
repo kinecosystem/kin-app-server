@@ -102,5 +102,10 @@ def get_categories_extra_data():
     sys_config = get_system_config()
     if sys_config is None or sys_config.categories_extra_data is None:
         # return some hard coded default value
-        return {'title': 'Welcome to Kinit!', 'subtitle': 'Ready to earn some KINs?'}
+        return {'default': {'title': 'Welcome to Kinit!', 'subtitle': 'Ready to earn some KINs?'}, 'no_tasks': {'title': 'Nothing to see here today', 'subtitle': 'Move along'}}
     return sys_config.categories_extra_data
+
+
+def update_categories_extra_data(json_obj):
+    import json
+    db.engine.execute("update system_config set categories_extra_data=%s;", (json.dumps(json_obj),))

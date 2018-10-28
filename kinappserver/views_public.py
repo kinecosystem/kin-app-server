@@ -1316,4 +1316,7 @@ def payment_service_callback_endpoint():
 def get_user_categories_endpoint():
     """returns the list of categories for this user. this list contains user tailored data like the number of tasks in each category"""
     user_id, auth_token = extract_headers(request)
-    return jsonify(status='ok', categories=get_categories_for_user(user_id), header_message=get_personalized_categories_header_message(user_id))
+    # customize the message: count available tasks:
+    cats_for_user = get_categories_for_user(user_id)
+    #message_type = 'no_tasks' if sum(cats_for_user[cat_id]['available_tasks_count']for cat_id in cats_for_user.keys()) == 0 else 'default'
+    return jsonify(status='ok', categories=cats_for_user, header_message=get_personalized_categories_header_message(user_id, 'default'))

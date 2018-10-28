@@ -35,7 +35,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
     blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, re_register_all_users, get_tx_totals, set_should_solve_captcha, add_task_to_completed_tasks, \
-    remove_task_from_completed_tasks, switch_task_ids, delete_task, block_user_from_truex_tasks, unblock_user_from_truex_tasks, set_update_available_below, set_force_update_below
+    remove_task_from_completed_tasks, switch_task_ids, delete_task, block_user_from_truex_tasks, unblock_user_from_truex_tasks, set_update_available_below, set_force_update_below, \
+    update_categories_extra_data
 
 
 @app.route('/health', methods=['GET'])
@@ -859,4 +860,16 @@ def system_versions_force_update_below_endpoint():
     os_type = payload.get('os_type', None)
     app_version = payload.get('version', None)
     set_force_update_below(os_type, app_version)
+    return jsonify(status='ok')
+
+
+@app.route('/system/categories/update-extra-data', methods=['POST'])
+def update_extra_data_endpoint():
+    if not config.DEBUG:
+        limit_to_acl()
+        limit_to_password()
+
+    payload = request.get_json(silent=True)
+    categories_extra_data = payload.get('categories_extra_data')
+    update_categories_extra_data(categories_extra_data)
     return jsonify(status='ok')

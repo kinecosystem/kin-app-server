@@ -1256,11 +1256,11 @@ def re_register_all_users():
 
 
 # TODO cache this
-def get_personalized_categories_header_message(user_id):
+def get_personalized_categories_header_message(user_id, message_type='default'):
     """returns a user-specific message to be shown in the categories page"""
     # nothing to personalize yet - just return the text from the db.
     from .system_config import get_categories_extra_data
-    return get_categories_extra_data()
+    return get_categories_extra_data()[message_type]  # either 'default' or 'no_tasks'
 
 
 def migrate_user_to_tasks2(user_id):
