@@ -500,9 +500,10 @@ def get_next_task_internal(cat_ids=[]):
     except Exception as e:
         log.error('cant print returned tasks for user %s. exception: %s' % (user_id, e))
 
-    # undict the tasks if a specific cat_id was requested
+    # undict the tasks if a specific cat_id was requested, order them otherwise
+    from collections import OrderedDict
+    tasks_by_categories = tasks_by_categories[cat_ids[0]] if len(cat_ids) == 1 else OrderedDict(tasks_by_categories)
     print('tasks_by_categories %s' % tasks_by_categories)
-    tasks_by_categories = tasks_by_categories[cat_ids[0]] if len(cat_ids) == 1 else tasks_by_categories
 
     return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id))
 
