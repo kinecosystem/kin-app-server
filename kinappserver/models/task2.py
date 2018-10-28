@@ -110,7 +110,8 @@ def store_task_results(user_id, task_id, results):
         # we should still use the original delay days value (as done here).
 
         try:
-            delay_days = get_task_delay(str(int(task_id) + 1))  # throws exception if no such task exists
+            delay_days = get_next_task_delay_days(user_id, task_id)  # throws exception if no such task exists
+            print('next task delay:%s (user_id: %s, current task: %s)' % (delay_days, user_id, task_id))
         except Exception as e:
             log.error('cant find task_delay for next task_id of %s' % task_id)
 
@@ -832,3 +833,13 @@ def should_reject_out_of_order_tasks(user_id, task_id, request_source_ip):
     if task_id != tasks_per_category[cat_id][0]['id']:
         return True
     return False
+
+
+def get_next_task_delay_days(user_id, task_id):
+    """returns the delay-days property of the task after the given task_id for the given user_id, if one exists"""
+    cat_id = get_cat_id_for_task_id(task_id)
+    next_tasks = get_next_tasks_for_user(user_id, None, [cat_id])
+    # now that we have the task_id, go back to the original task definition and get the delay days
+    next_task_id = next_tasks[cat_id][0]['id'] if len(next_tasks[cat_id]) > 0 else None
+    return get_task_delay(next_task_id) if next_task_id else None
+
