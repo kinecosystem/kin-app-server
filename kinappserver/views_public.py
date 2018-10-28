@@ -35,7 +35,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
     update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, \
     captcha_solved, get_user_tz, do_captcha_stuff, get_personalized_categories_header_message, get_categories_for_user, \
-    migrate_user_to_tasks2, should_force_update, is_update_available, should_reject_out_of_order_tasks
+    migrate_user_to_tasks2, should_force_update, is_update_available, should_reject_out_of_order_tasks, count_immediate_tasks
 
 def get_payment_lock_name(user_id, task_id):
     """generate a user and task specific lock for payments."""
@@ -495,17 +495,27 @@ def get_next_task_internal(cat_ids=[]):
         for cat_id in tasks_by_categories.keys():
             for task in tasks_by_categories[cat_id]:
                 all_task_ids.append(task['id'])
-        print('task_ids returned for user (for all cat_ids) %s: %s' % (user_id, all_task_ids))
+        log.info('task_ids returned for user (for all cat_ids) %s: %s' % (user_id, all_task_ids))
         #print('tasks for user %s: %s' % (user_id, tasks))
     except Exception as e:
         log.error('cant print returned tasks for user %s. exception: %s' % (user_id, e))
 
-    # undict the tasks if a specific cat_id was requested, order them otherwise
+    # if a specific cat_id was requested:
+    #   - undict the tasks
+    #   - add the number of available tasks
+    # otherwise (if all categories were requested):
+    #  order them by cat_id
     from collections import OrderedDict
-    tasks_by_categories = tasks_by_categories[cat_ids[0]] if len(cat_ids) == 1 else OrderedDict(tasks_by_categories)
-    print('tasks_by_categories %s' % tasks_by_categories)
+    if len(cat_ids) == 1:
+        tasks_by_categories = tasks_by_categories[cat_ids[0]]
+        immediate_tasks_count = count_immediate_tasks(user_id, cat_ids[0])
+        print('immediate_tasks_count: %s' % immediate_tasks_count[cat_ids[0]])
+        return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id), available_tasks_count=immediate_tasks_count[cat_ids[0]])
+    else:
+        tasks_by_categories = OrderedDict(tasks_by_categories)
+        return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id))
 
-    return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id))
+
 
 
 @app.route('/user/transactions', methods=['GET'])
@@ -758,11 +768,12 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
     finally:  # TODO dont do this if we fail with the tx
         if tx_hash and send_push:
-            try:
-                redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
-            except Exception as e:
-                log.error('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
             send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
+        try:
+            redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
+        except Exception as e:
+            log.error('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
+
 
 
 def reward_address_for_task_internal_payment_service(public_address, task_id, send_push, user_id, memo, delta=0):
@@ -1276,13 +1287,14 @@ def payment_service_callback_endpoint():
                 create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
                 increment_metric('payment-callback-success')
 
+                if tx_hash and send_push:
+                        send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
+
                 try:
                     redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
                 except Exception as e:
                     log.error('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
 
-                if tx_hash and send_push:
-                        send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
             else:
                 print('received failed tx from the payment service: %s' % payload)
                 #TODO implement some retry mechanism here

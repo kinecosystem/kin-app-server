@@ -700,14 +700,16 @@ def remove_task_from_completed_tasks(user_id, task_id):
     return True
 
 
-def count_immediate_tasks(user_id):
-    """given the user's task history, calculate how many tasks are readily avialable for each category"""
+def count_immediate_tasks(user_id, only_cat_id=None):
+    """given the user's task history, calculate how many tasks are readily available for each category"""
+
+    # if give, return results only for select_cat_ids (a list of cat_ids)
+
     # this function needs to take into account the following things:
     # 1. which tasks were already solved by the user
     # 2. the delay_days for each task
     # 3. the client's os type and app_ver
     # 4. the user's last recorded ip address
-    #TODO add adhoc tasks here
     immediate_tasks_count = {}
     now = arrow.utcnow()
     user_app_data = get_user_app_data(user_id)
@@ -716,20 +718,31 @@ def count_immediate_tasks(user_id):
     app_ver = user_app_data.app_ver
     country_code = get_country_code_by_ip(user_app_data.ip_address)
 
-    tasks_per_category = get_next_tasks_for_user(user_id)
-    for cat_id in tasks_per_category.keys():
-        if tasks_per_category[cat_id] == []:
-            # no tasks available. skip.
-            #log.info('skipping cat_id %s - no tasks' % cat_id)
+    user_next_tasks = get_next_tasks_for_user(user_id)
+
+    if only_cat_id:
+        log.info('getting count_immediate_tasks for cat_id %s' % only_cat_id)
+
+    # which cat_ids should we get (default = all for user, otherwise, get a subset)?
+    if only_cat_id is not None:
+        cat_ids = [only_cat_id]
+    else:
+        cat_ids = [x for x in user_next_tasks.keys()]  # get all the category ids for this user
+
+    for cat_id in cat_ids:
+        # for each category, determine the number of next available tasks if they exist
+        if user_next_tasks[cat_id] == []:
+            #  no tasks available. skip.
+            #  log.info('skipping cat_id %s - no tasks' % cat_id)
             immediate_tasks_count[cat_id] = 0
-        elif tasks_per_category[cat_id][0]['start_date'] > now.timestamp:
-            # the first task isn't available now, so skip.
+        elif user_next_tasks[cat_id][0]['start_date'] > now.timestamp:
+            #  the first task isn't available now, so skip.
             immediate_tasks_count[cat_id] = 0
         else:
-            # the first task in the category is guaranteed to be available
+            #  the first task in the category is guaranteed to be available - tested in the previous clause
             filtered_unsolved_tasks_for_user_and_cat = get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_tasks.get(cat_id, []), os_type, app_ver, country_code, user_id)
             immediate_tasks_count_for_cat_id = calculate_immediate_tasks(filtered_unsolved_tasks_for_user_and_cat)
-            #log.info('counted %s immediate tasks for cat_id %s' % (immediate_tasks_count_for_cat_id, cat_id))
+            #  log.info('counted %s immediate tasks for cat_id %s' % (immediate_tasks_count_for_cat_id, cat_id))
             immediate_tasks_count[cat_id] = immediate_tasks_count_for_cat_id
 
     log.info('count_immediate_tasks for user_id %s - %s' % (user_id, immediate_tasks_count))
