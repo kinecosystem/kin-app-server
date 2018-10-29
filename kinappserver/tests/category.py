@@ -123,7 +123,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
 
-        category_extra_data_dict = {'title': 'a title', 'subtitle': 'a subtitle'}
+        category_extra_data_dict = {'default': {'title': 'a title', 'subtitle': 'a subtitle'}}
         db.engine.execute("""insert into system_config values (1,'1','1','1','1')""");
         db.engine.execute("update system_config set categories_extra_data=%s;", (json.dumps(category_extra_data_dict),))
 
@@ -133,7 +133,7 @@ class Tester(unittest.TestCase):
         print('user categories: %s ' % resp.data)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['header_message'], category_extra_data_dict)
+        self.assertEqual(data['header_message'], category_extra_data_dict['default'])
 
 
 
