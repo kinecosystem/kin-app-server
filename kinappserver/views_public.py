@@ -35,7 +35,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
     update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, \
     captcha_solved, get_user_tz, do_captcha_stuff, get_personalized_categories_header_message, get_categories_for_user, \
-    migrate_user_to_tasks2, should_force_update, is_update_available, should_reject_out_of_order_tasks, count_immediate_tasks
+    task20_migrate_user_to_tasks2, should_force_update, is_update_available, should_reject_out_of_order_tasks, count_immediate_tasks
 
 def get_payment_lock_name(user_id, task_id):
     """generate a user and task specific lock for payments."""
@@ -62,7 +62,7 @@ def app_launch():
     update_user_app_version(user_id, app_ver)
 
     # enable this once tasks 2.0 is ready
-    migrate_user_to_tasks2(user_id)
+    task20_migrate_user_to_tasks2(user_id)
 
     # send auth token if needed
     send_push_auth_token(user_id)

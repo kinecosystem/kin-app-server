@@ -1264,7 +1264,7 @@ def get_personalized_categories_header_message(user_id, message_type='default'):
     return get_categories_extra_data()[message_type]  # either 'default' or 'no_tasks'
 
 
-def migrate_user_to_tasks2(user_id):
+def task20_migrate_user_to_tasks2(user_id):
     """this function migrates user data from tasks1.0 to tasks2.0
 
     a user can only migrate once.
@@ -1279,7 +1279,7 @@ def migrate_user_to_tasks2(user_id):
     uad = get_user_app_data(user_id)
 
     if '0' in uad.completed_tasks_dict.keys():
-        log.info('migrate_user_to_tasks2: user %s was already migrated' % user_id)
+        log.info('task20_migrate_user_to_tasks2: user %s was already migrated' % user_id)
         return
 
     # create a dict of arrays (for all currently existing categories)
@@ -1288,7 +1288,7 @@ def migrate_user_to_tasks2(user_id):
         new_completed_tasks_dict[cat_id] = []
 
     # populate the dict with previously solved tasks
-    print('migrate_user_to_tasks2: task 1.0 tasks list for user_id: %s: %s' % (user_id, uad.completed_tasks))
+    print('task20_migrate_user_to_tasks2: task 1.0 tasks list for user_id: %s: %s' % (user_id, uad.completed_tasks))
     completed_tasks = json.loads(uad.completed_tasks)
     tasks20_task_ids_list = tasks20_get_tasks_dict().keys()
     for task_id in completed_tasks:

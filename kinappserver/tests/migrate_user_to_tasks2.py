@@ -138,7 +138,7 @@ class Tester(unittest.TestCase):
 
         # migrate the user to task2.0
         print('migrating user..')
-        models.migrate_user_to_tasks2(str(userid))
+        models.task20_migrate_user_to_tasks2(str(userid))
         print('migrating user..done')
 
         # get the user's current tasks
@@ -231,7 +231,7 @@ class Tester(unittest.TestCase):
         models.add_task_to_completed_tasks1(str(userid), '0')
 
         # migrate the user to task2.0
-        models.migrate_user_to_tasks2(str(userid))
+        models.task20_migrate_user_to_tasks2(str(userid))
 
         # get the user's current tasks - should not receive task id 0
         headers = {USER_ID_HEADER: userid}
