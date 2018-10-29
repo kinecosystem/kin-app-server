@@ -4,6 +4,7 @@ import uuid
 
 import simplejson as json
 import testing.postgresql
+import logging as log
 
 import kinappserver
 from kinappserver import db, models
@@ -76,6 +77,34 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        cat4 = {'id': '3',
+          'title': 'cat-title4',
+               "skip_image_test": True,
+          'ui_data': {'color': "#123",
+                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat4}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        cat5 = {'id': '4',
+          'title': 'cat-title5',
+               "skip_image_test": True,
+          'ui_data': {'color': "#123",
+                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat5}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         print('all cat_ids: %s' % models.get_all_cat_ids())
 
         userid = uuid.uuid4()
@@ -108,7 +137,9 @@ class Tester(unittest.TestCase):
         models.add_task_to_completed_tasks1(str(userid), '0')
 
         # migrate the user to task2.0
+        print('migrating user..')
         models.migrate_user_to_tasks2(str(userid))
+        print('migrating user..done')
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
@@ -124,7 +155,7 @@ class Tester(unittest.TestCase):
 
         task = {
             'id': '0',
-            "cat_id": '0',
+            "cat_id": '3',
             "position": 0,
             'title': 'do you know horses?',
             'desc': 'horses_4_dummies',
@@ -195,6 +226,8 @@ class Tester(unittest.TestCase):
 
         # set tasks1.0-style tasks into the db
         db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\';' % (str(userid)))
+
+        # mark task_id 1 as completed in tasks1.0 format
         models.add_task_to_completed_tasks1(str(userid), '0')
 
         # migrate the user to task2.0
@@ -206,8 +239,9 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(data['tasks']['0']), 1)  # returns one task
-        self.assertEqual(data['tasks']['0'][0]['id'], '1')  # task no. 1 because zero was already returned
+        self.assertEqual(len(data['tasks']['3']), 1)  # returns one task
+        self.assertEqual(data['tasks']['0'], [])  # task no. 1 because zero was already submitted
+        self.assertEqual(data['tasks']['3'][0]['id'], '1')  # task no. 1 because zero was already submitted
         self.assertEqual(data['tasks']['1'], [])
         self.assertEqual(data['tasks']['2'], [])
 

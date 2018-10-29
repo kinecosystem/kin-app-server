@@ -383,7 +383,8 @@ def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
     try:
         next_memo = generate_memo()
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
-        cat_id = cat_id if cat_id else task_id_to_category_id(task_id)
+        from .task2 import get_cat_id_for_task_id
+        cat_id = cat_id if cat_id else get_cat_id_for_task_id(task_id)
         user_app_data.next_task_memo_dict[cat_id] = next_memo
         commit_json_changed_to_orm(user_app_data, ['next_task_memo_dict'])
     except Exception as e:
@@ -1287,10 +1288,12 @@ def migrate_user_to_tasks2(user_id):
         new_completed_tasks_dict[cat_id] = []
 
     # populate the dict with previously solved tasks
-    log.info('migrate_user_to_tasks2: task 1.0 tasks: %s' % uad.completed_tasks)
+    print('migrate_user_to_tasks2: task 1.0 tasks list for user_id: %s: %s' % (user_id, uad.completed_tasks))
     completed_tasks = json.loads(uad.completed_tasks)
+    tasks20_task_ids_list = tasks20_get_tasks_dict().keys()
     for task_id in completed_tasks:
-        new_completed_tasks_dict[task_id_to_category_id(task_id)].append(task_id)
+        if task_id in tasks20_task_ids_list:  # some tasks were not migrated to tasks2.0 - just ignore them
+            new_completed_tasks_dict[tasks20_task_id_to_category_id(task_id)].append(task_id)
     uad.completed_tasks_dict = new_completed_tasks_dict
 
     # create and populate dicts for memos and ts's
@@ -1308,10 +1311,10 @@ def migrate_user_to_tasks2(user_id):
     log.info('migrated user_id %s to tasks2.0: tasks: %s, ts: %s, memo: %s' % (user_id, uad.completed_tasks_dict , uad.next_task_ts_dict, uad.next_task_memo_dict))
 
 
-def task_id_to_category_id(task_id):
+def tasks20_task_id_to_category_id(task_id):
     """this function maps task_ids to their category_id, for migration (only)"""
     #TODO map tasks to categories here
-    return '0'
+    return tasks20_get_tasks_dict()[task_id]['cat_id']
 
 
 def add_task_to_completed_tasks1(user_id, task_id):
@@ -1326,6 +1329,7 @@ def add_task_to_completed_tasks1(user_id, task_id):
         user_app_data.completed_tasks = json.dumps(completed_tasks)
         db.session.add(user_app_data)
         db.session.commit()
+        log.info('user %s tasks 1.0 completed tasks: %s' % (user_id ,completed_tasks))
     return True
 
 
@@ -1335,3 +1339,790 @@ def count_completed_tasks(user_id):
     for tasks_in_categories in user_app_data.completed_tasks_dict.values():
         total_completed_tasks = total_completed_tasks + len(tasks_in_categories)
     return total_completed_tasks
+
+
+# this is the data we got from Sarit regarding tasks migration. remove this once migration is completed
+def tasks20_get_tasks_dict():
+    """this function returns a dict with all the tasks2.0 migration
+
+    note that some tasks may be missing - these are simply not migrated
+    """
+    tasks_migration_array = [
+    {
+      "task_id": "151",
+      "catgory": "0",
+      "position": 0,
+      "delay_days": 1
+    },
+    {
+      "task_id": "152",
+      "catgory": "0",
+      "position": 1,
+      "delay_days": 1
+    },
+    {
+      "task_id": "159",
+      "catgory": "0",
+      "position": 2,
+      "delay_days": 1
+    },
+    {
+      "task_id": "163",
+      "catgory": "0",
+      "position": 3,
+      "delay_days": 1
+    },
+    {
+      "task_id": "164",
+      "catgory": "0",
+      "position": 4,
+      "delay_days": 1
+    },
+    {
+      "task_id": "168",
+      "catgory": "0",
+      "position": 5,
+      "delay_days": 1
+    },
+    {
+      "task_id": "173",
+      "catgory": "0",
+      "position": 6,
+      "delay_days": 1
+    },
+    {
+      "task_id": "178",
+      "catgory": "0",
+      "position": 7,
+      "delay_days": 1
+    },
+    {
+      "task_id": "182",
+      "catgory": "0",
+      "position": 8,
+      "delay_days": 1
+    },
+    {
+      "task_id": "188",
+      "catgory": "0",
+      "position": 9,
+      "delay_days": 1
+    },
+    {
+      "task_id": "77",
+      "catgory": "0",
+      "position": 10,
+      "delay_days": 1
+    },
+    {
+      "task_id": "193",
+      "catgory": "0",
+      "position": 11,
+      "delay_days": 1
+    },
+    {
+      "task_id": "194",
+      "catgory": "0",
+      "position": 12,
+      "delay_days": 1
+    },
+    {
+      "task_id": "3",
+      "catgory": "1",
+      "position": 0,
+      "delay_days": 1
+    },
+    {
+      "task_id": "4",
+      "catgory": "1",
+      "position": 1,
+      "delay_days": 1
+    },
+    {
+      "task_id": "5",
+      "catgory": "1",
+      "position": 2,
+      "delay_days": 1
+    },
+    {
+      "task_id": "6",
+      "catgory": "1",
+      "position": 3,
+      "delay_days": 1
+    },
+    {
+      "task_id": "7",
+      "catgory": "1",
+      "position": 4,
+      "delay_days": 1
+    },
+    {
+      "task_id": "13",
+      "catgory": "1",
+      "position": 5,
+      "delay_days": 1
+    },
+    {
+      "task_id": "16",
+      "catgory": "1",
+      "position": 6,
+      "delay_days": 1
+    },
+    {
+      "task_id": "17",
+      "catgory": "1",
+      "position": 7,
+      "delay_days": 1
+    },
+    {
+      "task_id": "18",
+      "catgory": "1",
+      "position": 8,
+      "delay_days": 1
+    },
+    {
+      "task_id": "21",
+      "catgory": "1",
+      "position": 9,
+      "delay_days": 1
+    },
+    {
+      "task_id": "22",
+      "catgory": "1",
+      "position": 10,
+      "delay_days": 1
+    },
+    {
+      "task_id": "23",
+      "catgory": "1",
+      "position": 11,
+      "delay_days": 1
+    },
+    {
+      "task_id": "29",
+      "catgory": "1",
+      "position": 12,
+      "delay_days": 1
+    },
+    {
+      "task_id": "31",
+      "catgory": "1",
+      "position": 13,
+      "delay_days": 1
+    },
+    {
+      "task_id": "34",
+      "catgory": "1",
+      "position": 14,
+      "delay_days": 1
+    },
+    {
+      "task_id": "36",
+      "catgory": "1",
+      "position": 15,
+      "delay_days": 1
+    },
+    {
+      "task_id": "44",
+      "catgory": "1",
+      "position": 16,
+      "delay_days": 1
+    },
+    {
+      "task_id": "52",
+      "catgory": "1",
+      "position": 17,
+      "delay_days": 1
+    },
+    {
+      "task_id": "56",
+      "catgory": "1",
+      "position": 18,
+      "delay_days": 1
+    },
+    {
+      "task_id": "62",
+      "catgory": "1",
+      "position": 19,
+      "delay_days": 1
+    },
+    {
+      "task_id": "63",
+      "catgory": "1",
+      "position": 20,
+      "delay_days": 1
+    },
+    {
+      "task_id": "64",
+      "catgory": "1",
+      "position": 21,
+      "delay_days": 1
+    },
+    {
+      "task_id": "73",
+      "catgory": "1",
+      "position": 22,
+      "delay_days": 1
+    },
+    {
+      "task_id": "74",
+      "catgory": "1",
+      "position": 23,
+      "delay_days": 1
+    },
+    {
+      "task_id": "76",
+      "catgory": "1",
+      "position": 24,
+      "delay_days": 1
+    },
+    {
+      "task_id": "81",
+      "catgory": "1",
+      "position": 25,
+      "delay_days": 1
+    },
+    {
+      "task_id": "122",
+      "catgory": "1",
+      "position": 26,
+      "delay_days": 1
+    },
+    {
+      "task_id": "125",
+      "catgory": "1",
+      "position": 27,
+      "delay_days": 1
+    },
+    {
+      "task_id": "126",
+      "catgory": "1",
+      "position": 28,
+      "delay_days": 0
+    },
+    {
+      "task_id": "127",
+      "catgory": "1",
+      "position": 29,
+      "delay_days": 1
+    },
+    {
+      "task_id": "131",
+      "catgory": "1",
+      "position": 30,
+      "delay_days": 0
+    },
+    {
+      "task_id": "133",
+      "catgory": "1",
+      "position": 31,
+      "delay_days": 1
+    },
+    {
+      "task_id": "134",
+      "catgory": "1",
+      "position": 32,
+      "delay_days": 0
+    },
+    {
+      "task_id": "135",
+      "catgory": "1",
+      "position": 33,
+      "delay_days": 1
+    },
+    {
+      "task_id": "138",
+      "catgory": "1",
+      "position": 34,
+      "delay_days": 0
+    },
+    {
+      "task_id": "139",
+      "catgory": "1",
+      "position": 35,
+      "delay_days": 1
+    },
+    {
+      "task_id": "140",
+      "catgory": "1",
+      "position": 36,
+      "delay_days": 0
+    },
+    {
+      "task_id": "141",
+      "catgory": "1",
+      "position": 37,
+      "delay_days": 1
+    },
+    {
+      "task_id": "143",
+      "catgory": "1",
+      "position": 38,
+      "delay_days": 0
+    },
+    {
+      "task_id": "144",
+      "catgory": "1",
+      "position": 39,
+      "delay_days": 1
+    },
+    {
+      "task_id": "145",
+      "catgory": "1",
+      "position": 40,
+      "delay_days": 0
+    },
+    {
+      "task_id": "147",
+      "catgory": "1",
+      "position": 41,
+      "delay_days": 1
+    },
+    {
+      "task_id": "148",
+      "catgory": "1",
+      "position": 42,
+      "delay_days": 0
+    },
+    {
+      "task_id": "149",
+      "catgory": "1",
+      "position": 43,
+      "delay_days": 1
+    },
+    {
+      "task_id": "153",
+      "catgory": "1",
+      "position": 44,
+      "delay_days": 0
+    },
+    {
+      "task_id": "154",
+      "catgory": "1",
+      "position": 45,
+      "delay_days": 1
+    },
+    {
+      "task_id": "155",
+      "catgory": "1",
+      "position": 46,
+      "delay_days": 0
+    },
+    {
+      "task_id": "136",
+      "catgory": "1",
+      "position": 47,
+      "delay_days": 1
+    },
+    {
+      "task_id": "157",
+      "catgory": "1",
+      "position": 48,
+      "delay_days": 1
+    },
+    {
+      "task_id": "158",
+      "catgory": "1",
+      "position": 49,
+      "delay_days": 0
+    },
+    {
+      "task_id": "161",
+      "catgory": "1",
+      "position": 50,
+      "delay_days": 1
+    },
+    {
+      "task_id": "162",
+      "catgory": "1",
+      "position": 51,
+      "delay_days": 0
+    },
+    {
+      "task_id": "166",
+      "catgory": "1",
+      "position": 52,
+      "delay_days": 1
+    },
+    {
+      "task_id": "167",
+      "catgory": "1",
+      "position": 53,
+      "delay_days": 0
+    },
+    {
+      "task_id": "169",
+      "catgory": "1",
+      "position": 54,
+      "delay_days": 1
+    },
+    {
+      "task_id": "170",
+      "catgory": "1",
+      "position": 55,
+      "delay_days": 0
+    },
+    {
+      "task_id": "171",
+      "catgory": "1",
+      "position": 56,
+      "delay_days": 1
+    },
+    {
+      "task_id": "174",
+      "catgory": "1",
+      "position": 57,
+      "delay_days": 0
+    },
+    {
+      "task_id": "175",
+      "catgory": "1",
+      "position": 58,
+      "delay_days": 1
+    },
+    {
+      "task_id": "176",
+      "catgory": "1",
+      "position": 59,
+      "delay_days": 0
+    },
+    {
+      "task_id": "179",
+      "catgory": "1",
+      "position": 60,
+      "delay_days": 1
+    },
+    {
+      "task_id": "180",
+      "catgory": "1",
+      "position": 61,
+      "delay_days": 0
+    },
+    {
+      "task_id": "181",
+      "catgory": "1",
+      "position": 62,
+      "delay_days": 1
+    },
+    {
+      "task_id": "185",
+      "catgory": "1",
+      "position": 63,
+      "delay_days": 0
+    },
+    {
+      "task_id": "186",
+      "catgory": "1",
+      "position": 64,
+      "delay_days": 1
+    },
+    {
+      "task_id": "187",
+      "catgory": "1",
+      "position": 65,
+      "delay_days": 0
+    },
+    {
+      "task_id": "190",
+      "catgory": "1",
+      "position": 66,
+      "delay_days": 1
+    },
+    {
+      "task_id": "191",
+      "catgory": "1",
+      "position": 67,
+      "delay_days": 0
+    },
+    {
+      "task_id": "192",
+      "catgory": "1",
+      "position": 68,
+      "delay_days": 1
+    },
+    {
+      "task_id": "88",
+      "catgory": "2",
+      "position": 0,
+      "delay_days": 1
+    },
+    {
+      "task_id": "92",
+      "catgory": "2",
+      "position": 1,
+      "delay_days": 1
+    },
+    {
+      "task_id": "97",
+      "catgory": "2",
+      "position": 2,
+      "delay_days": 1
+    },
+    {
+      "task_id": "101",
+      "catgory": "2",
+      "position": 3,
+      "delay_days": 1
+    },
+    {
+      "task_id": "105",
+      "catgory": "2",
+      "position": 4,
+      "delay_days": 1
+    },
+    {
+      "task_id": "110",
+      "catgory": "2",
+      "position": 5,
+      "delay_days": 1
+    },
+    {
+      "task_id": "113",
+      "catgory": "2",
+      "position": 6,
+      "delay_days": 1
+    },
+    {
+      "task_id": "117",
+      "catgory": "2",
+      "position": 7,
+      "delay_days": 1
+    },
+    {
+      "task_id": "119",
+      "catgory": "2",
+      "position": 8,
+      "delay_days": 1
+    },
+    {
+      "task_id": "121",
+      "catgory": "2",
+      "position": 9,
+      "delay_days": 1
+    },
+    {
+      "task_id": "103",
+      "catgory": "2",
+      "position": 10,
+      "delay_days": 1
+    },
+    {
+      "task_id": "124",
+      "catgory": "2",
+      "position": 11,
+      "delay_days": 1
+    },
+    {
+      "task_id": "128",
+      "catgory": "2",
+      "position": 12,
+      "delay_days": 1
+    },
+    {
+      "task_id": "132",
+      "catgory": "2",
+      "position": 13,
+      "delay_days": 1
+    },
+    {
+      "task_id": "137",
+      "catgory": "2",
+      "position": 14,
+      "delay_days": 1
+    },
+    {
+      "task_id": "142",
+      "catgory": "2",
+      "position": 15,
+      "delay_days": 1
+    },
+    {
+      "task_id": "146",
+      "catgory": "2",
+      "position": 16,
+      "delay_days": 1
+    },
+    {
+      "task_id": "150",
+      "catgory": "2",
+      "position": 17,
+      "delay_days": 1
+    },
+    {
+      "task_id": "156",
+      "catgory": "2",
+      "position": 18,
+      "delay_days": 1
+    },
+    {
+      "task_id": "160",
+      "catgory": "2",
+      "position": 19,
+      "delay_days": 1
+    },
+    {
+      "task_id": "165",
+      "catgory": "2",
+      "position": 20,
+      "delay_days": 1
+    },
+    {
+      "task_id": "172",
+      "catgory": "2",
+      "position": 21,
+      "delay_days": 1
+    },
+    {
+      "task_id": "177",
+      "catgory": "2",
+      "position": 22,
+      "delay_days": 1
+    },
+    {
+      "task_id": "183",
+      "catgory": "2",
+      "position": 23,
+      "delay_days": 1
+    },
+    {
+      "task_id": "189",
+      "catgory": "2",
+      "position": 24,
+      "delay_days": 1
+    },
+    {
+      "task_id": "195",
+      "catgory": "2",
+      "position": 25,
+      "delay_days": 1
+    },
+    {
+      "task_id": "0",
+      "catgory": "3",
+      "position": 0,
+      "delay_days": 1
+    },
+    {
+      "task_id": "1",
+      "catgory": "3",
+      "position": 1,
+      "delay_days": 6
+    },
+    {
+      "task_id": "2",
+      "catgory": "3",
+      "position": 2,
+      "delay_days": 6
+    },
+    {
+      "task_id": "19",
+      "catgory": "3",
+      "position": 3,
+      "delay_days": 6
+    },
+    {
+      "task_id": "20",
+      "catgory": "3",
+      "position": 4,
+      "delay_days": 6
+    },
+    {
+      "task_id": "33",
+      "catgory": "3",
+      "position": 5,
+      "delay_days": 6
+    },
+    {
+      "task_id": "41",
+      "catgory": "3",
+      "position": 6,
+      "delay_days": 6
+    },
+    {
+      "task_id": "49",
+      "catgory": "3",
+      "position": 7,
+      "delay_days": 6
+    },
+    {
+      "task_id": "53",
+      "catgory": "3",
+      "position": 8,
+      "delay_days": 6
+    },
+    {
+      "task_id": "54",
+      "catgory": "3",
+      "position": 9,
+      "delay_days": 6
+    },
+    {
+      "task_id": "60",
+      "catgory": "3",
+      "position": 10,
+      "delay_days": 6
+    },
+    {
+      "task_id": "61",
+      "catgory": "3",
+      "position": 11,
+      "delay_days": 6
+    },
+    {
+      "task_id": "65",
+      "catgory": "3",
+      "position": 12,
+      "delay_days": 6
+    },
+    {
+      "task_id": "10",
+      "catgory": "4",
+      "position": 0,
+      "delay_days": 1
+    },
+    {
+      "task_id": "15",
+      "catgory": "4",
+      "position": 1,
+      "delay_days": 1
+    },
+    {
+      "task_id": "28",
+      "catgory": "4",
+      "position": 2,
+      "delay_days": 1
+    },
+    {
+      "task_id": "46",
+      "catgory": "4",
+      "position": 3,
+      "delay_days": 1
+    },
+    {
+      "task_id": "48",
+      "catgory": "4",
+      "position": 4,
+      "delay_days": 1
+    },
+    {
+      "task_id": "50",
+      "catgory": "4",
+      "position": 5,
+      "delay_days": 1
+    },
+    {
+      "task_id": "57",
+      "catgory": "4",
+      "position": 6,
+      "delay_days": 1
+    }]
+
+    tasks_dict = {}
+    for item in tasks_migration_array:
+        task_id = item['task_id']
+        cat_id = item['catgory']
+        position = item['position']
+        delay_days = item['delay_days']
+
+        tasks_dict[task_id] = {'cat_id': cat_id, 'position': position, 'delay_days': delay_days}
+    return tasks_dict
