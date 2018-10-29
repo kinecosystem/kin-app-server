@@ -375,21 +375,31 @@ def get_task_by_id(task_id, shifted_ts=None):
 
 def add_task(task_json):
 
+    def get_next_task_id():
+        """returns the next available task_id"""
+        if 0 == db.engine.execute('''select count(task_id) from task2;''').scalar():
+            return '0'
+        highest_task_id = str(db.engine.execute('''select max(task_id::int) from task2;''').scalar() + 1)
+        return highest_task_id
+
     def is_position_taken(cat_id, pos):
         """determines whether there is already a task at the given category and position"""
 
         if pos == -1:
             # position -1 is shared among all ad-hoc tasks
             return True
-        try:
-            Task2.query.filter(Task2.category_id == cat_id).filter(Task2.position == pos).one()
-        except Exception as e:
+        if 0 == db.engine.execute('''select count(task_id) from task2 where category_id='%s' and position=%s;''' % (cat_id, pos)).scalar():
             return False
         else:
             return True
 
     delete_prior_to_adding = False
-    task_id = str(task_json['id'])
+    task_id = task_json.get('id', None)  # task_id is optional. allocate next available task_id if none given
+    if task_id is None:
+        task_id = get_next_task_id()
+        log.info('no task id given. auto-allocated id: %s' % task_id)
+    task_id = str(task_id) # ensure its a string
+
     position = int(task_json['position'])
     task_start_date = task_json.get('task_start_date', None)
     task_expiration_date = task_json.get('task_expiration_date', None)
@@ -522,6 +532,7 @@ def add_task(task_json):
 
         db.session.add(task)
         db.session.commit()
+        log.info('success: added task with id %s, cat_id %s and position %s' % (task_id, category_id, position))
         return True
     except Exception as e:
         log.error('cant add task to db with id %s. exception: %s' % (task_id, e))
@@ -857,9 +868,18 @@ def get_next_task_delay_days(user_id, task_id):
     return get_task_delay(next_task_id) if next_task_id else None
 
 
+def task20_migrate_tasks():
+    """migrate all the tasks from Sarit's list into task2 table"""
+    from .user import tasks20_get_tasks_dict
+    tasks_to_migrate_dict = tasks20_get_tasks_dict()
+    for task_id in tasks_to_migrate_dict.keys():
+        print('migrating task_id %s' % task_id)
+        task20_migrate_task(task_id, tasks_to_migrate_dict[task_id]['cat_id'], tasks_to_migrate_dict[task_id]['position'], tasks_to_migrate_dict[task_id]['delay_days'])
+
+
 def task20_migrate_task(task_id, cat_id, position, delay_days):
     """given a task_id, migrate it from the old Task table to the new Task2 table"""
-    # no adhoc tasks allow - we have none atm in prod.
+    # no adhoc tasks allowed - we have none atm in prod.
 
     if get_task_by_id(task_id) is not None:
         log.info('refusing to migrate task_id %s - already migrated' % task_id)
@@ -869,28 +889,33 @@ def task20_migrate_task(task_id, cat_id, position, delay_days):
         log.error('task20_migrate_task: no adhoc tasks allowed here')
         return False
 
-    res = db.engine.execute('''select * from task where task_id='%s';''') % task_id
-    res.fetchone()
+    res = db.engine.execute('''select * from task where task_id='%s';''' % task_id)
+    res = res.fetchone()
+
     # create a new task on Task2:
-
     task = Task2()
-    task.delay_days = delay_days # take from function param
-    task.task_id = task_id # take from function param
-    task.category_id = cat_id # take from function param
-    task.position = position # take from function param
+    task.delay_days = delay_days  # take from function param
+    task.task_id = task_id  # take from function param
+    task.category_id = cat_id  # take from function param
+    task.position = position  # take from function param
 
-    task.task_type = res[0]
-    task.title = res[1]
-    task.description = res[2]
-    task.price = res[3]
-    task.video_url = res[4]
-    task.min_to_complete = res[5]
-    task.provider_data = res[6]
-    task.tags = res[7]
-    task.items = res[8]
-    task.excluded_country_codes = res[9]
+    task.task_type = res[1]
+    task.title = res[2]
+    task.description = res[3]
+    task.price = res[4]
+    task.video_url = res[5]
+    task.min_to_complete = res[6]
+    task.provider_data = res[7]
+    task.tags = res[8]
+    task.items = res[9]
+    task.excluded_country_codes = None
     task.task_start_date = None
     task.task_expiration_date = None
-    task.min_client_version_ios = res[10]
-    task.min_client_version_android = res[11]
-    task.post_task_actions = res[12]
+    task.delay_days = res[12]
+    task.min_client_version_ios = res[13]
+    task.min_client_version_android = res[14]
+    task.post_task_actions = res[15]
+
+    db.session.add(task)
+    db.session.commit()
+    return True

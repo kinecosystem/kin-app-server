@@ -8,7 +8,8 @@ import testing.postgresql
 import kinappserver
 from kinappserver import db, models
 import arrow
-
+import logging as log
+log.getLogger().setLevel(log.INFO)
 
 USER_ID_HEADER = "X-USERID"
 
@@ -49,8 +50,8 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        task = {  'id': '0',
-                  'title': 'do you know horses?',
+
+        task = {  'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'questionnaire',
                   'position': 0,
@@ -85,8 +86,8 @@ class Tester(unittest.TestCase):
                     }]
             }
 
-
-        resp = self.app.post('/task/add',
+        # task_id isn't given, should be '0'
+        resp = self.app.post('/task/add', # task_id should be 0
                             data=json.dumps({
                             'task': task}),
                             headers={},
@@ -96,7 +97,8 @@ class Tester(unittest.TestCase):
         task['skip_image_test'] = True  # once is enough
 
         # add the same task again. this should fail
-        resp = self.app.post('/task/add',
+        log.info('trying to add task with auto-task_id 1...')
+        resp = self.app.post('/task/add',  # task_id should be1
                             data=json.dumps({
                             'task': task}),
                             headers={},
@@ -105,6 +107,7 @@ class Tester(unittest.TestCase):
 
         # add the same task again but add the overwrite flag. this should not fail
         task['overwrite'] = True
+        task['id'] = '1' # we want to overwrite the task
         resp = self.app.post('/task/add',
                             data=json.dumps({
                             'task': task, }),
@@ -121,10 +124,11 @@ class Tester(unittest.TestCase):
                             content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
 
-
         # try to insert another task in the same position:
         task['id'] = 'should_fail'
         task['position'] = 0
+        task['cat_id'] = '0'
+        task['overwrite'] = False
         resp = self.app.post('/task/add',
                             data=json.dumps({
                             'task': task}),
@@ -135,6 +139,7 @@ class Tester(unittest.TestCase):
         # try to insert another task in the same position:
         task['id'] = '10'
         task['position'] = 5
+        task['overwrite'] = False
         resp = self.app.post('/task/add',
                             data=json.dumps({
                             'task': task}),
@@ -143,7 +148,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-        quiz_task = { 'id': '1',
+        quiz_task = { 'id': '2',
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'quiz',
@@ -220,7 +225,7 @@ class Tester(unittest.TestCase):
 
         # try to add an ad hoc task w/o start/expiration dates:
         task['position'] = -1
-        task['id'] = 2
+        task['id'] = '3'
         resp = self.app.post('/task/add',
                             data=json.dumps({
                             'task': task}),
@@ -243,6 +248,8 @@ class Tester(unittest.TestCase):
                             headers={},
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        # TODO check that the adhoc tasks are first in line
 
         resp = self.app.post('/user/completed_tasks/add',
                                 data=json.dumps({
