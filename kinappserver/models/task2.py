@@ -856,3 +856,41 @@ def get_next_task_delay_days(user_id, task_id):
     next_task_id = next_tasks[cat_id][0]['id'] if len(next_tasks[cat_id]) > 0 else None
     return get_task_delay(next_task_id) if next_task_id else None
 
+
+def task20_migrate_task(task_id, cat_id, position, delay_days):
+    """given a task_id, migrate it from the old Task table to the new Task2 table"""
+    # no adhoc tasks allow - we have none atm in prod.
+
+    if get_task_by_id(task_id) is not None:
+        log.info('refusing to migrate task_id %s - already migrated' % task_id)
+        return False
+
+    if position == -1:
+        log.error('task20_migrate_task: no adhoc tasks allowed here')
+        return False
+
+    res = db.engine.execute('''select * from task where task_id='%s';''') % task_id
+    res.fetchone()
+    # create a new task on Task2:
+
+    task = Task2()
+    task.delay_days = delay_days # take from function param
+    task.task_id = task_id # take from function param
+    task.category_id = cat_id # take from function param
+    task.position = position # take from function param
+
+    task.task_type = res[0]
+    task.title = res[1]
+    task.description = res[2]
+    task.price = res[3]
+    task.video_url = res[4]
+    task.min_to_complete = res[5]
+    task.provider_data = res[6]
+    task.tags = res[7]
+    task.items = res[8]
+    task.excluded_country_codes = res[9]
+    task.task_start_date = None
+    task.task_expiration_date = None
+    task.min_client_version_ios = res[10]
+    task.min_client_version_android = res[11]
+    task.post_task_actions = res[12]
