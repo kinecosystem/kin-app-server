@@ -140,7 +140,6 @@ class Tester(unittest.TestCase):
             }]
         }
 
-
         resp = self.app.post('/task/add',
                             data=json.dumps({
                             'task': task0}),
@@ -222,7 +221,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(data['tasks']['0'][0]['id'], '0')
 
 
-        # get the user's current tasks
+        # get the user's current tasks for category 0
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/category/0/tasks', headers=headers)
         data = json.loads(resp.data)
@@ -232,7 +231,15 @@ class Tester(unittest.TestCase):
         print('next task start date: %s' % data['tasks'][0]['start_date'])
         self.assertEqual(data['tasks'][0]['id'], '0')
 
-        return
+        # get the user's current tasks for category 1
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/category/1/tasks', headers=headers)
+        data = json.loads(resp.data)
+        print('data: %s' % data)
+        self.assertEqual(resp.status_code, 200)
+        print('next task id: %s' % data['tasks'][0]['id'])
+        print('next task start date: %s' % data['tasks'][0]['start_date'])
+        self.assertEqual(data['tasks'][0]['id'], '3')
 
 
         # send task results

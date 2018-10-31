@@ -509,7 +509,7 @@ def get_next_task_internal(cat_ids=[]):
     if len(cat_ids) == 1:
         tasks_by_categories = tasks_by_categories[cat_ids[0]]
         immediate_tasks_count = count_immediate_tasks(user_id, cat_ids[0])
-        print('immediate_tasks_count: %s' % immediate_tasks_count[cat_ids[0]])
+        log.info('immediate_tasks_count for cat_id %s: %s' % (cat_ids[0], immediate_tasks_count[cat_ids[0]]))
         return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id), available_tasks_count=immediate_tasks_count[cat_ids[0]])
     else:
         tasks_by_categories = OrderedDict(tasks_by_categories)

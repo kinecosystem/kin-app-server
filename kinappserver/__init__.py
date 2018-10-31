@@ -14,6 +14,9 @@ from .encrypt import AESCipher
 app = Flask(__name__)
 CORS(app)
 
+# set log level
+log.getLogger().setLevel(log.INFO)
+
 from flask_sqlalchemy import SQLAlchemy
 from kinappserver import config, ssm, stellar
 
