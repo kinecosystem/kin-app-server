@@ -3,10 +3,17 @@ from kinappserver.utils import InvalidUsage, test_image
 import logging as log
 
 class Category(db.Model):
-    """Categories group tasks with similar type/topics"""
+    """Categories group tasks with similar type/topics.
+       supported_os, specifies on which platform the category is supported and should be displayed.
+       'all' - all platforms (android and iOS)
+       'android' - only android
+       'iOS' - only iOS
+    """
     category_id = db.Column(db.String(40), nullable=False, primary_key=True)
     title = db.Column(db.String(100), nullable=False, primary_key=False)
     ui_data = db.Column(db.JSON)
+    supported_os = db.Column(db.String(10), unique=False, default='all',
+                                             nullable=False)  # 'all', 'android', 'iOS'
 
     def __repr__(self):
         return '<category_id: %s, title: %s>' % (self.category_id, self.title)
@@ -57,6 +64,7 @@ def add_category(cat_json):
         category.category_id = cat_id
         category.title = cat_json['title']
         category.ui_data = cat_json['ui_data']
+        category.supported_os = cat_json['supported_os']
 
         db.session.add(category)
         db.session.commit()
@@ -79,7 +87,21 @@ def get_cat_by_id(cat_id):
     cat_json['id'] = category.category_id
     cat_json['title'] = category.title
     cat_json['ui_data'] = category.ui_data
+    cat_json['supported_os'] = category.supported_os
     return cat_json
+
+
+
+def list_categories(os_type):
+    """returns a dict of categories that are supported by the specified platform (os_type)"""
+    response = {}
+    from sqlalchemy import or_
+
+    cats = Category.query.order_by(Category.category_id).filter(or_(Category.supported_os=='all', Category.supported_os==os_type)).all()
+    for cat in cats:
+        response[cat.category_id] = {'id': cat.category_id, 'ui_data': cat.ui_data, 'title': cat.title,
+                                     'supported_os': cat.supported_os}
+    return response
 
 
 def list_all_categories():
@@ -87,17 +109,21 @@ def list_all_categories():
     response = {}
     cats = Category.query.order_by(Category.category_id).all()
     for cat in cats:
-        response[cat.category_id] = {'id': cat.category_id, 'ui_data': cat.ui_data, 'title': cat.title}
+        response[cat.category_id] = {'id': cat.category_id, 'ui_data': cat.ui_data, 'title': cat.title,
+                                     'supported_os': cat.supported_os}
     return response
 
 
 def get_categories_for_user(user_id):
     """returns an array of categories tailored to this specific user"""
-    #TODO fileter out categories for this user based on OS/Versions etc
-    from .user import user_exists
+
+    from .user import user_exists, get_user_os_type
     if not user_exists(user_id):
         raise InvalidUsage('no such user_id %s' % user_id)
-    all_cats = list_all_categories()
+
+    os_type = get_user_os_type(user_id)
+
+    all_cats = list_categories(os_type)
 
     from .task2 import count_immediate_tasks
     immediate_tasks = count_immediate_tasks(user_id)
