@@ -1261,12 +1261,7 @@ def get_personalized_categories_header_message(user_id, message_type='default'):
     """returns a user-specific message to be shown in the categories page"""
     # nothing to personalize yet - just return the text from the db.
     from .system_config import get_categories_extra_data
-    message = get_categories_extra_data()[message_type] # either 'default' or 'no_tasks'
-    if config.DEBUG:
-        from random import randint
-        print(message)
-        message['title'] = message['title'] + str(randint(1, 99))  # TODO remove this
-    return message
+    return get_categories_extra_data()[message_type] # either 'default' or 'no_tasks'
 
 
 def task20_migrate_user_to_tasks2(user_id):

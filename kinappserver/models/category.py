@@ -29,6 +29,13 @@ def get_all_cat_ids():
 def add_category(cat_json):
     """"adds a category to the db based on the given json"""
     cat_id = str(cat_json['id'])
+
+    #sanity
+    supported_os = cat_json.get('supported_os', None)
+    if not supported_os or supported_os not in ['android', 'iOS', 'all']:
+        log.error('cant add category - missing or invalid supported_os field')
+        raise InvalidUsage('cant add category - missing or invalid supported_os')
+
     log.info('trying to add category with id %s' % cat_id)
     overwrite_flag = bool(cat_json.get('overwrite', False))
     delete_prior_to_insertion = False
@@ -64,7 +71,7 @@ def add_category(cat_json):
         category.category_id = cat_id
         category.title = cat_json['title']
         category.ui_data = cat_json['ui_data']
-        category.supported_os = cat_json['supported_os']
+        category.supported_os = supported_os
 
         db.session.add(category)
         db.session.commit()

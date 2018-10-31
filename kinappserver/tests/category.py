@@ -38,6 +38,7 @@ class Tester(unittest.TestCase):
 
         cat = {'id': '1',
           'title': 'cat-title',
+          'supported_os': 'all',
           'ui_data': {'color': "#123",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
                       'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
@@ -45,6 +46,7 @@ class Tester(unittest.TestCase):
 
         cat2 = {'id': '2',
           'title': 'cat-title2',
+          'supported_os': 'all',
           'ui_data': {'color': "#234",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
                       'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
@@ -132,9 +134,63 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
 
-        category_extra_data_dict = {'default': {'title': 'a title', 'subtitle': 'a subtitle'}}
+        category_extra_data_dict = {'default': {'title': 'a title', 'subtitle': 'a subtitle'}, 'no_tasks': {'title': 'title2', 'subtitle': 'subtitle2'}}
         db.engine.execute("""insert into system_config values (1,'1','1','1','1')""");
         db.engine.execute("update system_config set categories_extra_data=%s;", (json.dumps(category_extra_data_dict),))
+
+        # get the user's current categories
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/categories', headers=headers)
+        print('user categories: %s ' % resp.data)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['header_message'], category_extra_data_dict['no_tasks'])
+
+        # add a task and ensure the message is correct:
+
+
+        task = {  'title': 'do you know horses?',
+                  'desc': 'horses_4_dummies',
+                  'type': 'questionnaire',
+                  'position': 0,
+                  'cat_id': '1',
+                  'price': 2000,
+                  'min_to_complete': 2,
+                  'skip_image_test': False, # test link-checking code
+                  'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
+                  'provider':
+                    {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
+                  'post_task_actions':[{'type': 'external-url',
+                                        'text': 'please vote mofos',
+                                        'text_ok': 'yes! register!',
+                                        'text_cancel': 'no thanks mofos',
+                                        'url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                                        'icon_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                                        'campaign_name': 'buy-moar-underwear'}],
+                  'items': [
+                    {
+                     'id': '435',
+                     'text': 'what animal is this?',
+                     'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                     'type': 'textimage',
+                         'results': [
+                                {'id': '235',
+                                 'text': 'a horse!',
+                                 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
+                                    {'id': '2465436',
+                                 'text': 'a cat!',
+                                 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
+                                 ],
+                    }]
+            }
+
+        # task_id isn't given, should be '0'
+        resp = self.app.post('/task/add',  # task_id should be 0
+                            data=json.dumps({
+                            'task': task}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
         # get the user's current categories
         headers = {USER_ID_HEADER: userid}
@@ -146,6 +202,40 @@ class Tester(unittest.TestCase):
 
 
 
+        cat3 = {'id': '3',
+          'title': 'cat-title3',
+          'supported_os': 'iOS',
+          'ui_data': {'color': "#234",
+                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
+          'supported_os': 'all'}
+
+        # test invalid os - should not work
+        cat3['supported_os'] = 'blah'
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat3}),
+                            headers={},
+                            content_type='application/json')
+        self.assertNotEqual(resp.status_code, 200)
+
+        # test no os - should not work
+        cat3.pop('supported_os')
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat3}),
+                            headers={},
+                            content_type='application/json')
+        self.assertNotEqual(resp.status_code, 200)
+
+        # test ios - should work
+        cat3['supported_os'] = 'iOS'
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat3}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
 
 
 
