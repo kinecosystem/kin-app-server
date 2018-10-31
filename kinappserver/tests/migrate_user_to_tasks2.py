@@ -7,7 +7,7 @@ import testing.postgresql
 import logging as log
 
 import kinappserver
-from kinappserver import db,
+from kinappserver import db, models
 
 import logging as log
 log.getLogger().setLevel(log.INFO)
