@@ -273,7 +273,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
             tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
             tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
 
-        log.info('tasks_per_category: tasks for user %s for cat_id %s: %s' % (user_id, cat_id, tasks_per_category))
+        log.info('tasks_per_category: no. tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category)))
 
     return tasks_per_category
 
