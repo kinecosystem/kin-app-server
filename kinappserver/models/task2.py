@@ -398,7 +398,7 @@ def add_task(task_json):
     if task_id is None:
         task_id = get_next_task_id()
         log.info('no task id given. auto-allocated id: %s' % task_id)
-    task_id = str(task_id) # ensure its a string
+    task_id = str(task_id)  # ensure its a string
 
     position = int(task_json['position'])
     task_start_date = task_json.get('task_start_date', None)

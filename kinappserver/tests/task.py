@@ -11,6 +11,9 @@ import arrow
 import logging as log
 log.getLogger().setLevel(log.INFO)
 
+import logging as log
+log.getLogger().setLevel(log.INFO)
+
 USER_ID_HEADER = "X-USERID"
 
 class Tester(unittest.TestCase):

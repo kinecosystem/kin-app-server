@@ -8,9 +8,12 @@ import unittest
 import kinappserver
 from kinappserver import db, stellar, models, utils, encrypt
 
-
+import logging as log
+log.getLogger().setLevel(log.INFO)
 
 USER_ID_HEADER = "X-USERID"
+
+
 
 class Tester(unittest.TestCase):
     """tests the entire spend-scenario: creating an order and then redeeming it"""

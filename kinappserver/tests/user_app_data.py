@@ -10,6 +10,9 @@ from kinappserver import db, models
 
 USER_ID_HEADER = "X-USERID"
 
+import logging as log
+log.getLogger().setLevel(log.INFO)
+
 class Tester(unittest.TestCase):
 
     @classmethod

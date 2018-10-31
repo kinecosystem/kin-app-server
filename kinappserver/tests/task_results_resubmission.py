@@ -11,6 +11,9 @@ from kinappserver import db
 
 USER_ID_HEADER = "X-USERID"
 
+import logging as log
+log.getLogger().setLevel(log.INFO)
+
 
 class Tester(unittest.TestCase):
 
