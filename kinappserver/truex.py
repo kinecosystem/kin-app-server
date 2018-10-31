@@ -7,6 +7,8 @@ from kinappserver import config, utils, models
 from base64 import b64encode
 from hashlib import sha256, sha1
 
+import logging as log
+
 # work in progress #
 
 TRUEX_GET_ACTIVITY_URL = 'https://get.truex.com/v2'
