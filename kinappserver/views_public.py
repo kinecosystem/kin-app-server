@@ -512,7 +512,8 @@ def get_next_task_internal(cat_ids=[]):
         log.info('immediate_tasks_count for cat_id %s: %s' % (cat_ids[0], immediate_tasks_count[cat_ids[0]]))
         return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id), available_tasks_count=immediate_tasks_count[cat_ids[0]])
     else:
-        tasks_by_categories = OrderedDict(tasks_by_categories)
+        # sort the categories by their numeric value
+        tasks_by_categories = {key: tasks_by_categories[key] for key in sorted(tasks_by_categories.keys(), key=float)}
         return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id))
 
 
