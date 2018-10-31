@@ -34,7 +34,7 @@ class Tester(unittest.TestCase):
         self.postgresql.stop()
 
     def test_category_storing(self):
-        """test storting and getting tasks with categories"""
+        """test storing and getting tasks with categories"""
 
         cat = {'id': '1',
           'title': 'cat-title',

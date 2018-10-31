@@ -3,7 +3,12 @@ from kinappserver.utils import InvalidUsage, test_image
 import logging as log
 
 class Category(db.Model):
-    """Categories group tasks with similar type/topics"""
+    """Categories group tasks with similar type/topics.
+       supported_os, specifies on which platform the category is supported and should be displayed.
+       'all' - all platforms (android and iOS)
+       'android' - only android
+       'iOS' - only iOS
+    """
     category_id = db.Column(db.String(40), nullable=False, primary_key=True)
     title = db.Column(db.String(100), nullable=False, primary_key=False)
     ui_data = db.Column(db.JSON)
@@ -88,7 +93,7 @@ def get_cat_by_id(cat_id):
 
 
 def list_categories(os_type):
-    """returns a dict of all the categories"""
+    """returns a dict of categories that are supported by the specified platform (os_type)"""
     response = {}
     from sqlalchemy import or_
 
