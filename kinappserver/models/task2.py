@@ -212,7 +212,6 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
         remove_previous_tasks_clause = '''and task2.task_id not in (%s)''' % (",".join(completed_tasks_for_cat_id))
     # get ALL the unsolved task_ids for the category
     stmt = '''SELECT task2.task_id FROM task2 WHERE task2.category_id='%s' %s order by task2.position, task2.task_start_date;''' % (cat_id, remove_previous_tasks_clause)
-    log.info(stmt)
     res = db.engine.execute(stmt)
     unsolved_task_ids = [item[0] for item in res.fetchall()]
     log.info('unsolved tasks for cat_id %s: %s' % (cat_id, unsolved_task_ids))
@@ -279,6 +278,11 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
 
 
 def should_skip_truex_task(user_id, task_id, source_ip=None, country_code=None):
+
+    if config.DEBUG:
+        log.info('NOT skipping truex task for DEBUG mode')
+        return False
+
     if get_user_os_type(user_id) == OS_IOS:
         log.info('skipping truex task %s for ios user %s' % (task_id, user_id))
         return True
