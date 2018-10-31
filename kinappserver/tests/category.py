@@ -40,13 +40,15 @@ class Tester(unittest.TestCase):
           'title': 'cat-title',
           'ui_data': {'color': "#123",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
+          'supported_os': 'android'}
 
         cat2 = {'id': '2',
           'title': 'cat-title2',
           'ui_data': {'color': "#234",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
+          'supported_os': 'all'}
 
         resp = self.app.post('/category/add',
                             data=json.dumps({
@@ -65,6 +67,10 @@ class Tester(unittest.TestCase):
         print('all cat ids: %s' % models.get_all_cat_ids())
 
         print('all cats: %s ' % models.list_all_categories())
+
+        print('all android cats: %s ' % models.list_categories('android'))
+
+        print('all iOS cats: %s ' % models.list_categories('iOS'))
 
         print('adding the same cat without an overwrite flag: should fail')
         resp = self.app.post('/category/add',
@@ -137,7 +143,6 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['header_message'], category_extra_data_dict['default'])
-
 
 
 
