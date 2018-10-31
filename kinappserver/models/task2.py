@@ -637,7 +637,7 @@ def get_truex_activity(user_id, cat_id, remote_ip, user_agent=None):
         return None
 
     log.info("truex tasks: %s" % tasks)
-    if tasks[cat_id]['tasks'][0]['type'] != TASK_TYPE_TRUEX:
+    if tasks[cat_id][0]['type'] != TASK_TYPE_TRUEX:
         log.error('cant get activity: user\'s next task isnt truex')
         return None
 
