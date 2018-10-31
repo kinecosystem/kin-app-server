@@ -947,11 +947,14 @@ def report_p2p_tx_api():
     else:
         raise InvalidUsage('failed to add p2ptx')
 
-
+TRUEX_CAT_ID = '2'
 @app.route('/truex/activity', methods=['GET'])
 def truex_activity_endpoint():
     """returns a truex activity for the requesting user, provided this user is allowed to get one now:
        meaning that her current task is of type truex and the submission time was met"""
+
+    #TODO at the moment this function assumes that the ONLY category to show truex is '2'. not great.
+    #TODO this will require a client change to ask for the next truex activity in a given category
     try:
         remote_ip = request.headers.get('X-Forwarded-For', None)
         user_id, auth_token = extract_headers(request)
@@ -970,7 +973,7 @@ def truex_activity_endpoint():
         increment_metric('rejected-on-auth')
         return jsonify(status='error', reason='auth-failed'), status.HTTP_400_BAD_REQUEST
 
-    activity = get_truex_activity(user_id, remote_ip, user_agent)
+    activity = get_truex_activity(user_id, TRUEX_CAT_ID, remote_ip, user_agent)
     if not activity:
         print('userid %s failed to get a truex activity' % user_id)
         return jsonify(status='error', reason='no_activity')
@@ -1318,5 +1321,5 @@ def get_user_categories_endpoint():
     user_id, auth_token = extract_headers(request)
     # customize the message: count available tasks:
     cats_for_user = get_categories_for_user(user_id)
-    #message_type = 'no_tasks' if sum(cats_for_user[cat_id]['available_tasks_count']for cat_id in cats_for_user.keys()) == 0 else 'default'
+    #message_type = 'no_tasks' if sum(cats_for_user[cat_id]['`']for cat_id in cats_for_user.keys()) == 0 else 'default'
     return jsonify(status='ok', categories=cats_for_user, header_message=get_personalized_categories_header_message(user_id, 'default'))

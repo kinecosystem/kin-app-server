@@ -172,27 +172,29 @@ class Tester(unittest.TestCase):
         nuke_user_data_and_taks()
         add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0, task_type='truex')
         add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0, task_type='truex')
-        self.assertEqual(models.count_immediate_tasks(str(userid_ios)), 0)
+        self.assertEqual(models.count_immediate_tasks(str(userid_ios)), {'0': 0, '1': 0})
+
+        return
 
         # test an ios client with non-Truex-related task
         nuke_user_data_and_taks()
         add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0)
         add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0)
-        self.assertEqual(models.count_immediate_tasks(str(userid_ios)), 2)
+        self.assertEqual(models.count_immediate_tasks(str(userid_ios)), {'0': 0, '1': 0})
 
         # test an ios client with Truex-related task - should skip these tasks
         nuke_user_data_and_taks()
         self.app_config.TRUEX_BLACKLISTED_TASKIDS = "['1','0']"
         add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0)
         add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0)
-        self.assertEqual(models.count_immediate_tasks(str(userid_ios)), 0)
+        self.assertEqual(models.count_immediate_tasks(str(userid_ios)), {'0': 0, '1': 0})
 
         # test a US android client with a Truex task
         nuke_user_data_and_taks()
         db.engine.execute("""update public.user_app_data set ip_address='%s' where user_id='%s';""" % (US_IP_ADDRESS, str(userid)))
         add_task_to_test(task, cat_id=0, task_id=0, position=0, delay_days=0, task_type='truex')
         add_task_to_test(task, cat_id=1, task_id=1, position=0, delay_days=0, task_type='truex')
-        self.assertEqual(models.count_immediate_tasks(str(userid)), 2)
+        self.assertEqual(models.count_immediate_tasks(str(userid)), {'0': 1, '1': 1})
 
         # test a US android client with a truex-related task
         nuke_user_data_and_taks()

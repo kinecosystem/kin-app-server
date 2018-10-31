@@ -621,7 +621,7 @@ def handle_task_results_resubmission(user_id, task_id):
     return memo, user_id
 
 
-def get_truex_activity(user_id, cat_id, remote_ip, user_agent):
+def get_truex_activity(user_id, cat_id, remote_ip, user_agent=None):
     """returns a truex activity for the user if she is allowed one now"""
 
     tasks = []
@@ -630,13 +630,13 @@ def get_truex_activity(user_id, cat_id, remote_ip, user_agent):
     try:
         tasks = get_next_tasks_for_user(user_id, remote_ip, cat_id)
     except Exception as e:
-        log.error('cant get activity - no such user %s' % user_id)
+        log.error('get_truex_activity - cant get next tasks' % user_id)
 
     if tasks[cat_id] == []:
-        log.error('cant get activity: no next task')
+        log.error('get_truex_activity - no next tasks')
         return None
 
-    if tasks[0]['tasks'][0]['type'] != TASK_TYPE_TRUEX:
+    if tasks[cat_id]['tasks'][0]['type'] != TASK_TYPE_TRUEX:
         log.error('cant get activity: user\'s next task isnt truex')
         return None
 
