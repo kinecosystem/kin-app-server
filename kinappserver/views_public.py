@@ -1323,8 +1323,6 @@ def get_user_categories_endpoint():
     # customize the message: count available tasks:
     cats_for_user = get_categories_for_user(user_id)
     # total the number of available tasks. if its zero, show a special message
-    print('cats for user: %s' % cats_for_user)
-
     message_type = 'no_tasks' if sum([cat['available_tasks_count'] for cat in cats_for_user]) == 0 else 'default'
 
     return jsonify(status='ok', categories=cats_for_user, header_message=get_personalized_categories_header_message(user_id, message_type))

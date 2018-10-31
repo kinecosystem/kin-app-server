@@ -69,7 +69,7 @@ def add_category(cat_json):
         db.session.add(category)
         db.session.commit()
     except Exception as e:
-        log.error('cant add category to db with id %s, e:' % (cat_id, e))
+        log.error('cant add category to db with id %s, %s:' % (cat_id, e))
         return False
     else:
         return True
