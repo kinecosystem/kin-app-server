@@ -102,3 +102,11 @@ ENV/
 .mypy_cache/
 
 /.idea
+
+\.vscode/settings\.json
+
+dump\.rdb
+
+Pipfile
+
+Pipfile\.lock
