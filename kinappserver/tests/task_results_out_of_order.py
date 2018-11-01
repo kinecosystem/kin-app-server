@@ -41,6 +41,7 @@ class Tester(unittest.TestCase):
             cat = {'id': str(cat_id),
               'title': 'cat-title',
                    "skip_image_test": True,
+                   'supported_os': 'all',
               'ui_data': {'color': "#123",
                           'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
                           'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}

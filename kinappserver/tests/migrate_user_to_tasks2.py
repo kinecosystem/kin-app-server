@@ -41,6 +41,7 @@ class Tester(unittest.TestCase):
         cat = {'id': '0',
           'title': 'cat-title',
                "skip_image_test": True,
+               'supported_os': 'all',
           'ui_data': {'color': "#123",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
                       'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
@@ -54,6 +55,7 @@ class Tester(unittest.TestCase):
 
         cat2 = {'id': '1',
           'title': 'cat-title2',
+                'supported_os': 'all',
                "skip_image_test": True,
           'ui_data': {'color': "#123",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
@@ -68,6 +70,7 @@ class Tester(unittest.TestCase):
 
         cat3 = {'id': '2',
           'title': 'cat-title3',
+                'supported_os': 'all',
                "skip_image_test": True,
           'ui_data': {'color': "#123",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
@@ -82,6 +85,7 @@ class Tester(unittest.TestCase):
 
         cat4 = {'id': '3',
           'title': 'cat-title4',
+                'supported_os': 'all',
                "skip_image_test": True,
           'ui_data': {'color': "#123",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
@@ -96,6 +100,7 @@ class Tester(unittest.TestCase):
 
         cat5 = {'id': '4',
           'title': 'cat-title5',
+                'supported_os': 'all',
                "skip_image_test": True,
           'ui_data': {'color': "#123",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',

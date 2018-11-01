@@ -109,6 +109,7 @@ class Tester(unittest.TestCase):
             print('adding category %s...' % cat_id)
             cat = {'id': str(cat_id),
               'title': 'cat-title',
+                   'supported_os': 'all',
                    "skip_image_test": True,
               'ui_data': {'color': "#123",
                           'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
