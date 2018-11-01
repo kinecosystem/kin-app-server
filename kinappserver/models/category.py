@@ -2,6 +2,7 @@ from kinappserver import db
 from kinappserver.utils import InvalidUsage, test_image
 import logging as log
 
+
 class Category(db.Model):
     """Categories group tasks with similar type/topics.
        supported_os, specifies on which platform the category is supported and should be displayed.
@@ -12,8 +13,9 @@ class Category(db.Model):
     category_id = db.Column(db.String(40), nullable=False, primary_key=True)
     title = db.Column(db.String(100), nullable=False, primary_key=False)
     ui_data = db.Column(db.JSON)
-    supported_os = db.Column(db.String(10), unique=False, default='all',
-                                             nullable=False)  # 'all', 'android', 'iOS'
+    supported_os = db.Column(
+        db.String(10), unique=False, default='all',
+        nullable=False)  # 'all', 'android', 'iOS'
 
     def __repr__(self):
         return '<category_id: %s, title: %s>' % (self.category_id, self.title)
@@ -22,7 +24,8 @@ class Category(db.Model):
 # TODO cache
 def get_all_cat_ids():
     """returns a list of the category ids"""
-    res = db.engine.execute('SELECT category_id FROM category GROUP BY category_id')
+    res = db.engine.execute(
+        'SELECT category_id FROM category GROUP BY category_id')
     return [item[0] for item in res.fetchall()]
 
 
@@ -34,7 +37,8 @@ def add_category(cat_json):
     supported_os = cat_json.get('supported_os', None)
     if not supported_os or supported_os not in ['android', 'iOS', 'all']:
         log.error('cant add category - missing or invalid supported_os field')
-        raise InvalidUsage('cant add category - missing or invalid supported_os')
+        raise InvalidUsage(
+            'cant add category - missing or invalid supported_os')
 
     log.info('trying to add category with id %s' % cat_id)
     overwrite_flag = bool(cat_json.get('overwrite', False))
@@ -42,22 +46,24 @@ def add_category(cat_json):
 
     if get_cat_by_id(cat_id):
         if not overwrite_flag:
-            log.error('cant insert a category with id %s - one already exists' % cat_id)
+            log.error('cant insert a category with id %s - one already exists'
+                      % cat_id)
             raise InvalidUsage('cant overwrite category with id %s' % cat_id)
         else:
             delete_prior_to_insertion = True
-
 
     fail_flag = False
     skip_image_test = cat_json.get('skip_image_test', False)
 
     if not skip_image_test:
         if not test_image(cat_json['ui_data']['image_url']):
-            log.error("cant verify image url: %s" % cat_json['ui_data']['image_url'])
+            log.error(
+                "cant verify image url: %s" % cat_json['ui_data']['image_url'])
             fail_flag = True
 
         if not test_image(cat_json['ui_data']['header_image_url']):
-            log.error("cant verify image url: %s" % cat_json['ui_data']['header_image_url'])
+            log.error("cant verify image url: %s" %
+                      cat_json['ui_data']['header_image_url'])
             fail_flag = True
     if fail_flag:
         log.error('could not verify urls. aborting')
@@ -65,7 +71,8 @@ def add_category(cat_json):
 
     try:
         if delete_prior_to_insertion:
-            db.session.delete(Category.query.filter_by(category_id=cat_id).first())
+            db.session.delete(
+                Category.query.filter_by(category_id=cat_id).first())
 
         category = Category()
         category.category_id = cat_id
@@ -98,16 +105,21 @@ def get_cat_by_id(cat_id):
     return cat_json
 
 
-
 def list_categories(os_type):
     """returns a dict of categories that are supported by the specified platform (os_type)"""
     response = {}
     from sqlalchemy import or_
 
-    cats = Category.query.order_by(Category.category_id).filter(or_(Category.supported_os=='all', Category.supported_os==os_type)).all()
+    cats = Category.query.order_by(Category.category_id).filter(
+        or_(Category.supported_os == 'all',
+            Category.supported_os == os_type)).all()
     for cat in cats:
-        response[cat.category_id] = {'id': cat.category_id, 'ui_data': cat.ui_data, 'title': cat.title,
-                                     'supported_os': cat.supported_os}
+        response[cat.category_id] = {
+            'id': cat.category_id,
+            'ui_data': cat.ui_data,
+            'title': cat.title,
+            'supported_os': cat.supported_os
+        }
     return response
 
 
@@ -116,8 +128,12 @@ def list_all_categories():
     response = {}
     cats = Category.query.order_by(Category.category_id).all()
     for cat in cats:
-        response[cat.category_id] = {'id': cat.category_id, 'ui_data': cat.ui_data, 'title': cat.title,
-                                     'supported_os': cat.supported_os}
+        response[cat.category_id] = {
+            'id': cat.category_id,
+            'ui_data': cat.ui_data,
+            'title': cat.title,
+            'supported_os': cat.supported_os
+        }
     return response
 
 

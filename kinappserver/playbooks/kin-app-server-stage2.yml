@@ -15,7 +15,7 @@
     - igor_mukhin.bash_aliases
 
   vars:
-   kin_app_server_branch_name: ami/task2.0
+   kin_app_server_branch_name: aryeh/verification2.0
    deployment_env: stage
    environment_config:
      ENV: stage

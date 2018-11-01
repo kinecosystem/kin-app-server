@@ -604,11 +604,11 @@ def add_category_endpoint():
     payload = request.get_json(silent=True)
 
     try:
-        task = payload.get('category', None)
+        cat = payload.get('category', None)
     except Exception as e:
         print('exception: %s' % e)
         raise InvalidUsage('bad-request')
-    if add_category(task):
+    if add_category(cat):
         return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add category')

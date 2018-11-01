@@ -37,7 +37,7 @@ class Tester(unittest.TestCase):
     def test_old_client(self):
         """test storting task results"""
 
-        cat = {'id': '0',
+        cat = {'id': '0','supported_os': 'all',
                "skip_image_test": True,
           'title': 'cat-title',
           'ui_data': {'color': "#123",

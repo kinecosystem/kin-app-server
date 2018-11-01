@@ -23,14 +23,14 @@ class Tester(unittest.TestCase):
         pass
 
     def setUp(self):
-        #overwrite the db name, dont interfere with stage db data
+        # overwrite the db name, dont interfere with stage db data
         self.postgresql = testing.postgresql.Postgresql()
-        kinappserver.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url()
+        kinappserver.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url(
+        )
         kinappserver.app.testing = True
         self.app = kinappserver.app.test_client()
         db.drop_all()
         db.create_all()
-
 
     def tearDown(self):
         self.postgresql.stop()
@@ -41,6 +41,7 @@ class Tester(unittest.TestCase):
         for cat_id in range(2):
             cat = {'id': str(cat_id),
                    'title': 'cat-title',
+                   'supported_os': 'all',
                    "skip_image_test": True,
                    'ui_data': {'color': "#123",
                                'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
@@ -74,20 +75,17 @@ class Tester(unittest.TestCase):
             PRIMARY KEY (task_id, task_type)
         );""")
 
-
         # populate task table
         task_template = """insert into task (task_id, task_type, title, "desc", price, video_url, min_to_complete, provider_data, tags, items, start_date, update_at, delay_days, min_client_version_android, min_client_version_ios, post_task_actions) values ('0', 'task_type', 'task_title', 'task_desc', 1, 'http://google.com', 1, %s, %s, %s, null, null, 5, '1.0','2.0', %s);"""
 
-
-        d = {'a':1, 'b':2}
-        db.engine.execute(task_template, json.dumps(d), json.dumps(d), json.dumps(d), json.dumps(d))
+        d = {'a': 1, 'b': 2}
+        db.engine.execute(task_template, json.dumps(
+            d), json.dumps(d), json.dumps(d), json.dumps(d))
         # migrate task to task2
 
         models.task20_migrate_task('0', '0', 0, 3)
 
         print(models.get_task_by_id('0'))
-
-
 
 
 if __name__ == '__main__':

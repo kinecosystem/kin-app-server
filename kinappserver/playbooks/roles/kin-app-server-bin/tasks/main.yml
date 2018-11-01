@@ -16,6 +16,19 @@
     name: /opt/kin-app-server
     state: latest
 
+- name: Clone the server-client-validation-module  repo
+  git:
+    repo=git@github.com:kinecosystem/server-client-validation-module.git
+    dest=/opt/server-client-validation-module 
+    accept_hostkey=true
+    force=yes
+    key_file=/home/ubuntu/.ssh/id_rsa.validation_module
+
+- name: install the server-client-validation-module from the local copy. force upgrade to take any changes.
+  pip: 
+    name: /opt/server-client-validation-module
+    state: latest
+
 - name: restart supervisor
   supervisorctl:
     name: kinappserver

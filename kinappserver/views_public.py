@@ -3,13 +3,12 @@ The Kin App Server public API is defined here.
 """
 from threading import Thread
 from uuid import UUID
-
+import logging as log
 from flask import request, jsonify, abort
 from kinappserver.views_common import get_source_ip, extract_headers, limit_to_acl
 from flask_api import status
 import redis_lock
 import arrow
-import logging as log
 from distutils.version import LooseVersion
 from .utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
 
@@ -36,6 +35,8 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, \
     captcha_solved, get_user_tz, do_captcha_stuff, get_personalized_categories_header_message, get_categories_for_user, \
     task20_migrate_user_to_tasks2, should_force_update, is_update_available, should_reject_out_of_order_tasks, count_immediate_tasks
+
+import validation_module
 
 def get_payment_lock_name(user_id, task_id):
     """generate a user and task specific lock for payments."""
@@ -845,9 +846,24 @@ def book_offer_api():
     try:
         user_id, auth_token = extract_headers(request)
         offer_id = payload.get('id', None)
+        
         if None in (user_id, offer_id):
-            raise InvalidUsage('invalid payload')
+            raise InvalidUsage('### None in (user_id, offer_id)')
+        
+        os_type = get_user_os_type(user_id)
+        if (config.VALIDATION_ENABLED and os_type == OS_ANDROID):
+            log.info('### validating client')
+
+            validation_token = payload.get('validation_token', None)    
+            if validation_token is None:
+                raise InvalidUsage('### validation_token is None')
+
+            if not validation_module.validate_token(user_id,validation_token):
+                raise InvalidUsage('### validate_token returned invalid')
+                     
     except Exception as e:
+        log.error('### offer booking blocked')
+        print(e)
         raise InvalidUsage('bad-request')
 
     if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
@@ -1326,3 +1342,17 @@ def get_user_categories_endpoint():
     message_type = 'no_tasks' if sum([cat['available_tasks_count'] for cat in cats_for_user]) == 0 else 'default'
 
     return jsonify(status='ok', categories=cats_for_user, header_message=get_personalized_categories_header_message(user_id, message_type))
+
+
+@app.route('/validation/get-nonce', methods=['GET'])
+def get_validation_nonce():
+    """ return nonce to the client """
+    try:
+        user_id, auth_token = extract_headers(request)
+        if not user_exists(user_id):
+            print('get_nonce: user_id %s does not exist. aborting' % user_id)
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    return jsonify(nonce=validation_module.get_validation_nonce(user_id))

@@ -207,8 +207,8 @@ class Tester(unittest.TestCase):
           'supported_os': 'iOS',
           'ui_data': {'color': "#234",
                       'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
-          'supported_os': 'all'}
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}
+                      }
 
         # test invalid os - should not work
         cat3['supported_os'] = 'blah'

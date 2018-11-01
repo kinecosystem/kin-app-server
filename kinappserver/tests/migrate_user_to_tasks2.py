@@ -23,14 +23,14 @@ class Tester(unittest.TestCase):
         pass
 
     def setUp(self):
-        #overwrite the db name, dont interfere with stage db data
+        # overwrite the db name, dont interfere with stage db data
         self.postgresql = testing.postgresql.Postgresql()
-        kinappserver.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url()
+        kinappserver.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url(
+        )
         kinappserver.app.testing = True
         self.app = kinappserver.app.test_client()
         db.drop_all()
         db.create_all()
-
 
     def tearDown(self):
         self.postgresql.stop()
@@ -39,73 +39,78 @@ class Tester(unittest.TestCase):
         """test storting task reults"""
 
         cat = {'id': '0',
-          'title': 'cat-title',
+               'title': 'cat-title',
+               'supported_os': 'all',
                "skip_image_test": True,
-          'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+               'ui_data': {'color': "#123",
+                           'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                           'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
 
         resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat}),
-                            headers={},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'category': cat}),
+                             headers={},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         cat2 = {'id': '1',
-          'title': 'cat-title2',
-               "skip_image_test": True,
-          'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+                'title': 'cat-title2',
+                'supported_os': 'all',
+                "skip_image_test": True,
+                'ui_data': {'color': "#123",
+                            'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                            'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
 
         resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat2}),
-                            headers={},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'category': cat2}),
+                             headers={},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         cat3 = {'id': '2',
-          'title': 'cat-title3',
-               "skip_image_test": True,
-          'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+                'title': 'cat-title3',
+                'supported_os': 'all',
+                "skip_image_test": True,
+                'ui_data': {'color': "#123",
+                            'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                            'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
 
         resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat3}),
-                            headers={},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'category': cat3}),
+                             headers={},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         cat4 = {'id': '3',
-          'title': 'cat-title4',
-               "skip_image_test": True,
-          'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+                'title': 'cat-title4',
+                'supported_os': 'all',
+                "skip_image_test": True,
+                'ui_data': {'color': "#123",
+                            'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                            'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
 
         resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat4}),
-                            headers={},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'category': cat4}),
+                             headers={},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         cat5 = {'id': '4',
-          'title': 'cat-title5',
-               "skip_image_test": True,
-          'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+                'title': 'cat-title5',
+                'supported_os': 'all',
+                "skip_image_test": True,
+                'ui_data': {'color': "#123",
+                            'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                            'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
 
         resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat5}),
-                            headers={},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'category': cat5}),
+                             headers={},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         print('all cat_ids: %s' % models.get_all_cat_ids())
@@ -114,19 +119,20 @@ class Tester(unittest.TestCase):
 
         # register an android with a token
         resp = self.app.post('/user/register',
-                            data=json.dumps({
-                            'user_id': str(userid),
-                            'os': 'android',
-                            'device_model': 'samsung8',
-                            'device_id': '234234',
-                            'time_zone': '05:00',
-                            'token': 'fake_token',
-                            'app_ver': '1.0'}),
-                            headers={},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'user_id': str(userid),
+                                 'os': 'android',
+                                 'device_model': 'samsung8',
+                                 'device_id': '234234',
+                                 'time_zone': '05:00',
+                                 'token': 'fake_token',
+                                 'app_ver': '1.0'}),
+                             headers={},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (
+            str(userid), str(userid)))
 
         resp = self.app.post('/user/auth/ack',
                              data=json.dumps({
@@ -136,7 +142,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # set tasks1.0-style tasks into the db
-        db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\';' % (str(userid)))
+        db.engine.execute(
+            'update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\';' % (str(userid)))
         models.add_task_to_completed_tasks1(str(userid), '0')
 
         # migrate the user to task2.0
@@ -168,7 +175,8 @@ class Tester(unittest.TestCase):
             'min_to_complete': 2,
             'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
             'provider':
-                {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
+                {'name': 'om-nom-nom-food',
+                    'image_url': 'http://inter.webs/horsie.jpg'},
             'items': [
                 {
                     'id': '435',
@@ -186,39 +194,39 @@ class Tester(unittest.TestCase):
         }
 
         resp = self.app.post('/task/add',
-                            data=json.dumps({
-                            'task': task}),
-                            headers={},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'task': task}),
+                             headers={},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         task['id'] = '1'
         task['position'] = 1
         resp = self.app.post('/task/add',
-                            data=json.dumps({
-                            'task': task}),
-                            headers={},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'task': task}),
+                             headers={},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
 
         userid = uuid.uuid4()
 
         # register an android with a token
         resp = self.app.post('/user/register',
-                            data=json.dumps({
-                            'user_id': str(userid),
-                            'os': 'android',
-                            'device_model': 'samsung8',
-                            'device_id': '234234',
-                            'time_zone': '05:00',
-                            'token': 'fake_token',
-                            'app_ver': '1.0'}),
-                            headers={},
-                            content_type='application/json')
+                             data=json.dumps({
+                                 'user_id': str(userid),
+                                 'os': 'android',
+                                 'device_model': 'samsung8',
+                                 'device_id': '234234',
+                                 'time_zone': '05:00',
+                                 'token': 'fake_token',
+                                 'app_ver': '1.0'}),
+                             headers={},
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (str(userid), str(userid)))
+        db.engine.execute("""update public.push_auth_token set auth_token='%s' where user_id='%s';""" % (
+            str(userid), str(userid)))
 
         resp = self.app.post('/user/auth/ack',
                              data=json.dumps({
@@ -228,7 +236,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # set tasks1.0-style tasks into the db
-        db.engine.execute('update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\';' % (str(userid)))
+        db.engine.execute(
+            'update public.user_app_data set completed_tasks=\'"[]"\' where user_id=\'%s\';' % (str(userid)))
 
         # mark task_id 1 as completed in tasks1.0 format
         models.add_task_to_completed_tasks1(str(userid), '0')
@@ -243,11 +252,12 @@ class Tester(unittest.TestCase):
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(data['tasks']['3']), 1)  # returns one task
-        self.assertEqual(data['tasks']['0'], [])  # task no. 1 because zero was already submitted
-        self.assertEqual(data['tasks']['3'][0]['id'], '1')  # task no. 1 because zero was already submitted
+        # task no. 1 because zero was already submitted
+        self.assertEqual(data['tasks']['0'], [])
+        # task no. 1 because zero was already submitted
+        self.assertEqual(data['tasks']['3'][0]['id'], '1')
         self.assertEqual(data['tasks']['1'], [])
         self.assertEqual(data['tasks']['2'], [])
-
 
 
 if __name__ == '__main__':
