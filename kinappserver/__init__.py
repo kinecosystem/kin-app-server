@@ -111,7 +111,7 @@ app.redis.setex('temp-key', 1, 'temp-value')
 
 # start the rq queue connection
 app.rq_fast = Queue('kinappserver-%s-fast' % config.DEPLOYMENT_ENV, connection=redis.Redis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0), default_timeout=200)
-app.rq_slow = Queue('kinappserver-%s-slow' % config.DEPLOYMENT_ENV, connection=redis.Redis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0), default_timeout=1800)
+app.rq_slow = Queue('kinappserver-%s-slow' % config.DEPLOYMENT_ENV, connection=redis.Redis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0), default_timeout=7200)
 
 #push: init the amqplib: two instances, one for beta and one for release TODO get rid of this eventually
 app.amqp_publisher_beta = AmqpPublisher()

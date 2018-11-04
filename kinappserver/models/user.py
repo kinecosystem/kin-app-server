@@ -1243,16 +1243,16 @@ def re_register_all_users():
     counter = 0
     for user in all_phoned_users:
 
-        if user.os_type != OS_ANDROID:
-            print('skipping user with ios client')
+        if user.os_type == OS_ANDROID:
+            print('skipping user with android client')
             continue
-        user_app_data = get_user_app_data(user.user_id)
-        from distutils.version import LooseVersion
-        if user_app_data.app_ver is None or LooseVersion(user_app_data.app_ver) < LooseVersion('1.2.1'):
-            print('skipping user with client ver %s' % user_app_data.app_ver)
-            continue
+        #user_app_data = get_user_app_data(user.user_id)
+        #from distutils.version import LooseVersion
+        #if user_app_data.app_ver is None or LooseVersion(user_app_data.app_ver) < LooseVersion('1.2.1'):
+        #    print('skipping user with client ver %s' % user_app_data.app_ver)
+        #    continue
 
-        sleep(0.1)  # lets not choke the server
+        sleep(0.5)  # lets not choke the server. this can really hurt us if done too fast.
         send_push_register(user.user_id)
         counter = counter + 1
 
