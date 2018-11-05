@@ -49,4 +49,3 @@ test:
 	# python kinappserver/tests/onboarding.py
 all:
 	install test
-

@@ -1,13 +1,14 @@
 
 import simplejson as json
 import unittest
+import pytest
 from uuid import uuid4
 from time import sleep
 
 import testing.postgresql
 
 import kinappserver
-from kinappserver import db, models
+from kinappserver import app, db, models, config, utils
 import validation_module
 import base64
 import logging as log
@@ -135,22 +136,13 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # get nonce
-        resp = self.app.get('/validation/get-nonce',
-                            headers={USER_ID_HEADER: str(userid)})
-        data = json.loads(resp.data)
-        self.assertIsNotNone(data['nonce'])
-        nonce = data['nonce']
-
-        # mock valid token
-        payload = validation_module.config.MOCK_PAYLOAD % nonce
-        byte_pl = base64.b64encode(payload.encode('ascii')).decode("utf-8")
-        token = validation_module.config.TOKEN % (byte_pl)
-
+        # store a mocked token
+        utils.write_json_to_cache(config.NONCE_REDIS_KEY % str(userid),config.MOCK_B64_NONCE, config.NONCE_REDIS_TIMEOUT)
+        
         # create the first order (books item 1)
         resp = self.app.post('/offer/book',
                              data=json.dumps({
-                                 'id': offerid, 'validation_token': token}),
+                                 'id': offerid, 'validation_token': config.MOCK_B64_TOKEN}),
                              headers={USER_ID_HEADER: str(userid)},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -160,22 +152,10 @@ class Tester(unittest.TestCase):
         orderid1 = data['order_id']
         print('order_id: %s' % orderid1)
 
-        # get nonce
-        resp = self.app.get('/validation/get-nonce',
-                            headers={USER_ID_HEADER: str(userid)})
-        data = json.loads(resp.data)
-        self.assertIsNotNone(data['nonce'])
-        nonce = data['nonce']
-
-        # mock valid token
-        payload = validation_module.config.MOCK_PAYLOAD % nonce
-        byte_pl = base64.b64encode(payload.encode('ascii')).decode("utf-8")
-        token = validation_module.config.TOKEN % (byte_pl)
-
         # create another order for the same offer (books item 2)
         resp = self.app.post('/offer/book',
                              data=json.dumps({
-                                 'id': offerid, 'validation_token': token}),
+                                 'id': offerid, 'validation_token': config.MOCK_B64_TOKEN}),
                              headers={USER_ID_HEADER: str(
                                  userid)},
                              content_type='application/json')
@@ -186,22 +166,10 @@ class Tester(unittest.TestCase):
         orderid2 = data['order_id']
         print('order_id: %s' % orderid2)
 
-        # get nonce
-        resp = self.app.get('/validation/get-nonce',
-                            headers={USER_ID_HEADER: str(userid)})
-        data = json.loads(resp.data)
-        self.assertIsNotNone(data['nonce'])
-        nonce = data['nonce']
-
-        # mock valid token
-        payload = validation_module.config.MOCK_PAYLOAD % nonce
-        byte_pl = base64.b64encode(payload.encode('ascii')).decode("utf-8")
-        token = validation_module.config.TOKEN % (byte_pl)
-
         # should fail as there are already 2 active orders
         resp = self.app.post('/offer/book',
                              data=json.dumps({
-                                 'id': offerid, 'validation_token': token}),
+                                 'id': offerid, 'validation_token': config.MOCK_B64_TOKEN}),
                              headers={USER_ID_HEADER: str(
                                  userid)},
                              content_type='application/json')
@@ -222,44 +190,10 @@ class Tester(unittest.TestCase):
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 400)
 
-        # get nonce
-        resp = self.app.get('/validation/get-nonce',
-                            headers={USER_ID_HEADER: str(userid)})
-        data = json.loads(resp.data)
-        self.assertIsNotNone(data['nonce'])
-        nonce = data['nonce']
-
-        # mock invalid token
-        payload = validation_module.config.MOCK_INVALID_PAYLOAD
-        byte_pl = base64.b64encode(payload.encode('ascii')).decode("utf-8")
-        token = validation_module.config.TOKEN % (byte_pl)
-
-        # should fail no validation token
-        resp = self.app.post('/offer/book',
-                             data=json.dumps({
-                                 'id': offerid, 'validation_token': token}),
-                             headers={USER_ID_HEADER: str(
-                                 userid)},
-                             content_type='application/json')
-        print(json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
-
-        # get nonce
-        resp = self.app.get('/validation/get-nonce',
-                            headers={USER_ID_HEADER: str(userid)})
-        data = json.loads(resp.data)
-        self.assertIsNotNone(data['nonce'])
-        nonce = data['nonce']
-
-        # mock invalid token
-        payload = validation_module.config.MOCK_PAYLOAD % nonce
-        byte_pl = base64.b64encode(payload.encode('ascii')).decode("utf-8")
-        token = validation_module.config.TOKEN % (byte_pl)
-
         # should succeed now
         resp = self.app.post('/offer/book',
                              data=json.dumps({
-                                 'id': offerid, 'validation_token': token}),
+                                 'id': offerid, 'validation_token': config.MOCK_B64_TOKEN}),
                              headers={USER_ID_HEADER: str(
                                  userid)},
                              content_type='application/json')

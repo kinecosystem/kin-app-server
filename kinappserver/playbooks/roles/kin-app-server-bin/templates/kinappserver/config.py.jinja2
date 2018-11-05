@@ -80,3 +80,12 @@ CAPTCHA_TASK_MODULO = 4
 CAPTCHA_AUTO_RAISE = False
 
 VALIDATION_ENABLED = True
+
+NONCE_REDIS_TIMEOUT = 3600
+NONCE_REDIS_KEY = 'validation_nonce-%s'
+
+MOCK_PAYLOAD = '{ "nonce": "%s", "timestampMs": 9860437986543, "apkPackageName": "org.kinecosystem.kinit", "apkCertificateDigestSha256": ["base64 encoded, SHA-256 hash of the certificate used to sign requesting app"], "apkDigestSha256": ["base64 encoded, SHA-256 hash of the APK installed on a users device"], "ctsProfileMatch": true, "basicIntegrity": true }'
+
+MOCK_INVALID_PAYLOAD = '{ "nonce": "1234", "timestampMs": 9860437986543, "apkPackageName": "org.kinecosystem.kinit", "apkCertificateDigestSha256": ["base64 encoded, SHA-256 hash of the certificate used to sign requesting app"], "apkDigestSha256": ["base64 encoded, SHA-256 hash of the APK installed on a users device"], "ctsProfileMatch": false, "basicIntegrity": false }'
+
+TOKEN = '.%s.'

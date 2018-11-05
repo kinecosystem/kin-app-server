@@ -8,6 +8,7 @@ from flask import request, jsonify, abort
 from kinappserver.views_common import get_source_ip, extract_headers, limit_to_acl
 from flask_api import status
 import redis_lock
+import traceback
 import arrow
 from distutils.version import LooseVersion
 from .utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
@@ -864,6 +865,7 @@ def book_offer_api():
     except Exception as e:
         log.error('### offer booking blocked')
         print(e)
+        traceback.print_exc()
         raise InvalidUsage('bad-request')
 
     if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
