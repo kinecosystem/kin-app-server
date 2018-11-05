@@ -45,6 +45,8 @@ def calculate_timeshift(user_id, delay_days=1):
     user_tz = get_user_tz(user_id)
     seconds_to_midnight = seconds_to_local_nth_midnight(user_tz, delay_days)
     print('seconds to next local midnight: %s for user_id %s with tz %s' % (seconds_to_midnight, user_id, user_tz))
+    if get_user_os_type(user_id) == OS_IOS:
+        return seconds_to_midnight + 3600
     return seconds_to_midnight
 
 
