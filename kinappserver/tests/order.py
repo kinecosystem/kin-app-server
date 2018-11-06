@@ -137,7 +137,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # store a mocked token
-        utils.write_json_to_cache(config.NONCE_REDIS_KEY % str(userid),config.MOCK_B64_NONCE, config.NONCE_REDIS_TIMEOUT)
+        utils.write_json_to_cache(config.NONCE_REDIS_KEY % str(userid),config.MOCK_B64_NONCE)
         
         # create the first order (books item 1)
         resp = self.app.post('/offer/book',

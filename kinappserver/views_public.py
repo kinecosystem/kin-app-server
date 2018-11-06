@@ -1351,6 +1351,8 @@ def get_validation_nonce():
     """ return nonce to the client """
     try:
         user_id, auth_token = extract_headers(request)
+        if user_id is None:
+            raise InvalidUsage('bad-request')
         if not user_exists(user_id):
             print('get_nonce: user_id %s does not exist. aborting' % user_id)
             raise InvalidUsage('bad-request')
@@ -1358,3 +1360,23 @@ def get_validation_nonce():
         print(e)
         raise InvalidUsage('bad-request')
     return jsonify(nonce=validation_module.get_validation_nonce(user_id))
+
+
+@app.route('validation/validate-token', methods=['POST'])
+def validate_token():
+    "validate a given token"
+    try:
+        user_id, auth_token = extract_headers(request)
+        if user_id is None:
+            raise InvalidUsage('bad-request')
+        if not user_exists(user_id):
+            print('get_nonce: user_id %s does not exist. aborting' % user_id)
+            raise InvalidUsage('bad-request')
+
+        payload = request.get_json(silent=True)
+        token = payload.get('token', None)
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
+    return jsonify(status=validation_module.validate_token(user_id, token))
