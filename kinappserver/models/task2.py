@@ -811,8 +811,6 @@ def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_fo
             # the task is limited to a specific country, and the user's country is different
             skip_task = True
 
-        #TODO TASKS2.0 add Truex blacklist into the mix
-
         if not skip_task:
             unsolved_tasks.append(task)
 
@@ -826,12 +824,13 @@ def calculate_immediate_tasks(filtered_unsolved_tasks_for_user):
         # its possible all the tasks were filtered by version or country code
         return 0
 
-    # this code assumes that the first unsolved task is readily available to the user, or otherwise this called is never called.
+    # this code assumes that the first unsolved task is readily available to the user, or otherwise this func is never called.
     total_tasks = 1  # start with one, because the first task is currently available
 
-    items_count = len(filtered_unsolved_tasks_for_user)
     for idx, task in enumerate(filtered_unsolved_tasks_for_user):
-        if task.delay_days == 0 and idx != items_count-1:
+        if idx == 0: #already counted first task
+            continue
+        if task.delay_days == 0:
             total_tasks = total_tasks + 1
         else:
             break
