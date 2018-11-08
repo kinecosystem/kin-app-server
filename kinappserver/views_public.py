@@ -1094,7 +1094,7 @@ def compensate_truex_activity(user_id):
         return False
 
     # get the user's current task_id
-    tasks = get_task_f(user_id)
+    tasks = get_next_tasks_for_user(user_id, cat_ids=[TRUEX_CAT_ID])
     if len(tasks) == 0:
         print('compensate_truex_activity: should never happen - user doesnt have any tasks')
         return False
