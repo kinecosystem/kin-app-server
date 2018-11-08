@@ -6,6 +6,7 @@ DB_CONNSTR = "this gets overwritten by the tester code. it acutally uses a temp 
 REDIS_ENDPOINT = 'localhost'
 REDIS_PORT = 6379
 
+VALIDATION_ENABLED = True
 STELLAR_TIMEOUT_SEC = 10  # waitloop for tx data to be available
 STELLAR_INITIAL_ACCOUNT_BALANCE = 2
 
@@ -73,3 +74,5 @@ CAPTCHA_MIN_CLIENT_VERSION_IOS = '99.99'
 CAPTCHA_SAFETY_COOLDOWN_SECS = 60*60*1
 CAPTCHA_TASK_MODULO = 4
 CAPTCHA_AUTO_RAISE = True
+
+NONCE_REDIS_KEY = 'validation_nonce-%s'
