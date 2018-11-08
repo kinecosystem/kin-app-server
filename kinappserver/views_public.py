@@ -130,6 +130,10 @@ def set_user_phone_number_endpoint():
         unverified_phone_number = payload.get('phone_number', None)  # only used in tests
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
+        
+        if not utils.isValidClient(user_id, payload.get('validation_token', None)):
+            raise InvalidUsage('bad-request')
+
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
@@ -849,16 +853,8 @@ def book_offer_api():
         
         if None in (user_id, offer_id):
             raise InvalidUsage('### None in (user_id, offer_id)')
-        
-        os_type = get_user_os_type(user_id)
-        if (config.VALIDATION_ENABLED and os_type == OS_ANDROID):
-            log.info('### validating client')
-            validation_token = payload.get('validation_token', None)    
-            if validation_token is None:
-                raise InvalidUsage('### validation_token is None')
-
-            if not validation_module.validate_token(user_id,validation_token):
-                raise InvalidUsage('### validate_token returned invalid')
+        if not utils.isValidClient(user_id, payload.get('validation_token', None)):
+            raise InvalidUsage('### Invalid client')
     except Exception as e:
 
         traceback.print_exc()
