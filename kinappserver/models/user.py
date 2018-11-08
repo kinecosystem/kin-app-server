@@ -2126,3 +2126,57 @@ def tasks20_get_tasks_dict():
 
         tasks_dict[task_id] = {'cat_id': cat_id, 'position': position, 'delay_days': delay_days}
     return tasks_dict
+
+
+def tasks20_get_tasks_dict_stage():
+    """this function returns a dict with all the tasks2.0 migration
+
+    note that some tasks may be missing - these are simply not migrated
+    """
+    tasks_migration_array = [
+    {
+      "task_id": "3",
+      "catgory": "1",
+      "position": 0,
+      "delay_days": 1
+    },
+    {
+      "task_id": "4",
+      "catgory": "1",
+      "position": 1,
+      "delay_days": 1
+    },
+    {
+      "task_id": "5",
+      "catgory": "1",
+      "position": 2,
+      "delay_days": 1
+    },
+    {
+      "task_id": "6",
+      "catgory": "1",
+      "position": 3,
+      "delay_days": 1
+    },
+    {
+      "task_id": "7",
+      "catgory": "1",
+      "position": 4,
+      "delay_days": 1
+    },
+    {
+      "task_id": "13",
+      "catgory": "1",
+      "position": 5,
+      "delay_days": 1
+    }]
+
+    tasks_dict = {}
+    for item in tasks_migration_array:
+        task_id = item['task_id']
+        cat_id = item['catgory']
+        position = item['position']
+        delay_days = item['delay_days']
+
+        tasks_dict[task_id] = {'cat_id': cat_id, 'position': position, 'delay_days': delay_days}
+    return tasks_dict

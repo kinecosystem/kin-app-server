@@ -874,8 +874,11 @@ def get_next_task_delay_days(user_id, task_id):
 
 def task20_migrate_tasks():
     """migrate all the tasks from Sarit's list into task2 table"""
-    from .user import tasks20_get_tasks_dict
-    tasks_to_migrate_dict = tasks20_get_tasks_dict()
+    from .user import tasks20_get_tasks_dict, tasks20_get_tasks_dict_stage
+    if config.DEBUG:
+        tasks_to_migrate_dict = tasks20_get_tasks_dict_stage()
+    else:
+        tasks_to_migrate_dict = tasks20_get_tasks_dict()
     for task_id in tasks_to_migrate_dict.keys():
         print('migrating task_id %s' % task_id)
         task20_migrate_task(task_id, tasks_to_migrate_dict[task_id]['cat_id'], tasks_to_migrate_dict[task_id]['position'], tasks_to_migrate_dict[task_id]['delay_days'])
