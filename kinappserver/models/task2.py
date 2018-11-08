@@ -918,7 +918,6 @@ def task20_migrate_task(task_id, cat_id, position, delay_days):
     task.excluded_country_codes = None
     task.task_start_date = None
     task.task_expiration_date = None
-    task.delay_days = res[12]
     task.min_client_version_ios = res[13]
     task.min_client_version_android = res[14]
     task.post_task_actions = res[15]
