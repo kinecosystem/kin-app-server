@@ -1278,9 +1278,10 @@ def task20_migrate_user_to_tasks2(user_id):
     all_cat_ids = get_all_cat_ids()
     uad = get_user_app_data(user_id)
 
-    if '0' in uad.completed_tasks_dict.keys():
-        log.info('task20_migrate_user_to_tasks2: user %s was already migrated' % user_id)
-        return
+    if uad.completed_tasks_dict:
+        if '0' in uad.completed_tasks_dict.keys():
+            log.info('task20_migrate_user_to_tasks2: user %s was already migrated' % user_id)
+            return
 
     # create a dict of arrays (for all currently existing categories)
     new_completed_tasks_dict = {}
