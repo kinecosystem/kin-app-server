@@ -462,25 +462,25 @@ def get_next_tasks_endpoint():
 def get_next_task_internal(cat_ids=[]):
     user_id, auth_token = extract_headers(request)
 
-    print('getting tasks for userid %s and source_ip: %s' % (user_id, get_source_ip(request)))
+    log.info('getting tasks for userid %s and source_ip: %s' % (user_id, get_source_ip(request)))
 
     # dont serve users with no phone number
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
-        print('blocking user %s from getting tasks: phone not verified' % user_id)
+        log.info('blocking user %s from getting tasks: phone not verified' % user_id)
         return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it blocked?
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
-        print('blocked user_id %s from getting tasks - blocked prefix' % user_id)
+        log.info('blocked user_id %s from getting tasks - blocked prefix' % user_id)
         return jsonify(tasks=[], reason='denied'),  status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it from a blocked country?
     if should_block_user_by_country_code(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
-        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
+        log.info('blocked user_id %s from getting tasks - blocked country code' % user_id)
         return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     if user_deactivated(user_id):
@@ -488,6 +488,7 @@ def get_next_task_internal(cat_ids=[]):
         return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     tasks_by_categories = get_next_tasks_for_user(user_id, get_source_ip(request), cat_ids)
+    log.info('Next tasks for user %s = %s (by category) ' % (user_id, tasks_by_categories))
 
     try:
         # handle unprintable chars...

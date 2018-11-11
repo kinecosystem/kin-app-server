@@ -238,11 +238,12 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
             continue
 
         if not can_client_support_task(os_type, app_ver, task):
+            log.info('next_task_id_for_category no available tasks for user_id %s in cat_id %s because task %s needs higher version' % (user_id, cat_id, task_id))
             send_please_upgrade_push(user_id)
             return []
 
         # return the first valid task:
-        log.info('next_task_id_for_category: returning task_ids %s for cat_id %s and user_id %s' % (task_id, cat_id, user_id))
+        log.info('next_task_id_for_category: returning task_id %s for cat_id %s and user_id %s' % (task_id, cat_id, user_id))
         return [task_id]
     # ...no tasks available
     log.info('next_task_id_for_category: no available tasks for user_id %s in cat_id %s' % (user_id, cat_id))
@@ -272,7 +273,9 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
             tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
             tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
 
-        log.info('tasks_per_category: no. tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category)))
+        log.info('tasks_per_category: num of tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category[cat_id])))
+        if len(tasks_per_category[cat_id]) > 0:
+            log.info('First task for user %s for cat_id %s: %s' % (user_id, cat_id, tasks_per_category[cat_id][0]))
 
     return tasks_per_category
 
@@ -339,7 +342,10 @@ def can_client_support_task(os_type, app_ver, task):
             return True
     elif LooseVersion(app_ver) >= LooseVersion(task.get('min_client_version_ios')):
             return True
-    log.info('can_client_support_task: task min version: %s, the client app version: %s' % (task.get('min_client_version_android'), app_ver))
+    if os_type == OS_ANDROID:
+        log.info('TASK NOT SUPPORTED android min version: %s, and the client app version: %s' % (task.get('min_client_version_android'), app_ver))
+    else:
+        log.info('TASK NOT SUPPORTED ios min version: %s, and the client app version: %s' % (task.get('min_client_version_ios'), app_ver))
     return False
 
 

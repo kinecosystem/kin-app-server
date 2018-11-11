@@ -102,7 +102,9 @@ def get_categories_extra_data():
     sys_config = get_system_config()
     if sys_config is None or sys_config.categories_extra_data is None:
         # return some hard coded default value
-        return {'default': {'title': 'Welcome to Kinit!', 'subtitle': 'Ready to earn some KINs?'}, 'no_tasks': {'title': 'Nothing to see here today', 'subtitle': 'Move along'}}
+        import emoji
+        sweet_text=emoji.emojize('Sweet! :love-you_gesture:')
+        return {'no_tasks': {'title': sweet_text, 'subtitle': 'You\'re all done for today'}, 'default': {'title': 'Hi there', 'subtitle': 'Here are today\'s activities'}}
     return sys_config.categories_extra_data
 
 
