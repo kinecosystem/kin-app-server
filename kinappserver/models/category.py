@@ -98,13 +98,12 @@ def get_cat_by_id(cat_id):
     return cat_json
 
 
-
 def list_categories(os_type):
     """returns a dict of categories that are supported by the specified platform (os_type)"""
     response = {}
     from sqlalchemy import or_
 
-    cats = Category.query.order_by(Category.category_id).filter(or_(Category.supported_os=='all', Category.supported_os==os_type)).all()
+    cats = Category.query.order_by(Category.category_id).filter(or_(Category.supported_os == 'all', Category.supported_os == os_type)).all()
     for cat in cats:
         response[cat.category_id] = {'id': cat.category_id, 'ui_data': cat.ui_data, 'title': cat.title,
                                      'supported_os': cat.supported_os}

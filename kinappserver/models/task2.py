@@ -6,6 +6,7 @@ import json
 from ast import literal_eval
 
 from kinappserver import db, config, app
+from kinappserver.models.task import Task
 from kinappserver.push import send_please_upgrade_push
 from kinappserver.utils import InvalidUsage, InternalError, seconds_to_local_nth_midnight, OS_ANDROID, OS_IOS, DEFAULT_MIN_CLIENT_VERSION, test_image, test_url, get_country_code_by_ip, increment_metric, commit_json_changed_to_orm
 from kinappserver.models import store_next_task_results_ts, get_next_task_results_ts, get_user_os_type, get_user_app_data, get_unenc_phone_number_by_user_id
@@ -595,12 +596,18 @@ def get_task_type(task_id):
 
 
 def get_task_details(task_id):
-    """return a dict with some of the given taskid's metadata"""
+    """return a dict with some of the given task id's metadata"""
     task = Task2.query.filter_by(task_id=task_id).first()
+    if task:
+        return {'title': task.title, 'desc': task.description, 'provider': task.provider_data}
+
+    # task wasn't found. Let's try the original task table that has not been migrated
+    task = Task.query.filter_by(task_id=task_id).first()
     if not task:
         log.error('cant find task with task_id %s. using default text' % task_id)
         return {'title': 'Delayed Kin', 'desc': '', 'provider': {"image_url": "https://cdn.kinitapp.com/brand_img/poll_logo_kin.png", "name": "Kinit Team"}}
-    return {'title': task.title, 'desc': task.description, 'provider': task.provider_data}
+
+    return {'title': task.title, 'desc': task.desc, 'provider': task.provider_data}
 
 
 def handle_task_results_resubmission(user_id, task_id):
