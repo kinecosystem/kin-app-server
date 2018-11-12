@@ -344,11 +344,13 @@ class Tester(unittest.TestCase):
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 403)
 
+
         print('total completed tasks for user_id: %s ' % models.count_completed_tasks(str(userid)))
         self.assertEqual(3, models.count_completed_tasks(str(userid)))
 
         print('count_immediate_tasks: %s' % models.count_immediate_tasks(str(userid)))
         print('get_next_tasks_for_user: %s' % models.get_next_tasks_for_user(str(userid)))
+        models.count_missing_txs()
 
         sleep(8)  # give the thread enough time to complete before the db connection is shutdown
 

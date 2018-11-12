@@ -258,6 +258,7 @@ def autoswitch_captcha(user_id):
     db.engine.execute(statement % user_id)
 
 
+
 def should_pass_captcha(user_id):
     """returns True iff the client must pass captcha test. older clients are auto-exempt"""
 
@@ -1249,9 +1250,8 @@ def re_register_all_users():
         from distutils.version import LooseVersion
         if user_app_data.app_ver is None or LooseVersion(user_app_data.app_ver) < LooseVersion('1.2.1'):
             log.info('skipping user with client ver %s' % user_app_data.app_ver)
-            continue
 
-        sleep(0.1)  # lets not choke the server
+        sleep(0.5)  # lets not choke the server. this can really hurt us if done too fast.
         send_push_register(user.user_id)
         counter = counter + 1
 

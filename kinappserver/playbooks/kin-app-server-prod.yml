@@ -11,7 +11,7 @@
     - weareinteractive.environment
     - Datadog.datadog
     - kin-app-server
-    - igor_mukhin.bash_aliases
+    #- ansible-roles.bash_aliases
 
   vars:
    kin_app_server_branch_name: master

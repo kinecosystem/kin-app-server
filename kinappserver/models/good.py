@@ -49,6 +49,7 @@ def create_good(offer_id, good_type, value, extra_info=None):
         good.created_at = now
         if extra_info:
             good.extra_info = extra_info
+
         db.session.add(good)
         db.session.commit()
     except Exception as e:
