@@ -203,14 +203,16 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
      if the next task_id requires an upgrade, send push and return an empty set
      if no task can be matched return an empty set
      """
-
-    completed_tasks_for_cat_id = completed_tasks.get(cat_id, None)
-    if not completed_tasks_for_cat_id:
+    if not completed_tasks:
         remove_previous_tasks_clause = ''
     else:
-        # oh man, this is ugly: convert ['0','1'] to ["\'0\'", ...] and then to "\'0\',\'1\',\'2\'"
-        completed_tasks_for_cat_id = ["\'%s\'" % id for id in completed_tasks_for_cat_id]
-        remove_previous_tasks_clause = '''and task2.task_id not in (%s)''' % (",".join(completed_tasks_for_cat_id))
+        completed_tasks_for_cat_id = completed_tasks.get(cat_id, None)
+        if not completed_tasks_for_cat_id:
+            remove_previous_tasks_clause = ''
+        else:
+            # oh man, this is ugly: convert ['0','1'] to ["\'0\'", ...] and then to "\'0\',\'1\',\'2\'"
+            completed_tasks_for_cat_id = ["\'%s\'" % id for id in completed_tasks_for_cat_id]
+            remove_previous_tasks_clause = '''and task2.task_id not in (%s)''' % (",".join(completed_tasks_for_cat_id))
     # get ALL the unsolved task_ids for the category
     stmt = '''SELECT task2.task_id FROM task2 WHERE task2.category_id='%s' %s order by task2.position, task2.task_start_date;''' % (cat_id, remove_previous_tasks_clause)
     res = db.engine.execute(stmt)
@@ -274,9 +276,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
             tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
             tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
 
-        log.info('tasks_per_category: num of tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category[cat_id])))
-        if len(tasks_per_category[cat_id]) > 0:
-            log.info('First task for user %s for cat_id %s: %s' % (user_id, cat_id, tasks_per_category[cat_id][0]))
+        #log.info('tasks_per_category: num of tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category[cat_id])))
 
     return tasks_per_category
 
