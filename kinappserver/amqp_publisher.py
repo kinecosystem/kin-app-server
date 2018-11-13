@@ -54,7 +54,7 @@ class AmqpPublisher:
             return False
 
         if env == '':
-            print('cant init publisher: no env provided')
+            log.error('cant init publisher: no env provided')
             return False
         else:
             print('initing publisher with %s env' % env)
@@ -109,7 +109,7 @@ class AmqpPublisher:
     def publish(self, routing_key, payload, retry=True):
         """Publish the given payload."""
         if not self.inited:
-            print('cant publish payload: lib not yet inited')
+            log.error('cant publish payload: lib not yet inited')
             return
 
         if self._channels_manager is None:

@@ -9,6 +9,7 @@ from kinappserver.views_common import get_source_ip, extract_headers, limit_to_a
 from flask_api import status
 import redis_lock
 import arrow
+import logging as log
 from distutils.version import LooseVersion
 from .utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
 
@@ -18,7 +19,7 @@ from kinappserver.stellar import create_account, send_kin, send_kin_with_payment
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
     sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
-    store_task_results, add_task, get_tasks_for_user, is_onboarded, \
+    store_task_results, add_task, is_onboarded, \
     set_onboarded, send_push_tx_completed, \
     create_tx, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
@@ -28,12 +29,13 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     handle_task_results_resubmission, reject_premature_results, get_address_by_userid,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users, user_exists, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
+    scan_for_deauthed_users, user_exists, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
-    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, \
+    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, get_next_tasks_for_user, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
-    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, captcha_solved, get_user_tz, autoswitch_captcha, automatically_raise_captcha_flag, \
-    should_force_update, is_update_available
+    update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, \
+    captcha_solved, get_user_tz, do_captcha_stuff, get_personalized_categories_header_message, get_categories_for_user, \
+    task20_migrate_user_to_tasks2, should_force_update, is_update_available, should_reject_out_of_order_tasks, count_immediate_tasks
 
 def get_payment_lock_name(user_id, task_id):
     """generate a user and task specific lock for payments."""
@@ -58,6 +60,9 @@ def app_launch():
     update_ip_address(user_id, get_source_ip(request))
 
     update_user_app_version(user_id, app_ver)
+
+    # enable this once tasks 2.0 is ready
+    task20_migrate_user_to_tasks2(user_id)
 
     # send auth token if needed
     send_push_auth_token(user_id)
@@ -251,7 +256,7 @@ def post_user_task_results_endpoint():
         send_push = payload.get('send_push', True)
         captcha_token = payload.get('captcha_token', None) #optional
         if None in (user_id, task_id, address, results):
-            print('failed input checks on /user/task/results')
+            log.error('failed input checks on /user/task/results')
             raise InvalidUsage('bad-request')
         # TODO more input checks here
     except Exception as e:
@@ -305,11 +310,17 @@ def post_user_task_results_endpoint():
             print('captcha succeeded: user %s' % user_id), status.HTTP_403_FORBIDDEN
             captcha_solved(user_id)
 
-    if reject_premature_results(user_id):
+    if reject_premature_results(user_id, task_id):
         # should never happen: the client sent the results too soon
         print('rejecting user %s task %s results' % (user_id, task_id))
         increment_metric('premature_task_results')
         return jsonify(status='error', reason='cooldown_enforced'), status.HTTP_403_FORBIDDEN
+
+    # TODO fix this once we decide how to do it. see discussion here: https://kinecosystem.slack.com/archives/GB6HMS7EE/p1540291140000100
+    #if should_reject_out_of_order_tasks(user_id, task_id, get_source_ip(request)):
+    #    print('rejecting user %s task %s results - out of order' % (user_id, task_id))
+    #    increment_metric('out-of-order-task')
+    #    return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
     delta = 0  # change in the total kin reward for this task
 
@@ -399,16 +410,15 @@ def post_user_task_results_endpoint():
         # create a redis lock to prevent multiple payments for the same user_id and task_id:
         if not redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id), expire=60).acquire(blocking=False):
             print('aborting payment - user %s currently being payed for task_id %s' % (user_id, task_id))
-            return jsonify(status='error', reason='already_compensating'), status.HTTP_400_BAD_REQUEST
+            return jsonify(status='error', info='already_compensating'), status.HTTP_400_BAD_REQUEST
 
-        memo = get_and_replace_next_task_memo(user_id)
-        autoswitch_captcha(user_id)  # changes captcha flag from 0 to 1 if 0
-        automatically_raise_captcha_flag(user_id)  # sets the captcha flag every so-many tasks
+        memo = get_and_replace_next_task_memo(user_id, task_id)
+        do_captcha_stuff(user_id) # raise captcha flag if needed
         split_payment(address, task_id, send_push, user_id, memo, delta)
 
     except Exception as e:
         print('exception: %s' % e)
-        print('failed to reward task %s at address %s' % (task_id, address))
+        log.error('failed to reward task %s at address %s' % (task_id, address))
 
     increment_metric('task_completed')
     return jsonify(status='ok', memo=str(memo))
@@ -430,7 +440,7 @@ def split_payment(address, task_id, send_push, user_id, memo, delta):
                 print('using payment service for user_id %s' % user_id)
                 use_payment_service = True
     except Exception as e:
-        print('cant determine whether to use the payment service for user_id %s. defaulting to no' % user_id)
+        log.error('cant determine whether to use the payment service for user_id %s. defaulting to no' % user_id)
 
     if use_payment_service:
         reward_address_for_task_internal_payment_service(address, task_id, send_push, user_id, memo, delta)
@@ -438,49 +448,76 @@ def split_payment(address, task_id, send_push, user_id, memo, delta):
         reward_and_push(address, task_id, send_push, user_id, memo, delta)
 
 
+@app.route('/user/category/<cat_id>/tasks', methods=['GET'])
+def get_next_task_for_categories_endpoint(cat_id):
+    return get_next_task_internal(cat_ids=[cat_id])
+
+
 @app.route('/user/tasks', methods=['GET'])
-def get_next_task():
-    """returns the current task for the user with the given id"""
+def get_next_tasks_endpoint():
+    """returns the next tasks for this user in all categories"""
+    return get_next_task_internal()
+
+
+def get_next_task_internal(cat_ids=[]):
     user_id, auth_token = extract_headers(request)
 
-    print('getting tasks for userid %s and source_ip: %s' % (user_id, get_source_ip(request)))
+    log.info('getting tasks for userid %s and source_ip: %s' % (user_id, get_source_ip(request)))
 
     # dont serve users with no phone number
     if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
-        print('blocking user %s from getting tasks: phone not verified' % user_id)
+        log.info('blocking user %s from getting tasks: phone not verified' % user_id)
         return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it blocked?
     if should_block_user_by_phone_prefix(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
-        print('blocked user_id %s from getting tasks - blocked prefix' % user_id)
+        log.info('blocked user_id %s from getting tasks - blocked prefix' % user_id)
         return jsonify(tasks=[], reason='denied'),  status.HTTP_403_FORBIDDEN
 
     # user has a verified phone number, but is it from a blocked country?
     if should_block_user_by_country_code(user_id):
         # send push with 8 hour cooldown and dont return tasks
         send_country_not_supported(user_id)
-        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
+        log.info('blocked user_id %s from getting tasks - blocked country code' % user_id)
         return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     if user_deactivated(user_id):
         print('user %s is deactivated. returning empty task array' % user_id)
         return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
-    tasks = get_tasks_for_user(user_id, get_source_ip(request))
-    if len(tasks) == 1:
-        tasks[0]['memo'] = get_next_task_memo(user_id)
+    tasks_by_categories = get_next_tasks_for_user(user_id, get_source_ip(request), cat_ids)
+    log.info('Next tasks for user %s = %s (by category) ' % (user_id, tasks_by_categories))
 
     try:
         # handle unprintable chars...
-        print('tasks returned for user %s: %s' % (user_id, [t['id'] for t in tasks]))
-        print('tasks for user %s: %s' % (user_id, tasks))
+        all_task_ids = []
+        for cat_id in tasks_by_categories.keys():
+            for task in tasks_by_categories[cat_id]:
+                all_task_ids.append(task['id'])
+        log.info('task_ids returned for user (for all cat_ids) %s: %s' % (user_id, all_task_ids))
+        #print('tasks for user %s: %s' % (user_id, tasks))
     except Exception as e:
-        print('cant print returned tasks for user %s' % user_id)
-        print(e)
+        log.error('cant print returned tasks for user %s. exception: %s' % (user_id, e))
 
-    return jsonify(tasks=tasks, show_captcha=should_pass_captcha(user_id), tz=str(get_user_tz(user_id)))
+    # if a specific cat_id was requested:
+    #   - undict the tasks
+    #   - add the number of available tasks
+    # otherwise (if all categories were requested):
+    #  order them by cat_id
+    from collections import OrderedDict
+    if len(cat_ids) == 1:
+        tasks_by_categories = tasks_by_categories[cat_ids[0]]
+        immediate_tasks_count = count_immediate_tasks(user_id, cat_ids[0])
+        log.info('immediate_tasks_count for cat_id %s: %s' % (cat_ids[0], immediate_tasks_count[cat_ids[0]]))
+        return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id), available_tasks_count=immediate_tasks_count[cat_ids[0]])
+    else:
+        # sort the categories by their numeric value
+        tasks_by_categories = {key: tasks_by_categories[key] for key in sorted(tasks_by_categories.keys(), key=float)}
+        return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id))
+
+
 
 
 @app.route('/user/transactions', methods=['GET'])
@@ -526,7 +563,7 @@ def get_transactions_api():
             detailed_txs = detailed_txs[:MAX_TXS_PER_USER]
 
     except Exception as e:
-        print('cant get txs for user')
+        log.error('cant get txs for user')
         print(e)
         return jsonify(status='error', txs=[])
 
@@ -556,7 +593,7 @@ def user_redeemed_api():
             redeemed_goods.append({**good, **get_offer_details(good['offer_id'])})
 
     except Exception as e:
-        print('cant get redeemed items for user')
+        log.error('cant get redeemed items for user')
         print(e)
 
     return jsonify(status='ok', redeemed=redeemed_goods)
@@ -733,11 +770,12 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
         raise InternalError('failed sending %s kins to %s' % (amount, public_address))
     finally:  # TODO dont do this if we fail with the tx
         if tx_hash and send_push:
-            try:
-                redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
-            except Exception as e:
-                print('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
             send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
+        try:
+            redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
+        except Exception as e:
+            log.error('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
+
 
 
 def reward_address_for_task_internal_payment_service(public_address, task_id, send_push, user_id, memo, delta=0):
@@ -911,11 +949,14 @@ def report_p2p_tx_api():
     else:
         raise InvalidUsage('failed to add p2ptx')
 
-
+TRUEX_CAT_ID = '2'
 @app.route('/truex/activity', methods=['GET'])
 def truex_activity_endpoint():
     """returns a truex activity for the requesting user, provided this user is allowed to get one now:
        meaning that her current task is of type truex and the submission time was met"""
+
+    #TODO at the moment this function assumes that the ONLY category to show truex is '2'. not great.
+    #TODO this will require a client change to ask for the next truex activity in a given category
     try:
         remote_ip = request.headers.get('X-Forwarded-For', None)
         user_id, auth_token = extract_headers(request)
@@ -934,7 +975,7 @@ def truex_activity_endpoint():
         increment_metric('rejected-on-auth')
         return jsonify(status='error', reason='auth-failed'), status.HTTP_400_BAD_REQUEST
 
-    activity = get_truex_activity(user_id, remote_ip, user_agent)
+    activity = get_truex_activity(user_id, TRUEX_CAT_ID, remote_ip, user_agent)
     if not activity:
         print('userid %s failed to get a truex activity' % user_id)
         return jsonify(status='error', reason='no_activity')
@@ -1022,10 +1063,9 @@ def truex_callback_endpoint():
         print('paying user %s for truex activity' % user_id)
         res = compensate_truex_activity(user_id)
         if not res:
-            print('failed to pay user %s for truex activity' % user_id)
+            log.error('failed to pay user %s for truex activity' % user_id)
 
-        autoswitch_captcha(user_id)  # changes captcha flag from 0 to 1 if 0
-        automatically_raise_captcha_flag(user_id)  # sets the captcha flag every so-many tasks
+        do_captcha_stuff(user_id)  # raise captcha flag if needed
     except Exception as e:
         print('unhandled exception in truex process. exception: %s' % e)
         return TRUEX_CALLBACK_RECOVERABLE_ERROR
@@ -1050,12 +1090,12 @@ def compensate_truex_activity(user_id):
         print('user %s deactivated. rejecting submission' % user_id)
         return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
-    if reject_premature_results(user_id):
+    if reject_premature_results(user_id, task_id):
         print('compensate_truex_activity: should never happen - premature task submission')
         return False
 
     # get the user's current task_id
-    tasks = get_tasks_for_user(user_id)
+    tasks = get_next_tasks_for_user(user_id, cat_ids=[TRUEX_CAT_ID])
     if len(tasks) == 0:
         print('compensate_truex_activity: should never happen - user doesnt have any tasks')
         return False
@@ -1069,22 +1109,17 @@ def compensate_truex_activity(user_id):
         # this task was already submitted - and compensated, so dont pay again for the same task.
         # this really shouldn't happen, but it could happen if the phone-number's history wasn't migrated to the new user.
         # lets copy the user's history and bring her up to date, and then return 200OK.
-        try:
-            #fix_user_task_history(user_id)
-            pass
-        except Exception as e:
-            print('failed to fix user_id %s history. e=%s' % (user_id, e))
         return True
 
     # store some fake results as this task doesn't have any
     if not store_task_results(user_id, task_id, [{'aid': '0', 'qid': '0'}]):
             raise InternalError('cant save results for user_id %s' % user_id)
     try:
-        memo = get_and_replace_next_task_memo(user_id)
+        memo = get_and_replace_next_task_memo(user_id, task_id)
         address = get_address_by_userid(user_id)
         reward_and_push(address, task_id, False, user_id, memo, delta=0)
     except Exception as e:
-        print('failed to reward truex task %s at address %s for user_id %s . exception: %s' % (task_id, address, user_id, e))
+        log.error('failed to reward truex task %s at address %s for user_id %s . exception: %s' % (task_id, address, user_id, e))
         raise(e)
 
     increment_metric('task_completed')
@@ -1140,7 +1175,7 @@ def email_backup_endpoint():
         print('email result: %s' % res)
         increment_metric('backup-email-sent-success')
     except Exception as e:
-        print('failed to sent backup email to %s. e:%s' % (to_address, e))
+        log.error('failed to sent backup email to %s. e:%s' % (to_address, e))
         increment_metric('backup-email-sent-failure')
     #TODO handle errors
 
@@ -1249,7 +1284,7 @@ def payment_service_callback_endpoint():
                     print('payment request for tx_hash: %s took %s seconds' % (tx_hash, request_duration_sec))
                     gauge_metric('payment-req-dur', request_duration_sec)
                 except Exception as e:
-                    print('failed to calculate payment request duration. e=%s' % e)
+                    log.error('failed to calculate payment request duration. e=%s' % e)
 
                 # slap the '1-kit' on the memo
                 memo = '1-kit-%s' % memo
@@ -1257,13 +1292,14 @@ def payment_service_callback_endpoint():
                 create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
                 increment_metric('payment-callback-success')
 
+                if tx_hash and send_push:
+                        send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
+
                 try:
                     redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
                 except Exception as e:
-                    print('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
+                    log.error('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
 
-                if tx_hash and send_push:
-                        send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
             else:
                 print('received failed tx from the payment service: %s' % payload)
                 #TODO implement some retry mechanism here
@@ -1274,9 +1310,20 @@ def payment_service_callback_endpoint():
     except Exception as e:
 
         increment_metric('payment-callback-error')
-        print('failed processing the payment service callback')
+        log.error('failed processing the payment service callback')
         print(e)
         return jsonify(status='error', reason='internal_error')
 
     return jsonify(status='ok')
 
+
+@app.route('/user/categories', methods=['GET'])
+def get_user_categories_endpoint():
+    """returns the list of categories for this user. this list contains user tailored data like the number of tasks in each category"""
+    user_id, auth_token = extract_headers(request)
+    # customize the message: count available tasks:
+    cats_for_user = get_categories_for_user(user_id)
+    # total the number of available tasks. if its zero, show a special message
+    message_type = 'no_tasks' if sum([cat['available_tasks_count'] for cat in cats_for_user]) == 0 else 'default'
+
+    return jsonify(status='ok', categories=cats_for_user, header_message=get_personalized_categories_header_message(user_id, message_type))

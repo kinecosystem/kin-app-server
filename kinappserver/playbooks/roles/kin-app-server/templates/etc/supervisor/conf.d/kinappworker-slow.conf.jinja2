@@ -1,5 +1,6 @@
 [program:kinappworker-slow]
 directory=/opt/kin-app-server/kinappserver
+command=rq worker kinappserver-{{deployment_env}}-slow --url redis://{{redis_endpoint}}:6379 --logging_level=INFO
 command=rq worker kinappserver-{{deployment_env}}-slow --url redis://{{redis_endpoint}}:6379 --logging_level INFO
 autostart=true
 autorestart=true

@@ -19,7 +19,8 @@ from kinappserver.stellar import create_account, send_kin, send_kin_with_payment
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
     sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
-    add_task, get_tasks_for_user, is_onboarded, \
+    add_task, is_onboarded, \
+    store_task_results, add_task, add_category, \
     set_onboarded, send_push_tx_completed, send_engagement_push, \
     create_tx, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
@@ -29,31 +30,18 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     reject_premature_results, get_address_by_userid, send_compensated_push,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_user_tx_report, get_user_goods_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    get_next_task_memo, scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
+    scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
-    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, fix_user_task_history, update_tx_ts, fix_user_completed_tasks, \
+    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
     blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, re_register_all_users, get_tx_totals, set_should_solve_captcha, add_task_to_completed_tasks, \
-    remove_task_from_completed_tasks, switch_task_ids, delete_task, block_user_from_truex_tasks, unblock_user_from_truex_tasks, set_update_available_below, set_force_update_below
+    remove_task_from_completed_tasks, switch_task_ids, delete_task, block_user_from_truex_tasks, unblock_user_from_truex_tasks, set_update_available_below, set_force_update_below, \
+    update_categories_extra_data, task20_migrate_tasks
 
 
 @app.route('/health', methods=['GET'])
 def get_health():
     """health endpoint"""
-    return jsonify(status='ok')
-
-
-@app.route('/user/tasks/fix', methods=['POST'])
-def fix_user_tasks_endpoint():
-    #TODO REMVOE THIS
-    '''temp endpoit to add txs for users with nissing txs'''
-    if not config.DEBUG:
-        limit_to_localhost()
-
-    payload = request.get_json(silent=True)
-
-    user_id = payload.get('user_id', None)
-    fix_user_completed_tasks(user_id)
     return jsonify(status='ok')
 
 
@@ -270,7 +258,7 @@ def compensate_user_api():
         raise InvalidUsage('invalid param')
     public_address = get_address_by_userid(user_id)
     if not public_address:
-        print('cant compensate user %s - no public address' % user_id)
+        log.error('cant compensate user %s - no public address' % user_id)
         return jsonify(status='error', reason='no_public_address')
 
     user_tx_task_ids = [tx.tx_info.get('task_id', '-1') for tx in list_user_transactions(user_id)]
@@ -427,7 +415,7 @@ def user_tx_report_endpoint():
         if user_id:
             UUID(user_id)
     except Exception as e:
-        print('cant generate tx report for user_id: %s ' % user_id)
+        log.error('cant generate tx report for user_id: %s ' % user_id)
         return jsonify(error='invalid_userid')
 
     if user_id:
@@ -467,7 +455,7 @@ def user_goods_report_endpoint():
         if user_id:
             UUID(user_id)
     except Exception as e:
-        print('cant generate tx report for user_id: %s ' % user_id)
+        log.error('cant generate tx report for user_id: %s ' % user_id)
         return jsonify(error='invalid_userid')
 
     if user_id:
@@ -507,7 +495,7 @@ def user_report_endpoint():
         if user_id:
             UUID(user_id)
     except Exception as e:
-        print('cant generate report for user_id: %s ' % user_id)
+        log.error('cant generate report for user_id: %s ' % user_id)
         return jsonify(error='invalid_userid')
 
     if user_id:
@@ -573,6 +561,7 @@ def skip_wait_endpoint():
     try:
         payload = request.get_json(silent=True)
         user_id = payload.get('user_id', None)
+        cat_id = payload.get('cat_id', None)
         next_ts = payload.get('next_ts', 1)  # optional
         if user_id is None:
             raise InvalidUsage('bad-request')
@@ -580,7 +569,7 @@ def skip_wait_endpoint():
         print(e)
         raise InvalidUsage('bad-request')
     else:
-        store_next_task_results_ts(user_id, next_ts)
+        store_next_task_results_ts(user_id, 'fake_task_id', next_ts, cat_id)
 
     increment_metric('skip-wait')
     return jsonify(status='ok')
@@ -604,6 +593,25 @@ def send_auth_token_api():
         send_push_auth_token(user_id, force_send=True)
 
     return jsonify(status='ok')
+
+
+@app.route('/category/add', methods=['POST'])
+def add_category_endpoint():
+    """used to add categories to the db"""
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    payload = request.get_json(silent=True)
+
+    try:
+        task = payload.get('category', None)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if add_category(task):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to add category')
 
 
 @app.route('/task/add', methods=['POST'])
@@ -699,10 +707,10 @@ def migrate_restored_user():
         restored_user_id = payload.get('restored_user_id', None)
         temp_user_id = payload.get('temp_user_id', None)
     except Exception as e:
-        print('failed to process migrate-restored-user')
+        log.error('failed to process migrate-restored-user')
 
     if not migrate_restored_user_data(temp_user_id, restored_user_id):
-        print('failed to migrate restored user data from %s to %s' % (temp_user_id, restored_user_id))
+        log.error('failed to migrate restored user data from %s to %s' % (temp_user_id, restored_user_id))
         return jsonify(status='error')
     else:
         send_push_register(restored_user_id)
@@ -751,7 +759,7 @@ def user_set_captcha_endpoint():
         user_ids = payload.get('user_ids')
         should_show = payload.get('set_captcha', 0)
     except Exception as e:
-        print('failed to process user-set-captcha')
+        log.error('failed to process user-set-captcha')
     else:
         for user_id in user_ids:
             print('user_set_captcha_endpoint: setting user_id %s to %s' % (user_id, should_show))
@@ -853,3 +861,26 @@ def system_versions_force_update_below_endpoint():
     app_version = payload.get('version', None)
     set_force_update_below(os_type, app_version)
     return jsonify(status='ok')
+
+
+@app.route('/system/categories/update-extra-data', methods=['POST'])
+def update_extra_data_endpoint():
+    if not config.DEBUG:
+        limit_to_acl()
+        limit_to_password()
+
+    payload = request.get_json(silent=True)
+    categories_extra_data = payload.get('categories_extra_data')
+    update_categories_extra_data(categories_extra_data)
+    return jsonify(status='ok')
+
+
+@app.route('/task/migrate', methods=['POST'])
+def migrate_tasks_to_task20():
+    if not config.DEBUG:
+        limit_to_acl()
+        limit_to_password()
+
+    task20_migrate_tasks()
+    return jsonify(status='ok')
+

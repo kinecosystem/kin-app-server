@@ -1,0 +1,101 @@
+- hosts: "{{ play_hosts | first }}"
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: true
+  roles:
+    - kin-app-server-cron
+
+- hosts: all
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: true
+  roles:
+    - weareinteractive.environment
+    - Datadog.datadog
+    - kin-app-server
+    - igor_mukhin.bash_aliases
+
+  vars:
+   kin_app_server_branch_name: master
+   deployment_env: prod
+   environment_config:
+     ENV: prod
+     STELLAR_ACCOUNT_SID: "{{ play_hosts.index(inventory_hostname) }}" # sets the host's index within the play
+   datadog_api_key: "{{ lookup('aws_ssm', '/config/prod/datadog/apikey' )}}"
+   datadog_config:
+     log_level: INFO
+     tags: "service:kin-app-server-prod"
+   debug: False
+   nginx_domain: api2.kinitapp.com
+   db_connstr: "postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"
+   redis_endpoint: 'kinit-app-prod-001.qugi0x.0001.use1.cache.amazonaws.com'
+   redis_port: 6379
+   eshu_username: admin
+   eshu_password: admin
+   eshu_exchange: eshu-exchange # this is postfixed in the code with 'beta/release'
+   eshu_queue: eshu-queue # this is postfixed in the code with 'beta/release'
+   eshu_virtual_host: kinapp
+   eshu_appid: kinapp
+   eshu_rabbit_address: eshu-rabbit-prod.kinitapp.com
+   stellar_timeout_sec: 30
+   stellar_initial_account_balance: 2 # = 20K txs, but 1.5 xlms are required for establishing trustline
+   stellar_network: 'Public Global Kin Ecosystem Network ; June 2018'
+   stellar_kin_issuer_address: GDF42M3IPERQCBLWFEZKQRK77JQ65SCKTU3CW36HZVCX7XX5A5QXZIVK
+   stellar_horizon_url: https://horizon-ecosystem.kininfrastructure.com
+   max_simultaneous_orders_per_user: 2
+   kms_key_aws_region: 'us-east-1'
+   phone_verification_enabled: True
+   phone_verification_required: True
+   p2p_transfers_enabled: False
+   p2p_min_tasks: 21
+   p2p_min_kin_amount: 20
+   p2p_max_kin_amount: 200
+   auth_token_send_interval_days: 1
+   auth_token_enforced: True
+   auth_token_enabled: True
+   blackhawk_purchases_enabled: True
+   blackhawk_critical_balance_threshold: 30 # no cards will be ordered when we reach this threshold
+   payment_service_url: 'http://prod.payments.kinitapp.com:4999'
+   api_server_url: 'https://api2.kinitapp.com'
+   use_payment_service_phone_number_prefix: '+'
+   use_payment_service_percent_of_users: 100
+   block_onboarding_android_version: 1.2.5
+   block_onboarding_ios_version: 0.0
+   blocked_phone_prefixes: "['+55']" # handle with care. for example: "['+55','+972']" . must be a valid python list as a string. getting it wrong will break the server at startup.
+   allowed_phone_prefixes: "['+1','+44','+972']"
+   blocked_country_codes: "['BR']"
+   truex_blacklisted_taskids: "['103']"
+   max_num_registrations_per_number: 10
+
+   bash_aliases:
+     - { alias: '_env', command: 'echo "kinappserver-prod"' }
+     - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
+     - { alias: '_grepworker-fast', command: 'cat /var/log/kinappworker_fast.err.log|grep '}
+     - { alias: '_grepworker-slow', command: 'cat /var/log/kinappworker_slow.err.log|grep '}
+     - { alias: '_log', command: 'cat /var/log/kinappserver.err.log' }
+     - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
+     - { alias: '_tailworker-fast', command: 'tail -f /var/log/kinappworker_fast.err.log -n 10' }
+     - { alias: '_tailworker-slow', command: 'tail -f /var/log/kinappworker_slow.err.log -n 10' }
+     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod" }
+
+
+
+
+
+
+# add aliases to non-sudo user
+- hosts: all
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: false
+  roles:
+    - igor_mukhin.bash_aliases
+
+  vars:
+   bash_aliases:
+     - { alias: '_env', command: 'echo "kinappserver-prod"' }
+     - { alias: '_grep', command: 'cat /var/log/kinappserver.err.log|grep '}
+     - { alias: '_grepworker-fast', command: 'cat /var/log/kinappworker_fast.err.log|grep '}
+     - { alias: '_grepworker-slow', command: 'cat /var/log/kinappworker_slow.err.log|grep '}
+     - { alias: '_log', command: 'cat /var/log/kinappserver.err.log' }
+     - { alias: '_tail', command: 'tail -f /var/log/kinappserver.err.log -n 10' }
+     - { alias: '_tailworker-fast', command: 'tail -f /var/log/kinappworker_fast.err.log -n 10' }
+     - { alias: '_tailworker-slow', command: 'tail -f /var/log/kinappworker_slow.err.log -n 10' }
+     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod" }

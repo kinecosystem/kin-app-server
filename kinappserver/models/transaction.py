@@ -1,5 +1,6 @@
 """The model for the Kin App Server."""
 import datetime
+import logging as log
 
 from sqlalchemy_utils import UUIDType
 from sqlalchemy import desc
@@ -44,9 +45,9 @@ def create_tx(tx_hash, user_id, remote_address, incoming_tx, amount, tx_info):
         db.session.add(tx)
         db.session.commit()
     except Exception as e:
-        print('cant add tx to db with id %s' % tx_hash)
+        log.error('cant add tx to db with id %s' % tx_hash)
     else:
-        print('created tx with txinfo: %s' % tx.tx_info)
+        log.info('created tx with txinfo: %s' % tx.tx_info)
 
 def count_transactions_by_minutes_ago(minutes_ago=1):
     """return the number of failed txs since minutes_ago"""
@@ -91,7 +92,7 @@ def get_user_tx_report(user_id):
             user_tx_report[tx.tx_hash] = {'amount': tx.amount, 'in': tx.incoming_tx, 'date': tx.update_at, 'info': tx.tx_info, 'address': tx.remote_address}
 
     except Exception as e:
-        print('caught exception in get_user_tx_report:%s' % e)
+        log.error('caught exception in get_user_tx_report:%s' % e)
     return user_tx_report
 
 

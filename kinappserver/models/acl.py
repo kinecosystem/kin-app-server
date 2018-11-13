@@ -1,5 +1,7 @@
 
 import datetime
+import logging as log
+
 from kinappserver import db
 
 

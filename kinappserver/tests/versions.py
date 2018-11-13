@@ -7,6 +7,9 @@ import unittest
 import kinappserver
 from kinappserver import db, stellar, models
 
+import logging as log
+log.getLogger().setLevel(log.INFO)
+
 
 USER_ID_HEADER = "X-USERID"
 
@@ -36,22 +39,22 @@ class Tester(unittest.TestCase):
         """test getting the balance"""
         print('testing versions...')
         task = {'min_client_version_ios': '0.1', 'min_client_version_android': '0.1'}
-        self.assertEqual(models.can_support_task("android", "0.4.1", task), True)
+        self.assertEqual(models.can_client_support_task("android", "0.4.1", task), True)
 
         task = {'min_client_version_ios': '0.1', 'min_client_version_android': '0.1'}
-        self.assertEqual(models.can_support_task("ios", "0.4.1", task), True)
+        self.assertEqual(models.can_client_support_task("ios", "0.4.1", task), True)
 
         task = {'min_client_version_ios': '1.1', 'min_client_version_android': '1.1'}
-        self.assertEqual(models.can_support_task("android", "0.4.1", task), False)
+        self.assertEqual(models.can_client_support_task("android", "0.4.1", task), False)
 
         task = {'min_client_version_ios': '1.   1', 'min_client_version_android': '1.1'}
-        self.assertEqual(models.can_support_task("ios", "0.4.1", task), False)
+        self.assertEqual(models.can_client_support_task("ios", "0.4.1", task), False)
 
         task = {'min_client_version_ios': '1.1', 'min_client_version_android': '1.1'}
-        self.assertEqual(models.can_support_task("android", "1.4.1", task), True)
+        self.assertEqual(models.can_client_support_task("android", "1.4.1", task), True)
 
         task = {'min_client_version_ios': '1.1', 'min_client_version_android': '1.1'}
-        self.assertEqual(models.can_support_task("ios", "1.4.1", task), True)
+        self.assertEqual(models.can_client_support_task("ios", "1.4.1", task), True)
         print('testing versions...done')
 
 

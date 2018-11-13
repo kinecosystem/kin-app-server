@@ -35,7 +35,7 @@ def extract_headers(request):
         user_id = request.headers.get('X-USERID')
         auth_token = request.headers.get('X-AUTH-TOKEN', None)
     except Exception as e:
-        print('cant extract user_id from header')
+        log.error('cant extract user_id from header')
         raise InvalidUsage('bad header')
     return user_id, auth_token
 

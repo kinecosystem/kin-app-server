@@ -15,7 +15,7 @@ def report_exceptions():
     try:
         num_exceptions = int(completed_process.stdout)
     except Exception as e:
-        print('failed to calculate num_exceptions from stdout %s. aborting' % completed_process.stdout)
+        log.error('failed to calculate num_exceptions from stdout %s. aborting' % completed_process.stdout)
         return False
 
     # compare against value in redis
@@ -23,7 +23,7 @@ def report_exceptions():
     try:
         previous_value = int(redis_con.get(redis_key))
     except Exception as e:
-        print('cant get previous value from reids. Exception %s. defaulting to 0' % e)
+        log.error('cant get previous value from reids. Exception %s. defaulting to 0' % e)
         previous_value = 0
 
     # evaluate

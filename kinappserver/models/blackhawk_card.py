@@ -1,4 +1,5 @@
 import arrow
+import logging as log
 
 from kinappserver import db
 from kinappserver.utils import InternalError
@@ -33,8 +34,7 @@ def create_bh_card(card_id, order_id, merchant_code, denomination):
         db.session.add(card)
         db.session.commit()
     except Exception as e:
-        print('failed to create a new blackhawk card with id: %s' % card_id)
-        print(e)
+        log.error('failed to create a new blackhawk card with id: %s. e:%s' % (card_id, e))
         raise InternalError('failed to create a new blackhawk card')
     else:
         return True
@@ -55,7 +55,7 @@ def set_processed_orders(card_ids):
         # TODO switch to _in
         card = BlackhawkCard.query.filter_by(card_id=card_id).first()
         if not card:
-            print('could not retrieve card id %s in db' % card_id)
+            log.error('could not retrieve card id %s in db' % card_id)
             return None
         card.processed = True
         db.session.add(card)

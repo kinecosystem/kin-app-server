@@ -1,5 +1,5 @@
 from kinappserver import db
-from sqlalchemy_utils import UUIDType
+import logging as log
 from kinappserver.utils import InvalidUsage, OS_ANDROID, OS_IOS
 from distutils.version import LooseVersion
 
@@ -18,14 +18,14 @@ def get_system_config():
     try:
         return db.session.query(SystemConfig).one()
     except Exception as e:
-        print('get_block_clients_below_version: cant find sysconfig in the db. returning default value')
+        log.warning('get_system_config: cant find sysconfig in the db. returning default value. e:%s' % e)
         return None
 
 
 def get_block_clients_below_version(os_type):
     sysconfig = get_system_config()
     if not sysconfig:
-        #print('cant find value for block-clients-below in the db. using default')
+        #log.error('cant find value for block-clients-below in the db. using default')
         return '0'
 
     if os_type == OS_ANDROID:
@@ -38,7 +38,7 @@ def get_block_clients_below_version(os_type):
 def update_available_below_version(os_type):
     sysconfig = get_system_config()
     if not sysconfig:
-        print('cant find value for update-available-below in the db. using default')
+        log.warning('cant find value for update-available-below in the db. using default')
         return '0'
 
     if os_type == OS_ANDROID:
@@ -78,7 +78,7 @@ def set_force_update_below(os_type, app_ver):
         sysconfig.block_clients_below_version_ios = app_ver
     db.session.add(sysconfig)
     db.session.commit()
-    print('set force-update-below for os_type %s to %s' % (os_type, app_ver))
+    log.info('set force-update-below for os_type %s to %s' % (os_type, app_ver))
 
 
 def set_update_available_below(os_type, app_ver):
@@ -95,4 +95,19 @@ def set_update_available_below(os_type, app_ver):
         sysconfig.update_available_below_version_ios = app_ver
     db.session.add(sysconfig)
     db.session.commit()
-    print('set update-available-below for os_type %s to %s' % (os_type, app_ver))
+    log.info('set update-available-below for os_type %s to %s' % (os_type, app_ver))
+
+
+def get_categories_extra_data():
+    sys_config = get_system_config()
+    if sys_config is None or sys_config.categories_extra_data is None:
+        # return some hard coded default value
+        import emoji
+        sweet_text=emoji.emojize('Sweet! :love-you_gesture:')
+        return {'no_tasks': {'title': sweet_text, 'subtitle': 'You\'re all done for today'}, 'default': {'title': 'Hi there', 'subtitle': 'Here are today\'s activities'}}
+    return sys_config.categories_extra_data
+
+
+def update_categories_extra_data(json_obj):
+    import json
+    db.engine.execute("update system_config set categories_extra_data=%s;", (json.dumps(json_obj),))

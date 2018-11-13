@@ -1,6 +1,7 @@
 from kinappserver import db
 from sqlalchemy_utils import UUIDType
 from kinappserver.utils import InvalidUsage
+import logging as log
 
 
 class TruexBlacklistedUser(db.Model):

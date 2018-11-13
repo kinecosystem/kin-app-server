@@ -8,6 +8,9 @@ import testing.postgresql
 import kinappserver
 from kinappserver import db
 
+import logging as log
+log.getLogger().setLevel(log.INFO)
+
 
 USER_ID_HEADER = "X-USERID"
 
@@ -36,14 +39,15 @@ class Tester(unittest.TestCase):
 
         # add a task
         task0 = {
-          'id': '0', 
+          'id': '0',
+            "cat_id": '0',
+            "position": 0,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
           'price': 1,
           'skip_image_test': True,
           'min_to_complete': 2,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
           'provider': 
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
@@ -64,14 +68,15 @@ class Tester(unittest.TestCase):
         }
 
         task1 = {
-          'id': '1', 
+          'id': '1',
+            "cat_id": '0',
+            "position": 1,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
           'price': 1,
           'skip_image_test': True,
           'min_to_complete': 2,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
           'provider': 
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
@@ -93,13 +98,14 @@ class Tester(unittest.TestCase):
 
         task2 = {
           'id': '2',
+            "cat_id": '0',
+            "position": 2,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
           'price': 1,
           'skip_image_test': True,
           'min_to_complete': 2,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
           'provider':
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},

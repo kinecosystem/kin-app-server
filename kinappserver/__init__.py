@@ -4,6 +4,8 @@ from flask import Flask
 from flask_cors import CORS
 import kin
 
+import logging as log
+
 from kinappserver.amqp_publisher import AmqpPublisher
 from stellar_base.network import NETWORKS
 from .encrypt import AESCipher
@@ -11,6 +13,9 @@ from .encrypt import AESCipher
 
 app = Flask(__name__)
 CORS(app)
+
+# set log level
+log.getLogger().setLevel(log.INFO)
 
 from flask_sqlalchemy import SQLAlchemy
 from kinappserver import config, ssm, stellar
@@ -21,11 +26,11 @@ increment_metric('server-starting')
 # get seeds, channels from aws ssm:
 base_seed, channel_seeds = ssm.get_stellar_credentials()
 if not base_seed:
-    print('could not get base seed - aborting')
+    log.error('could not get base seed - aborting')
     sys.exit(-1)
 
 if channel_seeds is None:
-    print('could not get channels seeds - aborting')
+    log.error('could not get channels seeds - aborting')
     sys.exit(-1)
 
 # init sdk:
@@ -36,7 +41,7 @@ from stellar_base.asset import Asset
 kin_asset = Asset('KIN', config.STELLAR_KIN_ISSUER_ADDRESS)
 
 if config.STELLAR_NETWORK != 'TESTNET':
-    print('starting the sdk in a private network')
+    log.info('starting the sdk in a private network')
     network = 'CUSTOM'
     NETWORKS[network] = config.STELLAR_NETWORK
 else:
@@ -51,9 +56,9 @@ app.kin_sdk = kin.SDK(secret_key=base_seed,
 
 # get (and print) the current balance for the account:
 from stellar_base.keypair import Keypair
-print('the current KIN balance on the base-seed: %s' % stellar.get_kin_balance(Keypair.from_seed(base_seed).address().decode()))
+log.info('the current KIN balance on the base-seed: %s' % stellar.get_kin_balance(Keypair.from_seed(base_seed).address().decode()))
 # get (and print) the current balance for the account:
-print('the current XLM balance on the base-seed: %s' % stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode()))
+log.info('the current XLM balance on the base-seed: %s' % stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode()))
 
 for channel in channel_seeds:
     address = Keypair.from_seed(channel).address().decode()
@@ -119,13 +124,13 @@ app.amqp_publisher_release = AmqpPublisher()
 if not app.amqp_publisher_beta.init_config('beta', config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE,
                                   config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD,
                                   config.ESHU_HEARTBEAT, config.ESHU_APPID, config.PUSH_TTL_SECS):
-    print('could not init beta amqppublisher')
+    log.error('could not init beta amqppublisher')
     sys.exit(-1)
 
 if not app.amqp_publisher_release.init_config('release', config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE,
                                   config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD,
                                   config.ESHU_HEARTBEAT, config.ESHU_APPID, config.PUSH_TTL_SECS):
-    print('could not init release amqppublisher')
+    log.error('could not init release amqppublisher')
     sys.exit(-1)
 
 # init truex credentials
@@ -133,14 +138,14 @@ config.TRUEX_APP_ID, config.TRUEX_PARTNER_HASH, config.TRUEX_CALLBACK_SECRET = s
 
 # useful prints:
 state = 'enabled' if config.PHONE_VERIFICATION_ENABLED else 'disabled'
-print('phone verification: %s' % state)
+log.info('phone verification: %s' % state)
 state = 'enabled' if config.AUTH_TOKEN_ENABLED else 'disabled'
-print('auth token enabled: %s' % state)
+log.info('auth token enabled: %s' % state)
 state = 'enabled' if config.AUTH_TOKEN_ENFORCED else 'disabled'
-print('auth token enforced: %s' % state)
+log.info('auth token enforced: %s' % state)
 state = 'enabled' if config.P2P_TRANSFERS_ENABLED else 'disabled'
-print('p2p transfers: %s' % state)
-print('replenish blackhawk cards enabled: %s' % config.BLACKHAWK_PURCHASES_ENABLED)
+log.info('p2p transfers: %s' % state)
+log.info('replenish blackhawk cards enabled: %s' % config.BLACKHAWK_PURCHASES_ENABLED)
 
 # get the firebase service-account from ssm
 service_account_file_path = ssm.write_service_account()

@@ -7,6 +7,8 @@ from kinappserver import config, utils, models
 from base64 import b64encode
 from hashlib import sha256, sha1
 
+import logging as log
+
 # work in progress #
 
 TRUEX_GET_ACTIVITY_URL = 'https://get.truex.com/v2'
@@ -24,21 +26,21 @@ def get_activity(user_id, remote_ip, user_agent, window_width=None, window_heigh
         network_user_id = models.get_truex_user_id(user_id)
 
         url = generate_truex_url(network_user_id, remote_ip, client_request_id, user_agent, window_width, window_height, screen_density)
-        print('truex get activity url: %s. network_user_id: %s' % (url, network_user_id))
+        log.info('truex get activity url: %s. network_user_id: %s' % (url, network_user_id))
         resp = requests.get(url)
         resp.raise_for_status()
     except Exception as e:
-        print('failed to get an activity from truex: %s' % e)
+        log.error('failed to get an activity from truex: %s' % e)
         return None
     else:
         # process the response:
         activities = resp.json()
         if len(activities) == 0:
             if remote_ip != HARDCODED_CLIENT_IP:
-                print('no activities returned for userid %s with remote_ip %s. re-trying with hardcoded ip...' % (user_id, remote_ip))
+                log.info('no activities returned for userid %s with remote_ip %s. re-trying with hardcoded ip...' % (user_id, remote_ip))
                 return get_activity(user_id, HARDCODED_CLIENT_IP, user_agent, window_width, window_height, screen_density, client_request_id)
             else:
-                print('cant get activity for userid %s with remote_ip: %s. bummer' % (user_id, remote_ip))
+                log.error('cant get activity for userid %s with remote_ip: %s. bummer' % (user_id, remote_ip))
                 return None
 
         # slap the network user_id onto the activity:
@@ -77,7 +79,7 @@ def generate_truex_url(network_user_id, remote_ip, client_request_id, user_agent
     try:
         url = TRUEX_GET_ACTIVITY_URL + '?%s' % urlencode(data)
     except Exception as e:
-        print('failed to encode truex request')
+        log.error('failed to encode truex request')
         return None
 
     return url
@@ -115,13 +117,14 @@ def verify_sig(request):
     gen_signature = sign_truex_attrs(request)
 
     if not gen_signature:
-        print('verify_truex: failed to sign the request')
+        log.error('verify_truex: failed to sign the request')
         return False
 
     if signature.encode('latin-1') != gen_signature:
-        print('verify_truex: the incoming request does not match the signature')
-        print('signature: %s' % signature)
-        print('gen_signature: %s' % gen_signature)
+        log.error('verify_truex: the incoming request does not match the signature')
+        log.error('signature: %s' % signature)
+        log.error('gen_signature: %s' % gen_signature)
+        log.error('gen_signature: %s' % gen_signature)
         return False
 
     return True

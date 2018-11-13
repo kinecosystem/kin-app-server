@@ -1,5 +1,6 @@
 """The model for the Kin App Server p2p transaction."""
 
+import logging as log
 from sqlalchemy_utils import UUIDType
 from sqlalchemy import desc
 import arrow
@@ -48,7 +49,7 @@ def create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, rec
         db.session.add(tx)
         db.session.commit()
     except Exception as e:
-        print('cant add p2ptx to db with id %s. e:%s' % (tx_hash, e))
+        log.error('cant add p2ptx to db with id %s. e:%s' % (tx_hash, e))
 
 
 def format_p2p_tx_dict(tx_hash, amount, format_for_receiver):
@@ -75,16 +76,16 @@ def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
         receiver_user_id = get_userid_by_address(receiver_address)
         sender_address = get_address_by_userid(sender_user_id)
         if None in (receiver_user_id, sender_address):
-            print('cant create p2p tx - cant get one of the following: receiver_user_id: %s, sender_address: %s' % (receiver_user_id, sender_address))
+            log.error('cant create p2p tx - cant get one of the following: receiver_user_id: %s, sender_address: %s' % (receiver_user_id, sender_address))
             return False
         create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, receiver_address, amount)
         # create a json object that mimics the one in the /transactions api
 
-        print('sending p2p-tx push message to user_id %s' % receiver_user_id)
+        log.info('sending p2p-tx push message to user_id %s' % receiver_user_id)
         from ..push import send_p2p_push
         send_p2p_push(receiver_user_id, amount, format_p2p_tx_dict(tx_hash, amount, True))
     except Exception as e:
-        print('failed to create a new p2p tx. exception: %s' % e)
+        log.error('failed to create a new p2p tx. exception: %s' % e)
         return False, None
     else:
         return True, format_p2p_tx_dict(tx_hash, amount, False)

@@ -8,6 +8,9 @@ import testing.postgresql
 import kinappserver
 from kinappserver import db
 
+import logging as log
+log.getLogger().setLevel(log.INFO)
+
 
 USER_ID_HEADER = "X-USERID"
 
@@ -34,16 +37,31 @@ class Tester(unittest.TestCase):
     def test_task_results_other_user(self):
         """test storting task reults"""
 
+        cat = {'id': '0',
+          'title': 'cat-title',
+               'supported_os': 'all',
+          'ui_data': {'color': "#123",
+                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         # add a task
         task0 = {
-          'id': '0', 
+          'id': '0',
+          'cat_id': '0',
+          'position': 0,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
           'price': 1,
           'skip_image_test': True,
           'min_to_complete': 2,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
           'provider': 
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
@@ -64,14 +82,15 @@ class Tester(unittest.TestCase):
         }
 
         task1 = {
-          'id': '1', 
+          'id': '1',
+            'cat_id': '0',
+            'position': 1,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
           'price': 1,
           'skip_image_test': True,
           'min_to_complete': 2,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
           'provider': 
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
@@ -93,13 +112,14 @@ class Tester(unittest.TestCase):
 
         task2 = {
           'id': '2',
+            'cat_id': '0',
+            'position': 2,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
           'price': 1,
           'skip_image_test': True,
           'min_to_complete': 2,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
           'provider':
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
@@ -192,9 +212,9 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         print('data: %s' % data)
         self.assertEqual(resp.status_code, 200)
-        print('next task id: %s' % data['tasks'][0]['id'])
-        print('next task start date: %s' % data['tasks'][0]['start_date'])
-        self.assertEqual(data['tasks'][0]['id'], '0')
+        print('next task id: %s' % data['tasks']['0'][0]['id'])
+        print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
+        self.assertEqual(data['tasks']['0'][0]['id'], '0')
 
         # send task results
         resp = self.app.post('/user/task/results',

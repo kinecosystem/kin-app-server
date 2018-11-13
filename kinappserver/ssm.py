@@ -1,6 +1,7 @@
 import json
 import os
 import ast
+import logging as log
 
 import boto3
 
@@ -23,7 +24,7 @@ def get_encrpytion_creds():
     encryption_key = get_ssm_parameter('/config/' + env + '/encryption/key', config.KMS_KEY_AWS_REGION)
     iv = bytes.fromhex(get_ssm_parameter('/config/' + env + '/encryption/iv', config.KMS_KEY_AWS_REGION)) # the iv is encoded into hex()
     if not encryption_key:
-        print('cant get encryption_creds')
+        log.error('cant get encryption_creds')
         raise InternalError('cant get encryption_creds')
 
     return encryption_key, iv
@@ -40,7 +41,7 @@ def get_truex_creds(force_prod=False):
     callback_secret = get_ssm_parameter('/config/' + env + '/truex/callback_secret', config.KMS_KEY_AWS_REGION)
     app_id = get_ssm_parameter('/config/' + env + '/truex/app_id', config.KMS_KEY_AWS_REGION)
     if None in (app_id, partner_hash, callback_secret):
-        print('cant get truex creds')
+        log.error('cant get truex creds')
         raise InternalError('cant get truex creds')
 
     return app_id, partner_hash, callback_secret
@@ -57,7 +58,7 @@ def get_stellar_credentials():
     channel_seeds = get_ssm_parameter('/config/' + env + '/stellar/account_sid_%s/channel-seeds' % account_sid, config.KMS_KEY_AWS_REGION)
 
     if base_seed is None:
-        print('cant get base_seed, aborting')
+        log.error('cant get base_seed, aborting')
         return None, None
 
     if not channel_seeds:
@@ -104,7 +105,7 @@ def get_ssm_parameter(param_name, kms_key_region):
         res = ssm_client.get_parameter(Name=param_name, WithDecryption=True)
         return res['Parameter']['Value']
     except Exception as e:
-        print('cant get secure value: %s from ssm' % param_name)
+        log.error('cant get secure value: %s from ssm' % param_name)
         print(e)
         return None
 

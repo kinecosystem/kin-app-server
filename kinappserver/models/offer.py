@@ -1,6 +1,6 @@
 from kinappserver import db, config
 from kinappserver.utils import InvalidUsage, test_image, OS_ANDROID, OS_IOS
-
+import logging as log
 
 class Offer(db.Model):
     """the Offer class represent a single offer"""
@@ -75,25 +75,25 @@ def add_offer(offer_json, set_active=False):
         image_url = offer_json['type_image_url']
         if image_url:
             if not test_image(image_url):
-                print('offer type_image_url - %s - could not be verified' % image_url)
+                log.error('offer type_image_url - %s - could not be verified' % image_url)
                 fail_flag = True
 
         image_url = offer_json['image_url']
         if image_url:
             if not test_image(image_url):
-                print('offer image_url - %s - could not be verified' % image_url)
+                log.error('offer image_url - %s - could not be verified' % image_url)
                 fail_flag = True
 
         image_url = offer_json['provider']['image_url']
         if image_url:
             if not test_image(image_url):
-                print('offer provider image_url - %s - could not be verified' % image_url)
+                log.error('offer provider image_url - %s - could not be verified' % image_url)
                 fail_flag = True
 
         if fail_flag:
-            print('could not ensure accessibility of all urls. refusing to add offer')
+            log.error('could not ensure accessibility of all urls. refusing to add offer')
             return False
-        print('done testing accessibility of offer urls')
+        log.info('done testing accessibility of offer urls')
 
     try:
         offer = Offer()
@@ -114,7 +114,7 @@ def add_offer(offer_json, set_active=False):
         db.session.commit()
     except Exception as e:
         print(e)
-        print('cant add offer to db with id %s' % offer_json['id'])
+        log.error('cant add offer to db with id %s' % offer_json['id'])
         return False
     else:
         if set_active:
@@ -150,7 +150,7 @@ def get_offers_for_user(user_id):
     filter_p2p = False
 
     if not config.P2P_TRANSFERS_ENABLED:
-        print('filter out p2p for all users as per config flag')
+        log.info('filter out p2p for all users as per config flag')
         filter_p2p = True
     else:
         # TODO remove this chunk of code when we go live on prod2.
@@ -159,16 +159,16 @@ def get_offers_for_user(user_id):
         except Exception as e:
             # race condition - the user's OS hasn't been written into the db yet, so
             # just dont show the p2p offer. yes its an ugly patch
-            print('filter p2p - cant get user os_type')
+            log.error('filter p2p - cant get user os_type. e:%s' % e)
             filter_p2p = True
         else:
             # try to get the user's version:
             client_version = get_user_app_data(user_id).app_ver
             if os_type == OS_IOS and LooseVersion(client_version) < LooseVersion('0.11.0'):
-                print('filter out p2p for old ios client %s' % client_version)
+                log.info('filter out p2p for old ios client %s' % client_version)
                 filter_p2p = True
             elif os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion('0.7.4'):
-                print('filter out p2p for old android client version %s' % client_version)
+                log.info('filter out p2p for old android client version %s' % client_version)
                 filter_p2p = True
 
     # filter the first p2p item if one exists:
@@ -191,7 +191,7 @@ def get_offers_for_user(user_id):
         os_type = get_user_os_type(user_id)
         offers_to_remove = []
     except Exception as e:
-        print('cant get app_ver or os_type - not filtering offers')
+        log.error('cant get app_ver or os_type - not filtering offers')
     else:
         # 2. collect offers that are not allowed for this os/app_ver
         for offer in redeemable_offers:
@@ -221,7 +221,7 @@ def get_offers_for_user(user_id):
     for offer in redeemable_offers:
         offers_json_array.append(offer_to_json(offer))
 
-    print('offers for user %s: %s' % (user_id, [o['id'] for o in offers_json_array]))
+    log.info('offers for user %s: %s' % (user_id, [o['id'] for o in offers_json_array]))
     return offers_json_array
 
 
@@ -229,7 +229,7 @@ def get_offer_details(offer_id):
     """return a dict with some of the given offerid's metadata"""
     offer = Offer.query.filter_by(offer_id=offer_id).first()
     if not offer:
-        print('cant find offer with id %s. using default text' % offer_id)
+        log.error('cant find offer with id %s. using default text' % offer_id)
         return {'title': 'unknown offer', 'desc': '', 'provider': {}}
 
     return {'title': offer.title, 'desc': offer.desc, 'provider': offer.provider_data}

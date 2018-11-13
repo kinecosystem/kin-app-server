@@ -1,4 +1,5 @@
 import arrow
+import logging as log
 
 from kinappserver import db, config, stellar, utils
 from kinappserver.utils import InternalError, increment_metric, generate_memo
@@ -39,7 +40,7 @@ def create_order(user_id, offer_id):
 
     # dont let users create too many simultaneous orders
     if len(get_orders_for_user(user_id)) >= int(config.MAX_SIMULTANEOUS_ORDERS_PER_USER):
-        print('rejecting users ofer - too many orders')
+        log.error('rejecting users ofer - too many orders')
         return None, utils.ERROR_ORDERS_COOLDOWN
 
     # get offer cost
@@ -54,7 +55,7 @@ def create_order(user_id, offer_id):
     # attempt to allocate a good for this order
     if not allocate_good(offer_id, order_id):
         # no good available to allocate. bummer
-        print('out of goods for offer_id: %s' % offer_id)
+        log.info('out of goods for offer_id: %s' % offer_id)
         return None, utils.ERROR_NO_GOODS
 
     try:
@@ -68,8 +69,7 @@ def create_order(user_id, offer_id):
         db.session.add(order)
         db.session.commit()
     except Exception as e:
-        print('failed to create a new order with id %s' % order_id)
-        print(e)
+        log.error('failed to create a new order with id %s. e: %s' % (order_id, e))
         raise InternalError('failed to create a new order')
     else:
         return str(order_id), None
@@ -120,12 +120,12 @@ def get_order_by_order_id(order_id):
 
     order = Order.query.filter_by(order_id=order_id).first()
     if not order:
-        print('no order with id: %s' % order_id)
+        log.warning('no order with id: %s' % order_id)
         return None
 
     # ensure the order isn't stale
     if (arrow.utcnow() - order.created_at).total_seconds() > config.ORDER_EXPIRATION_SECS:
-        print('order %s expired' % order_id)
+        log.warning('order %s expired' % order_id)
         return None
     return order
 
@@ -136,21 +136,21 @@ def process_order(user_id, tx_hash):
     goods = []
     res, tx_data = stellar.extract_tx_payment_data(tx_hash)
     if not res:
-        print('could not extract tx_data for tx_hash: %s' % tx_hash)
+        log.error('could not extract tx_data for tx_hash: %s' % tx_hash)
         return False, None
 
     # get the order from the db using the memo in the tx
     order = get_order_by_order_id(tx_data['memo'])
     if not order:
-        print('cant match tx order_id to any active orders')
+        log.error('cant match tx order_id to any active orders')
         return False, None
 
     # ensure the tx matches the order
     if tx_data['to_address'] != order.address:
-        print('tx address does not match offer address')
+        log.error('tx address does not match offer address')
         return False, None
     if int(tx_data['amount']) != order.kin_amount:
-        print('tx amount does not match offer amount')
+        log.error('tx amount does not match offer amount')
         return False, None
 
     # tx matched! document the tx in the db with a tx object
@@ -161,12 +161,12 @@ def process_order(user_id, tx_hash):
     if res:
         goods.append(good)
     else:
-        print('failed to finalize the good for tx_hash: %s' % tx_hash)
+        log.error('failed to finalize the good for tx_hash: %s' % tx_hash)
 
     # delete the order
     try:
         delete_order(order.order_id)
     except Exception as e:
-        print('failed to delete order %s' % order.order_id)
+        log.error('failed to delete order %s' % order.order_id)
 
     return True, goods

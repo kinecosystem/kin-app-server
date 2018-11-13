@@ -1,4 +1,5 @@
 import arrow
+import logging as log
 
 from kinappserver import db
 from kinappserver.utils import InternalError
@@ -37,8 +38,7 @@ def create_bh_offer(offer_id, merchant_code, merchant_template_id, batch_size, d
         db.session.add(offer)
         db.session.commit()
     except Exception as e:
-        print('failed to create a new blackhawk offer with id: %s' % offer)
-        print(e)
+        log.error('failed to create a new blackhawk offer with id: %s. e: %s' % (offer, e))
         raise InternalError('failed to create a new blackhawk offer')
     else:
         return True

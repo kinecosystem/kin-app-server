@@ -8,6 +8,9 @@ import testing.postgresql
 import kinappserver
 from kinappserver import db, models, blackhawk
 
+import logging as log
+log.getLogger().setLevel(log.INFO)
+
 
 USER_ID_HEADER = "X-USERID"
 

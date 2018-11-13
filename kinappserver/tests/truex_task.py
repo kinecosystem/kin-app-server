@@ -8,6 +8,9 @@ import testing.postgresql
 import kinappserver
 from kinappserver import db, models
 
+import logging as log
+log.getLogger().setLevel(log.INFO)
+
 
 USER_ID_HEADER = "X-USERID"
 X_FORWARD_FOR_HEADER = 'X-Forwarded-For'
@@ -34,13 +37,13 @@ class Tester(unittest.TestCase):
     def test_truex_task(self):
         """test storting and getting tasks"""
         task0 = {  'id': '0',
+                   'cat_id': '0', 'position': 0,
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'nottruex',
                   'price': 2000,
                   'skip_image_test': True,
                   'min_to_complete': 2,
-                  'start_date': '2013-05-11T21:23:58.970460+00:00',
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider': 
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
@@ -48,13 +51,13 @@ class Tester(unittest.TestCase):
             }
 
         task1 = {  'id': '1',
+                   'cat_id': '0', 'position': 1,
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'truex',
                   'price': 2000,
                   'skip_image_test': True,
                   'min_to_complete': 2,
-                  'start_date': '2013-05-11T21:23:58.970460+00:00',
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider':
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},
@@ -62,14 +65,15 @@ class Tester(unittest.TestCase):
             }
 
 
+
         task2 = {  'id': '2',
+                   'cat_id': '0', 'position': 2,
                   'title': 'do you know horses?',
                   'desc': 'horses_4_dummies',
                   'type': 'truex',
                   'price': 2000,
                   'skip_image_test': True,
                   'min_to_complete': 2,
-                  'start_date': '2013-05-11T21:23:58.970460+00:00',
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
                   'provider':
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},

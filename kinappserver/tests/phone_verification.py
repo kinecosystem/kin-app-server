@@ -7,6 +7,9 @@ import testing.postgresql
 import kinappserver
 from kinappserver import db, models
 
+import logging as log
+log.getLogger().setLevel(log.INFO)
+
 
 USER_ID_HEADER = "X-USERID"
 
@@ -27,6 +30,22 @@ class Tester(unittest.TestCase):
 
     def test_register_with_verification2(self):
         """test registration scenarios"""
+
+        cat = {'id': '0',
+          'title': 'cat-title',
+               'supported_os': 'all',
+           'skip_image_test': True,
+           'ui_data': {'color': "#123",
+                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
+                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
+
+        resp = self.app.post('/category/add',
+                            data=json.dumps({
+                            'category': cat}),
+                            headers={},
+                            content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
         userid = str(uuid.uuid4())
         resp = self.app.post('/user/register',
             data=json.dumps({
@@ -112,13 +131,14 @@ class Tester(unittest.TestCase):
 
         task0 = {
           'id': '0',
+          "cat_id": '0',
+          "position": 0,
           'title': 'do you know horses?',
           'desc': 'horses_4_dummies',
           'type': 'questionnaire',
           'price': 1,
           'min_to_complete': 2,
           'skip_image_test': True,
-          'start_date': '2013-05-11T21:23:58.970460+00:00',
           'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
           'provider':
             {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},

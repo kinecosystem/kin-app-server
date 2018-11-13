@@ -25,11 +25,11 @@ def send_kin(public_address, amount, memo=None):
 
     #  sanity:
     if public_address in (None, ''):
-        print('cant send kin to address: %s' % public_address)
+        log.error('cant send kin to address: %s' % public_address)
         return False, None
 
     if amount is None or amount < 1:
-        print('cant send kin amount: %s' % amount)
+        log.error('cant send kin amount: %s' % amount)
         return False, None
 
     print('sending kin to address: %s' % public_address) #TODO REMOVE
@@ -48,11 +48,11 @@ def send_kin_with_payment_service(public_address, amount, memo=None):
 
     #  sanity:
     if public_address in (None, ''):
-        print('cant send kin to address: %s' % public_address)
+        log.error('cant send kin to address: %s' % public_address)
         return False, None
 
     if amount is None or amount < 1:
-        print('cant send kin amount: %s' % amount)
+        log.error('cant send kin amount: %s' % amount)
         return False, None
 
     print('sending kin to address: %s' % public_address)
