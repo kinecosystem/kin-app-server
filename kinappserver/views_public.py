@@ -488,7 +488,7 @@ def get_next_task_internal(cat_ids=[]):
         return jsonify(tasks=[], reason='denied'), status.HTTP_403_FORBIDDEN
 
     tasks_by_categories = get_next_tasks_for_user(user_id, get_source_ip(request), cat_ids)
-    log.info('Next tasks for user %s = %s (by category) ' % (user_id, tasks_by_categories))
+    # log.info('Next tasks for user %s = %s (by category) ' % (user_id, tasks_by_categories))
 
     try:
         # handle unprintable chars...
