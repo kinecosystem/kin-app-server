@@ -32,7 +32,7 @@ def add_category(cat_json):
 
     #sanity
     supported_os = cat_json.get('supported_os', None)
-    if not supported_os or supported_os not in ['android', 'iOS', 'all']:
+    if not supported_os or supported_os not in ['android', 'iOS', 'all', 'none']:
         log.error('cant add category - missing or invalid supported_os field')
         raise InvalidUsage('cant add category - missing or invalid supported_os')
 
@@ -100,7 +100,8 @@ def get_cat_by_id(cat_id):
 
 def list_categories(os_type):
     """returns a dict of categories that are supported by the specified platform (os_type)"""
-    response = {}
+    from collections import OrderedDict
+    response = OrderedDict()
     from sqlalchemy import or_
 
     cats = Category.query.order_by(Category.category_id).filter(or_(Category.supported_os == 'all', Category.supported_os == os_type)).all()
@@ -112,7 +113,8 @@ def list_categories(os_type):
 
 def list_all_categories():
     """returns a dict of all the categories"""
-    response = {}
+    from collections import OrderedDict
+    response = OrderedDict()
     cats = Category.query.order_by(Category.category_id).all()
     for cat in cats:
         response[cat.category_id] = {'id': cat.category_id, 'ui_data': cat.ui_data, 'title': cat.title,
@@ -130,6 +132,7 @@ def get_categories_for_user(user_id):
     os_type = get_user_os_type(user_id)
 
     all_cats = list_categories(os_type)
+    log.info('all_cats for user %s with os_type %s: %s', user_id, os_type, all_cats)
 
     from .task2 import count_immediate_tasks
     immediate_tasks = count_immediate_tasks(user_id)
