@@ -7,7 +7,8 @@ from time import sleep
 import testing.postgresql
 
 import kinappserver
-from kinappserver import db, models
+from kinappserver import db, models, utils
+from kinit_client_validation_module.config import MOCK_B64_NONCE, MOCK_B64_TOKEN, NONCE_REDIS_KEY
 
 import logging as log
 log.getLogger().setLevel(log.INFO)
@@ -78,7 +79,7 @@ class Tester(unittest.TestCase):
                             'device_id': '234234',
                             'time_zone': '05:00',
                             'token': 'fake_token',
-                            'app_ver': '1.0'}),
+                            'app_ver': '1.4.3'}),
             headers={},
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -132,10 +133,14 @@ class Tester(unittest.TestCase):
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        # store a mocked token
+        utils.write_json_to_cache(NONCE_REDIS_KEY % str(userid),MOCK_B64_NONCE)
+        
+
         # create the first order (books item 1)
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offerid}),
+                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -145,10 +150,13 @@ class Tester(unittest.TestCase):
         orderid1 = data['order_id']
         print('order_id: %s' % orderid1)
 
+         # store a mocked token
+        utils.write_json_to_cache(NONCE_REDIS_KEY % str(userid),MOCK_B64_NONCE)
+
         # create another order for the same offer (books item 2)
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offerid}),
+                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -158,10 +166,14 @@ class Tester(unittest.TestCase):
         orderid2 = data['order_id']
         print('order_id: %s' % orderid2)
 
+         # store a mocked token
+        utils.write_json_to_cache(NONCE_REDIS_KEY % str(userid),MOCK_B64_NONCE)
+        
+
         # should fail as there are already 2 active orders
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offerid}),
+                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
@@ -170,14 +182,28 @@ class Tester(unittest.TestCase):
         print('sleeping 16 secs')
         sleep(16) # TODO read from config
         print('done! now trying to book a new order')
+        
+        # should fail no validation token
+        resp = self.app.post('/offer/book',
+                             data=json.dumps({
+                                 'id': offerid}),
+                             headers={USER_ID_HEADER: str(
+                                 userid)},
+                             content_type='application/json')
+        print(json.loads(resp.data))
+        self.assertEqual(resp.status_code, 400)
 
+         # store a mocked token
+        utils.write_json_to_cache(NONCE_REDIS_KEY % str(userid),MOCK_B64_NONCE)
+        
         # should succeed now
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offerid}),
+                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         print(json.loads(resp.data))
+        data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['status'], 'ok')
         self.assertNotEqual(data['order_id'], None)

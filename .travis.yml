@@ -5,7 +5,6 @@ language: python
 python:
 - '3.6'
 cache: pip
-
 install:
 - pip install -r kinappserver/requirements.txt
 - pip install -r kinappserver/requirements_dev.txt

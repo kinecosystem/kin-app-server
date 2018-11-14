@@ -10,9 +10,6 @@ import redis
 import json
 import random
 import arrow
-
-
-
 from kinappserver import config, app
 
 
@@ -371,3 +368,27 @@ def commit_json_changed_to_orm(obj_to_commit, changed_fields_list):
         flag_modified(obj_to_commit, field_name)
     db.session.add(obj_to_commit)
     db.session.commit()
+
+
+def is_valid_client(user_id, validation_token):
+
+    import kinit_client_validation_module as validation_module 
+    from kinappserver import config    
+    from .models.user import get_user_os_type, get_user_app_data
+    log.info('validating client')
+            
+    os_type = get_user_os_type(user_id)
+    apk_version = get_user_app_data(user_id).app_ver
+    
+    log.info('os_type: %s\napk_version: %s\APK_VERSION: %s' % (os_type, apk_version, validation_module.APK_VERSION))
+
+    if os_type == OS_ANDROID and apk_version >= validation_module.APK_VERSION:
+        log.info('REQUIRES VALIDATION')
+        if validation_token is None:
+            log.info("validation_token is None!")
+            return False
+
+        if not validation_module.validate_token(user_id,validation_token):
+            log.info("validation_token is invalid!")
+            return False
+    return True
