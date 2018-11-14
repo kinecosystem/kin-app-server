@@ -102,3 +102,9 @@ ENV/
 .mypy_cache/
 
 /.idea
+
+\.vscode/settings\.json
+
+Pipfile
+
+Pipfile\.lock

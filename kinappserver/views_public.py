@@ -835,7 +835,7 @@ def get_offers_api():
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting offers - blocked country code' % user_id)
         return jsonify(offers=[], status='error', reason='denied'),  status.HTTP_403_FORBIDDEN
-
+    
     return jsonify(offers=get_offers_for_user(user_id))
 
 

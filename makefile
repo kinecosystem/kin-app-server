@@ -8,6 +8,9 @@ install:
 install-travis:
 	sudo pip install . --upgrade
 
+install-cv-module:
+	ssh-agent bash -c 'ssh-add ~/.ssh/secret; pip install -e git+ssh://git@github.com/kinecosystem/kinit-client-validation-server-module.git#egg=kinit-client-validation-module'
+
 test:
 	export LC_ALL=C
 	# python kinappserver/tests/task_results_out_of_order.py # disabled until we decide how to handle this
