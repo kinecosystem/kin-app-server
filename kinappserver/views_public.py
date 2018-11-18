@@ -855,7 +855,8 @@ def book_offer_api():
         if None in (user_id, offer_id):
             raise InvalidUsage('no user_id or offer_id')
         if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
-            raise InvalidUsage('invalid payload')
+            if config.VALIDATION_ENABLED:
+                raise InvalidUsage('bad-request')
     except Exception as e:
         raise InvalidUsage('bad-request')
 

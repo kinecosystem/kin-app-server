@@ -375,20 +375,19 @@ def is_valid_client(user_id, validation_token):
     import kinit_client_validation_module as validation_module 
     from kinappserver import config    
     from .models.user import get_user_os_type, get_user_app_data
-    log.info('validating client')
             
     os_type = get_user_os_type(user_id)
     apk_version = get_user_app_data(user_id).app_ver
     
-    log.info('os_type: %s\napk_version: %s\APK_VERSION: %s' % (os_type, apk_version, validation_module.APK_VERSION))
+    log.info('user_id: %s  - os_type: %s - client apk_version: %s - VALIDATION_MIN_APK_VERSION: %s' % (user_id, os_type, apk_version, validation_module.VALIDATION_MIN_APK_VERSION))
 
-    if os_type == OS_ANDROID and apk_version >= validation_module.APK_VERSION:
-        log.info('REQUIRES VALIDATION')
+    if os_type == OS_ANDROID and apk_version >= validation_module.VALIDATION_MIN_APK_VERSION:
+        log.info('user_id: %s  - REQUIRES VALIDATION' % user_id)
         if validation_token is None:
-            log.info("validation_token is None!")
+            log.info("user_id: %s  - validation_token is None!" % user_id)
             return False
 
         if not validation_module.validate_token(user_id,validation_token):
-            log.info("validation_token is invalid!")
+            log.info("user_id: %s  - validation_token is invalid!" % user_id)
             return False
     return True
