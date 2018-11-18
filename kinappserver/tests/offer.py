@@ -307,7 +307,7 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # get the user's current offers - should have 4 offers - check that the price is ascending
+        # get the user's current offers - should have 5 offers - check that the price is ascending
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
@@ -328,28 +328,29 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # get the user's current offers - should have 3 offers
+        # get the user's current offers - should have 5 offers
         headers = {USER_ID_HEADER: userid}
         resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
         print(data)
         self.assertEqual(resp.status_code, 200)
 
-        self.assertEqual(len(data['offers']), 4)
+        self.assertEqual(len(data['offers']), 5)
 
-        # get the ios user's current offers - should have 3 offers
+        # get the ios user's current offers - should have 5 offers
         headers = {USER_ID_HEADER: ios_userid}
         resp = self.app.get('/user/offers', headers=headers)
         data = json.loads(resp.data)
         print(data)
         self.assertEqual(resp.status_code, 200)
 
-        self.assertEqual(len(data['offers']), 4)
+        self.assertEqual(len(data['offers']), 5)
 
         self.assertEqual((data['offers'][0]['price']), 50)
-        self.assertEqual((data['offers'][1]['price']), 100)
-        self.assertEqual((data['offers'][2]['price']), 800)
-        self.assertEqual((data['offers'][3]['price']), 2500) # ios task
+        self.assertEqual((data['offers'][1]['price']), 50)
+        self.assertEqual((data['offers'][2]['price']), 100)
+        self.assertEqual((data['offers'][3]['price']), 800)
+        self.assertEqual((data['offers'][4]['price']), 2500) # ios task
 
 
         

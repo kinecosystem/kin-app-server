@@ -196,9 +196,9 @@ def not_enought_kin(user_id, offer_id):
     log.info('user_id: %s - real balance: %s' % (user_id, income - spend))
 
     kin_cost = Offer.query.filter_by(offer_id=offer_id).first().kin_cost
-    log.info('user_id: %s - offer_id: %s, kin_cost: %s' % (offer_id,kin_cost))
+    log.info('user_id: %s - offer_id: %s, kin_cost: %s' % (user_id, offer_id,kin_cost))
     
-    return balance < kin_cost
+    return income - spend < kin_cost
 
 def goods_avilable(offer_id):
     """returns true if the given offer_id has avilable goods"""
