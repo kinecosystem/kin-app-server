@@ -131,8 +131,7 @@ def set_user_phone_number_endpoint():
             raise InvalidUsage('bad-request')
         
         if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
-            log.info('{} client is invalid'.format(user_id))
-            if config.VALIDATION_ENABLED:
+            if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
 
     except Exception as e:
@@ -855,7 +854,7 @@ def book_offer_api():
         if None in (user_id, offer_id):
             raise InvalidUsage('no user_id or offer_id')
         if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
-            if config.VALIDATION_ENABLED:
+            if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
     except Exception as e:
         raise InvalidUsage('bad-request')
