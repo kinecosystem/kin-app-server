@@ -18,6 +18,8 @@ class Offer(db.Model):
     provider_data = db.Column(db.JSON)
     min_client_version_ios = db.Column(db.String(80), nullable=True, primary_key=False)
     min_client_version_android = db.Column(db.String(80), nullable=True, primary_key=False)
+    unavailable_reason = None
+    cannot_buy_reason = None
 
     def __repr__(self):
         return '<offer_id: %s, offer_type: %s, title: %s, desc: %s, kin_cost: %s, is_active: %s, min_client_version_ios: %s, min_client_version_android: %s>' % \
@@ -49,6 +51,8 @@ def offer_to_json(offer):
     offer_json['price'] = offer.kin_cost
     offer_json['address'] = offer.address
     offer_json['provider'] = offer.provider_data
+    offer_json['unavailable_reason'] = offer.unavailable_reason
+    offer_json['cannot_buy_reason'] = offer.cannot_buy_reason
     return offer_json
 
 
@@ -131,20 +135,22 @@ def get_cost_and_address(offer_id):
 
 
 def get_offers_for_user(user_id):
-    """return the list of active offers for this user"""
+    """return the list of offers with there status for this user"""
     from distutils.version import LooseVersion
     all_offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
     
     # filter out offers with no goods
     redeemable_offers = []
-    from .good import goods_avilable
+    from .good import goods_avilable, not_enought_kin, max_goods_reached
     for offer in all_offers:
-        if goods_avilable(offer.offer_id):
-            redeemable_offers.append(offer)
-        else:
-            #print('filtering out un-redeemable offer-id: %s' % offer.offer_id)
-            pass
-
+        if not goods_avilable(offer.offer_id):
+            offer.unavailable_reason = 'Sold out Check back again soon'
+        elif not_enought_kin(user_id, offer.offer_id):
+            offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
+        elif max_goods_reached(user_id, offer.offer_id):
+            offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
+        redeemable_offers.append(offer)        
+    
     # filter out p2p for users with client versions that do not support it
     from .user import get_user_app_data, get_user_os_type
     filter_p2p = False

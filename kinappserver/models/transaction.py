@@ -104,3 +104,4 @@ def get_tx_totals():
     totals['from_public'] = db.engine.execute(prep_stat).scalar()
 
     return totals
+

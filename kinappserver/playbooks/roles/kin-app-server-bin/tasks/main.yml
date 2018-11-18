@@ -16,6 +16,13 @@
     name: /opt/kin-app-server
     state: latest
 
+
+- name: install the kinit-client-validation-server-module  from the local copy. force upgrade to take any changes.
+  pip: 
+    name: /opt/kinit-client-validation-server-module 
+    state: latest
+
+
 - name: restart supervisor
   supervisorctl:
     name: kinappserver

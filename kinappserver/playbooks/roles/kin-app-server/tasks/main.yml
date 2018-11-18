@@ -71,6 +71,11 @@
     force=yes
     version={{kin_app_server_branch_name}}
 
+- name: install the kinit-client-validation-server-module  from the local copy. force upgrade to take any changes.
+  pip: 
+    name: /opt/kinit-client-validation-server-module 
+    state: latest
+
 - name: pip install reqs
   pip:
     requirements: /opt/kin-app-server/kinappserver/requirements.txt 

@@ -129,6 +129,12 @@ def set_user_phone_number_endpoint():
         unverified_phone_number = payload.get('phone_number', None)  # only used in tests
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
+        
+        if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
+            log.info('{} client is invalid'.format(user_id))
+            if config.VALIDATION_ENABLED:
+                raise InvalidUsage('bad-request')
+
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
@@ -835,7 +841,7 @@ def get_offers_api():
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting offers - blocked country code' % user_id)
         return jsonify(offers=[], status='error', reason='denied'),  status.HTTP_403_FORBIDDEN
-
+    
     return jsonify(offers=get_offers_for_user(user_id))
 
 
@@ -847,7 +853,10 @@ def book_offer_api():
         user_id, auth_token = extract_headers(request)
         offer_id = payload.get('id', None)
         if None in (user_id, offer_id):
-            raise InvalidUsage('invalid payload')
+            raise InvalidUsage('no user_id or offer_id')
+        if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
+            if config.VALIDATION_ENABLED:
+                raise InvalidUsage('bad-request')
     except Exception as e:
         raise InvalidUsage('bad-request')
 
@@ -1327,3 +1336,19 @@ def get_user_categories_endpoint():
     message_type = 'no_tasks' if sum([cat['available_tasks_count'] for cat in cats_for_user]) == 0 else 'default'
 
     return jsonify(status='ok', categories=cats_for_user, header_message=get_personalized_categories_header_message(user_id, message_type))
+
+@app.route('/validation/get-nonce', methods=['GET'])
+def get_validation_nonce():
+    """ return nonce to the client """
+    import kinit_client_validation_module as validation_module
+    try:
+        user_id, auth_token = extract_headers(request)
+        if user_id is None:
+            raise InvalidUsage('bad-request')
+        if not user_exists(user_id):
+            print('get_nonce: user_id %s does not exist. aborting' % user_id)
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    return jsonify(nonce=validation_module.get_validation_nonce(user_id))
