@@ -220,7 +220,8 @@ class Tester(unittest.TestCase):
         print('next task id: %s' % data['tasks']['0'][0]['id'])
         print('next task start date: %s' % data['tasks']['0'][0]['start_date'])
         self.assertEqual(data['tasks']['0'][0]['id'], '0')
-
+        task_memo = data['tasks']['0'][0]['memo']
+        print('next task memo: %s' % task_memo)
 
         # get the user's current tasks for category 0
         headers = {USER_ID_HEADER: userid}
@@ -253,10 +254,12 @@ class Tester(unittest.TestCase):
                             }),
                             headers={USER_ID_HEADER: str(userid)},
                             content_type='application/json')
-        print('post task results response: %s' % json.loads(resp.data))
+        data = json.loads(resp.data)
+        print('post task results response: %s' % data)
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['memo'], task_memo)
 
-        sleep(8) # give the thread enough time to complete before the db connection is shutdown
+        sleep(8)  # give the thread enough time to complete before the db connection is shutdown
 
 
         print('count_immediate_tasks after first submission: %s' % models.count_immediate_tasks(str(userid)))

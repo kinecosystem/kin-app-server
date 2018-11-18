@@ -367,12 +367,11 @@ def get_user_country_code(user_id):
 
 def get_next_task_memo(user_id, cat_id):
     """returns the next memo for this user and cat_id"""
-    next_memo = None
     try:
-        userAppData = UserAppData.query.filter_by(user_id=user_id).first()
-        next_memo = userAppData.next_task_memo_dict.get(cat_id, None)
+        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
+        next_memo = user_app_data.next_task_memo_dict.get(cat_id, None)
         if next_memo is None:  # set a value
-            return get_and_replace_next_task_memo(user_id, task_id='fake_task_id', cat_id=cat_id)
+            return generate_and_save_next_task_memo(user_app_data, cat_id)
     except Exception as e:
         raise InvalidUsage('cant get next memo. exception:%s' % e)
     else:
@@ -380,19 +379,30 @@ def get_next_task_memo(user_id, cat_id):
 
 
 def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
-    """return the next memo for this user and replace it with another"""
+    """return the memo for this user and replace it with another"""
     try:
-        next_memo = generate_memo()
+        memo = None
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
         from .task2 import get_cat_id_for_task_id
         cat_id = cat_id if cat_id else get_cat_id_for_task_id(task_id)
-        user_app_data.next_task_memo_dict[cat_id] = next_memo
-        commit_json_changed_to_orm(user_app_data, ['next_task_memo_dict'])
+        if user_app_data.next_task_memo_dict[cat_id]:
+            memo = user_app_data.next_task_memo_dict[cat_id]
+
+        generate_and_save_next_task_memo(user_app_data, cat_id)
+
     except Exception as e:
         print(e)
         raise InvalidUsage('cant set next memo')
-    else:
-        return next_memo
+
+    return memo
+
+
+def generate_and_save_next_task_memo(user_app_data, cat_id):
+    """generate a new memo and save it"""
+    next_memo = generate_memo()
+    user_app_data.next_task_memo_dict[cat_id] = next_memo
+    commit_json_changed_to_orm(user_app_data, ['next_task_memo_dict'])
+    return next_memo
 
 
 def list_all_users_app_data():

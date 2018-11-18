@@ -1124,7 +1124,7 @@ def compensate_truex_activity(user_id):
     if not store_task_results(user_id, task_id, [{'aid': '0', 'qid': '0'}]):
             raise InternalError('cant save results for user_id %s' % user_id)
     try:
-        memo = get_and_replace_next_task_memo(user_id, task_id)
+        memo = get_and_replace_next_task_memo(user_id, task_id, TRUEX_CAT_ID)
         address = get_address_by_userid(user_id)
         reward_and_push(address, task_id, False, user_id, memo, delta=0)
     except Exception as e:
