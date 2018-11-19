@@ -8,6 +8,7 @@ import testing.postgresql
 
 import kinappserver
 from kinappserver import db, models, utils
+from kinappserver.config import SERVERSIDE_CLIENT_VALIDATION_ENABLED
 from kinit_client_validation_module.config import MOCK_B64_NONCE, MOCK_B64_TOKEN, NONCE_REDIS_KEY
 
 import logging as log
@@ -45,7 +46,7 @@ class Tester(unittest.TestCase):
                   'title': 'offer_title',
                   'desc': 'offer_desc',
                   'image_url': 'image_url',
-                  'price': 800,
+                  'price': 0,
                   'address': 'the address',
                   'skip_image_test': True,
                   'provider': 
@@ -183,7 +184,7 @@ class Tester(unittest.TestCase):
         sleep(16) # TODO read from config
         print('done! now trying to book a new order')
         
-        # should fail no validation token
+        # should fail if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED is True -  no validation token
         resp = self.app.post('/offer/book',
                              data=json.dumps({
                                  'id': offerid}),
@@ -191,7 +192,10 @@ class Tester(unittest.TestCase):
                                  userid)},
                              content_type='application/json')
         print(json.loads(resp.data))
-        self.assertEqual(resp.status_code, 400)
+        if SERVERSIDE_CLIENT_VALIDATION_ENABLED:
+            self.assertEqual(resp.status_code, 400)
+        else:
+            self.assertEqual(resp.status_code, 200)
 
          # store a mocked token
         utils.write_json_to_cache(NONCE_REDIS_KEY % str(userid),MOCK_B64_NONCE)

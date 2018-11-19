@@ -847,6 +847,7 @@ def get_offers_api():
 @app.route('/offer/book', methods=['POST'])
 def book_offer_api():
     """books an offer by a user"""
+    from .models.good import not_enought_kin, max_goods_reached
     payload = request.get_json(silent=True)
     try:
         user_id, auth_token = extract_headers(request)
@@ -856,8 +857,13 @@ def book_offer_api():
         if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
             if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
+        if not_enought_kin(user_id, offer_id):
+            raise InvalidUsage('not_enought_kin')
+        if max_goods_reached(user_id, offer_id):
+            raise InvalidUsage('max_goods_reached')
     except Exception as e:
-        raise InvalidUsage('bad-request')
+        log.error(e)
+        raise e
 
     if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
         print('user %s is not authenticated. rejecting book request' % user_id)
