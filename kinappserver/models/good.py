@@ -197,9 +197,9 @@ def not_enought_kin(user_id, offer_id):
     """return true if user has not enoguth kin earned for that offer"""
     
     # calculates user balance
-    spend = db.engine.execute("select sum(amount) as total from public.transaction where user_id='%s' and incoming_tx = true;" % user_id).first()['total'] or 0
+    spend = db.engine.execute("select sum(amount) as total from public.transaction where user_id in (select user_id from public.user where enc_phone_number=(select enc_phone_number from public.user where user_id='%s') and incoming_tx = true);" % user_id).first()['total'] or 0
 
-    income = db.engine.execute("select sum(amount) as total from public.transaction where user_id='%s' and incoming_tx = false;" % user_id).first()['total'] or 0
+    income = db.engine.execute("select sum(amount) as total from public.transaction where user_id in (select user_id from public.user where enc_phone_number=(select enc_phone_number from public.user where user_id='%s') and incoming_tx = false);" % user_id).first()['total'] or 0
 
     log.info('user_id: %s - real balance: %s' % (user_id, income - spend))
 
