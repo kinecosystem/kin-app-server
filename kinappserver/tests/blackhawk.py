@@ -41,11 +41,11 @@ class Tester(unittest.TestCase):
         # print(merchants_data)
 
 
-        merchant_data = blackhawk.get_merchant_api('1776b2e7ad2da09dfa2b1c2b6af20cd3', 813)
-        merchant_data = str(merchant_data).encode('utf-8').strip()
-        print(merchant_data)
+        # merchant_data = blackhawk.get_merchant_api('1776b2e7ad2da09dfa2b1c2b6af20cd3', 813)
+        # merchant_data = str(merchant_data).encode('utf-8').strip()
+        # print(merchant_data)
 
-        return
+        # return
 
         resp = self.app.post('/blackhawk/creds/init',
                             data=json.dumps({

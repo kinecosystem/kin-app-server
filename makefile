@@ -25,7 +25,6 @@ test:
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/auth_token.py
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/phone_verification.py
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/phone_verification_2.py
-	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/three_redeems_in_a_row.py
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/balance.py
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/versions.py
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/old_client_new_task.py
@@ -46,8 +45,9 @@ test:
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/utils_test.py
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/phone_verification_blacklisted_phone.py
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/blacklisted_phone_numbers.py
-	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/book_and_redeem_multiple.py
 	python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/task_results_resubmission_other_user.py
+	# python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/book_and_redeem_multiple.py 
+	# python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/three_redeems_in_a_row.py
 	# python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/task_results_out_of_order.py 
 	# python -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/onboarding.py
 all:
