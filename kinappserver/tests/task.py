@@ -60,7 +60,7 @@ class Tester(unittest.TestCase):
                   'type': 'questionnaire',
                   'position': 0,
                   'cat_id': '0',
-                  'price': 2000,
+                  'price': 2,
                   'min_to_complete': 2,
                   'skip_image_test': False, # test link-checking code
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],
@@ -158,7 +158,7 @@ class Tester(unittest.TestCase):
                   'type': 'quiz',
                   'position': 1,
                   'cat_id': '0',
-                  'price': 2000,
+                  'price': 2,
                   'min_to_complete': 2,
                   'skip_image_test': False,
                   'tags': ['music',  'crypto', 'movies', 'kardashians', 'horses'],

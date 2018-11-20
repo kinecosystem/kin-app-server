@@ -68,7 +68,7 @@ class Tester(unittest.TestCase):
                  'title': 'do you know horses?',
                  'desc': 'horses_4_dummies',
                  'type': 'truex',
-                 'price': 2000,
+                 'price': 2,
                  'skip_image_test': True,
                  'min_to_complete': 2,
                  'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],

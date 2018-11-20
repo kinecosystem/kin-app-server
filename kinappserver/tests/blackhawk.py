@@ -36,14 +36,16 @@ class Tester(unittest.TestCase):
 
         # get merchant list and merchant data
 
-        #merchants_data = blackhawk.get_merchants_api('e67f735488d784131542ffa0091dd810')
-        #merchants_data = str(merchants_data).encode('utf-8').strip()
-        #print(merchants_data)
+        # merchants_data = blackhawk.get_merchants_api('1776b2e7ad2da09dfa2b1c2b6af20cd3')
+        # merchants_data = str(merchants_data).encode('utf-8').strip()
+        # print(merchants_data)
 
 
-        #merchant_data = blackhawk.get_merchant_api('e67f735488d784131542ffa0091dd810', 810)
-        #merchant_data = str(merchant_data).encode('utf-8').strip()
-        #print(merchant_data)
+        # merchant_data = blackhawk.get_merchant_api('1776b2e7ad2da09dfa2b1c2b6af20cd3', 813)
+        # merchant_data = str(merchant_data).encode('utf-8').strip()
+        # print(merchant_data)
+
+        # return
 
         resp = self.app.post('/blackhawk/creds/init',
                             data=json.dumps({
@@ -69,7 +71,7 @@ class Tester(unittest.TestCase):
                   'title': 'offer_title',
                   'desc': 'offer_desc',
                   'image_url': 'image_url',
-                  'price': 800,
+                  'price': 8,
                   'address': 'the address',
                   'skip_image_test': True,
                   'provider':

@@ -202,13 +202,19 @@ def get_offers_for_user(user_id):
         # 2. collect offers that are not allowed for this os/app_ver
         for offer in redeemable_offers:
             if os_type == OS_ANDROID:
-                if not offer.min_client_version_android:
+                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(config.GIFTCARDS_ANDROID_VERSION):
+                    # client does not support text on offers, remove it
+                    offers_to_remove.append(offer)
+                elif not offer.min_client_version_android:
                     # no minimum set, so dont remove
                     continue
                 elif LooseVersion(offer.min_client_version_android) > LooseVersion(client_version):
                     offers_to_remove.append(offer)
             else:  # ios
-                if not offer.min_client_version_ios:
+                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(config.GIFTCARDS_IOS_VERSION):
+                    # client does not support text on offers, remove it
+                    offers_to_remove.append(offer)
+                elif not offer.min_client_version_ios:
                     # no minimum set, so dont remove
                     continue
                 elif LooseVersion(offer.min_client_version_ios) > LooseVersion(client_version):
