@@ -4,7 +4,7 @@ from time import sleep
 import kin
 import requests
 import random
-
+import logging as log
 ASSET_NAME = 'KIN'
 
 
