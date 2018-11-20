@@ -40,7 +40,7 @@ class Tester(unittest.TestCase):
                   'title': 'offer_title',
                   'desc': 'offer_desc',
                   'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                  'price': 800,
+                  'price': 0,
                   'address': 'the address',
                   'provider': 
                     {'name': 'om-nom-nom-food', 'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'},

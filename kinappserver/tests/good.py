@@ -40,7 +40,7 @@ class Tester(unittest.TestCase):
                   'title': 'offer_title',
                   'desc': 'offer_desc',
                   'image_url': 'image_url',
-                  'price': 800,
+                  'price': 8,
                   'address': 'the address',
                   'skip_image_test': True,
                   'provider': 
