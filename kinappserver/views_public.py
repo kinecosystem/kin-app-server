@@ -857,10 +857,10 @@ def book_offer_api():
         if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
             if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
-        if not_enought_kin(user_id, offer_id):
-            raise InvalidUsage('not_enought_kin')
-        if max_goods_reached(user_id, offer_id):
-            raise InvalidUsage('max_goods_reached')
+        # if not_enought_kin(user_id, offer_id):
+        #     raise InvalidUsage('not_enought_kin')
+        # if max_goods_reached(user_id, offer_id):
+        #     raise InvalidUsage('max_goods_reached')
     except Exception as e:
         log.error(e)
         raise e
