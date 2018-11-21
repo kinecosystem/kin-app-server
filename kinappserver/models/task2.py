@@ -321,12 +321,12 @@ def should_skip_task(user_id, task_id, source_ip, country_code=None):
     try:
         # skip truex for iOS devices, non-american android
         if get_task_type(task_id) == TASK_TYPE_TRUEX:
-            if should_skip_truex_task(user_id, task_id, source_ip, country_code):
-                return True
+            # if should_skip_truex_task(user_id, task_id, source_ip, country_code):
+            return True
         else:  # not truex
             # skip special truex-related tasks for users that skipped the truex task
-            if task_id in literal_eval(config.TRUEX_BLACKLISTED_TASKIDS) and should_skip_truex_task(user_id, task_id, source_ip, country_code):
-                log.info('skipping blacklisted truex task %s' % task_id)
+            if task_id in literal_eval(config.TRUEX_BLACKLISTED_TASKIDS): # and should_skip_truex_task(user_id, task_id, source_ip, country_code):
+                # log.info('skipping blacklisted truex task %s' % task_id)
                 return True
 
     except Exception as e:
@@ -742,10 +742,10 @@ def count_immediate_tasks(user_id, only_cat_id=None):
     immediate_tasks_count = {}
     now = arrow.utcnow()
     user_app_data = get_user_app_data(user_id)
-    completed_tasks = user_app_data.completed_tasks_dict
-    os_type = get_user_os_type(user_id)
-    app_ver = user_app_data.app_ver
-    country_code = get_country_code_by_ip(user_app_data.ip_address)
+    # completed_tasks = user_app_data.completed_tasks_dict
+    # os_type = get_user_os_type(user_id)
+    # app_ver = user_app_data.app_ver
+    # country_code = get_country_code_by_ip(user_app_data.ip_address)
 
     user_next_tasks = get_next_tasks_for_user(user_id)
 
@@ -769,10 +769,11 @@ def count_immediate_tasks(user_id, only_cat_id=None):
             immediate_tasks_count[cat_id] = 0
         else:
             #  the first task in the category is guaranteed to be available - tested in the previous clause
-            filtered_unsolved_tasks_for_user_and_cat = get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_tasks.get(cat_id, []), os_type, app_ver, country_code, user_id)
-            immediate_tasks_count_for_cat_id = calculate_immediate_tasks(filtered_unsolved_tasks_for_user_and_cat)
+            # filtered_unsolved_tasks_for_user_and_cat = get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_tasks.get(cat_id, []), os_type, app_ver, country_code, user_id)
+            # immediate_tasks_count_for_cat_id = calculate_immediate_tasks(filtered_unsolved_tasks_for_user_and_cat)
             #  log.info('counted %s immediate tasks for cat_id %s' % (immediate_tasks_count_for_cat_id, cat_id))
-            immediate_tasks_count[cat_id] = immediate_tasks_count_for_cat_id
+            # immediate_tasks_count[cat_id] = immediate_tasks_count_for_cat_id
+            immediate_tasks_count[cat_id] = 1
 
     log.info('count_immediate_tasks for user_id %s - %s' % (user_id, immediate_tasks_count))
     return immediate_tasks_count
@@ -810,7 +811,7 @@ def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_fo
 
         # filter out truex tasks if the user is in the truex blacklist
         if should_skip_task(user_id, task_id, None, user_country_code):
-            log.info('skipping task %s - its either truex or truex-related' % task_id)
+            # log.info('skipping task %s - its either truex or truex-related' % task_id)
             skip_task = True
 
         # filter out tasks that dont match the client's version
