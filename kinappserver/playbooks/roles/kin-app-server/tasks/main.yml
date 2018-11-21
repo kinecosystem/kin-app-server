@@ -71,6 +71,15 @@
     force=yes
     version={{kin_app_server_branch_name}}
 
+- name: Clone the kinit-client-validation-server-module
+  git:
+    repo=git@github.com:kinecosystem/kinit-client-validation-server-module.git
+    dest=/opt/kinit-client-validation-server-module
+    accept_hostkey=true
+    force=yes
+    version={{kin_app_server_branch_name}}
+    key_file=/home/ubuntu/.ssh/id_rsa
+
 - name: install the kinit-client-validation-server-module  from the local copy. force upgrade to take any changes.
   pip: 
     name: /opt/kinit-client-validation-server-module 
@@ -90,11 +99,6 @@
     name: /opt/kin-app-server
     state: latest
 
-- name: delete previous supervisord config
-  file:
-    state: absent
-    path: /etc/supervisor/conf.d/kinappserver.conf
-
 - name: template the supervisord config file
   template:
     src: "{{ role_path }}/templates/etc/supervisor/conf.d/kinappserver.conf.jinja2"
@@ -113,17 +117,17 @@
     dest: /etc/supervisor/conf.d/kinappworker-slow.conf
     mode:
 
-- name: update supervisor
+- name: update supervisor:kinappworker
   supervisorctl:
     name: kinappserver
     state: restarted
 
-- name: update supervisor
+- name: update supervisor:kinappworker-fast
   supervisorctl:
     name: kinappworker-fast
     state: restarted
 
-- name: update supervisor
+- name: update supervisor:kinappworker-slow
   supervisorctl:
     name: kinappworker-slow
     state: restarted

@@ -10,12 +10,20 @@
   template:
     src: templates/kinappserver/config.py.jinja2
     dest: /opt/kin-app-server/kinappserver/config.py
-    
+
 - name: install the kin-app-server from the local copy. force upgrade to take any changes.
   pip: 
     name: /opt/kin-app-server
     state: latest
 
+- name: Clone the kinit-client-validation-server-module
+  git:
+    repo=git@github.com:kinecosystem/kinit-client-validation-server-module.git
+    dest=/opt/kinit-client-validation-server-module
+    accept_hostkey=true
+    force=yes
+    version={{kin_app_server_branch_name}}
+    key_file=/home/ubuntu/.ssh/id_rsa
 
 - name: install the kinit-client-validation-server-module  from the local copy. force upgrade to take any changes.
   pip: 
