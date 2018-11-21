@@ -179,20 +179,10 @@ def max_goods_reached(user_id, offer_id):
     s_time = int(round(time.time() * 1000))
     # get transactions count of this offer in the last {X} days
     date_days_from_now = (datetime.now() - timedelta(days=config.TIME_RANGE_IN_DAYS)).strftime("%Y-%m-%d")
-    count = db.engine.execute("\
-    select count(*) from public.transaction where user_id in  \
-    (select user_id from public.user where enc_phone_number= \
-    (select enc_phone_number from public.user where user_id='%s')) \
-    and tx_info->>'offer_id'='%s' and update_at > ('%s'::date);" % (user_id, offer_id, date_days_from_now)).first()['count']
-
-    log.info("\
-    select count(*) from public.transaction where user_id in  \
-    (select user_id from public.user where enc_phone_number= \
-    (select enc_phone_number from public.user where user_id='%s')) \
-    and tx_info->>'offer_id'='%s' and update_at > ('%s'::date);" % (user_id, offer_id, date_days_from_now))
+    count = db.engine.execute("select count(*) from public.transaction where user_id ='%s' and tx_info->>'offer_id'='%s' and update_at > ('%s'::date);" % (user_id, offer_id, date_days_from_now)).first()['count']
 
     e_time = int(round(time.time() * 1000))
-    log.info("user_id %s bought offer_id %s %d times in the past %d days -- ptime: %s" % (user_id, offer_id, count, config.TIME_RANGE_IN_DAYS, str(s_time - e_time)))
+    log.info("user_id %s bought offer_id %s %d times in the past %d days -- ptime: %s" % (user_id, offer_id, count, config.TIME_RANGE_IN_DAYS, str(e_time - s_time)))
     return count >= config.GIFTCARDS_PER_TIME_RANGE
 
 def not_enought_kin(user_id, offer_id):
@@ -200,9 +190,8 @@ def not_enought_kin(user_id, offer_id):
     import time
     s_time = int(round(time.time() * 1000))
     # calculates user balance
-    spend = db.engine.execute("select sum(amount) as total from public.transaction where user_id in (select user_id from public.user where enc_phone_number=(select enc_phone_number from public.user where user_id='%s')) and incoming_tx = true;" % user_id).first()['total'] or 0
-
-    income = db.engine.execute("select sum(amount) as total from public.transaction where user_id in (select user_id from public.user where enc_phone_number=(select enc_phone_number from public.user where user_id='%s')) and incoming_tx = false;" % user_id).first()['total'] or 0
+    spend = db.engine.execute("select sum(amount) as total from public.transaction where user_id ='%s' and incoming_tx = true;" % user_id).first()['total'] or 0
+    income = db.engine.execute("select sum(amount) as total from public.transaction where user_id ='%s' and incoming_tx = false;" % user_id).first()['total'] or 0
 
     log.info('user_id: %s - real balance: %s' % (user_id, income - spend))
 

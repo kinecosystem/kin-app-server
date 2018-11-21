@@ -231,7 +231,7 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
         # skip truex and truex-related tasks
         if should_skip_task(user_id, task_id, None, user_country_code):
             # we're skipping this task
-            log.info('skipping truex-related task_id %s for user %s' % (task_id, user_id))
+            # log.info('skipping truex-related task_id %s for user %s' % (task_id, user_id))
             continue
 
         # skip country-blocked tasks
