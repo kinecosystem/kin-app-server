@@ -124,18 +124,23 @@ def list_all_categories():
 
 def get_categories_for_user(user_id):
     """returns an array of categories tailored to this specific user"""
-
+    import time
     from .user import user_exists, get_user_os_type
     if not user_exists(user_id):
         raise InvalidUsage('no such user_id %s' % user_id)
 
     os_type = get_user_os_type(user_id)
 
+    s_time = int(round(time.time() * 1000))
     all_cats = list_categories(os_type)
-    log.info('all_cats for user %s with os_type %s: %s', user_id, os_type, all_cats)
-
+    e_time = int(round(time.time() * 1000))
+    log.info('all_cats for user %s with os_type %s: %s -- ptime: %s', user_id, os_type, all_cats, str(e_time-s_time))
     from .task2 import count_immediate_tasks
+
+    s_time = int(round(time.time() * 1000))
     immediate_tasks = count_immediate_tasks(user_id)
+    e_time = int(round(time.time() * 1000))
+    log.info('count_immediate_tasks ptime for user_id %s is: %s', user_id, str(e_time-s_time))
     for cat_id in all_cats.keys():
         all_cats[cat_id]['available_tasks_count'] = immediate_tasks[cat_id]
 
