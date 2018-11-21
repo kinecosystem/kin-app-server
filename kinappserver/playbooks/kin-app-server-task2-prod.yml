@@ -39,7 +39,7 @@
    stellar_initial_account_balance: 2 # = 20K txs, but 1.5 xlms are required for establishing trustline
    stellar_network: 'Public Global Kin Ecosystem Network ; June 2018'
    stellar_kin_issuer_address: GDF42M3IPERQCBLWFEZKQRK77JQ65SCKTU3CW36HZVCX7XX5A5QXZIVK
-   stellar_horizon_url: http://horizon-ecosystem-c5dc-298387387.us-east-1.elb.amazonaws.com
+   stellar_horizon_url: https://horizon-ecosystem.kininfrastructure.com
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: True
