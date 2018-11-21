@@ -3,6 +3,7 @@ import logging as log
 from kinappserver import db
 from kinappserver.utils import InternalError
 from sqlalchemy_utils import UUIDType, ArrowType
+from kinappserver import config
 
 from .offer import Offer
 
@@ -80,7 +81,7 @@ def list_inventory():
 def count_total_goods(offer_id):
     offer_id = int(offer_id)  # sanitize input
     results = db.engine.execute("select count(sid) from good where good.offer_id=\'%s\';" % str(offer_id))  # safe
-    return(results.fetchone()[0])    
+    return(results.fetchone()[0])
 
 
 def count_available_goods(offer_id):
@@ -207,3 +208,27 @@ def get_user_goods_report(user_id):
     except Exception as e:
         log.error('caught exception in get_user_goods_report:%s' % e)
     return user_goods_report
+
+
+def max_goods_reached(user_id, offer_id):
+    """return true if user already reclaimed this offer in offers time period"""
+    from datetime import datetime, timedelta
+    # get transactions count of this offer in the last {X} days
+    date_days_from_now = (datetime.now() - timedelta(days=config.GIFTCARDS_TIME_RANGE_IN_DAYS)).strftime("%Y-%m-%d")
+    count = db.engine.execute("select count(*) from public.transaction where user_id in  \
+    (select user_id from public.user where enc_phone_number= \
+    (select enc_phone_number from public.user where user_id='%s')) \
+    and tx_info->>'offer_id'='%s' and update_at > ('%s'::date);" % (user_id, offer_id, date_days_from_now)).first()['count']
+    log.info("user_id %s bought offer_id %s %d times in the past %d days" % (user_id, offer_id, count, config.GIFTCARDS_TIME_RANGE_IN_DAYS))
+    return count >= config.GIFTCARDS_PER_TIME_RANGE
+
+
+def not_enough_kin(user_id, offer_id):
+    """return true if user has not enoguth kin earned for that offer"""
+    # calculates user balance
+    spend = db.engine.execute("select sum(amount) as total from public.transaction where user_id in (select user_id from public.user where enc_phone_number=(select enc_phone_number from public.user where user_id='%s')) and incoming_tx = true;" % user_id).first()['total'] or 0
+    income = db.engine.execute("select sum(amount) as total from public.transaction where user_id in (select user_id from public.user where enc_phone_number=(select enc_phone_number from public.user where user_id='%s')) and incoming_tx = false;" % user_id).first()['total'] or 0
+    log.info('user_id: %s - real balance: %s' % (user_id, income - spend))
+    kin_cost = Offer.query.filter_by(offer_id=offer_id).first().kin_cost
+    log.info('user_id: %s - offer_id: %s, kin_cost: %s' % (user_id, offer_id, kin_cost))
+    return income - spend < kin_cost

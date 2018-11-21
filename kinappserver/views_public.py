@@ -842,12 +842,17 @@ def get_offers_api():
 @app.route('/offer/book', methods=['POST'])
 def book_offer_api():
     """books an offer by a user"""
+    from .models.good import not_enough_kin, max_goods_reached
     payload = request.get_json(silent=True)
     try:
         user_id, auth_token = extract_headers(request)
         offer_id = payload.get('id', None)
         if None in (user_id, offer_id):
             raise InvalidUsage('invalid payload')
+        if not_enough_kin(user_id, offer_id):
+            raise InvalidUsage('not_enough_kin')
+        if max_goods_reached(user_id, offer_id):
+            raise InvalidUsage('max_goods_reached')
     except Exception as e:
         raise InvalidUsage('bad-request')
 
@@ -1327,3 +1332,19 @@ def get_user_categories_endpoint():
     message_type = 'no_tasks' if sum([cat['available_tasks_count'] for cat in cats_for_user]) == 0 else 'default'
 
     return jsonify(status='ok', categories=cats_for_user, header_message=get_personalized_categories_header_message(user_id, message_type))
+
+
+@app.route('/validation/get-nonce', methods=['GET'])
+def get_validation_nonce():
+    """ return nonce to the client """
+    try:
+        user_id, auth_token = extract_headers(request)
+        if user_id is None:
+            raise InvalidUsage('bad-request')
+        if not user_exists(user_id):
+            print('get_nonce: user_id %s does not exist. aborting' % user_id)
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    return jsonify(nonce='')

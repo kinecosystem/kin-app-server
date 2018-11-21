@@ -18,6 +18,8 @@ class Offer(db.Model):
     provider_data = db.Column(db.JSON)
     min_client_version_ios = db.Column(db.String(80), nullable=True, primary_key=False)
     min_client_version_android = db.Column(db.String(80), nullable=True, primary_key=False)
+    unavailable_reason = None
+    cannot_buy_reason = None
 
     def __repr__(self):
         return '<offer_id: %s, offer_type: %s, title: %s, desc: %s, kin_cost: %s, is_active: %s, min_client_version_ios: %s, min_client_version_android: %s>' % \
@@ -49,6 +51,8 @@ def offer_to_json(offer):
     offer_json['price'] = offer.kin_cost
     offer_json['address'] = offer.address
     offer_json['provider'] = offer.provider_data
+    offer_json['unavailable_reason'] = offer.unavailable_reason
+    offer_json['cannot_buy_reason'] = offer.cannot_buy_reason
     return offer_json
 
 
@@ -137,13 +141,16 @@ def get_offers_for_user(user_id):
     
     # filter out offers with no goods
     redeemable_offers = []
-    from .good import goods_avilable
+    from .good import goods_avilable, not_enough_kin, max_goods_reached
+
     for offer in all_offers:
-        if goods_avilable(offer.offer_id):
-            redeemable_offers.append(offer)
-        else:
-            #print('filtering out un-redeemable offer-id: %s' % offer.offer_id)
-            pass
+        if not goods_avilable(offer.offer_id):
+            offer.unavailable_reason = 'Sold out Check back again soon'
+        elif not_enough_kin(user_id, offer.offer_id):
+            offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
+        elif max_goods_reached(user_id, offer.offer_id):
+            offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
+        redeemable_offers.append(offer)
 
     # filter out p2p for users with client versions that do not support it
     from .user import get_user_app_data, get_user_os_type
@@ -196,13 +203,22 @@ def get_offers_for_user(user_id):
         # 2. collect offers that are not allowed for this os/app_ver
         for offer in redeemable_offers:
             if os_type == OS_ANDROID:
-                if not offer.min_client_version_android:
+                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(
+                        config.GIFTCARDS_ANDROID_VERSION):
+                    # client does not support text on offers, remove it
+                    offers_to_remove.append(offer)
+
+                elif not offer.min_client_version_android:
                     # no minimum set, so dont remove
                     continue
                 elif LooseVersion(offer.min_client_version_android) > LooseVersion(client_version):
                     offers_to_remove.append(offer)
             else:  # ios
-                if not offer.min_client_version_ios:
+                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(
+                        config.GIFTCARDS_IOS_VERSION):
+                    # client does not support text on offers, remove it
+                    offers_to_remove.append(offer)
+                elif not offer.min_client_version_ios:
                     # no minimum set, so dont remove
                     continue
                 elif LooseVersion(offer.min_client_version_ios) > LooseVersion(client_version):

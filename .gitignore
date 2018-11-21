@@ -108,3 +108,5 @@ ENV/
 Pipfile
 
 Pipfile\.lock
+
+dump\.rdb
