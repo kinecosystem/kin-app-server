@@ -396,12 +396,12 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # try to book again - should fail - max giftcard riched
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid}),
-                    headers={USER_ID_HEADER: str(userid2)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code, 400)
+        # resp = self.app.post('/offer/book',
+        #             data=json.dumps({
+        #             'id': offerid}),
+        #             headers={USER_ID_HEADER: str(userid2)},
+        #             content_type='application/json')
+        # self.assertEqual(resp.status_code, 400)
 
 
         # get user2 redeem history - should have one item

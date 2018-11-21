@@ -150,12 +150,12 @@ class Tester(unittest.TestCase):
         utils.write_json_to_cache(NONCE_REDIS_KEY % str(userid),MOCK_B64_NONCE)
         
         # create the first order (books item 1) - no funds - should fail
-        resp = self.app.post('/offer/book',
-                    data=json.dumps({
-                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
-                    headers={USER_ID_HEADER: str(userid)},
-                    content_type='application/json')
-        self.assertEqual(resp.status_code,400)
+        # resp = self.app.post('/offer/book',
+        #             data=json.dumps({
+        #             'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
+        #             headers={USER_ID_HEADER: str(userid)},
+        #             content_type='application/json')
+        # self.assertEqual(resp.status_code,400)
 
         
         # add transactions to the user

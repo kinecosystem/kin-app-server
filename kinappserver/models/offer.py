@@ -145,10 +145,10 @@ def get_offers_for_user(user_id):
     for offer in all_offers:
         if not goods_avilable(offer.offer_id):
             offer.unavailable_reason = 'Sold out Check back again soon'
-        elif not_enought_kin(user_id, offer.offer_id):
-            offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
-        elif max_goods_reached(user_id, offer.offer_id):
-            offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
+        # elif not_enought_kin(user_id, offer.offer_id):
+        #     offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
+        # elif max_goods_reached(user_id, offer.offer_id):
+        #     offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
         redeemable_offers.append(offer)        
     
     # filter out p2p for users with client versions that do not support it
