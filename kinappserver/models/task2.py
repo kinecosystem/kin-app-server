@@ -231,7 +231,7 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
         # skip truex and truex-related tasks
         if should_skip_task(user_id, task_id, None, user_country_code):
             # we're skipping this task
-            log.info('skipping truex-related task_id %s for user %s' % (task_id, user_id))
+            # log.info('skipping truex-related task_id %s for user %s' % (task_id, user_id))
             continue
 
         # skip country-blocked tasks
@@ -810,7 +810,7 @@ def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_fo
 
         # filter out truex tasks if the user is in the truex blacklist
         if should_skip_task(user_id, task_id, None, user_country_code):
-            log.info('skipping task %s - its either truex or truex-related' % task_id)
+            # log.info('skipping task %s - its either truex or truex-related' % task_id)
             skip_task = True
 
         # filter out tasks that dont match the client's version
