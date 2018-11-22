@@ -157,7 +157,7 @@ def get_offers_for_user(user_id):
         counter = len([tx for tx in tx_infos if tx['offer_id'] == offer.offer_id])
         
         if not goods_avilable(offer.offer_id):
-            offer.unavailable_reason = 'Sold out Check back again soon'
+            offer.unavailable_reason = 'Sold out\nCheck back again soon'
         elif user_balance < offer.kin_cost:
             offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
         elif counter >= config.GIFTCARDS_PER_TIME_RANGE:
