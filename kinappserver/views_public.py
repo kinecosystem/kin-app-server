@@ -847,7 +847,11 @@ def get_offers_api():
 @app.route('/offer/book', methods=['POST'])
 def book_offer_api():
     """books an offer by a user"""
-    from .models.good import not_enought_kin, max_goods_reached
+    from .models.user import get_user_inapp_balance
+    from .models.transaction import get_offers_bought_in_days_ago
+    from .models.offer import get_cost_and_address
+    from .models.good import goods_avilable
+
     payload = request.get_json(silent=True)
     try:
         user_id, auth_token = extract_headers(request)
@@ -857,10 +861,21 @@ def book_offer_api():
         if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
             if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
-        # if not_enought_kin(user_id, offer_id):
-        #     raise InvalidUsage('not_enought_kin')
-        # if max_goods_reached(user_id, offer_id):
-        #     raise InvalidUsage('max_goods_reached')
+
+        tx_infos = get_offers_bought_in_days_ago(user_id, config.TIME_RANGE_IN_DAYS)
+        user_balance = get_user_inapp_balance(user_id)
+        kin_cost, address = get_cost_and_address(offer_id)
+
+        if not goods_avilable(offer_id):
+            raise InvalidUsage('goods_unvilable')
+        if user_balance < kin_cost:
+            raise InvalidUsage('not_enought_kin')
+        # check if max-giftcards reached
+        counter = len([tx for tx in tx_infos if tx['offer_id'] == offer_id]) 
+        if counter >= config.GIFTCARDS_PER_TIME_RANGE:
+            raise InvalidUsage('max giftcards reached')
+
+
     except Exception as e:
         log.error(e)
         raise e

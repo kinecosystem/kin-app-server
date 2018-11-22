@@ -136,23 +136,35 @@ def get_cost_and_address(offer_id):
 
 def get_offers_for_user(user_id):
     """return the list of offers with there status for this user"""
+    import time
     from distutils.version import LooseVersion
+    from .user import get_user_app_data, get_user_os_type, get_user_inapp_balance
+    from .good import goods_avilable
+    from .transaction import get_offers_bought_in_days_ago
+
+    # for debugging
+    start = time.time()
+
     all_offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
-    
+    tx_infos = get_offers_bought_in_days_ago(user_id, config.TIME_RANGE_IN_DAYS)
+    user_balance = get_user_inapp_balance(user_id)
+    end = time.time()
+
+    log.info("## GETTING OFFERS MID PTIME: %s", end - start)
     # filter out offers with no goods
     redeemable_offers = []
-    from .good import goods_avilable, not_enought_kin, max_goods_reached
     for offer in all_offers:
+        counter = len([tx for tx in tx_infos if tx['offer_id'] == offer.offer_id])
+        
         if not goods_avilable(offer.offer_id):
             offer.unavailable_reason = 'Sold out Check back again soon'
-        # elif not_enought_kin(user_id, offer.offer_id):
-        #     offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
-        # elif max_goods_reached(user_id, offer.offer_id):
-        #     offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
+        elif user_balance < offer.kin_cost:
+            offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
+        elif counter >= config.GIFTCARDS_PER_TIME_RANGE:
+            offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
         redeemable_offers.append(offer)        
     
     # filter out p2p for users with client versions that do not support it
-    from .user import get_user_app_data, get_user_os_type
     filter_p2p = False
 
     if not config.P2P_TRANSFERS_ENABLED:
@@ -233,7 +245,8 @@ def get_offers_for_user(user_id):
     for offer in redeemable_offers:
         offers_json_array.append(offer_to_json(offer))
 
-    log.info('offers for user %s: %s' % (user_id, [o['id'] for o in offers_json_array]))
+    end = time.time()
+    log.info('offers for user %s: %s. \n ## GETTING OFFERS PTIME: %s' % (user_id, [o['id'] for o in offers_json_array], end - start))
     return offers_json_array
 
 
