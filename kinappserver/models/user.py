@@ -232,6 +232,12 @@ def update_user_app_version(user_id, app_ver):
         raise InvalidUsage('cant set user app data')
 
 
+def get_user_inapp_balance(user_id):
+    spend = db.engine.execute("select sum(amount) as total from public.transaction where user_id ='%s' and incoming_tx = true;" % user_id).first()['total'] or 0
+    income = db.engine.execute("select sum(amount) as total from public.transaction where user_id ='%s' and incoming_tx = false;" % user_id).first()['total'] or 0
+    return income - spend
+
+
 def set_should_solve_captcha(user_id, value=0):
     """sets the should solve captcha. note that client version isn't checked here
 
