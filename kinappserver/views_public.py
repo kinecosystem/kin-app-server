@@ -129,7 +129,7 @@ def set_user_phone_number_endpoint():
         unverified_phone_number = payload.get('phone_number', None)  # only used in tests
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
-        
+
         if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
             if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
@@ -342,9 +342,12 @@ def post_user_task_results_endpoint():
     # process of being compensated (perhaps by another server).
 
     memo, compensated_user_id = handle_task_results_resubmission(user_id, task_id)
+
     if memo:
         print('detected resubmission by user_id %s of previously payed-for task id %s by user_id: %s . memo:%s' % (task_id, user_id, compensated_user_id, memo))
         # this task was already submitted - and compensated, so just re-return the memo to the user.
+        if not store_task_results(user_id, task_id, results):
+            raise InternalError('cant save results for userid %s' % user_id)
         increment_metric('already-compensated')
         return jsonify(status='ok', info='already_compensated')
 
@@ -410,7 +413,8 @@ def post_user_task_results_endpoint():
 
     # this should never fail for application-level reasons:
     if not store_task_results(user_id, task_id, results):
-            raise InternalError('cant save results for userid %s' % user_id)
+        raise InternalError('cant save results for userid %s' % user_id)
+
     try:
         # create a redis lock to prevent multiple payments for the same user_id and task_id:
         if not redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id), expire=60).acquire(blocking=False):
@@ -840,7 +844,7 @@ def get_offers_api():
         send_country_not_supported(user_id)
         print('blocked user_id %s from getting offers - blocked country code' % user_id)
         return jsonify(offers=[], status='error', reason='denied'),  status.HTTP_403_FORBIDDEN
-    
+
     return jsonify(offers=get_offers_for_user(user_id))
 
 
@@ -871,7 +875,7 @@ def book_offer_api():
         if user_balance < kin_cost:
             raise InvalidUsage('not_enought_kin')
         # check if max-giftcards reached
-        counter = len([tx for tx in tx_infos if tx['offer_id'] == offer_id]) 
+        counter = len([tx for tx in tx_infos if tx['offer_id'] == offer_id])
         if counter >= config.GIFTCARDS_PER_TIME_RANGE:
             raise InvalidUsage('max giftcards reached')
 
