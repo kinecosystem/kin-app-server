@@ -94,7 +94,8 @@ def store_task_results(user_id, task_id, results):
             raise InternalError('cant find cat_id for task_id %s' % task_id)
 
         if cat_id in user_app_data.completed_tasks_dict:
-            user_app_data.completed_tasks_dict[cat_id].append(task_id)
+            if task_id not in user_app_data.completed_tasks_dict[cat_id]:
+                user_app_data.completed_tasks_dict[cat_id].append(task_id)
         else:
             user_app_data.completed_tasks_dict[cat_id] = [task_id]
 
