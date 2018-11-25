@@ -821,6 +821,7 @@ def book_offer_api():
         counter = len([tx for tx in tx_infos if tx['offer_id'] == offer_id])
 
         if user_balance < kin_cost:
+            print('blocking offer buy - no funds user_id %s - offer_id: %s' % (user_id, offer_id))
             raise InvalidUsage('invalid payload')
 
         if counter >= config.GIFTCARDS_PER_TIME_RANGE:

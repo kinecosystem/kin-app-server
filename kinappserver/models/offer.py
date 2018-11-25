@@ -139,18 +139,17 @@ def get_offers_for_user(user_id):
 
     all_offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
     tx_infos = get_offers_bought_in_days_ago(user_id, config.TIME_RANGE_IN_DAYS)
-    user_balance = get_user_inapp_balance(user_id)
 
     # filter out offers with no goods
     redeemable_offers = []
     for offer in all_offers:
         counter = len([tx for tx in tx_infos if tx['offer_id'] == offer.offer_id])
-        
+
         if not goods_avilable(offer.offer_id):
-            continue
-        if user_balance < offer.kin_cost:
+            print('removing offer - out of stock - offer_id: %s' % offer.offer_id)
             continue
         if counter >= config.GIFTCARDS_PER_TIME_RANGE:
+            print('removing offer - GIFTCARDS_PER_TIME_RANGE - offer_id: %s' % offer.offer_id)
             continue
         
         redeemable_offers.append(offer)        
