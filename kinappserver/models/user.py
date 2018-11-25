@@ -385,6 +385,12 @@ def get_user_os_type(user_id):
     return User.query.filter_by(user_id=user_id).one().os_type
 
 
+def get_user_inapp_balance(user_id):
+    spend = db.engine.execute("select sum(amount) as total from public.transaction where user_id ='%s' and incoming_tx = true;" % user_id).first()['total'] or 0
+    income = db.engine.execute("select sum(amount) as total from public.transaction where user_id ='%s' and incoming_tx = false;" % user_id).first()['total'] or 0
+    return income - spend
+
+
 def package_id_to_push_env(package_id):
     if package_id == KINIT_IOS_PACKAGE_ID_PROD:
         # only ios clients use prod atm

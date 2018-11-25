@@ -133,20 +133,28 @@ def get_cost_and_address(offer_id):
 def get_offers_for_user(user_id):
     """return the list of active offers for this user"""
     from distutils.version import LooseVersion
+    from .user import get_user_app_data, get_user_os_type, get_user_inapp_balance
+    from .good import goods_avilable
+    from .transaction import get_offers_bought_in_days_ago
+
     all_offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
-    
+    tx_infos = get_offers_bought_in_days_ago(user_id, config.TIME_RANGE_IN_DAYS)
+
     # filter out offers with no goods
     redeemable_offers = []
-    from .good import goods_avilable
     for offer in all_offers:
-        if goods_avilable(offer.offer_id):
-            redeemable_offers.append(offer)
-        else:
-            #print('filtering out un-redeemable offer-id: %s' % offer.offer_id)
-            pass
+        counter = len([tx for tx in tx_infos if tx['offer_id'] == offer.offer_id])
+
+        if not goods_avilable(offer.offer_id):
+            print('removing offer - out of stock - offer_id: %s' % offer.offer_id)
+            continue
+        if counter >= config.GIFTCARDS_PER_TIME_RANGE:
+            print('removing offer - GIFTCARDS_PER_TIME_RANGE - offer_id: %s' % offer.offer_id)
+            continue
+        
+        redeemable_offers.append(offer)        
 
     # filter out p2p for users with client versions that do not support it
-    from .user import get_user_app_data, get_user_os_type
     filter_p2p = False
 
     if not config.P2P_TRANSFERS_ENABLED:

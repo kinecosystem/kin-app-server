@@ -804,12 +804,29 @@ def get_offers_api():
 @app.route('/offer/book', methods=['POST'])
 def book_offer_api():
     """books an offer by a user"""
+    from .models.user import get_user_inapp_balance
+    from .models.transaction import get_offers_bought_in_days_ago
+    from .models.offer import get_cost_and_address
+
     payload = request.get_json(silent=True)
     try:
         user_id, auth_token = extract_headers(request)
         offer_id = payload.get('id', None)
         if None in (user_id, offer_id):
             raise InvalidUsage('invalid payload')
+
+        tx_infos = get_offers_bought_in_days_ago(user_id, config.TIME_RANGE_IN_DAYS)
+        user_balance = get_user_inapp_balance(user_id)
+        kin_cost, address = get_cost_and_address(offer_id)
+        counter = len([tx for tx in tx_infos if tx['offer_id'] == offer_id])
+
+        if user_balance < kin_cost:
+            print('blocking offer buy - no funds user_id %s - offer_id: %s' % (user_id, offer_id))
+            raise InvalidUsage('invalid payload')
+
+        if counter >= config.GIFTCARDS_PER_TIME_RANGE:
+            raise InvalidUsage('invalid payload')
+
     except Exception as e:
         raise InvalidUsage('bad-request')
 
