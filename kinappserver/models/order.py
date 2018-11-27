@@ -169,4 +169,7 @@ def process_order(user_id, tx_hash):
     except Exception as e:
         log.error('failed to delete order %s' % order.order_id)
 
+    # update locked_offers
+    from kinappserver.models.offer import set_locked_offers
+    set_locked_offers(user_id, config.OFFER_LIMIT_TIME_RANGE)
     return True, goods

@@ -1,4 +1,4 @@
-from kinappserver import db, config
+from kinappserver import db, config, utils
 from kinappserver.utils import InvalidUsage, test_image, OS_ANDROID, OS_IOS
 import logging as log
 
@@ -140,30 +140,31 @@ def get_offers_for_user(user_id):
     from distutils.version import LooseVersion
     from .user import get_user_app_data, get_user_os_type, get_user_inapp_balance
     from .good import goods_avilable
-    from .transaction import get_offers_bought_in_days_ago
-
-    # for debugging
-    start = time.time()
 
     all_offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
-    tx_infos = get_offers_bought_in_days_ago(user_id, config.TIME_RANGE_IN_DAYS)
+
+    start = time.time()
+    locked_offers_ids = get_locked_offers(user_id, config.OFFER_LIMIT_TIME_RANGE)
+    end = time.time()
+    log.info("## locked_offers_ids MID PTIME: %s", end - start)
+
+    start = time.time()
     user_balance = get_user_inapp_balance(user_id)
     end = time.time()
+    log.info("## GETTING user_balance MID PTIME: %s", end - start)
 
-    log.info("## GETTING OFFERS MID PTIME: %s", end - start)
     # filter out offers with no goods
     redeemable_offers = []
     for offer in all_offers:
-        counter = len([tx for tx in tx_infos if tx['offer_id'] == offer.offer_id])
-        
         if not goods_avilable(offer.offer_id):
             offer.unavailable_reason = 'Sold out\nCheck back again soon'
         elif user_balance < offer.kin_cost:
             offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
-        elif counter >= config.GIFTCARDS_PER_TIME_RANGE:
+        elif offer.offer_id in locked_offers_ids:
             offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
-        redeemable_offers.append(offer)        
-    
+
+        redeemable_offers.append(offer)
+
     # filter out p2p for users with client versions that do not support it
     filter_p2p = False
 
@@ -214,7 +215,7 @@ def get_offers_for_user(user_id):
         # 2. collect offers that are not allowed for this os/app_ver
         for offer in redeemable_offers:
             if os_type == OS_ANDROID:
-                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(config.GIFTCARDS_ANDROID_VERSION):
+                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(config.OFFER_RATE_LIMIT_MIN_ANDROID_VERSION):
                     # client does not support text on offers, remove it
                     offers_to_remove.append(offer)
                 elif not offer.min_client_version_android:
@@ -223,7 +224,7 @@ def get_offers_for_user(user_id):
                 elif LooseVersion(offer.min_client_version_android) > LooseVersion(client_version):
                     offers_to_remove.append(offer)
             else:  # ios
-                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(config.GIFTCARDS_IOS_VERSION):
+                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(config.OFFER_RATE_LIMIT_MIN_IOS_VERSION):
                     # client does not support text on offers, remove it
                     offers_to_remove.append(offer)
                 elif not offer.min_client_version_ios:
@@ -258,3 +259,40 @@ def get_offer_details(offer_id):
         return {'title': 'unknown offer', 'desc': '', 'provider': {}}
 
     return {'title': offer.title, 'desc': offer.desc, 'provider': offer.provider_data}
+
+
+def set_locked_offers(user_id, days):
+    """ scan the db for offers bought in the last {days} and update USER_LOCKED_OFFERS_REDIS_KEY"""
+    from datetime import datetime, timedelta
+    log.info("user_id: %s - not cache - set_locked_offers! " % user_id)
+    date_days_from_now = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    offers_bought_in_time_range = db.engine.execute("select tx_info, update_at from public.transaction "
+                                                    "where user_id='%s' and incoming_tx=true "
+                                                    "and update_at > ('%s'::date);" % (user_id, date_days_from_now)).fetchall()
+    # extract data from result
+    offers_bought_in_time_range_ids = [item[0]['offer_id'] for item in offers_bought_in_time_range]
+    offers_bought_in_time_range_timestamp = [item[1].strftime('%m/%d/%Y') for item in offers_bought_in_time_range]
+    # build locked_offers_ids array
+    locked_offers_ids = dict(zip(offers_bought_in_time_range_ids, offers_bought_in_time_range_timestamp))
+    # write to cache
+    utils.write_json_to_cache(config.USER_LOCKED_OFFERS_REDIS_KEY % user_id, locked_offers_ids)
+    log.info("user_id: %s - locked_offers_ids: %s" % (user_id, locked_offers_ids))
+    return locked_offers_ids
+
+
+def get_locked_offers(user_id, days):
+    """return list of locked offers"""
+    from datetime import datetime, timedelta
+    # first check if we have a cached result.
+    locked_offers_ids = utils.read_json_from_cache(config.USER_LOCKED_OFFERS_REDIS_KEY % user_id)
+    if locked_offers_ids is not None:
+        log.info("user_id: %s - get_locked_offers - cache found!" % user_id)
+        # we need to check if offer's timestamp is old enough to be unlocked
+        locked_offers_ids = {k: v for k, v in locked_offers_ids.items() if datetime.strptime(v, '%m/%d/%Y') + timedelta(days=days) > datetime.now()}
+        # update cache
+        utils.write_json_to_cache(config.USER_LOCKED_OFFERS_REDIS_KEY % user_id, locked_offers_ids)
+        log.info("user_id: %s - locked_offers_ids: %s" % (user_id, locked_offers_ids))
+        return locked_offers_ids
+    else:
+        # cache not available, query the db store and return the result
+        return set_locked_offers(user_id, days)

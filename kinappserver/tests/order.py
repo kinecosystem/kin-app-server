@@ -213,7 +213,7 @@ class Tester(unittest.TestCase):
         sleep(16) # TODO read from config
         print('done! now trying to book a new order')
         
-        # should fail if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED is True -  no validation token
+        # should fail if config is True -  no validation token
         resp = self.app.post('/offer/book',
                              data=json.dumps({
                                  'id': offerid}),
