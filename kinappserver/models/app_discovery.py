@@ -10,7 +10,7 @@ class AppDiscovery(db.Model):
     """ the app discovery class represents a single Discoverable App """
     app_identifier = db.Column(db.String(40), nullable=False, primary_key=True)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
-    subtitle = db.Column(db.String(40), nullable=False, primary_key=False)
+    subtitle = db.Column(db.String(80), nullable=False, primary_key=False)
     app_category_id = db.Column(db.Integer(), nullable=False, primary_key=False)
     is_active = db.Column(db.Boolean, unique=False, default=False)
     os_type = db.Column(db.String(20), primary_key=False, nullable=False)
