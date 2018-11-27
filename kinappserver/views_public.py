@@ -1361,6 +1361,7 @@ def get_user_categories_endpoint():
 
     return jsonify(status='ok', categories=cats_for_user, header_message=get_personalized_categories_header_message(user_id, message_type))
 
+
 @app.route('/validation/get-nonce', methods=['GET'])
 def get_validation_nonce():
     """ return nonce to the client """
@@ -1376,3 +1377,16 @@ def get_validation_nonce():
         print(e)
         raise InvalidUsage('bad-request')
     return jsonify(nonce=validation_module.get_validation_nonce(user_id))
+
+
+@app.route('/app_discovery', methods=['GET'])
+def get_discovery_apps():
+    """ return the list of discoverable apps for user's platform """
+    from .models.app_descovery import get_discovery_apps
+    user_id, auth_token = extract_headers(request)
+    if not user_id:
+        raise InvalidUsage('missing user_id')
+
+    os_type = get_user_os_type(user_id)
+
+    return jsonify(get_discovery_apps(os_type))

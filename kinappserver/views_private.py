@@ -25,18 +25,26 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     create_tx, get_reward_for_task, add_offer, \
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, get_users_for_engagement_push, \
-    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days,\
-    add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,\
-    reject_premature_results, get_address_by_userid, send_compensated_push,\
-    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config, get_user_report, get_user_tx_report, get_user_goods_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
-    get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
+    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days, \
+    add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, \
+    reject_premature_results, get_address_by_userid, send_compensated_push, \
+    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, \
+    is_user_phone_verified, init_bh_creds, create_bh_offer, \
+    get_task_results, get_user_config, get_user_report, get_user_tx_report, get_user_goods_report, get_task_by_id, \
+    get_truex_activity, get_and_replace_next_task_memo, \
+    scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, \
+    is_in_acl, \
+    get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, \
+    generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, \
-    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
-    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, re_register_all_users, get_tx_totals, set_should_solve_captcha, add_task_to_completed_tasks, \
-    remove_task_from_completed_tasks, switch_task_ids, delete_task, block_user_from_truex_tasks, unblock_user_from_truex_tasks, set_update_available_below, set_force_update_below, \
-    update_categories_extra_data, task20_migrate_tasks
+    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, \
+    delete_all_user_data, count_registrations_for_phone_number, \
+    blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, \
+    re_register_all_users, get_tx_totals, set_should_solve_captcha, add_task_to_completed_tasks, \
+    remove_task_from_completed_tasks, switch_task_ids, delete_task, block_user_from_truex_tasks, \
+    unblock_user_from_truex_tasks, set_update_available_below, set_force_update_below, \
+    update_categories_extra_data, task20_migrate_tasks, add_discovery_app, set_discovery_app_active, \
+    add_discovery_app_category
 
 
 @app.route('/health', methods=['GET'])
@@ -884,3 +892,57 @@ def migrate_tasks_to_task20():
     task20_migrate_tasks()
     return jsonify(status='ok')
 
+
+@app.route('/app_discovery/add_discovery_app_category', methods=['POST'])
+def add_discovery_app_category_api():
+    """ add a discovery app category to the db"""
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    payload = request.get_json(silent=True)
+    try:
+        discovery_app_category = payload.get('discovery_app_category', None)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if add_discovery_app_category(discovery_app_category):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to add discovery app')
+
+
+@app.route('/app_discovery/is_active', methods=['POST'])
+def set_active_app_discovery_api():
+    """ enable/ disable discovery app"""
+    if not config.DEBUG:
+        limit_to_localhost()
+    payload = request.get_json(silent=True)
+    try:
+        app_id = payload.get('app_id', None)
+        set_active = payload.get('set_active', False)  # optional
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if set_discovery_app_active(app_id, set_active):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to activate discovery app')
+
+
+@app.route('/app_discovery/add_discovery_app', methods=['POST'])
+def add_discovery_app_api():
+    """ internal endpoint used to populate the server with discovery apps"""
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    payload = request.get_json(silent=True)
+    try:
+        discovery_app = payload.get('discovery_app', None)
+        set_active = payload.get('set_active', False)  # optional
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if add_discovery_app(discovery_app, set_active):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to add discovery app')
