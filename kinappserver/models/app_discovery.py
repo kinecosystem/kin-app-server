@@ -142,7 +142,7 @@ def set_discovery_app_active(app_identifier, is_active):
 
 def get_discovery_apps(os_type):
     """ get discovery apps from the db, filter by platform """
-    apps = AppDiscovery.query.filter(AppDiscovery.os_type.contains(os_type)).all() # android, iOS or both
+    apps = AppDiscovery.query.filter(os_type=os_type).all() # android, iOS or both
     categories = AppDiscoveryCategory.query.all()
 
     json_array = []
