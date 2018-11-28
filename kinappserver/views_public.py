@@ -873,7 +873,7 @@ def book_offer_api():
             raise InvalidUsage('goods_unavailable')
         if user_balance < kin_cost:
             raise InvalidUsage('not_enough_kin')
-        if offer_id in locked_offers_ids :
+        if str(offer_id) in locked_offers_ids:
             raise InvalidUsage('max offers reached')
     except Exception as e:
         log.error(e)

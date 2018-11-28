@@ -11,7 +11,7 @@ class Offer(db.Model):
     offer_domain = db.Column(db.String(40), nullable=False, primary_key=False)
     is_active = db.Column(db.Boolean, unique=False, default=False)
     title = db.Column(db.String(80), nullable=False, primary_key=False)
-    desc = db.Column(db.String(500), nullable=False, primary_key=False)
+    desc = db.Column(db.String(1000), nullable=False, primary_key=False)
     image_url = db.Column(db.String(100), nullable=False, primary_key=False)
     kin_cost = db.Column(db.Integer(), nullable=False, primary_key=False)
     address = db.Column(db.String(80), nullable=False, primary_key=False)
@@ -159,10 +159,10 @@ def get_offers_for_user(user_id):
     for offer in all_offers:
         if not goods_avilable(offer.offer_id):
             offer.unavailable_reason = 'Sold out\nCheck back again soon'
+        elif str(offer.offer_id) in locked_offers_ids:
+            offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
         elif user_balance < offer.kin_cost:
             offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
-        elif offer.offer_id in locked_offers_ids:
-            offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
 
         redeemable_offers.append(offer)
 
@@ -277,7 +277,7 @@ def set_locked_offers(user_id, days):
     # write to cache
     utils.write_json_to_cache(config.USER_LOCKED_OFFERS_REDIS_KEY % user_id, locked_offers_ids)
     log.info("user_id: %s - locked_offers_ids: %s" % (user_id, locked_offers_ids))
-    return locked_offers_ids
+    return locked_offers_ids.keys()
 
 
 def get_locked_offers(user_id, days):
@@ -291,7 +291,7 @@ def get_locked_offers(user_id, days):
         # update cache
         utils.write_json_to_cache(config.USER_LOCKED_OFFERS_REDIS_KEY % user_id, locked_offers_ids)
         log.info("user_id: %s - locked_offers_ids: %s" % (user_id, locked_offers_ids))
-        return locked_offers_ids
+        return locked_offers_ids.keys()
     else:
         # cache not available, query the db store and return the result
         return set_locked_offers(user_id, days)
