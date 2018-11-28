@@ -1,6 +1,7 @@
 from kinappserver import db, config, utils
 from kinappserver.utils import InvalidUsage, test_image, OS_ANDROID, OS_IOS
 import logging as log
+from datetime import datetime, timedelta
 
 class Offer(db.Model):
     """the Offer class represent a single offer"""
@@ -263,7 +264,6 @@ def get_offer_details(offer_id):
 
 def set_locked_offers(user_id, days):
     """ scan the db for offers bought in the last {days} and update USER_LOCKED_OFFERS_REDIS_KEY"""
-    from datetime import datetime, timedelta
     log.info("user_id: %s - not cache - set_locked_offers! " % user_id)
     date_days_from_now = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     offers_bought_in_time_range = db.engine.execute("select tx_info, update_at from public.transaction "
@@ -282,7 +282,6 @@ def set_locked_offers(user_id, days):
 
 def get_locked_offers(user_id, days):
     """return list of locked offers"""
-    from datetime import datetime, timedelta
     # first check if we have a cached result.
     locked_offers_ids = utils.read_json_from_cache(config.USER_LOCKED_OFFERS_REDIS_KEY % user_id)
     if locked_offers_ids is not None:
