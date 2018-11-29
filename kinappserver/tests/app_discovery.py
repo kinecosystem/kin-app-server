@@ -65,7 +65,7 @@ class Tester(unittest.TestCase):
         # create a category
         cat = {
             'category_id': '0',
-            'title': 'cat-title'
+            'category_name': 'Travel & Local'
         }
         # add category to db
         resp = self.app.post('/app_discovery/add_discovery_app_category',
@@ -84,24 +84,27 @@ class Tester(unittest.TestCase):
 
         # test that category data is correct
         self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['title'], 'cat-title')
+        self.assertEqual(data[0]['name'], 'Travel & Local')
         self.assertEqual(data[0]['apps'], [])
 
         # create an android app
         app = {
             'skip_image_test': 'true',
-            'app_identifier': '0',
-            'title': 'app title',
-            'subtitle': 'subtitle',
-            'app_category_id': '0',
-            'os_type': 'android',
-            'meta_data': {
-                'app_url': 'url',
-                'description': 'long desc',
-                'kin_usage': 'how to use description',
-                'icon_url': 'url',
-                'card_image_url': 'url',
-                'image_url': 'url',
+            "identifier": "com.addme.android",
+            "is_active": "true",
+            "category_id": 0,
+            "os_type": "android",
+            "name": "Addme Android",
+            "meta_data": {
+                "app_url": "https://play.google.com/store/apps/details?id=org.kinecosystem.kinit&hl=en",
+                "card_image_url": "https://cdn.kinitapp.com/brand_img/airbnb.png",
+                "short_description": "Ask questions to the community.",
+                "description": "Beseech is a place for local communities to gather,  exchange advice, create connections, trade, and compete.",
+                "icon_url": "https://cdn.kinitapp.com/brand_img/soyummy.jpg",
+                "image_url_0": "https://cdn.kinitapp.com/brand_img/amazon.png",
+                "image_url_1": "https://cdn.kinitapp.com/brand_img/soyummy.jpg",
+                "image_url_2": "https://cdn.kinitapp.com/brand_img/airbnb.png",
+                "kin_usage": "How to earn Kin: - Answer questions posted by other others - the most helpful answer will receive the Kin posted as a reward for the question How to spend Kin: - Ask questions to the community. The Kin spent to post the question will be the reward given to the most helpful answer.",
             }
         }
         # add the app
@@ -120,7 +123,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
 
         self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['title'], 'cat-title')
+        self.assertEqual(data[0]['name'], 'Travel & Local')
         self.assertEqual(len(data[0]['apps']), 1)
 
         # verify iOS user does not see the app
@@ -131,24 +134,27 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
 
         self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['title'], 'cat-title')
+        self.assertEqual(data[0]['name'], 'Travel & Local')
         self.assertEqual(len(data[0]['apps']), 0)
 
         # create an androdi and ios app
         app = {
             'skip_image_test': 'true',
-            'app_identifier': '1',
-            'title': 'app title',
-            'subtitle': 'subtitle',
-            'app_category_id': '0',
-            'os_type': 'android, iOS',
-            'meta_data': {
-                'app_url': 'url',
-                'description': 'long desc',
-                'kin_usage': 'how to use description',
-                'icon_url': 'url',
-                'card_image_url': 'url',
-                'image_url': 'url',
+            "identifier": "com.addme.ios",
+            "is_active": "true",
+            "category_id": 0,
+            "os_type": "iOS",
+            "name": "Addme IOS",
+            "meta_data": {
+                "app_url": "https://play.google.com/store/apps/details?id=org.kinecosystem.kinit&hl=en",
+                "card_image_url": "https://cdn.kinitapp.com/brand_img/airbnb.png",
+                "short_description": "Ask questions to the community.",
+                "description": "Beseech is a place for local communities to gather,  exchange advice, create connections, trade, and compete.",
+                "icon_url": "https://cdn.kinitapp.com/brand_img/soyummy.jpg",
+                "image_url_0": "https://cdn.kinitapp.com/brand_img/amazon.png",
+                "image_url_1": "https://cdn.kinitapp.com/brand_img/soyummy.jpg",
+                "image_url_2": "https://cdn.kinitapp.com/brand_img/airbnb.png",
+                "kin_usage": "How to earn Kin: - Answer questions posted by other others - the most helpful answer will receive the Kin posted as a reward for the question How to spend Kin: - Ask questions to the community. The Kin spent to post the question will be the reward given to the most helpful answer.",
             }
         }
 
@@ -168,8 +174,8 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
 
         self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['title'], 'cat-title')
-        self.assertEqual(len(data[0]['apps']), 2)
+        self.assertEqual(data[0]['name'], 'Travel & Local')
+        self.assertEqual(len(data[0]['apps']),1)
 
         # verify iOS user sees new app
         resp = self.app.get('/app_discovery', headers={USER_ID_HEADER: str(ios_user)})
@@ -179,13 +185,13 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
 
         self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['title'], 'cat-title')
+        self.assertEqual(data[0]['name'], 'Travel & Local')
         self.assertEqual(len(data[0]['apps']), 1)
 
         # create a category
         cat = {
             'category_id': '1',
-            'title': 'cat-title'
+            'category_name': 'Travel & Local'
         }
         # add category to db
         resp = self.app.post('/app_discovery/add_discovery_app_category',

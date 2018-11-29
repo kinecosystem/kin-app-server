@@ -8,24 +8,23 @@ import json
 
 class AppDiscovery(db.Model):
     """ the app discovery class represents a single Discoverable App """
-    app_identifier = db.Column(db.String(40), nullable=False, primary_key=True)
-    title = db.Column(db.String(80), nullable=False, primary_key=False)
-    subtitle = db.Column(db.String(80), nullable=False, primary_key=False)
-    app_category_id = db.Column(db.Integer(), nullable=False, primary_key=False)
+    identifier = db.Column(db.String(40), nullable=False, primary_key=True)
+    name = db.Column(db.String(80), nullable=False, primary_key=False)
+    category_id = db.Column(db.Integer(), nullable=False, primary_key=False)
     is_active = db.Column(db.Boolean, unique=False, default=False)
     os_type = db.Column(db.String(20), primary_key=False, nullable=False)
     meta_data = db.Column(db.JSON, primary_key=False, nullable=False)
-    move_kin_data = db.Column(db.JSON, primary_key=False, nullable=True)
+    transfer_data = db.Column(db.JSON, primary_key=False, nullable=True)
 
     def __repr__(self):
-        return '<app_identifier: %s, title: %s, app_category_id: %d, meta_data: %s, move_kin_data: %s>' % (
-            self.app_identifier, self.title, self.app_category_id, self.meta_data, self.move_kin_data)
+        return '<identifier: %s, name: %s, category_id: %d, meta_data: %s, transfer_data: %s>' % (
+            self.identifier, self.name, self.category_id, self.meta_data, self.transfer_data)
 
 
 class AppDiscoveryCategory(db.Model):
     """ the app discovery category represents a single App Category """
     category_id = db.Column(db.Integer(), nullable=False, primary_key=True)
-    title = db.Column(db.String(80), nullable=False, primary_key=False)
+    category_name = db.Column(db.String(80), nullable=False, primary_key=False)
 
 
 def app_discovery_category_to_json(app_discovery_category):
@@ -35,7 +34,7 @@ def app_discovery_category_to_json(app_discovery_category):
 
     # Build json
     json_app_discovery_category = {'category_id': app_discovery_category.category_id,
-                                   'title': app_discovery_category.title}
+                                   'category_name': app_discovery_category.category_name}
 
     return json_app_discovery_category
 
@@ -46,11 +45,11 @@ def app_discovery_to_json(app_discovery):
         return {}
 
     # Build json
-    json_app_discovery = {'app_identifier': app_discovery.app_identifier, 'title': app_discovery.title,
-                          'app_category_id': app_discovery.app_category_id, 'is_active': app_discovery.is_active,
+    json_app_discovery = {'identifier': app_discovery.identifier, 'name': app_discovery.name,
+                          'category_id': app_discovery.category_id, 'is_active': app_discovery.is_active,
                           'os_type': app_discovery.os_type, 'meta_data': app_discovery.meta_data}
-    if app_discovery.move_kin_data:
-        json_app_discovery['move_kin_data'] = app_discovery.move_kin_data
+    if app_discovery.transfer_data:
+        json_app_discovery['transfer_data'] = app_discovery.transfer_data
 
     return json_app_discovery
 
@@ -61,7 +60,7 @@ def add_discovery_app(discovery_app_json, set_active=False):
     if discovery_app_json['meta_data']:
         meta_data = discovery_app_json['meta_data']
     else:
-        log.error('cant add discovery app to db with id %s' % discovery_app_json['app_identifier'])
+        log.error('cant add discovery app to db with id %s' % discovery_app_json['identifier'])
         return False
 
     skip_image_test = discovery_app_json.get('skip_image_test', False)
@@ -71,10 +70,16 @@ def add_discovery_app(discovery_app_json, set_active=False):
         # ensure all urls are accessible:
         fail_flag = False
 
-        image_url, card_image_url, icon_url = meta_data['image_url'], meta_data['card_image_url'], meta_data['icon_url']
+        image_url1,image_url2,image_url3, card_image_url, icon_url = meta_data['image_url_0'], meta_data['image_url_1'], meta_data['image_url_2'], meta_data['card_image_url'], meta_data['icon_url']
 
-        if not test_image(image_url):
-            log.error('discovery app image_url - %s - could not be verified' % image_url)
+        if not test_image(image_url1):
+            log.error('discovery app image_url - %s - could not be verified' % image_url1)
+            fail_flag = True
+        if not test_image(image_url2):
+            log.error('discovery app image_url - %s - could not be verified' % image_url1)
+            fail_flag = True
+        if not test_image(image_url2):
+            log.error('discovery app image_url - %s - could not be verified' % image_url3)
             fail_flag = True
         if not test_image(card_image_url):
             log.error('discovery app card_image_url - %s - could not be verified' % card_image_url)
@@ -91,23 +96,22 @@ def add_discovery_app(discovery_app_json, set_active=False):
 
     try:
         discovery_app = AppDiscovery()
-        discovery_app.app_identifier = discovery_app_json['app_identifier']
-        discovery_app.title = discovery_app_json['title']
-        discovery_app.subtitle = discovery_app_json['subtitle']
-        discovery_app.app_category_id = int(discovery_app_json['app_category_id'])
+        discovery_app.identifier = discovery_app_json['identifier']
+        discovery_app.name = discovery_app_json['name']
+        discovery_app.category_id = int(discovery_app_json['category_id'])
         discovery_app.os_type = discovery_app_json['os_type']
         discovery_app.meta_data = discovery_app_json['meta_data']
-        discovery_app.move_kin_data = discovery_app_json.get('move_kin_data', None)  # Optional
+        discovery_app.transfer_data = discovery_app_json.get('transfer_data', None)  # Optional
 
         db.session.add(discovery_app)
         db.session.commit()
     except Exception as e:
         print(e)
-        log.error('cant add discovery app to db with id %s' % discovery_app_json['app_identifier'])
+        log.error('cant add discovery app to db with id %s' % discovery_app_json['identifier'])
         return False
     else:
         if set_active:
-            set_discovery_app_active(discovery_app_json['app_identifier'], True)
+            set_discovery_app_active(discovery_app_json['identifier'], True)
         return True
 
 
@@ -116,23 +120,23 @@ def add_discovery_app_category(app_category_json):
     try:
         discovery_app_category = AppDiscoveryCategory()
         discovery_app_category.category_id = int(app_category_json['category_id'])
-        discovery_app_category.title = app_category_json['title']
+        discovery_app_category.category_name = app_category_json['category_name']
 
         db.session.add(discovery_app_category)
         db.session.commit()
     except Exception as e:
         print(e)
-        log.error('cant add discovery app to db with id %s' % app_category_json['category_id'])
+        log.error('cant add discovery category to db with id %s' % app_category_json['category_id'])
         return False
     else:
         return True
 
 
-def set_discovery_app_active(app_identifier, is_active):
+def set_discovery_app_active(identifier, is_active):
     """ show/hide discovery app"""
-    app = AppDiscovery.query.filter_by(app_identifier=app_identifier).first()
+    app = AppDiscovery.query.filter_by(identifier=identifier).first()
     if not app:
-        raise InvalidUsage('no such discovery app_identifier')
+        raise InvalidUsage('no such discovery identifier')
 
     app.is_active = is_active
     db.session.add(app)
@@ -142,7 +146,7 @@ def set_discovery_app_active(app_identifier, is_active):
 
 def get_discovery_apps(os_type):
     """ get discovery apps from the db, filter by platform """
-    apps = AppDiscovery.query.filter(os_type=os_type).all() # android, iOS or both
+    apps = AppDiscovery.query.filter_by(os_type=os_type).all() # android, iOS or both
     categories = AppDiscoveryCategory.query.all()
 
     json_array = []
@@ -151,7 +155,9 @@ def get_discovery_apps(os_type):
         json_array.append(app_discovery_category_to_json(cat))
         json_array[cat.category_id]['apps'] = []
         for app in apps:
-            if app.app_category_id == cat.category_id and app.is_active:
-                json_array[cat.category_id]['apps'].append(app_discovery_to_json(app))
+            if app.category_id == cat.category_id and app.is_active:
+                json_app = app_discovery_to_json(app)
+                json_app['meta_data']['category_name'] = cat.category_name
+                json_array[cat.category_id]['apps'].append(json_app)
 
     return json_array
