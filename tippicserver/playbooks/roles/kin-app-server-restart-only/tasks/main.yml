@@ -1,0 +1,15 @@
+- name: restart supervisor
+  supervisorctl:
+    name: tippicserver
+    state: restarted
+
+- name: service nginx restart
+  service:
+    name: nginx
+    state: restarted
+
+- name: verify the server is up
+  command: curl -s -o /dev/null -w "%{http_code}" http://localhost:80/internal/health
+  register: result
+  retries: 10
+  until: result.stdout.find("200") != -1

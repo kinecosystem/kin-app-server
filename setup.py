@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='kinappserver',
+    name='tippicserver',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
