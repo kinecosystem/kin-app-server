@@ -12,7 +12,7 @@
     local_action: command python3 "{{playbook_dir}}/dereg_from_elb.py" dereg "{{kinit_prod_tg_arn}}" "{{ ansible_ec2_instance_id }}"
 
   roles:
-    - { role: kin-app-server-restart-only , become: yes }
+    - { role: tippic-server-restart-only , become: yes }
 
   post_tasks:
   - name: re-registering server to elb

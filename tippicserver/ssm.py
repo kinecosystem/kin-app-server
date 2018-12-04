@@ -78,7 +78,7 @@ def write_service_account():
 
         # travis is a special case - has a unique path:
         is_travis = os.environ.get('TRAVIS', 0)
-        path = config.FIREBASE_SERVICE_ACCOUNT_FILE if not is_travis else '/home/travis/build/kinecosystem/kin-app-server/tippicserver/service-account.json'
+        path = config.FIREBASE_SERVICE_ACCOUNT_FILE if not is_travis else '/home/travis/build/kinecosystem/tippic-server/tippicserver/service-account.json'
         with open(path, 'w+') as the_file:
             the_file.write(service_account_json)
         return path

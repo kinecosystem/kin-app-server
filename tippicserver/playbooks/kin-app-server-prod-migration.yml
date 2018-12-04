@@ -2,7 +2,7 @@
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
   roles:
-    - kin-app-server-cron
+    - tippic-server-cron
 
 - hosts: all
   remote_user: "{{ remote_user | default('ubuntu') }}"
@@ -10,7 +10,7 @@
   roles:
     - weareinteractive.environment
     - Datadog.datadog
-    - kin-app-server
+    - tippic-server
     - igor_mukhin.bash_aliases
 
   vars:
@@ -22,7 +22,7 @@
    datadog_api_key: "{{ lookup('aws_ssm', '/config/prod/datadog/apikey' )}}"
    datadog_config:
      log_level: INFO
-     tags: "service:kin-app-server-prod"
+     tags: "service:tippic-server-prod"
    debug: False
    nginx_domain: api2.kinitapp.com
    db_connstr: "postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"

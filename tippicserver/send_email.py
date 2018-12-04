@@ -64,7 +64,7 @@ def send_mail_with_qr_attachment(sender: str, recipients: list, title: str, body
     msg.attach(part)
 
     # attach static images
-    attachments = {'@2xbeta_logo.png': '/opt/kin-app-server/tippicserver/statics/@2xbeta_logo.png'}
+    attachments = {'@2xbeta_logo.png': '/opt/tippic-server/tippicserver/statics/@2xbeta_logo.png'}
     for attachment in attachments:
         part = MIMEApplication(open(attachments[attachment], 'rb').read())
         part.add_header('Content-Disposition', 'attachment', filename=attachment)

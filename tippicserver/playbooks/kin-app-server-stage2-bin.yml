@@ -2,7 +2,7 @@
   remote_user: "{{ remote_user | default('ubuntu') }}"
   become: true
   roles:
-    - kin-app-server-bin
+    - tippic-server-bin
 
   vars:
    kin_app_server_branch_name: master
@@ -13,7 +13,7 @@
    debug: True
    nginx_domain: stage2.kinitapp.com
    db_connstr: "postgresql://{{lookup('aws_ssm', '/config/stage/sql/userpassword')}}@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage"
-   redis_endpoint: 'kin-app-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
+   redis_endpoint: 'tippic-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
    redis_port: 6379
    eshu_username: admin
    eshu_password: admin

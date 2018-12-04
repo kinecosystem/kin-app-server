@@ -1,6 +1,6 @@
-# kin-app-server
+# tippic-server
 
-![](https://travis-ci.org/kinecosystem/kin-app-server.svg?branch=master)
+![](https://travis-ci.org/kinecosystem/tippic-server.svg?branch=master)
 
 An backend service for the Kinit App aimed at:
 
@@ -36,10 +36,10 @@ this server is intended to be deployed on an ubuntu machine with python3. You'll
 
 run ansible (2.4.2.0) with this command:
 
-    ansible-playbook playbooks/kin-app-server.yml -i <public_ip>, -e 'ansible_python_interpreter=/usr/bin/python3'
+    ansible-playbook playbooks/tippic-server.yml -i <public_ip>, -e 'ansible_python_interpreter=/usr/bin/python3'
 
 ## Configuration
-All configurations reside in the config.py.jinj2 file (in kin-app-server/kinappserver/playbooks/roles/kin-app-server/templates), which is processed by Ansible into a config.py file.
+All configurations reside in the config.py.jinj2 file (in tippic-server/tippicserver/playbooks/roles/tippic-server/templates), which is processed by Ansible into a config.py file.
 
 By default, the config is set to DEBUG mode, which has some preset values. Production/Stage values must be give in the Ansible role.
 
@@ -50,7 +50,7 @@ To test the service, run the unittests.
 note that the tester uses a local, temporary postgress db - it does not mess with prod/stage.
 
 ## CI
-we use travis to run our tests: https://travis-ci.org/kinecosystem/kin-app-server
+we use travis to run our tests: https://travis-ci.org/kinecosystem/tippic-server
 
 ## Running
 At the moment, you can run this service with
@@ -59,12 +59,12 @@ At the moment, you can run this service with
     
 You'll probably also need to export the service name, as following:
 
-    export FLASK_APP=kinappserver
+    export FLASK_APP=tippicserver
 
 ## Creating the db for the fisrt time:
 go into python console and:
 
-     from kinappserver import db
+     from tippicserver import db
 
      db.create_all()
 

@@ -10,7 +10,7 @@
 
 
   vars:
-    redis_endpoint: 'kin-app-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
+    redis_endpoint: 'tippic-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
     datadog_api_key: "{{ lookup('aws_ssm', '/config/stage/datadog/apikey' )}}"
     datadog_config:
       tags: "service:kin-app-payment-service-stage"

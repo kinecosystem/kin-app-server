@@ -6,7 +6,7 @@
 
 - cron:
     name: "gather periodic metrics"
-    job: "/usr/bin/python3 /opt/kin-app-server/tippicserver/metrics.py"
+    job: "/usr/bin/python3 /opt/tippic-server/tippicserver/metrics.py"
   run_once: true # runs every minute, on one machine of the 2
 
 - cron:
@@ -25,17 +25,17 @@
 
 - cron:
     name: "replenish blackhawk cards"
-    job: "/opt/kin-app-server/tippicserver/cron/replenish_blackhawk_cards.sh"
+    job: "/opt/tippic-server/tippicserver/cron/replenish_blackhawk_cards.sh"
   run_once: true # runs every minute, on one machine of the 2
 
 - cron:
     name: "periodically de-authenticate users"
-    job: "/opt/kin-app-server/tippicserver/cron/deauth_users.sh"
+    job: "/opt/tippic-server/tippicserver/cron/deauth_users.sh"
   run_once: true # runs every minute, on one machine of the 2
 
 - cron:
     name: "release unclaimed goods every minute"
-    job: "/opt/kin-app-server/tippicserver/cron/release_unclaimed_goods.sh"
+    job: "/opt/tippic-server/tippicserver/cron/release_unclaimed_goods.sh"
   run_once: true # runs every minute, on one machine of the 2
 
 

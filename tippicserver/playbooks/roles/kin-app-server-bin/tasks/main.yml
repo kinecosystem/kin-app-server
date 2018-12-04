@@ -1,7 +1,7 @@
-- name: Clone the kin-app-service repo
+- name: Clone the tippic-server repo
   git:
-    repo=https://github.com/kinfoundation/kin-app-server.git
-    dest=/opt/kin-app-server
+    repo=https://github.com/kinfoundation/tippic-server.git
+    dest=/opt/tippic-server
     accept_hostkey=true
     force=yes
     version={{kin_app_server_branch_name}}
@@ -9,11 +9,11 @@
 - name: Template the config file
   template:
     src: templates/tippicserver/config.py.jinja2
-    dest: /opt/kin-app-server/tippicserver/config.py
+    dest: /opt/tippic-server/tippicserver/config.py
 
-- name: install the kin-app-server from the local copy. force upgrade to take any changes.
+- name: install the tippic-server from the local copy. force upgrade to take any changes.
   pip: 
-    name: /opt/kin-app-server
+    name: /opt/tippic-server
     state: latest
 
 - name: Clone the kinit-client-validation-server-module

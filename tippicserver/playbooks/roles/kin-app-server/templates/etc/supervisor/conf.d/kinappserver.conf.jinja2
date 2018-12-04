@@ -1,14 +1,14 @@
-[program:kinappserver]
-directory=/opt/kin-app-server/kinappserver
+[program:tippicserver]
+directory=/opt/tippic-server/tippicserver
 command=uwsgi --socket 0.0.0.0:8000 --protocol=http --master --workers 3 -w wsgi  --enable-threads -l 4000
 ; #refer to https://stackoverflow.com/questions/12340047/uwsgi-your-server-socket-listen-backlog-is-limited-to-100-connections for wsgi connections
 ; # as this requires additional `sysctl -w net.core.somaxconn=4096` config
 autostart=true
 autorestart=true
-stderr_logfile=/var/log/kinappserver.err.log
-stdout_logfile=/var/log/kinappserver.out.log
+stderr_logfile=/var/log/tippicserver.err.log
+stdout_logfile=/var/log/tippicserver.out.log
 stopasgroup=true
 environment=
-    FLASK_APP=kinappserver,
+    FLASK_APP=tippicserver,
     ENV={{ deployment_env }},
     STELLAR_ACCOUNT_SID={{ play_hosts.index(inventory_hostname) }}

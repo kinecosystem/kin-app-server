@@ -1,13 +1,13 @@
 [program:kinappworker-fast]
-directory=/opt/kin-app-server/kinappserver
-command=rq worker kinappserver-{{deployment_env}}-fast --url redis://{{redis_endpoint}}:6379 --logging_level=INFO
+directory=/opt/tippic-server/tippicserver
+command=rq worker tippicserver-{{deployment_env}}-fast --url redis://{{redis_endpoint}}:6379 --logging_level=INFO
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/kinappworker_fast.err.log
 stdout_logfile=/var/log/kinappworker_fast.out.log
 stopasgroup=true
 environment=
-    FLASK_APP=kinappserver,
+    FLASK_APP=tippicserver,
     ENV={{ deployment_env }},
     STELLAR_ACCOUNT_SID={{ play_hosts.index(inventory_hostname) }},
     LC_ALL=C.UTF-8

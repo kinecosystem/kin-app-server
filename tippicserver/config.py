@@ -38,7 +38,7 @@ P2P_MAX_KIN_AMOUNT = 12500
 
 TOS_URL = 'http://www.kinitapp.com/terms-and-privacy-policy'
 FAQ_URL = 'https://cdn.kinitapp.com/faq/v2/index.html'
-FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/kin-app-server/service-account.json'
+FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/tippic-server/service-account.json'
 
 
 AUTH_TOKEN_SEND_INTERVAL_DAYS = 1

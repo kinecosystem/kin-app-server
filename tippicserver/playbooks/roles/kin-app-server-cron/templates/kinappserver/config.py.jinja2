@@ -1,4 +1,4 @@
-# this is the config file for the kin-app-server. 
+# this is the config file for the tippic-server.
 # Its a jinja2 file, meant to be processed by Ansible. By default, the debug mode is set to True,
 # and the debug values are hard-coded. Production values must be provided via the playbook.
 
@@ -41,7 +41,7 @@ P2P_MAX_KIN_AMOUNT = {{ p2p_max_kin_amount }}
 
 TOS_URL = 'http://www.kinitapp.com/terms-and-privacy-policy'
 FAQ_URL = 'https://cdn.kinitapp.com/faq/v2/index.html'
-FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/kin-app-server/service-account.json'
+FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/tippic-server/service-account.json'
 
 AUTH_TOKEN_SEND_INTERVAL_DAYS = {{ auth_token_send_interval_days }}
 AUTH_TOKEN_ENFORCED= {{ auth_token_enforced }}

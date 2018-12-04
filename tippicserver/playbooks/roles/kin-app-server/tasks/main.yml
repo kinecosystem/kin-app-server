@@ -1,15 +1,15 @@
 - name: "cron to periodically reboot server 1"
-  when: inventory_hostname == "kin-app-server-prod-1"
+  when: inventory_hostname == "tippic-server-prod-1"
   cron:
     name: "periodically reboot server"
-    job: "/usr/bin/python3 /opt/kin-app-server/tippicserver/helpers/reboot_server.py"
+    job: "/usr/bin/python3 /opt/tippic-server/tippicserver/helpers/reboot_server.py"
     minute: "*/13" # run every 30 minutes on all machines with a 10 minutes offset
 
 - name: "cron to periodically reboot server 2"
-  when: inventory_hostname == "kin-app-server-prod-2"
+  when: inventory_hostname == "tippic-server-prod-2"
   cron:
     name: "periodically reboot server"
-    job: "/usr/bin/python3 /opt/kin-app-server/tippicserver/helpers/reboot_server.py"
+    job: "/usr/bin/python3 /opt/tippic-server/tippicserver/helpers/reboot_server.py"
     minute: "*/17" # run every 39 minutes on all machines with a 10 minutes offset
 
 - name: Run "apt-get update"
@@ -63,10 +63,10 @@
     name: /opt/kin-core-python
     state: latest
 
-- name: Clone the kin-app-server repo
+- name: Clone the tippic-server repo
   git:
-    repo=https://github.com/kinfoundation/kin-app-server.git
-    dest=/opt/kin-app-server
+    repo=https://github.com/kinfoundation/tippic-server.git
+    dest=/opt/tippic-server
     accept_hostkey=true
     force=yes
     version={{kin_app_server_branch_name}}
@@ -87,16 +87,16 @@
 
 - name: pip install reqs
   pip:
-    requirements: /opt/kin-app-server/tippicserver/requirements.txt
+    requirements: /opt/tippic-server/tippicserver/requirements.txt
 
 - name: Template the config file
   template:
     src: templates/tippicserver/config.py.jinja2
-    dest: /opt/kin-app-server/tippicserver/config.py
+    dest: /opt/tippic-server/tippicserver/config.py
     
-- name: install the kin-app-server from the local copy. force upgrade to take any changes.
+- name: install the tippic-server from the local copy. force upgrade to take any changes.
   pip: 
-    name: /opt/kin-app-server
+    name: /opt/tippic-server
     state: latest
 
 - name: template the supervisord config file
@@ -152,18 +152,18 @@
 # this play is done, you need to run the restart one
 
 # all the cron tasks that need to run on all machines:
-# (for those that need to run on just one, see the kin-app-server-cron role)
+# (for those that need to run on just one, see the tippic-server-cron role)
 - cron:
     name: "gather periodic db-stats"
-    job: "/usr/bin/python3 /opt/kin-app-server/tippicserver/db_stats.py"
+    job: "/usr/bin/python3 /opt/tippic-server/tippicserver/db_stats.py"
     # needs to run on all machines
 
 - cron:
     name: "gather periodic xlm,kin balance"
-    job: "/usr/bin/python3 /opt/kin-app-server/tippicserver/track_balance.py"
+    job: "/usr/bin/python3 /opt/tippic-server/tippicserver/track_balance.py"
     # needs to run on all machines
 
 - cron:
     name: "periodically track exceptions in the log"
-    job: "/opt/kin-app-server/tippicserver/cron/track_exceptions.sh"
+    job: "/opt/tippic-server/tippicserver/cron/track_exceptions.sh"
     minute: "*/5" # run every 5 minutes on all machines

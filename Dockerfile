@@ -3,7 +3,7 @@ FROM alpine
 LABEL description "uWSGI + Flask based on Alpine Linux"
 
 # Copy python requirements file
-COPY kinappserver/requirements.txt /tmp/requirements.txt
+COPY tippicserver/requirements.txt /tmp/requirements.txt
 
 RUN apk add --no-cache \
     build-base \
@@ -21,14 +21,14 @@ RUN apk add --no-cache \
     rm -r /root/.cache
 
 
-# Add the kinappserver app
+# Add the tippicserver app
 COPY setup.py /app/
-COPY kinappserver /app/kinappserver/
+COPY tippicserver /app/tippicserver/
 WORKDIR /app/
 RUN pip3 install . --upgrade
 
 RUN apk add --update uwsgi-python
 
-RUN mkdir /opt/kin-app-server -p
+RUN mkdir /opt/tippic-server -p
 
-CMD ["uwsgi --plugin /usr/lib/uwsgi/python3_plugin.so --socket 0.0.0.0:8000 --protocol=http --wsgi-file /app/kinappserver/wsgi.py --enable-threads"]
+CMD ["uwsgi --plugin /usr/lib/uwsgi/python3_plugin.so --socket 0.0.0.0:8000 --protocol=http --wsgi-file /app/tippicserver/wsgi.py --enable-threads"]
