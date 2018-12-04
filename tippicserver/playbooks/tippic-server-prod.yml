@@ -54,7 +54,7 @@
    blackhawk_purchases_enabled: True
    blackhawk_critical_balance_threshold: 30 # no cards will be ordered when we reach this threshold
    payment_service_url: 'http://prod.payments.kinitapp.com:4999'
-   api_server_url: 'https://api.kinitapp.com'
+   api_server_url: 'https://api.tippicapp.com'
    use_payment_service_phone_number_prefix: '+'
    use_payment_service_percent_of_users: 100
    block_onboarding_android_version: 1.2.5

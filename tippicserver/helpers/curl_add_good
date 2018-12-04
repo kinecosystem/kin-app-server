@@ -1,3 +1,0 @@
-for x in {1..10} ; do
-curl -H "Content-Type: application/json" -X POST -d @good_payload.json https://stage.kinitapp.com/good/add
-done

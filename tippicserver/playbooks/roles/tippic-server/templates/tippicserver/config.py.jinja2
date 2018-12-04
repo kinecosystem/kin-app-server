@@ -2,7 +2,7 @@
 # Its a jinja2 file, meant to be processed by Ansible. By default, the debug mode is set to True,
 # and the debug values are hard-coded. Production values must be provided via the playbook.
 
-APK_PACKAGE_NAME = "org.kinecosystem.kinit"
+APK_PACKAGE_NAME = "org.kinecosystem.tippic"
 DEPLOYMENT_ENV = "{{deployment_env}}"
 DEBUG = {{ debug | default('True') }}
 DB_CONNSTR = "{{ db_connstr }}"

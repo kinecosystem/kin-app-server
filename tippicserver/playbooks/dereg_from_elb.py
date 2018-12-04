@@ -7,7 +7,6 @@ import json
 import sys
 import arrow
 
-kinit_prod_tg_arn='arn:aws:elasticloadbalancing:us-east-1:935522987944:targetgroup/kinitapp-prod/4311f4679bb3c46b'
 DEREGISTER_TIMEOUT_SECS = 60
 
 def get_checkout_connections():

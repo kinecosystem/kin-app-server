@@ -1,1 +1,0 @@
-curl -H "Content-Type: application/json" -X POST -d @offer_payload.json https://stage.kinitapp.com/offer/add

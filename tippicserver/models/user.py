@@ -36,18 +36,13 @@ class User(db.Model):
     deactivated = db.Column(db.Boolean, unique=False, default=False)
     auth_token = db.Column(UUIDType(binary=False), primary_key=False, nullable=True)
     package_id = db.Column(db.String(60), primary_key=False, nullable=True)
-    screen_w = db.Column(db.String(20), primary_key=False, nullable=True)
-    screen_h = db.Column(db.String(20), primary_key=False, nullable=True)
-    screen_d = db.Column(db.String(20), primary_key=False, nullable=True)
-    user_agent = db.Column(db.String(200), primary_key=False, nullable=True)  # optional, and filled via get_truex_activity
-    truex_user_id = db.Column(UUIDType(binary=False), primary_key=False, nullable=True)
 
     def __repr__(self):
         return '<sid: %s, user_id: %s, os_type: %s, device_model: %s, push_token: %s, time_zone: %s, device_id: %s,' \
-               ' onboarded: %s, public_address: %s, enc_phone_number: %s, package_id: %s, screen_w: %s, screen_h: %s,' \
-               ' screen_d: %s, user_agent: %s, deactivated: %s, truex_user_id: %s>' % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
-                                                                                           self.device_id, self.onboarded, self.public_address, self.enc_phone_number, self.package_id,
-                                                                                self.screen_w, self.screen_h, self.screen_d, self.user_agent, self.deactivated, self.truex_user_id)
+               ' onboarded: %s, public_address: %s, enc_phone_number: %s, package_id: %s, deactivated: %s'\
+               % (self.sid, self.user_id, self.os_type, self.device_model, self.push_token, self.time_zone,
+                  self.device_id, self.onboarded, self.public_address, self.enc_phone_number, self.package_id,
+                  self.deactivated)
 
 
 def get_user(user_id):
@@ -67,7 +62,7 @@ def deactivate_user(user_id):
 
 def user_deactivated(user_id):
     """returns true if the user_id is deactivated"""
-    # TODO cacahe the results?
+    # TODO cache the results?
     try:
         user = get_user(user_id)
     except Exception as e:
@@ -125,24 +120,16 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     user.time_zone = parse_timezone(time_zone)
     user.device_id = device_id
     user.auth_token = uuid4() if not user.auth_token else user.auth_token
-    user.screen_h = screen_h
-    user.screen_w = screen_w
-    user.screen_d = screen_d
     user.package_id = package_id
-    user.truex_user_id = uuid4() if not user.truex_user_id else user.truex_user_id
     db.session.add(user)
     db.session.commit()
 
     if is_new_user:
         user_app_data = UserAppData()
         user_app_data.user_id = user_id
-        user_app_data.completed_tasks = '[]'
-        user_app_data.completed_tasks_dict = {}
+        user_app_data.last_seen_pic_id = -1
+        user_app_data.next_pic_ts = arrow.utcnow().timestamp
         user_app_data.app_ver = app_ver
-        user_app_data.next_task_ts = arrow.utcnow().timestamp
-        user_app_data.next_task_ts_dict = {}
-        user_app_data.next_task_memo = generate_memo()
-        user_app_data.next_task_memo_dict = {}
         user_app_data.app_ver = app_ver
         db.session.add(user_app_data)
         db.session.commit()
@@ -208,16 +195,13 @@ class UserAppData(db.Model):
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
     completed_tasks = db.Column(db.JSON)
     completed_tasks_dict = db.Column(db.JSON)
-    next_task_ts = db.Column(db.String(40), primary_key=False, nullable=True)  # the ts for th next task, can be None
-    next_task_ts_dict = db.Column(db.JSON)
-    next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=True)  # the memo for the user's next task.
-    next_task_memo_dict = db.Column(db.JSON)
     ip_address = db.Column(INET) # the user's last known ip
     ip_address = db.Column(INET)  # the user's last known ip
     country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
     captcha_history = db.Column(db.JSON)
     should_solve_captcha_ternary = db.Column(db.Integer, unique=False, default=0, nullable=False)  # -1 = no captcha, 0 = show captcha on next task, 1 = captcha required
-
+    last_seen_pic_id =db.Column(db.Integer, unique=False, default=-1, nullable=False)
+    next_pic_ts = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
 
 
 def update_user_app_version(user_id, app_ver):
@@ -371,52 +355,12 @@ def get_user_country_code(user_id):
     return UserAppData.query.filter_by(user_id=user_id).one().country_iso_code  # can be null
 
 
-def get_next_task_memo(user_id, cat_id):
-    """returns the next memo for this user and cat_id"""
-    try:
-        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
-        next_memo = user_app_data.next_task_memo_dict.get(cat_id, None)
-        if next_memo is None:  # set a value
-            return generate_and_save_next_task_memo(user_app_data, cat_id)
-    except Exception as e:
-        raise InvalidUsage('cant get next memo. exception:%s' % e)
-    else:
-        return next_memo
-
-
-def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
-    """return the memo for this user and replace it with another"""
-    try:
-        memo = None
-        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
-        from .task2 import get_cat_id_for_task_id
-        cat_id = cat_id if cat_id else get_cat_id_for_task_id(task_id)
-        if user_app_data.next_task_memo_dict[cat_id]:
-            memo = user_app_data.next_task_memo_dict[cat_id]
-
-        generate_and_save_next_task_memo(user_app_data, cat_id)
-
-    except Exception as e:
-        print(e)
-        raise InvalidUsage('cant set next memo')
-
-    return memo
-
-
-def generate_and_save_next_task_memo(user_app_data, cat_id):
-    """generate a new memo and save it"""
-    next_memo = generate_memo()
-    user_app_data.next_task_memo_dict[cat_id] = next_memo
-    commit_json_changed_to_orm(user_app_data, ['next_task_memo_dict'])
-    return next_memo
-
-
 def list_all_users_app_data():
     """returns a dict of all the user-app-data"""
     response = {}
     users = UserAppData.query.order_by(UserAppData.user_id).all()
     for user in users:
-        response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at, 'completed_tasks': user.completed_tasks_dict}
+        response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at, 'last_seen_pic_id': user.last_seen_pic_id, 'next_pic_ts': user.next_pic_ts}
     return response
 
 
@@ -556,142 +500,37 @@ def send_compensated_push(user_id, amount, task_title):
         push_send_gcm(token, compensated_payload_gcm(amount, task_title), push_env)
     return True
 
+#
+# def store_next_task_results_ts(user_id, task_id, timestamp_str, cat_id=None):
+#     """stores the given ts for the given user and task_id for later retrieval
+#
+#     if cat_id is given, ignore the task_id.
+#     """
+#     try:
+#         if cat_id is None:
+#             from .task2 import get_cat_id_for_task_id
+#             cat_id = get_cat_id_for_task_id(task_id)
+#
+#         # stored as string, can be None
+#         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
+#         user_app_data.next_task_ts_dict[cat_id] = timestamp_str
+#         db.session.add(user_app_data)
+#
+#         commit_json_changed_to_orm(user_app_data, ['next_task_ts_dict'])
+#     except Exception as e:
+#         raise InvalidUsage('cant set task result ts. e:%s' % e)
 
-def store_next_task_results_ts(user_id, task_id, timestamp_str, cat_id=None):
-    """stores the given ts for the given user and task_id for later retrieval
-
-    if cat_id is given, ignore the task_id.
-    """
-    try:
-        if cat_id is None:
-            from .task2 import get_cat_id_for_task_id
-            cat_id = get_cat_id_for_task_id(task_id)
-
-        # stored as string, can be None
-        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
-        user_app_data.next_task_ts_dict[cat_id] = timestamp_str
-        db.session.add(user_app_data)
-
-        commit_json_changed_to_orm(user_app_data, ['next_task_ts_dict'])
-    except Exception as e:
-        raise InvalidUsage('cant set task result ts. e:%s' % e)
-
-
-def get_next_task_results_ts(user_id, cat_id):
-    """return the task_result_ts field for the given user and task category"""
-    try:
-        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
-        if user_app_data is None:
-            return None
-        return user_app_data.next_task_ts_dict.get(cat_id, 0)  # can be None
-    except Exception as e:
-        log.error('cant get task result ts. e: %s' % e)
-        raise InvalidUsage('cant get task result ts')
-
-
-def get_users_for_engagement_push(scheme):
-    """get user_ids for an engagement scheme"""
-    #TODO refactor - make it dry
-    from datetime import datetime, timedelta
-    from .task2 import count_immediate_tasks
-
-    now = arrow.utcnow().shift(seconds=60).timestamp  # add a small timeshift to account for calculation time
-    user_ids = {OS_IOS: [], OS_ANDROID: []}
-
-    if scheme not in ['engage-recent', 'engage-week']:
-        print('invalid scheme:%s' % scheme)
-        raise InvalidUsage('invalid scheme: %s' % scheme)
-
-    if scheme == 'engage-recent':
-        # get all user_ids that:
-        # (1) have active tasks and
-        # (2) did not log in today and
-        # (3) last login was sometimes in the last 4 days
-        today = datetime.date(datetime.today())
-        four_days_ago = datetime.date(datetime.today() + timedelta(days=-4))
-
-        all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
-        for user in all_pushable_users:
-            try:
-                from .blacklisted_phone_numbers import is_userid_blacklisted
-                if is_userid_blacklisted(user.user_id):
-                    log.info('skipping user %s - blacklisted' % user.user_id)
-                    continue
-
-                if should_block_user_by_country_code(user.user_id):
-                    log.info('skipping user %s - country not supported' % user.user_id)
-                    continue
-
-                # filter out users with no tasks AND ALSO users with future tasks:
-
-                if sum(item for item in count_immediate_tasks(user.user_id).keys()) == 0:
-                    log.info('skipping user %s - no active task, now: %s' % (user.user_id, now))
-                    continue
-
-                last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
-                last_active_date = datetime.date(last_active)
-
-                if today == last_active_date:
-                    log.info('skipping user %s: was active today. now: %s' % (user.user_id, now))
-                    continue
-                if last_active_date < four_days_ago:
-                    log.info('skipping user %s: last active more than 4 days ago. now: %s' % (user.user_id, now))
-                    continue
-
-                log.info('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
-                if user.os_type == OS_IOS:
-                    user_ids[OS_IOS].append(user.user_id)
-                else:
-                    user_ids[OS_ANDROID].append(user.user_id)
-
-            except Exception as e:
-                log.error('caught exception trying to calculate push for user %s. e:%s' % (user.user_id, e))
-                continue
-        return user_ids
-
-    elif scheme == 'engage-week':
-        # get all tokens that:
-        # (1) have active tasks and
-        # (2) logged in exactly a week ago
-        # (3) last login was sometimes in the last 4 days
-        seven_days_ago = datetime.date(datetime.today() + timedelta(days=-7))
-
-        all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
-        for user in all_pushable_users:
-            try:
-                from .blacklisted_phone_numbers import is_userid_blacklisted
-                if is_userid_blacklisted(user.user_id):
-                    log.info('skipping user %s - blacklisted' % user.user_id)
-                    continue
-
-                if should_block_user_by_country_code(user.user_id):
-                    log.info('skipping user %s - country not supported' % user.user_id)
-                    continue
-
-                if sum(item for item in count_immediate_tasks(user.user_id).keys()) == 0:
-                    log.info('skipping user %s - no active task, now: %s' % (user.user_id, now))
-                    continue
-
-                last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
-                last_active_date = datetime.date(last_active)
-
-                if seven_days_ago != last_active_date:
-                    log.info('skipping user %s: last active not seven days ago, now: %s' % (user.user_id, now))
-                    continue
-
-                log.info('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
-                if user.os_type == OS_IOS:
-                    user_ids[OS_IOS].append(user.push_token)
-                else:
-                    user_ids[OS_ANDROID].append(user.push_token)
-
-            except Exception as e:
-                log.error('caught exception trying to calculate push for user %s. e:%s' % (user.user_id, e))
-                continue
-        return user_ids
-    else:
-        log.error('get_users_for_engagement_push - unknown scheme')
-        return None
+#
+# def get_next_task_results_ts(user_id, cat_id):
+#     """return the task_result_ts field for the given user and task category"""
+#     try:
+#         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
+#         if user_app_data is None:
+#             return None
+#         return user_app_data.next_task_ts_dict.get(cat_id, 0)  # can be None
+#     except Exception as e:
+#         log.error('cant get task result ts. e: %s' % e)
+#         raise InvalidUsage('cant get task result ts')
 
 
 def get_userid_by_address(address):
@@ -916,10 +755,8 @@ def nuke_user_data(phone_number, nuke_all=False):
     for user_id in user_ids:
         db.engine.execute("delete from good where tx_hash in (select tx_hash from transaction where user_id='%s')" % user_id)
         db.engine.execute("delete from public.transaction where user_id='%s'" % user_id)
-        db.engine.execute("delete from public.user_task_results where user_id='%s'" % user_id)
-        db.engine.execute('''update public.user_app_data set completed_tasks_dict='{}'::json where user_id=\'%s\'''' % user_id)
-        db.engine.execute('''update public.user_app_data set next_task_memo_dict='{}'::json where user_id=\'%s\'''' % user_id)
-        db.engine.execute('''update public.user_app_data set next_task_ts_dict='{}'::json where user_id=\'%s\'''' % user_id)
+        db.engine.execute('''update public.user_app_data set last_seen_pic_id=-1 where user_id=\'%s\'''' % user_id)
+        db.engine.execute('''update public.user_app_data set next_pic_ts=%d where user_id=\'%s\'''' % (arrow.utcnow().timestamp, user_id) )
 
     # also erase the backup hints for the phone
     db.engine.execute("delete from phone_backup_hints where enc_phone_number='%s'" % app.encryption.encrypt(phone_number))
@@ -944,13 +781,11 @@ def get_user_config(user_id):
 
     # turn off phone verification for older clients:
     disable_phone_verification = False
-    disable_backup_nag = False
+    disable_backup_nag = True
     if os_type == OS_ANDROID and LooseVersion(user_app_data.app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_ANDROID_VERSION):
         disable_phone_verification = True
-        disable_backup_nag = True
     elif os_type == OS_IOS and LooseVersion(user_app_data.app_ver) <= LooseVersion(config.BLOCK_ONBOARDING_IOS_VERSION):
         disable_phone_verification = True
-        disable_backup_nag = True
 
     from .system_config import should_force_update, is_update_available
     if should_force_update(os_type, user_app_data.app_ver):
@@ -996,9 +831,6 @@ def get_user_report(user_id):
         user_report['onboarded'] = str(user.onboarded)
         user_report['public_address'] = user.public_address
         user_report['deactivated'] = str(user.deactivated)
-        user_report['completed_tasks'] = user_app_data.completed_tasks_dict
-        user_report['next_task_ts'] = user_app_data.next_task_ts_dict
-        user_report['next_task_memo'] = user_app_data.next_task_memo_dict
         user_report['last_app_launch'] = user_app_data.update_at
         user_report['ip_addr'] = user_app_data.ip_address
         user_report['country_iso_code'] = user_app_data.country_iso_code
@@ -1008,14 +840,11 @@ def get_user_report(user_id):
         user_report['auth_token']['authenticated'] = str(push_token_entry.authenticated)
         user_report['auth_token']['token'] = str(push_token_entry.auth_token)
         user_report['package_id'] = str(user.package_id)
-        user_report['screen_w'] = user.screen_w
-        user_report['screen_h'] = user.screen_h
-        user_report['screen_d'] = user.screen_d
-        user_report['user_agent'] = user.user_agent
-        user_report['truex_user_id'] = user.truex_user_id
         user_report['captcha_data'] = {}
         user_report['captcha_data']['should_solve_captcha'] = user_app_data.should_solve_captcha_ternary
         user_report['captcha_data']['history'] = user_app_data.captcha_history
+        user_report['last_seen_pic_id'] = user_app_data.last_seen_pic_id
+        user_report['next_pic_ts'] = user_app_data.next_pic_ts
 
         if user.enc_phone_number:
             ubh = get_user_backup_hints_by_enc_phone(user.enc_phone_number)
@@ -1101,15 +930,12 @@ def migrate_restored_user_data(temp_user_id, restored_user_id):
         restored_user.device_id = temp_user.device_id
         restored_user.auth_token = temp_user.auth_token
         restored_user.package_id = temp_user.package_id
-        restored_user.screen_w = temp_user.screen_w
-        restored_user.screen_h = temp_user.screen_h
-        restored_user.screen_d = temp_user.screen_d
-        restored_user.user_agent = temp_user.user_agent
-
         restored_user_app_data.app_ver = temp_user_app_data.app_ver
         restored_user_app_data.ip_address = temp_user_app_data.ip_address
         restored_user_app_data.app_ver = temp_user_app_data.app_ver
         restored_user_app_data.country_iso_code = temp_user_app_data.country_iso_code
+        restored_user_app_data.last_seen_pic_id = temp_user_app_data.last_seen_pic_id
+        restored_user_app_data.next_pic_ts = temp_user_app_data.next_pic_ts
 
         db.session.add(restored_user)
         db.session.add(restored_user_app_data)
@@ -1189,13 +1015,10 @@ def delete_all_user_data(user_id, are_u_sure=False):
     """delete all user data from the db. this erases all the users associated with the same phone number"""
     log.info('preparing to delete all info related to user_id %s' % user_id)
 
-    delete_user_goods = '''delete from good where good.order_id in (select tx_info->>'memo' as order_id from transaction where user_id='%s');'''
     delete_user_transactions = '''delete from transaction where user_id='%s';'''
-    delete_user_orders = '''delete from public.order where user_id='%s';'''
     delete_p2p_txs_sent = '''delete from p2_p_transaction where sender_user_id='%s';'''
     delete_p2p_txs_received = '''delete from p2_p_transaction where receiver_user_id='%s';'''
     delete_phone_backup_hints = '''delete from phone_backup_hints where enc_phone_number in (select enc_phone_number from public.user where user_id='%s');'''
-    delete_task_results = '''delete from public.user_task_results where user_id='%s';'''
     delete_auth_token = '''delete from public.push_auth_token where user_id='%s';'''
     delete_app_data = '''delete from public.user_app_data where user_id='%s';'''
     delete_user = '''delete from public.user where user_id='%s';'''
@@ -1213,10 +1036,6 @@ def delete_all_user_data(user_id, are_u_sure=False):
 
     for uid in uids:
         log.info('deleting all data related to user_id %s' % uid)
-        log.info('deleting goods...')
-        db.engine.execute(delete_user_goods % uid)
-        log.info('deleting orders...')
-        db.engine.execute(delete_user_orders % uid)
         log.info('deleting txs...')
         db.engine.execute(delete_user_transactions % uid)
         log.info('deleting p2p txs...')
@@ -1224,8 +1043,6 @@ def delete_all_user_data(user_id, are_u_sure=False):
         db.engine.execute(delete_p2p_txs_received % uid)
         log.info('deleting backup hints...')
         db.engine.execute(delete_phone_backup_hints % uid)
-        log.info('deleting task results...')
-        db.engine.execute(delete_task_results % uid)
         log.info('deleting auth tokens...')
         db.engine.execute(delete_auth_token % uid)
         log.info('deleting user data...')
@@ -1241,16 +1058,6 @@ def count_registrations_for_phone_number(phone_number):
     count = db.engine.execute(count_users_with_enc_phone_number % enc_phone_number).scalar()
     return count if count else 0
 
-
-def count_missing_txs():
-    """counts the number of users with missing txs in their data == users we owe money to"""
-    from datetime import datetime
-    todays_date = str(datetime.today()).split(' ')[0] + '%%'  # convert to sql date format with LIKE '2018-10-12%', double the '%' sign for escaping.
-    sql_stmt = '''SELECT count(*) FROM user_task_results u left join transaction t on u.user_id = t.user_id where t.tx_hash is null  and u.update_at::varchar LIKE '%s';''' % todays_date
-    missing_txs_today = db.engine.execute(sql_stmt)
-    missing_txs_today = missing_txs_today.scalar()
-    log.info('missing txs today: %s' % missing_txs_today)
-    gauge_metric('missing-txs', missing_txs_today)
 
 def re_register_all_users():
     """sends a push message to all users with a phone"""
@@ -1271,929 +1078,3 @@ def re_register_all_users():
         send_push_register(user.user_id)
         counter = counter + 1
 
-
-# TODO cache this
-def get_personalized_categories_header_message(user_id, message_type='default'):
-    """returns a user-specific message to be shown in the categories page"""
-    # nothing to personalize yet - just return the text from the db.
-    from .system_config import get_categories_extra_data
-    return get_categories_extra_data()[message_type] # either 'default' or 'no_tasks'
-
-
-def task20_migrate_user_to_tasks2(user_id):
-    """this function migrates user data from tasks1.0 to tasks2.0
-
-    a user can only migrate once.
-
-    Specifically: the user completed_tasks, next_task_ts and next_task_memo must be reformed.
-    - previously completed tasks must be kept, but mapped into their category
-    - for each category, the next_ts must be set to the beginning of the epoch
-    - a next memo must be calculated for each category
-    """
-    from .category import get_all_cat_ids
-    all_cat_ids = get_all_cat_ids()
-    uad = get_user_app_data(user_id)
-
-    if uad.completed_tasks_dict:
-        if '0' in uad.completed_tasks_dict.keys():
-            log.info('task20_migrate_user_to_tasks2: user %s was already migrated' % user_id)
-            return
-
-    # create a dict of arrays (for all currently existing categories)
-    new_completed_tasks_dict = {}
-    for cat_id in all_cat_ids:
-        new_completed_tasks_dict[cat_id] = []
-
-    # populate the dict with previously solved tasks
-    print('task20_migrate_user_to_tasks2: task 1.0 tasks list for user_id: %s: %s' % (user_id, uad.completed_tasks))
-    completed_tasks = json.loads(uad.completed_tasks)
-    tasks20_task_ids_list = tasks20_get_tasks_dict().keys()
-    for task_id in completed_tasks:
-        if task_id in tasks20_task_ids_list:  # some tasks were not migrated to tasks2.0 - just ignore them
-            new_completed_tasks_dict[tasks20_task_id_to_category_id(task_id)].append(task_id)
-    uad.completed_tasks_dict = new_completed_tasks_dict
-
-    # create and populate dicts for memos and ts's
-    epoch_start = arrow.get('0').timestamp
-    next_task_ts_dict = {}
-    next_task_memo_dict = {}
-    for cat_id in all_cat_ids:
-        next_task_ts_dict[cat_id] = epoch_start
-        next_task_memo_dict[cat_id] = generate_memo()
-    uad.next_task_ts_dict = next_task_ts_dict
-    uad.next_task_memo_dict = next_task_memo_dict
-
-    commit_json_changed_to_orm(uad, ['completed_tasks_dict', 'next_task_ts_dict', 'next_task_memo_dict'])
-
-    log.info('migrated user_id %s to tasks2.0: tasks: %s, ts: %s, memo: %s' % (user_id, uad.completed_tasks_dict , uad.next_task_ts_dict, uad.next_task_memo_dict))
-
-
-def tasks20_task_id_to_category_id(task_id):
-    """this function maps task_ids to their category_id, for migration (only)"""
-    #TODO map tasks to categories here
-    return tasks20_get_tasks_dict()[task_id]['cat_id']
-
-
-def add_task_to_completed_tasks1(user_id, task_id):
-    """DEBUG - to be used only for task2.0 migration tests. remove afterwards"""
-    user_app_data = get_user_app_data(user_id)
-    completed_tasks = json.loads(user_app_data.completed_tasks)
-
-    if task_id in completed_tasks:
-        log.info('task_id %s already in completed_tasks for user_id %s - ignoring' % (task_id, user_id))
-    else:
-        completed_tasks.append(task_id)
-        user_app_data.completed_tasks = json.dumps(completed_tasks)
-        db.session.add(user_app_data)
-        db.session.commit()
-        log.info('user %s tasks 1.0 completed tasks: %s' % (user_id ,completed_tasks))
-    return True
-
-
-def count_completed_tasks(user_id):
-    total_completed_tasks = 0
-    user_app_data = get_user_app_data(user_id)
-    for tasks_in_categories in user_app_data.completed_tasks_dict.values():
-        total_completed_tasks = total_completed_tasks + len(tasks_in_categories)
-    return total_completed_tasks
-
-
-# this is the data we got from Sarit regarding tasks migration. remove this once migration is completed
-def tasks20_get_tasks_dict():
-    """this function returns a dict with all the tasks2.0 migration
-
-    note that some tasks may be missing - these are simply not migrated
-    """
-    tasks_migration_array = [
-    {
-      "task_id": "151",
-      "catgory": "0",
-      "position": 0,
-      "delay_days": 1
-    },
-    {
-      "task_id": "152",
-      "catgory": "0",
-      "position": 1,
-      "delay_days": 1
-    },
-    {
-      "task_id": "159",
-      "catgory": "0",
-      "position": 2,
-      "delay_days": 1
-    },
-    {
-      "task_id": "163",
-      "catgory": "0",
-      "position": 3,
-      "delay_days": 1
-    },
-    {
-      "task_id": "164",
-      "catgory": "0",
-      "position": 4,
-      "delay_days": 1
-    },
-    {
-      "task_id": "168",
-      "catgory": "0",
-      "position": 5,
-      "delay_days": 1
-    },
-    {
-      "task_id": "173",
-      "catgory": "0",
-      "position": 6,
-      "delay_days": 1
-    },
-    {
-      "task_id": "178",
-      "catgory": "0",
-      "position": 7,
-      "delay_days": 1
-    },
-    {
-      "task_id": "182",
-      "catgory": "0",
-      "position": 8,
-      "delay_days": 1
-    },
-    {
-      "task_id": "188",
-      "catgory": "0",
-      "position": 9,
-      "delay_days": 1
-    },
-    {
-      "task_id": "77",
-      "catgory": "0",
-      "position": 10,
-      "delay_days": 1
-    },
-    {
-      "task_id": "193",
-      "catgory": "0",
-      "position": 11,
-      "delay_days": 1
-    },
-    {
-      "task_id": "194",
-      "catgory": "0",
-      "position": 12,
-      "delay_days": 1
-    },
-    {
-      "task_id": "3",
-      "catgory": "1",
-      "position": 0,
-      "delay_days": 1
-    },
-    {
-      "task_id": "4",
-      "catgory": "1",
-      "position": 1,
-      "delay_days": 1
-    },
-    {
-      "task_id": "5",
-      "catgory": "1",
-      "position": 2,
-      "delay_days": 1
-    },
-    {
-      "task_id": "6",
-      "catgory": "1",
-      "position": 3,
-      "delay_days": 1
-    },
-    {
-      "task_id": "7",
-      "catgory": "1",
-      "position": 4,
-      "delay_days": 1
-    },
-    {
-      "task_id": "13",
-      "catgory": "1",
-      "position": 5,
-      "delay_days": 1
-    },
-    {
-      "task_id": "16",
-      "catgory": "1",
-      "position": 6,
-      "delay_days": 1
-    },
-    {
-      "task_id": "17",
-      "catgory": "1",
-      "position": 7,
-      "delay_days": 1
-    },
-    {
-      "task_id": "18",
-      "catgory": "1",
-      "position": 8,
-      "delay_days": 1
-    },
-    {
-      "task_id": "21",
-      "catgory": "1",
-      "position": 9,
-      "delay_days": 1
-    },
-    {
-      "task_id": "22",
-      "catgory": "1",
-      "position": 10,
-      "delay_days": 1
-    },
-    {
-      "task_id": "23",
-      "catgory": "1",
-      "position": 11,
-      "delay_days": 1
-    },
-    {
-      "task_id": "29",
-      "catgory": "1",
-      "position": 12,
-      "delay_days": 1
-    },
-    {
-      "task_id": "31",
-      "catgory": "1",
-      "position": 13,
-      "delay_days": 1
-    },
-    {
-      "task_id": "34",
-      "catgory": "1",
-      "position": 14,
-      "delay_days": 1
-    },
-    {
-      "task_id": "36",
-      "catgory": "1",
-      "position": 15,
-      "delay_days": 1
-    },
-    {
-      "task_id": "44",
-      "catgory": "1",
-      "position": 16,
-      "delay_days": 1
-    },
-    {
-      "task_id": "52",
-      "catgory": "1",
-      "position": 17,
-      "delay_days": 1
-    },
-    {
-      "task_id": "56",
-      "catgory": "1",
-      "position": 18,
-      "delay_days": 1
-    },
-    {
-      "task_id": "62",
-      "catgory": "1",
-      "position": 19,
-      "delay_days": 1
-    },
-    {
-      "task_id": "63",
-      "catgory": "1",
-      "position": 20,
-      "delay_days": 1
-    },
-    {
-      "task_id": "64",
-      "catgory": "1",
-      "position": 21,
-      "delay_days": 1
-    },
-    {
-      "task_id": "73",
-      "catgory": "1",
-      "position": 22,
-      "delay_days": 1
-    },
-    {
-      "task_id": "74",
-      "catgory": "1",
-      "position": 23,
-      "delay_days": 1
-    },
-    {
-      "task_id": "76",
-      "catgory": "1",
-      "position": 24,
-      "delay_days": 1
-    },
-    {
-      "task_id": "81",
-      "catgory": "1",
-      "position": 25,
-      "delay_days": 1
-    },
-    {
-      "task_id": "122",
-      "catgory": "1",
-      "position": 26,
-      "delay_days": 1
-    },
-    {
-      "task_id": "125",
-      "catgory": "1",
-      "position": 27,
-      "delay_days": 1
-    },
-    {
-      "task_id": "126",
-      "catgory": "1",
-      "position": 28,
-      "delay_days": 0
-    },
-    {
-      "task_id": "127",
-      "catgory": "1",
-      "position": 29,
-      "delay_days": 1
-    },
-    {
-      "task_id": "131",
-      "catgory": "1",
-      "position": 30,
-      "delay_days": 0
-    },
-    {
-      "task_id": "133",
-      "catgory": "1",
-      "position": 31,
-      "delay_days": 1
-    },
-    {
-      "task_id": "134",
-      "catgory": "1",
-      "position": 32,
-      "delay_days": 0
-    },
-    {
-      "task_id": "135",
-      "catgory": "1",
-      "position": 33,
-      "delay_days": 1
-    },
-    {
-      "task_id": "138",
-      "catgory": "1",
-      "position": 34,
-      "delay_days": 0
-    },
-    {
-      "task_id": "139",
-      "catgory": "1",
-      "position": 35,
-      "delay_days": 1
-    },
-    {
-      "task_id": "140",
-      "catgory": "1",
-      "position": 36,
-      "delay_days": 0
-    },
-    {
-      "task_id": "141",
-      "catgory": "1",
-      "position": 37,
-      "delay_days": 1
-    },
-    {
-      "task_id": "143",
-      "catgory": "1",
-      "position": 38,
-      "delay_days": 0
-    },
-    {
-      "task_id": "144",
-      "catgory": "1",
-      "position": 39,
-      "delay_days": 1
-    },
-    {
-      "task_id": "145",
-      "catgory": "1",
-      "position": 40,
-      "delay_days": 0
-    },
-    {
-      "task_id": "147",
-      "catgory": "1",
-      "position": 41,
-      "delay_days": 1
-    },
-    {
-      "task_id": "148",
-      "catgory": "1",
-      "position": 42,
-      "delay_days": 0
-    },
-    {
-      "task_id": "149",
-      "catgory": "1",
-      "position": 43,
-      "delay_days": 1
-    },
-    {
-      "task_id": "153",
-      "catgory": "1",
-      "position": 44,
-      "delay_days": 0
-    },
-    {
-      "task_id": "154",
-      "catgory": "1",
-      "position": 45,
-      "delay_days": 1
-    },
-    {
-      "task_id": "155",
-      "catgory": "1",
-      "position": 46,
-      "delay_days": 0
-    },
-    {
-      "task_id": "136",
-      "catgory": "1",
-      "position": 47,
-      "delay_days": 1
-    },
-    {
-      "task_id": "157",
-      "catgory": "1",
-      "position": 48,
-      "delay_days": 1
-    },
-    {
-      "task_id": "158",
-      "catgory": "1",
-      "position": 49,
-      "delay_days": 0
-    },
-    {
-      "task_id": "161",
-      "catgory": "1",
-      "position": 50,
-      "delay_days": 1
-    },
-    {
-      "task_id": "162",
-      "catgory": "1",
-      "position": 51,
-      "delay_days": 0
-    },
-    {
-      "task_id": "166",
-      "catgory": "1",
-      "position": 52,
-      "delay_days": 1
-    },
-    {
-      "task_id": "167",
-      "catgory": "1",
-      "position": 53,
-      "delay_days": 0
-    },
-    {
-      "task_id": "169",
-      "catgory": "1",
-      "position": 54,
-      "delay_days": 1
-    },
-    {
-      "task_id": "170",
-      "catgory": "1",
-      "position": 55,
-      "delay_days": 0
-    },
-    {
-      "task_id": "171",
-      "catgory": "1",
-      "position": 56,
-      "delay_days": 1
-    },
-    {
-      "task_id": "174",
-      "catgory": "1",
-      "position": 57,
-      "delay_days": 0
-    },
-    {
-      "task_id": "175",
-      "catgory": "1",
-      "position": 58,
-      "delay_days": 1
-    },
-    {
-      "task_id": "176",
-      "catgory": "1",
-      "position": 59,
-      "delay_days": 0
-    },
-    {
-      "task_id": "179",
-      "catgory": "1",
-      "position": 60,
-      "delay_days": 1
-    },
-    {
-      "task_id": "180",
-      "catgory": "1",
-      "position": 61,
-      "delay_days": 0
-    },
-    {
-      "task_id": "181",
-      "catgory": "1",
-      "position": 62,
-      "delay_days": 1
-    },
-    {
-      "task_id": "185",
-      "catgory": "1",
-      "position": 63,
-      "delay_days": 0
-    },
-    {
-      "task_id": "186",
-      "catgory": "1",
-      "position": 64,
-      "delay_days": 1
-    },
-    {
-      "task_id": "187",
-      "catgory": "1",
-      "position": 65,
-      "delay_days": 0
-    },
-    {
-      "task_id": "190",
-      "catgory": "1",
-      "position": 66,
-      "delay_days": 1
-    },
-    {
-      "task_id": "191",
-      "catgory": "1",
-      "position": 67,
-      "delay_days": 0
-    },
-    {
-      "task_id": "192",
-      "catgory": "1",
-      "position": 68,
-      "delay_days": 1
-    },
-    {
-      "task_id": "88",
-      "catgory": "2",
-      "position": 0,
-      "delay_days": 1
-    },
-    {
-      "task_id": "92",
-      "catgory": "2",
-      "position": 1,
-      "delay_days": 1
-    },
-    {
-      "task_id": "97",
-      "catgory": "2",
-      "position": 2,
-      "delay_days": 1
-    },
-    {
-      "task_id": "101",
-      "catgory": "2",
-      "position": 3,
-      "delay_days": 1
-    },
-    {
-      "task_id": "105",
-      "catgory": "2",
-      "position": 4,
-      "delay_days": 1
-    },
-    {
-      "task_id": "110",
-      "catgory": "2",
-      "position": 5,
-      "delay_days": 1
-    },
-    {
-      "task_id": "113",
-      "catgory": "2",
-      "position": 6,
-      "delay_days": 1
-    },
-    {
-      "task_id": "117",
-      "catgory": "2",
-      "position": 7,
-      "delay_days": 1
-    },
-    {
-      "task_id": "119",
-      "catgory": "2",
-      "position": 8,
-      "delay_days": 1
-    },
-    {
-      "task_id": "121",
-      "catgory": "2",
-      "position": 9,
-      "delay_days": 1
-    },
-    {
-      "task_id": "103",
-      "catgory": "2",
-      "position": 10,
-      "delay_days": 1
-    },
-    {
-      "task_id": "124",
-      "catgory": "2",
-      "position": 11,
-      "delay_days": 1
-    },
-    {
-      "task_id": "128",
-      "catgory": "2",
-      "position": 12,
-      "delay_days": 1
-    },
-    {
-      "task_id": "132",
-      "catgory": "2",
-      "position": 13,
-      "delay_days": 1
-    },
-    {
-      "task_id": "137",
-      "catgory": "2",
-      "position": 14,
-      "delay_days": 1
-    },
-    {
-      "task_id": "142",
-      "catgory": "2",
-      "position": 15,
-      "delay_days": 1
-    },
-    {
-      "task_id": "146",
-      "catgory": "2",
-      "position": 16,
-      "delay_days": 1
-    },
-    {
-      "task_id": "150",
-      "catgory": "2",
-      "position": 17,
-      "delay_days": 1
-    },
-    {
-      "task_id": "156",
-      "catgory": "2",
-      "position": 18,
-      "delay_days": 1
-    },
-    {
-      "task_id": "160",
-      "catgory": "2",
-      "position": 19,
-      "delay_days": 1
-    },
-    {
-      "task_id": "165",
-      "catgory": "2",
-      "position": 20,
-      "delay_days": 1
-    },
-    {
-      "task_id": "172",
-      "catgory": "2",
-      "position": 21,
-      "delay_days": 1
-    },
-    {
-      "task_id": "177",
-      "catgory": "2",
-      "position": 22,
-      "delay_days": 1
-    },
-    {
-      "task_id": "183",
-      "catgory": "2",
-      "position": 23,
-      "delay_days": 1
-    },
-    {
-      "task_id": "189",
-      "catgory": "2",
-      "position": 24,
-      "delay_days": 1
-    },
-    {
-      "task_id": "195",
-      "catgory": "2",
-      "position": 25,
-      "delay_days": 1
-    },
-    {
-      "task_id": "0",
-      "catgory": "3",
-      "position": 0,
-      "delay_days": 1
-    },
-    {
-      "task_id": "1",
-      "catgory": "3",
-      "position": 1,
-      "delay_days": 6
-    },
-    {
-      "task_id": "2",
-      "catgory": "3",
-      "position": 2,
-      "delay_days": 6
-    },
-    {
-      "task_id": "19",
-      "catgory": "3",
-      "position": 3,
-      "delay_days": 6
-    },
-    {
-      "task_id": "20",
-      "catgory": "3",
-      "position": 4,
-      "delay_days": 6
-    },
-    {
-      "task_id": "33",
-      "catgory": "3",
-      "position": 5,
-      "delay_days": 6
-    },
-    {
-      "task_id": "41",
-      "catgory": "3",
-      "position": 6,
-      "delay_days": 6
-    },
-    {
-      "task_id": "49",
-      "catgory": "3",
-      "position": 7,
-      "delay_days": 6
-    },
-    {
-      "task_id": "53",
-      "catgory": "3",
-      "position": 8,
-      "delay_days": 6
-    },
-    {
-      "task_id": "54",
-      "catgory": "3",
-      "position": 9,
-      "delay_days": 6
-    },
-    {
-      "task_id": "60",
-      "catgory": "3",
-      "position": 10,
-      "delay_days": 6
-    },
-    {
-      "task_id": "61",
-      "catgory": "3",
-      "position": 11,
-      "delay_days": 6
-    },
-    {
-      "task_id": "65",
-      "catgory": "3",
-      "position": 12,
-      "delay_days": 6
-    },
-    {
-      "task_id": "10",
-      "catgory": "4",
-      "position": 0,
-      "delay_days": 1
-    },
-    {
-      "task_id": "15",
-      "catgory": "4",
-      "position": 1,
-      "delay_days": 5
-    },
-    {
-      "task_id": "28",
-      "catgory": "4",
-      "position": 2,
-      "delay_days": 5
-    },
-    {
-      "task_id": "46",
-      "catgory": "4",
-      "position": 3,
-      "delay_days": 5
-    },
-    {
-      "task_id": "48",
-      "catgory": "4",
-      "position": 4,
-      "delay_days": 5
-    },
-    {
-      "task_id": "50",
-      "catgory": "4",
-      "position": 5,
-      "delay_days": 5
-    },
-    {
-      "task_id": "57",
-      "catgory": "4",
-      "position": 6,
-      "delay_days": 5
-    }]
-
-    tasks_dict = {}
-    for item in tasks_migration_array:
-        task_id = item['task_id']
-        cat_id = item['catgory']
-        position = item['position']
-        delay_days = item['delay_days']
-
-        tasks_dict[task_id] = {'cat_id': cat_id, 'position': position, 'delay_days': delay_days}
-    return tasks_dict
-
-
-def tasks20_get_tasks_dict_stage():
-    """this function returns a dict with all the tasks2.0 migration
-
-    note that some tasks may be missing - these are simply not migrated
-    """
-    tasks_migration_array = [
-    {
-      "task_id": "3",
-      "catgory": "1",
-      "position": 0,
-      "delay_days": 1
-    },
-    {
-      "task_id": "4",
-      "catgory": "1",
-      "position": 1,
-      "delay_days": 1
-    },
-    {
-      "task_id": "5",
-      "catgory": "1",
-      "position": 2,
-      "delay_days": 1
-    },
-    {
-      "task_id": "6",
-      "catgory": "1",
-      "position": 3,
-      "delay_days": 1
-    },
-    {
-      "task_id": "7",
-      "catgory": "1",
-      "position": 4,
-      "delay_days": 1
-    },
-    {
-      "task_id": "13",
-      "catgory": "1",
-      "position": 5,
-      "delay_days": 1
-    }]
-
-    tasks_dict = {}
-    for item in tasks_migration_array:
-        task_id = item['task_id']
-        cat_id = item['catgory']
-        position = item['position']
-        delay_days = item['delay_days']
-
-        tasks_dict[task_id] = {'cat_id': cat_id, 'position': position, 'delay_days': delay_days}
-    return tasks_dict

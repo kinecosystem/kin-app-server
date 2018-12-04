@@ -2,17 +2,19 @@
 
 ![](https://travis-ci.org/kinecosystem/tippic-server.svg?branch=master)
 
-An backend service for the Kinit App aimed at:
+An backend service for the Tippic App aimed at:
 
     - storing user data (userid, push-token, device-id etc)
     
-    - offering spend and earn opportunities for clients
+    - offering one picture a day for tipping
     
     - paying clients via the payment service (https://github.com/kinecosystem/payment-service)
     
     - push messages are sent via rabbit queues to a dedicated Eshu cluster which forwards them to GCM/APNS
     
-all hosts are private in AWS. only the web-server ia accessible via a loadbalancer at port 443. Some internal services reside behind a loadbalancer (eshu, the payment service). There's even a load-balancer for the rabbit cluster (for health-checks.
+all hosts are private in AWS. only the web-server ia accessible via a loadbalancer at port 443. 
+Some internal services reside behind a loadbalancer (eshu, the payment service). There's even a load-balancer for the rabbit cluster (for health-checks.
+
 
 there's also an additional machine (kinit-app-cron) which runs some cron'd scripts.
 

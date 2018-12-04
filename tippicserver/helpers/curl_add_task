@@ -1,1 +1,0 @@
-curl -H "Content-Type: application/json" -X POST -d @task_payload.json https://stage.kinitapp.com/task/add
