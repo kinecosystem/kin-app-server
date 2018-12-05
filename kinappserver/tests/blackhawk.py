@@ -2,7 +2,7 @@
 import simplejson as json
 import unittest
 import time
-
+import json
 import testing.postgresql
 
 import kinappserver
@@ -31,21 +31,17 @@ class Tester(unittest.TestCase):
     def test_blackhawk(self):
         """test registration scenarios"""
         # client potal: https://clients.omnicard.com/login
-
-
-
         # get merchant list and merchant data
 
         # merchants_data = blackhawk.get_merchants_api('1776b2e7ad2da09dfa2b1c2b6af20cd3')
         # merchants_data = str(merchants_data).encode('utf-8').strip()
         # print(merchants_data)
 
+        # Run this on production to make sure Blackhawk is ssetupped correctly
+        # blackhawk_offers = models.list_bh_offers()
+        # all_offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
 
-        # merchant_data = blackhawk.get_merchant_api('1776b2e7ad2da09dfa2b1c2b6af20cd3', 813)
-        # merchant_data = str(merchant_data).encode('utf-8').strip()
-        # print(merchant_data)
-
-        # return
+        return
 
         resp = self.app.post('/blackhawk/creds/init',
                             data=json.dumps({

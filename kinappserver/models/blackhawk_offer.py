@@ -1,6 +1,7 @@
-import arrow
 import logging as log
-
+from kinappserver.models import Offer
+from kinappserver import blackhawk
+import json
 from kinappserver import db
 from kinappserver.utils import InternalError
 
@@ -51,11 +52,22 @@ def get_bh_offers():
 def list_bh_offers():
     """returns a dict of all the offers"""
     response = {}
-    offers = BlackhawkOffer.query.order_by(BlackhawkOffer.updated_at).all()
-    for offer in offers:
-        response[offer.offer_id] = {'merchant_code': offer.merchant_code,
-                                    'merchant_template_id': offer.merchant_template_id,
-                                    'batch_size': offer.batch_size,
-                                    'denomination': offer.denomination,
-                                    'minimum_threshold': offer.minimum_threshold}
+    blackhawk_offers = BlackhawkOffer.query.order_by(BlackhawkOffer.updated_at).all()
+    all_offers = Offer.query.filter_by(is_active=True).order_by(Offer.kin_cost.asc()).all()
+
+    for offer in blackhawk_offers:
+
+        merchant_data = blackhawk.get_merchant_api('1776b2e7ad2da09dfa2b1c2b6af20cd3', offer.merchant_code)
+        merchant_data = json.dumps(merchant_data)['merchant']
+
+        response[offer.offer_id] = {
+            'merchant_name': merchant_data['name'],
+            'merchant_code': offer.merchant_code,
+            'merchant_template_id': offer.merchant_template_id,
+            'batch_size': offer.batch_size,
+            'denomination': offer.denomination,
+            'minimum_threshold': offer.minimum_threshold,
+            'offer': filter(lambda item: item.offer_id == offer.offer_id, all_offers)
+        }
+
     return response
