@@ -1,10 +1,10 @@
-[program:kinappworker-fast]
+[program:tippicworker-fast]
 directory=/opt/tippic-server/tippicserver
 command=rq worker tippicserver-{{deployment_env}}-fast --url redis://{{redis_endpoint}}:6379 --logging_level=INFO
 autostart=true
 autorestart=true
-stderr_logfile=/var/log/kinappworker_fast.err.log
-stdout_logfile=/var/log/kinappworker_fast.out.log
+stderr_logfile=/var/log/tippicworker_fast.err.log
+stdout_logfile=/var/log/tippicworker_fast.out.log
 stopasgroup=true
 environment=
     FLASK_APP=tippicserver,

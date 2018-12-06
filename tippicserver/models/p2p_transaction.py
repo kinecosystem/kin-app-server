@@ -81,9 +81,6 @@ def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
         create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, receiver_address, amount)
         # create a json object that mimics the one in the /transactions api
 
-        log.info('sending p2p-tx push message to user_id %s' % receiver_user_id)
-        from ..push import send_p2p_push
-        send_p2p_push(receiver_user_id, amount, format_p2p_tx_dict(tx_hash, amount, True))
     except Exception as e:
         log.error('failed to create a new p2p tx. exception: %s' % e)
         return False, None

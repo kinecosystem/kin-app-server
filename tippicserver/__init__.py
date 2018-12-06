@@ -118,24 +118,6 @@ app.redis.setex('temp-key', 1, 'temp-value')
 app.rq_fast = Queue('tippicserver-%s-fast' % config.DEPLOYMENT_ENV, connection=redis.Redis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0), default_timeout=200)
 app.rq_slow = Queue('tippicserver-%s-slow' % config.DEPLOYMENT_ENV, connection=redis.Redis(host=config.REDIS_ENDPOINT, port=config.REDIS_PORT, db=0), default_timeout=7200)
 
-#push: init the amqplib: two instances, one for beta and one for release TODO get rid of this eventually
-app.amqp_publisher_beta = AmqpPublisher()
-app.amqp_publisher_release = AmqpPublisher()
-if not app.amqp_publisher_beta.init_config('beta', config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE,
-                                  config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD,
-                                  config.ESHU_HEARTBEAT, config.ESHU_APPID, config.PUSH_TTL_SECS):
-    log.error('could not init beta amqppublisher')
-    sys.exit(-1)
-
-if not app.amqp_publisher_release.init_config('release', config.ESHU_RABBIT_ADDRESS, config.ESHU_QUEUE, config.ESHU_EXCHANGE,
-                                  config.ESHU_VIRTUAL_HOST, config.ESHU_USERNAME, config.ESHU_PASSWORD,
-                                  config.ESHU_HEARTBEAT, config.ESHU_APPID, config.PUSH_TTL_SECS):
-    log.error('could not init release amqppublisher')
-    sys.exit(-1)
-
-# init truex credentials
-config.TRUEX_APP_ID, config.TRUEX_PARTNER_HASH, config.TRUEX_CALLBACK_SECRET = ssm.get_truex_creds()
-
 # useful prints:
 state = 'enabled' if config.PHONE_VERIFICATION_ENABLED else 'disabled'
 log.info('phone verification: %s' % state)
@@ -145,7 +127,6 @@ state = 'enabled' if config.AUTH_TOKEN_ENFORCED else 'disabled'
 log.info('auth token enforced: %s' % state)
 state = 'enabled' if config.P2P_TRANSFERS_ENABLED else 'disabled'
 log.info('p2p transfers: %s' % state)
-log.info('replenish blackhawk cards enabled: %s' % config.BLACKHAWK_PURCHASES_ENABLED)
 
 # get the firebase service-account from ssm
 service_account_file_path = ssm.write_service_account()
@@ -156,8 +137,6 @@ from firebase_admin import credentials
 cred = credentials.Certificate(service_account_file_path)
 firebase_admin.initialize_app(cred)
 app.firebase_admin = firebase_admin
-
-app.recaptcha_secret = ssm.get_ssm_value('/config/%s/recaptcha/secret' % config.DEPLOYMENT_ENV)
 
 # figure out blocked prefixes - if this fail, crash the server
 from ast import literal_eval

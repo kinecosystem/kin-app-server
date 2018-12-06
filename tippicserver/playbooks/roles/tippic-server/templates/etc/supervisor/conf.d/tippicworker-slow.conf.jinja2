@@ -1,11 +1,11 @@
-[program:kinappworker-slow]
+[program:tippicworker-slow]
 directory=/opt/tippic-server/tippicserver
 command=rq worker tippicserver-{{deployment_env}}-slow --url redis://{{redis_endpoint}}:6379 --logging_level=INFO
 command=rq worker tippicserver-{{deployment_env}}-slow --url redis://{{redis_endpoint}}:6379 --logging_level INFO
 autostart=true
 autorestart=true
-stderr_logfile=/var/log/kinappworker_slow.err.log
-stdout_logfile=/var/log/kinappworker_slow.out.log
+stderr_logfile=/var/log/tippicworker_slow.err.log
+stdout_logfile=/var/log/tippicworker_slow.out.log
 stopasgroup=true
 environment=
     FLASK_APP=tippicserver,

@@ -17,7 +17,7 @@ def report_inventory():
         pass
     for offer_id in inventory.keys():
         metric_name_unallocated = 'inventory-offerid-%s-unallocated' % offer_id
-        statsd.gauge(metric_name_unallocated, inventory[offer_id]['unallocated'], tags=['app:kinit,env:%s' % os.environ['ENV']])
+        statsd.gauge(metric_name_unallocated, inventory[offer_id]['unallocated'], tags=['app:tippic,env:%s' % os.environ['ENV']])
 
 
 def report_bh_balance():
@@ -32,7 +32,7 @@ def report_tx_total():
         from_public = (json.loads(response.text)['total']['from_public'])
         public_kin = to_public - from_public
         metric = 'public_kin'
-        statsd.gauge(metric, public_kin, tags=['app:kinit,env:%s' % os.environ['ENV']])
+        statsd.gauge(metric, public_kin, tags=['app:tippic,env:%s' % os.environ['ENV']])
     except Exception as e:
         log.error('cant collect tx totals')
         pass
@@ -51,7 +51,7 @@ def report_unauthed_user_count():
         pass
 
     metric = 'unauthed_user_count'
-    statsd.gauge(metric, count, tags=['app:kinit,env:%s' % os.environ['ENV']])
+    statsd.gauge(metric, count, tags=['app:tippic,env:%s' % os.environ['ENV']])
 
 
 report_inventory()

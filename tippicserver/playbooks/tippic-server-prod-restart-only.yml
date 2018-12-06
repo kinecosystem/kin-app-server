@@ -1,0 +1,21 @@
+- hosts: all
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: false
+  serial: '50%'
+
+ # vars:
+ #   tippic_prod_tg_arn: 'arn:aws:elasticloadbalancing:us-east-1:935522987944:targetgroup/tippic-prod/44e68fe465dd36c9'
+
+  pre_tasks:
+  - action: ec2_metadata_facts
+  - name: de-registering server from elb
+    local_action: command python3 "{{playbook_dir}}/dereg_from_elb.py" dereg "{{tippic_prod_tg_arn}}" "{{ ansible_ec2_instance_id }}"
+
+  roles:
+    - { role: tippic-server-restart-only , become: yes }
+
+  post_tasks:
+  - name: re-registering server to elb
+    local_action: command python3 "{{playbook_dir}}/dereg_from_elb.py" reg "{{tippic_prod_tg_arn}}" "{{ ansible_ec2_instance_id }}"
+
+

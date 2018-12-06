@@ -5,7 +5,6 @@ import logging as log
 
 from tippicserver import db, config, app
 from tippicserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS, commit_json_changed_to_orm
-from tippicserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_country_IS_supported
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
 import arrow
@@ -15,7 +14,7 @@ from .backup import get_user_backup_hints_by_enc_phone
 from time import sleep
 
 DEFAULT_TIME_ZONE = -4
-KINIT_IOS_PACKAGE_ID_PROD = 'org.kinecosystem.kinit'  # AKA bundle id
+TIPPIC_IOS_PACKAGE_ID_PROD = 'org.kinecosystem.tippic'  # AKA bundle id
 DEVICE_MODEL_MAX_SIZE = 40
 
 class User(db.Model):
@@ -94,7 +93,7 @@ def set_onboarded(user_id, onboarded, public_address):
     db.session.commit()
 
 
-def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver, screen_w, screen_h, screen_d, package_id):
+def create_user(user_id, os_type, device_model, push_token, time_zone, device_id, app_ver, package_id):
     """create a new user and commit to the database. should only fail if the user_id is duplicate"""
 
     def parse_timezone(tz):
@@ -128,7 +127,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
         user_app_data = UserAppData()
         user_app_data.user_id = user_id
         user_app_data.last_seen_pic_id = -1
-        user_app_data.next_pic_ts = arrow.utcnow().timestamp
+        user_app_data.next_pic_ts = '\'%s\'' % arrow.utcnow().timestamp
         user_app_data.app_ver = app_ver
         user_app_data.app_ver = app_ver
         db.session.add(user_app_data)
@@ -140,31 +139,6 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
         increment_metric('reregister')
 
     return is_new_user
-
-
-def get_truex_user_id(user_id):
-    """gets/create the truex user_id"""
-    user = get_user(user_id)
-    truex_user_id = user.truex_user_id
-    if not truex_user_id:
-        user.truex_user_id = uuid4()
-        db.session.add(user)
-        db.session.commit()
-
-    return truex_user_id
-
-
-def get_user_id_by_truex_user_id(truex_user_id):
-    """return the user_id for the given truex user id"""
-    try:
-        user = User.query.filter_by(truex_user_id=truex_user_id).first()
-        if user is None:
-            return None
-        else:
-            return user.user_id
-    except Exception as e:
-        log.error('cant get user_id by truex_user_id. Exception: %s' % e)
-        raise
 
 
 def update_user_token(user_id, push_token):
@@ -201,7 +175,7 @@ class UserAppData(db.Model):
     captcha_history = db.Column(db.JSON)
     should_solve_captcha_ternary = db.Column(db.Integer, unique=False, default=0, nullable=False)  # -1 = no captcha, 0 = show captcha on next task, 1 = captcha required
     last_seen_pic_id =db.Column(db.Integer, unique=False, default=-1, nullable=False)
-    next_pic_ts = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
+    next_pic_ts = db.Column(db.String(40), primary_key=False, nullable=True)
 
 
 def update_user_app_version(user_id, app_ver):
@@ -382,7 +356,7 @@ def get_user_os_type(user_id):
 
 
 def package_id_to_push_env(package_id):
-    if package_id == KINIT_IOS_PACKAGE_ID_PROD:
+    if package_id == TIPPIC_IOS_PACKAGE_ID_PROD:
         # only ios clients use prod atm
         return 'prod'
     return 'beta'
@@ -401,104 +375,6 @@ def get_user_push_data(user_id):
         else:
             push_env = 'beta'  # android dont send package id and only support 'beta'
         return user.os_type, user.push_token, push_env
-
-
-def send_push_tx_completed(user_id, tx_hash, amount, task_id, memo):
-    """send a message indicating that the tx has been successfully completed"""
-    os_type, token, push_env = get_user_push_data(user_id)
-    if token is None:
-        log.error('cant push to user %s: no push token' % user_id)
-        return False
-    if os_type == OS_IOS:
-        from tippicserver.push import tx_completed_push_apns, generate_push_id
-        push_send_apns(token, tx_completed_push_apns(generate_push_id(), str(tx_hash), str(user_id), str(task_id), int(amount), str(memo)), push_env)
-    else:
-        from tippicserver.push import gcm_payload, generate_push_id
-        payload = gcm_payload('tx_completed', generate_push_id(), {'type': 'tx_completed', 'user_id': user_id, 'tx_hash': tx_hash, 'kin': amount, 'task_id': task_id})
-        push_send_gcm(token, payload, push_env)
-    return True
-
-
-def send_push_auth_token(user_id, force_send=False):
-    """send an auth token that the client should ack"""
-    from .push_auth_token import get_token_by_user_id
-    if not force_send and not should_send_auth_token(user_id):
-        return True
-    os_type, token, push_env = get_user_push_data(user_id)
-    auth_token = get_token_by_user_id(user_id)
-    if token is None:
-        log.error('cant push to user %s: no push token' % user_id)
-        return False
-    if os_type == OS_IOS:
-        from tippicserver.push import auth_push_apns, generate_push_id
-        push_send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)), push_env)
-        push_send_apns(token, auth_push_apns(generate_push_id(), str(auth_token), str(user_id)), push_env) # send twice?
-        log.info('sent apns auth token to user %s' % user_id)
-    else:
-        from tippicserver.push import gcm_payload, generate_push_id
-        payload = gcm_payload('auth_token', generate_push_id(), {'type': 'auth_token', 'user_id': str(user_id), 'token': str(auth_token)})
-        push_send_gcm(token, payload, push_env)
-        log.info('sent gcm auth token to user %s' % user_id)
-
-    if not set_send_date(user_id):
-        log.error('could not set the send-date for auth-token for user_id: %s' % user_id)
-
-    increment_metric('auth-token-sent')
-
-    return True
-
-
-def send_push_register(user_id):
-    """send a message indicating that the client should re-register"""
-    os_type, token, push_env = get_user_push_data(user_id)
-    if token is None:
-        log.error('cant push to user %s: no push token' % user_id)
-        return False
-    if os_type == OS_IOS:
-        from tippicserver.push import register_push_apns, generate_push_id
-        push_send_apns(token, register_push_apns(generate_push_id()), push_env)
-        log.info('sent apns register to user %s' % user_id)
-    else:
-        from tippicserver.push import gcm_payload, generate_push_id
-        payload = gcm_payload('register', generate_push_id(), {'type': 'register'})
-        push_send_gcm(token, payload, push_env)
-        log.info('sent gcm register to user %s' % user_id)
-
-    increment_metric('register-push-sent')
-
-    return True
-
-
-def send_engagement_push(user_id, push_type):
-    """sends an engagement push message to the user with the given user_id"""
-    os_type, token, push_env = get_user_push_data(user_id)
-
-    if token is None:
-        log.error('cant push to user %s: no push token' % user_id)
-        return False
-
-    if os_type == OS_IOS:
-        push_send_apns(token, engagement_payload_apns(push_type), push_env)
-    else:
-        push_send_gcm(token, engagement_payload_gcm(push_type), push_env)
-
-    increment_metric('sent_eng_push_%s' % push_type)
-    return True
-
-
-def send_compensated_push(user_id, amount, task_title):
-
-    os_type, token, push_env = get_user_push_data(user_id)
-
-    if token is None:
-        log.error('cant push to user %s: no push token' % user_id)
-        return False
-
-    if os_type == OS_IOS:
-        push_send_apns(token, compensated_payload_apns(amount, task_title), push_env)
-    else:
-        push_send_gcm(token, compensated_payload_gcm(amount, task_title), push_env)
-    return True
 
 #
 # def store_next_task_results_ts(user_id, task_id, timestamp_str, cat_id=None):
@@ -718,13 +594,6 @@ def deactivate_by_enc_phone_number(enc_phone_number, new_user_id, activate_user=
                 # deactivate and copy task_history and next_task_ts
                 db.engine.execute("update public.user set deactivated=true where enc_phone_number='%s' and user_id='%s'" % (enc_phone_number, user_id_to_deactivate))
 
-                completed_tasks_query = "update user_app_data set completed_tasks_dict = Q.col1, next_task_ts_dict = Q.col2 from (select completed_tasks_dict as col1, next_task_ts_dict as col2 from user_app_data where user_id='%s') as Q where user_app_data.user_id = '%s'" % (user_id_to_deactivate, UUID(new_user_id))
-                db.engine.execute(completed_tasks_query)
-
-                # also delete the new user's history and plant the old user's history instead
-                db.engine.execute("delete from public.user_task_results where user_id='%s'" % UUID(new_user_id))
-                db.engine.execute("update public.user_task_results set user_id='%s' where user_id='%s'" % (UUID(new_user_id), user_id_to_deactivate))
-
     except Exception as e:
         log.error('cant deactivate_by_phone_number. Exception: %s' % e)
         raise
@@ -756,7 +625,7 @@ def nuke_user_data(phone_number, nuke_all=False):
         db.engine.execute("delete from good where tx_hash in (select tx_hash from transaction where user_id='%s')" % user_id)
         db.engine.execute("delete from public.transaction where user_id='%s'" % user_id)
         db.engine.execute('''update public.user_app_data set last_seen_pic_id=-1 where user_id=\'%s\'''' % user_id)
-        db.engine.execute('''update public.user_app_data set next_pic_ts=%d where user_id=\'%s\'''' % (arrow.utcnow().timestamp, user_id) )
+        db.engine.execute('''update public.user_app_data set next_pic_ts=\'%s\' where user_id=\'%s\'''' % (arrow.utcnow().timestamp, user_id))
 
     # also erase the backup hints for the phone
     db.engine.execute("delete from phone_backup_hints where enc_phone_number='%s'" % app.encryption.encrypt(phone_number))
@@ -769,15 +638,6 @@ def get_user_config(user_id):
     global_config = get_global_config()
     user_app_data = get_user_app_data(user_id)
     os_type = get_user_os_type(user_id)
-
-    # customize the p2p tx flag
-    if config.P2P_TRANSFERS_ENABLED:
-
-        if not user_app_data:
-            log.warning('could not customize user config. disabling p2p txs for this user')
-            global_config['p2p_enabled'] = False
-        elif len(user_app_data.completed_tasks_dict.values()) < config.P2P_MIN_TASKS:
-            global_config['p2p_enabled'] = False
 
     # turn off phone verification for older clients:
     disable_phone_verification = False

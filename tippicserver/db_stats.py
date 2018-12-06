@@ -13,7 +13,7 @@ def report_db_stats():
 
     response = requests.get(URL_PREFIX + '/stats/db')
     stats = json.loads(response.text)['stats']
-    statsd.gauge('dbstats-checkedout', stats['checkedout'], tags=['app:kinit,env:%s' % os.environ['ENV']])
+    statsd.gauge('dbstats-checkedout', stats['checkedout'], tags=['app:tippic,env:%s' % os.environ['ENV']])
 
 
 

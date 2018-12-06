@@ -13,22 +13,9 @@ REDIS_PORT = {{ redis_port }}
 STELLAR_INITIAL_ACCOUNT_BALANCE = {{ stellar_initial_account_balance }}
 STELLAR_TIMEOUT_SEC = {{ stellar_timeout_sec }}
 
-ESHU_USERNAME = "{{ eshu_username }}"
-ESHU_PASSWORD = "{{ eshu_password }}"
-ESHU_HEARTBEAT = 10
-ESHU_APPID = "{{ eshu_appid }}"
-ESHU_VIRTUAL_HOST = "{{ eshu_virtual_host }}"
-ESHU_EXCHANGE = "{{ eshu_exchange }}"
-ESHU_QUEUE = "{{ eshu_queue }}"
-ESHU_RABBIT_ADDRESS = "{{ eshu_rabbit_address }}"
-PUSH_TTL_SECS = 60*60*24
-
 STELLAR_NETWORK = "{{ stellar_network }}"
 STELLAR_HORIZON_URL = "{{ stellar_horizon_url }}"
 STELLAR_KIN_ISSUER_ADDRESS = "{{ stellar_kin_issuer_address }}"
-
-MAX_SIMULTANEOUS_ORDERS_PER_USER = {{ max_simultaneous_orders_per_user }}
-ORDER_EXPIRATION_SECS = 60
 
 KMS_KEY_AWS_REGION = "{{ kms_key_aws_region }}"
 
@@ -36,7 +23,6 @@ PHONE_VERIFICATION_ENABLED = {{ phone_verification_enabled }}
 PHONE_VERIFICATION_REQUIRED = {{ phone_verification_required }}
 
 P2P_TRANSFERS_ENABLED = {{ p2p_transfers_enabled }}
-P2P_MIN_TASKS = {{ p2p_min_tasks }}
 P2P_MIN_KIN_AMOUNT = {{ p2p_min_kin_amount }}
 P2P_MAX_KIN_AMOUNT = {{ p2p_max_kin_amount }}
 
@@ -47,14 +33,6 @@ FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/tippic-server/service-account.json'
 AUTH_TOKEN_SEND_INTERVAL_DAYS = {{ auth_token_send_interval_days }}
 AUTH_TOKEN_ENFORCED= {{ auth_token_enforced }}
 AUTH_TOKEN_ENABLED= {{ auth_token_enabled }}
-
-BLACKHAWK_PURCHASES_ENABLED = {{ blackhawk_purchases_enabled }}
-BLACKHAWK_CRITICAL_BALANCE_THRESHOLD = {{ blackhawk_critical_balance_threshold }}
-
-#TRUEX
-TRUEX_APP_ID = ''
-TRUEX_PARTNER_HASH = ''
-TRUEX_CALLBACK_SECRET = ''
 
 PAYMENT_SERVICE_URL = "{{ payment_service_url }}"
 API_SERVER_URL = "{{ api_server_url }}"
@@ -67,20 +45,4 @@ BLOCKED_PHONE_PREFIXES = "{{ blocked_phone_prefixes }}"
 ALLOWED_PHONE_PREFIXES = "{{ allowed_phone_prefixes }}"
 BLOCKED_COUNTRY_CODES = "{{ blocked_country_codes }}"
 
-TRUEX_BLACKLISTED_TASKIDS = "{{ truex_blacklisted_taskids }}"
-
 MAX_NUM_REGISTRATIONS_PER_NUMBER = "{{ max_num_registrations_per_number }}"
-
-CAPTCHA_STALE_THRESHOLD_SECS = 60
-CAPTCHA_MIN_CLIENT_VERSION_ANDROID = '1.2.6'
-CAPTCHA_MIN_CLIENT_VERSION_IOS = '99.99'
-CAPTCHA_SAFETY_COOLDOWN_SECS = 60*60*1
-CAPTCHA_TASK_MODULO = 4
-CAPTCHA_AUTO_RAISE = False
-
-GIFTCARDS_PER_TIME_RANGE = 1
-TIME_RANGE_IN_DAYS = 30
-SERVERSIDE_CLIENT_VALIDATION_ENABLED = False
-
-GIFTCARDS_IOS_VERSION = '1.2.1'
-GIFTCARDS_ANDROID_VERSION = '1.4.1'

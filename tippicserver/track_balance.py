@@ -15,15 +15,15 @@ def report_balance():
     base_seed_xlm = json.loads(response.text)['balance']['base_seed']['xlm']
  
     metric = 'base-seed-kin'
-    statsd.gauge(metric, base_seed_kin, tags=['app:kinit,env:%s' % os.environ['ENV']])
+    statsd.gauge(metric, base_seed_kin, tags=['app:tippic,env:%s' % os.environ['ENV']])
     metric = 'base-seed-xlm'
-    statsd.gauge(metric, base_seed_xlm, tags=['app:kinit,env:%s' % os.environ['ENV']])
+    statsd.gauge(metric, base_seed_xlm, tags=['app:tippic,env:%s' % os.environ['ENV']])
 
     for index in range(10):
         metric = 'channel-seed-%s-xlm' % index
         channel_xlm = json.loads(response.text)['balance']['channel_seeds'].get(str(index), None)
         if channel_xlm:
-            statsd.gauge(metric, int(channel_xlm['xlm']), tags=['app:kinit,env:%s' % os.environ['ENV']])
+            statsd.gauge(metric, int(channel_xlm['xlm']), tags=['app:tippic,env:%s' % os.environ['ENV']])
 
     return True
 

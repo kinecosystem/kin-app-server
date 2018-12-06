@@ -1,1 +1,0 @@
-python3 /opt/tippic-server/tippicserver/track_exceptions.py

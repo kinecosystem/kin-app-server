@@ -14,17 +14,15 @@ from distutils.version import LooseVersion
 from .utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
 
 from tippicserver import app, config, stellar, utils, ssm
-from .push import send_please_upgrade_push_2, send_country_not_supported
 from tippicserver.stellar import create_account, send_kin, send_kin_with_payment_service
 from tippicserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
     sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
-from tippicserver.models import create_user, update_user_token, update_user_app_version, is_onboarded, \
-    set_onboarded, send_push_tx_completed, \
+from tippicserver.models import create_user, update_user_token, update_user_app_version, is_onboarded, set_onboarded,\
     create_tx, list_user_transactions, \
     add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,\
-    get_address_by_userid, list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token,\
+    get_address_by_userid, list_p2p_transactions_for_user_id, nuke_user_data, ack_auth_token,\
     is_user_authenticated, is_user_phone_verified, get_user_config, get_user_report,\
-    scan_for_deauthed_users, user_exists, get_user_id_by_truex_user_id, is_in_acl,\
+    scan_for_deauthed_users, user_exists, is_in_acl,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
@@ -56,9 +54,6 @@ def app_launch():
     update_ip_address(user_id, get_source_ip(request))
 
     update_user_app_version(user_id, app_ver)
-
-    # send auth token if needed
-    send_push_auth_token(user_id)
 
     return jsonify(status='ok', config=get_user_config(user_id))
 
@@ -122,10 +117,6 @@ def set_user_phone_number_endpoint():
         unverified_phone_number = payload.get('phone_number', None)  # only used in tests
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
-
-        if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
-            if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
-                raise InvalidUsage('bad-request')
 
     except Exception as e:
         print(e)
@@ -195,8 +186,6 @@ def update_token_api_old():
             print('updating token for user %s to %s' % (user_id, token))
             update_user_token(user_id, token)
 
-            # send auth token now that we have push token
-            send_push_auth_token(user_id)
         except Exception as e:
             print('exception trying to update token for user_id %s with token: %s. exception: %s' % (user_id, token, e))
             return jsonify(status='error'), status.HTTP_400_BAD_REQUEST
@@ -228,8 +217,6 @@ def update_token_api():
             print('updating token for user %s' % user_id)
             update_user_token(user_id, token)
 
-            # send auth token now that we have push token
-            send_push_auth_token(user_id)
         except Exception as e:
             print('exception trying to update token for user_id %s' % user_id)
             return jsonify(status='error'), status.HTTP_400_BAD_REQUEST
@@ -240,30 +227,6 @@ def update_token_api():
         print('already updating token for user %s. ignoring request' % user_id)
 
     return jsonify(status='ok')
-
-
-def split_payment(address, task_id, send_push, user_id, memo, delta):
-    """this function calls either the payment service or the internal sdk to pay the user
-
-    this function will eventually be replaced, once we're sure the payment service is working
-    as intended.
-    """
-    use_payment_service = False
-    try:
-        phone_number = get_unenc_phone_number_by_user_id(user_id)
-        if phone_number and phone_number.find(config.USE_PAYMENT_SERVICE_PHONE_NUMBER_PREFIX) >= 0:  # like '+' or '+972' or '++' for (all, israeli numbers, nothing)
-            user_rolled = random_percent()
-            #print('split_payment: user rolled: %s, config: %s' % (user_rolled, config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS))
-            if int(user_rolled) <= int(config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS):
-                print('using payment service for user_id %s' % user_id)
-                use_payment_service = True
-    except Exception as e:
-        log.error('cant determine whether to use the payment service for user_id %s. defaulting to no' % user_id)
-
-    if use_payment_service:
-        reward_address_for_task_internal_payment_service(address, task_id, send_push, user_id, memo, delta)
-    else:
-        reward_and_push(address, task_id, send_push, user_id, memo, delta)
 
 
 @app.route('/user/transactions', methods=['GET'])
@@ -332,15 +295,13 @@ def onboard_user():
     # block users with an older version from onboarding. and send them a push message
     if should_block_user_by_client_version(user_id):
         print('blocking + deactivating user %s on onboarding with older version and sending push' % user_id)
-        send_please_upgrade_push_2([user_id])
+        # send_please_upgrade_push_2([user_id])
         # and also, deactivate the user
         deactivate_user(user_id)
 
         abort(403)
-
-    #TODO uncomment this when the time is right!
-    # elif config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
-    #    raise InvalidUsage('user isnt phone verified')
+    elif config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        raise InvalidUsage('user isnt phone verified')
 
     # ensure the user exists but does not have an account:
     onboarded = is_onboarded(user_id)
@@ -393,9 +354,6 @@ def register_api():
         app_ver = payload.get('app_ver', None)
         # optionals
         token = payload.get('token', None)
-        screen_h = payload.get('screen_h', None)
-        screen_w = payload.get('screen_w', None)
-        screen_d = payload.get('screen_d', None)
         package_id = payload.get('package_id', None)
         if None in (user_id, os, device_model, time_zone, app_ver):  # token is optional, device-id is required but may be None
             raise InvalidUsage('bad-request')
@@ -413,8 +371,7 @@ def register_api():
     else:
         try:
             new_user_created = create_user(user_id, os, device_model, token,
-                        time_zone, device_id, app_ver,
-                        screen_w, screen_h, screen_d, package_id)
+                        time_zone, device_id, app_ver, package_id)
         except InvalidUsage as e:
             raise InvalidUsage('duplicate-userid')
         else:
@@ -715,9 +672,9 @@ def payment_service_callback_endpoint():
 
                 create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
                 increment_metric('payment-callback-success')
-
-                if tx_hash and send_push:
-                        send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
+                #
+                # if tx_hash and send_push:
+                #     send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
 
                 try:
                     redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()

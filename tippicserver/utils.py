@@ -41,13 +41,13 @@ def generate_memo(is_manual=False):
 def increment_metric(metric_name, count=1):
     """increment a counter with the given name and value"""
     # set env to undefined for local tests (which do not emit stats, as there's no agent)
-    statsd.increment(metric_name, count, tags=['app:kinit,env:%s' % config.DEPLOYMENT_ENV])
+    statsd.increment(metric_name, count, tags=['app:tippic,env:%s' % config.DEPLOYMENT_ENV])
 
 
 def gauge_metric(metric_name, value, tags_str=''):
     """increment a counter with the given name and value"""
     # set env to undefined for local tests (which do not emit stats, as there's no agent)
-    tags = 'app:kinit,env:%s' % config.DEPLOYMENT_ENV
+    tags = 'app:tippic,env:%s' % config.DEPLOYMENT_ENV
     if tags_str:
         tags = tags + ',' + tags_str
     statsd.gauge(metric_name, value, tags=[tags])
@@ -85,7 +85,6 @@ def get_global_config():
     d['p2p_enabled'] = config.P2P_TRANSFERS_ENABLED
     d['p2p_min_kin'] = config.P2P_MIN_KIN_AMOUNT
     d['p2p_max_kin'] = config.P2P_MAX_KIN_AMOUNT
-    d['p2p_min_tasks'] = config.P2P_MIN_TASKS
     d['backup_nag'] = True
     if config.TOS_URL is not '':
         d['tos'] = config.TOS_URL
@@ -243,22 +242,16 @@ def print_creation_statement():
     """prints out db creation statement. useful"""
     from sqlalchemy.schema import CreateTable
     from sqlalchemy.dialects import postgresql
-    from .models import BlackhawkCard, BlackhawkOffer, BlackhawkCreds, UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, EmailTemplate, TruexBlacklistedUser, BlacklistedEncPhoneNumber, Task2, SystemConfig, Category
+    from .models import UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, EmailTemplate, BlacklistedEncPhoneNumber, SystemConfig
     log.info(CreateTable(User.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(UserAppData.__table__).compile(dialect=postgresql.dialect()))
-    log.info(CreateTable(BlackhawkCard.__table__).compile(dialect=postgresql.dialect()))
-    log.info(CreateTable(BlackhawkCreds.__table__).compile(dialect=postgresql.dialect()))
-    log.info(CreateTable(BlackhawkOffer.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(ACL.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(BackupQuestion.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(PhoneBackupHints.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(EmailTemplate.__table__).compile(dialect=postgresql.dialect()))
-    log.info(CreateTable(TruexBlacklistedUser.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(BlacklistedEncPhoneNumber.__table__).compile(dialect=postgresql.dialect()))
-    log.info(CreateTable(Task2.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(SystemConfig.__table__).compile(dialect=postgresql.dialect()))
-    log.info(CreateTable(Task2.__table__).compile(dialect=postgresql.dialect()))
-    log.info(CreateTable(Category.__table__).compile(dialect=postgresql.dialect()))
+
 
 
 def random_string(length=8):
@@ -368,26 +361,3 @@ def commit_json_changed_to_orm(obj_to_commit, changed_fields_list):
         flag_modified(obj_to_commit, field_name)
     db.session.add(obj_to_commit)
     db.session.commit()
-
-
-def is_valid_client(user_id, validation_token):
-
-    import kinit_client_validation_module as validation_module 
-    from tippicserver import config
-    from .models.user import get_user_os_type, get_user_app_data
-            
-    os_type = get_user_os_type(user_id)
-    apk_version = get_user_app_data(user_id).app_ver
-    
-    log.info('user_id: %s  - os_type: %s - client apk_version: %s - VALIDATION_MIN_APK_VERSION: %s' % (user_id, os_type, apk_version, validation_module.VALIDATION_MIN_APK_VERSION))
-
-    if os_type == OS_ANDROID and apk_version >= validation_module.VALIDATION_MIN_APK_VERSION:
-        log.info('user_id: %s  - REQUIRES VALIDATION' % user_id)
-        if validation_token is None:
-            log.info("user_id: %s  - validation_token is None!" % user_id)
-            return False
-
-        if not validation_module.validate_token(user_id,validation_token):
-            log.info("user_id: %s  - validation_token is invalid!" % user_id)
-            return False
-    return True

@@ -8,18 +8,14 @@ from flask import request, jsonify, abort
 from tippicserver.views_common import limit_to_acl, limit_to_localhost, limit_to_password, get_source_ip, extract_headers
 
 from tippicserver import app, config, stellar, utils, ssm
-from .push import send_please_upgrade_push_2
 from tippicserver.stellar import create_account, send_kin, send_kin_with_payment_service
 from tippicserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
     sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from tippicserver.models import create_user, update_user_token, update_user_app_version, \
-    is_onboarded, set_onboarded, send_push_tx_completed, send_engagement_push, \
-    create_tx,list_user_transactions,\
-    add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,\
-    get_address_by_userid, send_compensated_push,\
-    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified,\
-    get_user_config, get_user_report, get_user_tx_report,\
-    scan_for_deauthed_users, user_exists, send_push_register, is_in_acl,\
+    is_onboarded, set_onboarded, create_tx,list_user_transactions,\
+    add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,get_address_by_userid,\
+    list_p2p_transactions_for_user_id, nuke_user_data, ack_auth_token, is_user_authenticated, is_user_phone_verified,\
+    get_user_config, get_user_report, get_user_tx_report, scan_for_deauthed_users, user_exists, is_in_acl,\
     get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
     validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, delete_all_user_data, count_registrations_for_phone_number, \
@@ -262,26 +258,6 @@ def user_phone_number_blacklist_endpoint():
 #
 #     increment_metric('skip-wait')
 #     return jsonify(status='ok')
-
-
-@app.route('/user/auth/send', methods=['POST'])
-def send_auth_token_api():
-    """debug endpoint used to manually target clients with auth tokens"""
-    if not config.DEBUG:
-        limit_to_localhost()
-
-    payload = request.get_json(silent=True)
-    try:
-        user_ids = payload.get('user_ids', [])
-    except Exception as e:
-        print(e)
-        raise InvalidUsage('bad-request')
-
-    for user_id in user_ids:
-        # force send auth push
-        send_push_auth_token(user_id, force_send=True)
-
-    return jsonify(status='ok')
 
 
 @app.route('/user/blacklist', methods=['POST'])

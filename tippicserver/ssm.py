@@ -30,23 +30,6 @@ def get_encrpytion_creds():
     return encryption_key, iv
 
 
-def get_truex_creds(force_prod=False):
-    env = os.environ.get('ENV', 'test')
-
-    if force_prod:
-        print('forcing prod truex creds')
-        env = 'prod'
-
-    partner_hash = get_ssm_parameter('/config/' + env + '/truex/partner_hash', config.KMS_KEY_AWS_REGION)
-    callback_secret = get_ssm_parameter('/config/' + env + '/truex/callback_secret', config.KMS_KEY_AWS_REGION)
-    app_id = get_ssm_parameter('/config/' + env + '/truex/app_id', config.KMS_KEY_AWS_REGION)
-    if None in (app_id, partner_hash, callback_secret):
-        log.error('cant get truex creds')
-        raise InternalError('cant get truex creds')
-
-    return app_id, partner_hash, callback_secret
-
-
 def get_stellar_credentials():
     # get credentials from ssm. the base_seed is required, the channel-seeds are optional
     env = os.environ.get('ENV', 'test')
@@ -111,7 +94,7 @@ def get_ssm_parameter(param_name, kms_key_region):
 
 
 def get_security_passwords():
-    """returns the kinit security password from ssm"""
+    """returns the security password from ssm"""
     passwords = []
     env = os.environ.get('ENV', 'test')
     password = get_ssm_parameter('/config/' + env + '/misc/password', config.KMS_KEY_AWS_REGION)

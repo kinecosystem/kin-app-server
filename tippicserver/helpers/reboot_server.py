@@ -7,7 +7,7 @@ import json
 import sys
 import arrow
 
-kinit_prod_tg_arn='arn:aws:elasticloadbalancing:us-east-1:935522987944:targetgroup/kinitapp-prod/4311f4679bb3c46b'
+tippic_prod_tg_arn='arn:aws:elasticloadbalancing:us-east-1:935522987944:targetgroup/tippic-prod/44e68fe465dd36c9'
 MIN_CHECKEDOUT_CONN = 50
 DEREGISTER_TIMEOUT_SECS = 60
 
@@ -32,8 +32,8 @@ def get_target_group_instances(target_group_arn):
     return d
 
 
-def register_instance(kinit_prod_tg_arn, instance_id):
-    instances = get_target_group_instances(kinit_prod_tg_arn)
+def register_instance(tippic_prod_tg_arn, instance_id):
+    instances = get_target_group_instances(tippic_prod_tg_arn)
 
     if instance_id in instances and instances[instance_id] not in ('draining',):
         print('instance %s already in state %s. not registering' % (instance_id, instances[instance_id]))
@@ -42,7 +42,7 @@ def register_instance(kinit_prod_tg_arn, instance_id):
     print('regisering instance %s' % instance_id)
 
     resp=elbv2.register_targets(
-        TargetGroupArn=kinit_prod_tg_arn,
+        TargetGroupArn=tippic_prod_tg_arn,
         Targets=[
         {
             'Id': instance_id,
@@ -52,8 +52,8 @@ def register_instance(kinit_prod_tg_arn, instance_id):
     return True
 
 
-def deregister_instance(kinit_prod_tg_arn, instance_id):
-    instances = get_target_group_instances(kinit_prod_tg_arn)
+def deregister_instance(tippic_prod_tg_arn, instance_id):
+    instances = get_target_group_instances(tippic_prod_tg_arn)
 
     if instance_id not in instances:
         print('no such instance_id %s' % instance_id)
@@ -63,21 +63,21 @@ def deregister_instance(kinit_prod_tg_arn, instance_id):
         print('instance %s already in state %s. not de-registering' % (instance_id, instances[instance_id]))
         return True
 
-    print('deregisering instance %s' % instance_id)
+    print('deregistering instance %s' % instance_id)
 
     resp = elbv2.deregister_targets(
-        TargetGroupArn=kinit_prod_tg_arn,
+        TargetGroupArn=tippic_prod_tg_arn,
         Targets=[
         {
             'Id': instance_id,
         },
     ])
-    print('deregisering response: %s' % resp)
+    print('deregistering response: %s' % resp)
     return True
 
 
-def wait_for_registered(kinit_prod_tg_arn, instance_id):
-    instances = get_target_group_instances(kinit_prod_tg_arn)
+def wait_for_registered(tippic_prod_tg_arn, instance_id):
+    instances = get_target_group_instances(tippic_prod_tg_arn)
     if instances[instance_id] in ('healthy', 'unhealthy'):
         return True
 
@@ -85,14 +85,14 @@ def wait_for_registered(kinit_prod_tg_arn, instance_id):
         if instances[instance_id] in ('initial'):
             print('current status: %s. sleeping 10 seconds' % instances[instance_id])
             time.sleep(10)
-            instances = get_target_group_instances(kinit_prod_tg_arn)
+            instances = get_target_group_instances(tippic_prod_tg_arn)
         else:
             break
     return True
 
 
-def wait_for_unreigstered(kinit_prod_tg_arn, instance_id):
-    instances = get_target_group_instances(kinit_prod_tg_arn)
+def wait_for_unreigstered(tippic_prod_tg_arn, instance_id):
+    instances = get_target_group_instances(tippic_prod_tg_arn)
     if instance_id not in instances:
         print('instance %s already not in target group. aborting' % instance_id)
         return True
@@ -109,7 +109,7 @@ def wait_for_unreigstered(kinit_prod_tg_arn, instance_id):
             print('current status: %s. sleeping 10 seconds' % instances[instance_id])
 
             time.sleep(10)
-            instances = get_target_group_instances(kinit_prod_tg_arn)
+            instances = get_target_group_instances(tippic_prod_tg_arn)
         else:
             break
     return True
@@ -124,24 +124,24 @@ if conn_count < MIN_CHECKEDOUT_CONN:
     print('current conn count: %s. no need to reboot. aborting' % conn_count)
     sys.exit(1)
 
-instances = get_target_group_instances(kinit_prod_tg_arn)
+instances = get_target_group_instances(tippic_prod_tg_arn)
 print(instances)
 
 instance_id = get_instance_id()
 
-deregister_instance(kinit_prod_tg_arn, instance_id)
-wait_for_unreigstered(kinit_prod_tg_arn, instance_id)
+deregister_instance(tippic_prod_tg_arn, instance_id)
+wait_for_unreigstered(tippic_prod_tg_arn, instance_id)
 
-instances=get_target_group_instances(kinit_prod_tg_arn)
+instances=get_target_group_instances(tippic_prod_tg_arn)
 print(instances)
 
 completed_process = subprocess.run("supervisorctl restart all", shell=True, stdout=subprocess.PIPE)
 time.sleep(5)
 
-register_instance(kinit_prod_tg_arn, instance_id)
-wait_for_registered(kinit_prod_tg_arn, instance_id)
+register_instance(tippic_prod_tg_arn, instance_id)
+wait_for_registered(tippic_prod_tg_arn, instance_id)
 
-instances = get_target_group_instances(kinit_prod_tg_arn)
+instances = get_target_group_instances(tippic_prod_tg_arn)
 print(instances)
 
 

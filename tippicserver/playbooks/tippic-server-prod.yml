@@ -1,8 +1,3 @@
-- hosts: "{{ play_hosts | first }}"
-  remote_user: "{{ remote_user | default('ubuntu') }}"
-  become: true
-  roles:
-    - tippic-server-cron
 
 - hosts: all
   remote_user: "{{ remote_user | default('ubuntu') }}"
@@ -14,27 +9,20 @@
     #- ansible-roles.bash_aliases
 
   vars:
-   kin_app_server_branch_name: master
+   branch_name: tippic
    deployment_env: prod
    environment_config:
      ENV: prod
      STELLAR_ACCOUNT_SID: "{{ play_hosts.index(inventory_hostname) }}" # sets the host's index within the play
-   datadog_api_key: "{{ lookup('aws_ssm', '/config/prod/datadog/apikey' )}}"
+   datadog_api_key: "{{ lookup('aws_ssm', '/config/tippic/prod/datadog/apikey' )}}"
    datadog_config:
      log_level: INFO
      tags: "service:tippic-server-prod"
    debug: False
-   nginx_domain: api.kinitapp.com
-   db_connstr: "postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"
+   nginx_domain: api.tippicapp.com
+   db_connstr: "postgresql://{{lookup('aws_ssm', '/config/tippic/prod/sql/userpassword')}}@tippic-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/tippicdb"
    redis_endpoint: 'kinit-app-prod-001.qugi0x.0001.use1.cache.amazonaws.com'
    redis_port: 6379
-   eshu_username: admin
-   eshu_password: admin
-   eshu_exchange: eshu-exchange # this is postfixed in the code with 'beta/release'
-   eshu_queue: eshu-queue # this is postfixed in the code with 'beta/release'
-   eshu_virtual_host: kinapp
-   eshu_appid: kinapp
-   eshu_rabbit_address: eshu-rabbit-prod.kinitapp.com
    stellar_timeout_sec: 30
    stellar_initial_account_balance: 2 # = 20K txs, but 1.5 xlms are required for establishing trustline
    stellar_network: 'Public Global Kin Ecosystem Network ; June 2018'
@@ -62,19 +50,18 @@
    blocked_phone_prefixes: "['+55']" # handle with care. for example: "['+55','+972']" . must be a valid python list as a string. getting it wrong will break the server at startup.
    allowed_phone_prefixes: "['+1','+44','+972']"
    blocked_country_codes: "['BR']"
-   truex_blacklisted_taskids: "['103']"
    max_num_registrations_per_number: 10
 
    bash_aliases:
      - { alias: '_env', command: 'echo "tippicserver-prod"' }
      - { alias: '_grep', command: 'cat /var/log/tippicserver.err.log|grep '}
-     - { alias: '_grepworker-fast', command: 'cat /var/log/kinappworker_fast.err.log|grep '}
-     - { alias: '_grepworker-slow', command: 'cat /var/log/kinappworker_slow.err.log|grep '}
+     - { alias: '_grepworker-fast', command: 'cat /var/log/tippicworker_fast.err.log|grep '}
+     - { alias: '_grepworker-slow', command: 'cat /var/log/tippicworker_slow.err.log|grep '}
      - { alias: '_log', command: 'cat /var/log/tippicserver.err.log' }
      - { alias: '_tail', command: 'tail -f /var/log/tippicserver.err.log -n 10' }
-     - { alias: '_tailworker-fast', command: 'tail -f /var/log/kinappworker_fast.err.log -n 10' }
-     - { alias: '_tailworker-slow', command: 'tail -f /var/log/kinappworker_slow.err.log -n 10' }
-     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod" }
+     - { alias: '_tailworker-fast', command: 'tail -f /var/log/tippicworker_fast.err.log -n 10' }
+     - { alias: '_tailworker-slow', command: 'tail -f /var/log/tippicworker_slow.err.log -n 10' }
+     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/tippic/prod/sql/userpassword')}}@tippic-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/tippicproduser" }
 
 
 
@@ -92,10 +79,10 @@
    bash_aliases:
      - { alias: '_env', command: 'echo "tippicserver-prod"' }
      - { alias: '_grep', command: 'cat /var/log/tippicserver.err.log|grep '}
-     - { alias: '_grepworker-fast', command: 'cat /var/log/kinappworker_fast.err.log|grep '}
-     - { alias: '_grepworker-slow', command: 'cat /var/log/kinappworker_slow.err.log|grep '}
+     - { alias: '_grepworker-fast', command: 'cat /var/log/tippicworker_fast.err.log|grep '}
+     - { alias: '_grepworker-slow', command: 'cat /var/log/tippicworker_slow.err.log|grep '}
      - { alias: '_log', command: 'cat /var/log/tippicserver.err.log' }
      - { alias: '_tail', command: 'tail -f /var/log/tippicserver.err.log -n 10' }
-     - { alias: '_tailworker-fast', command: 'tail -f /var/log/kinappworker_fast.err.log -n 10' }
-     - { alias: '_tailworker-slow', command: 'tail -f /var/log/kinappworker_slow.err.log -n 10' }
-     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod" }
+     - { alias: '_tailworker-fast', command: 'tail -f /var/log/tippicworker_fast.err.log -n 10' }
+     - { alias: '_tailworker-slow', command: 'tail -f /var/log/tippicworker_slow.err.log -n 10' }
+     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@tippic-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/tippicproduser" }

@@ -31,21 +31,6 @@ class Tester(unittest.TestCase):
     def test_register_with_verification2(self):
         """test registration scenarios"""
 
-        cat = {'id': '0',
-          'title': 'cat-title',
-               'supported_os': 'all',
-           'skip_image_test': True,
-           'ui_data': {'color': "#123",
-                      'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png',
-                      'header_image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/gift_card.png'}}
-
-        resp = self.app.post('/category/add',
-                            data=json.dumps({
-                            'category': cat}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
         userid = str(uuid.uuid4())
         resp = self.app.post('/user/register',
             data=json.dumps({
@@ -129,64 +114,7 @@ class Tester(unittest.TestCase):
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
 
-        task0 = {
-          'id': '0',
-          "cat_id": '0',
-          "position": 0,
-          'title': 'do you know horses?',
-          'desc': 'horses_4_dummies',
-          'type': 'questionnaire',
-          'price': 1,
-          'min_to_complete': 2,
-          'skip_image_test': True,
-          'tags': ['music', 'crypto', 'movies', 'kardashians', 'horses'],
-          'provider':
-            {'name': 'om-nom-nom-food', 'image_url': 'http://inter.webs/horsie.jpg'},
-          'items': [
-            {
-             'id': '435',
-             'text': 'what animal is this?',
-             'type': 'textimage',
-                 'results': [
-                        {'id': '235',
-                         'text': 'a horse!',
-                         'image_url': 'cdn.helllo.com/horse.jpg'},
-                            {'id': '2465436',
-                         'text': 'a cat!',
-                         'image_url': 'cdn.helllo.com/kitty.jpg'},
-                         ],
-            }]
-        }
-
-        resp = self.app.post('/task/add',
-                            data=json.dumps({
-                            'task': task0}),
-                            headers={},
-                            content_type='application/json')
-        self.assertEqual(resp.status_code, 200)
-
-        # get the user's current tasks - there should be none.
-        headers = {USER_ID_HEADER: userid}
-        resp = self.app.get('/user/tasks', headers=headers)
-        data = json.loads(resp.data)
-        print('data: %s' % data)
-        self.assertEqual(resp.status_code, 403)
-        self.assertEqual(data['tasks'], [])
-        self.assertEqual(data['reason'], 'denied')
-
-        # send task results - should fail - user deactivated
-        resp = self.app.post('/user/task/results',
-                            data=json.dumps({
-                            'id': '0',
-                            'address': 'GCYUCLHLMARYYT5EXJIK2KZJCMRGIKKUCCJKJOAPUBALTBWVXAT4F4OZ',
-                            'results': {'2234': 'werw', '5345': '345345'},
-                            'send_push': False
-                            }),
-                            headers={USER_ID_HEADER: str(userid)},
-                            content_type='application/json')
-        print('post task results response: %s' % json.loads(resp.data))
-        self.assertEqual(resp.status_code, 403)
-        self.assertEqual(data['reason'], 'denied')
+        ## TODO - BERRY there were tests here checking task submission - different test we need to add for Tippic?
 
 if __name__ == '__main__':
     unittest.main()
