@@ -242,7 +242,7 @@ def print_creation_statement():
     """prints out db creation statement. useful"""
     from sqlalchemy.schema import CreateTable
     from sqlalchemy.dialects import postgresql
-    from .models import UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, EmailTemplate, BlacklistedEncPhoneNumber, SystemConfig
+    from .models import UserAppData, User, ACL, BackupQuestion, PhoneBackupHints, EmailTemplate, BlacklistedEncPhoneNumber, SystemConfig, PushAuthToken
     log.info(CreateTable(User.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(UserAppData.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(ACL.__table__).compile(dialect=postgresql.dialect()))
@@ -251,6 +251,7 @@ def print_creation_statement():
     log.info(CreateTable(EmailTemplate.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(BlacklistedEncPhoneNumber.__table__).compile(dialect=postgresql.dialect()))
     log.info(CreateTable(SystemConfig.__table__).compile(dialect=postgresql.dialect()))
+    log.info(CreateTable(PushAuthToken.__table__).compile(dialect=postgresql.dialect()))
 
 
 
