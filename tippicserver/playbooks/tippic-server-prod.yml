@@ -61,7 +61,7 @@
      - { alias: '_tail', command: 'tail -f /var/log/tippicserver.err.log -n 10' }
      - { alias: '_tailworker-fast', command: 'tail -f /var/log/tippicworker_fast.err.log -n 10' }
      - { alias: '_tailworker-slow', command: 'tail -f /var/log/tippicworker_slow.err.log -n 10' }
-     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/tippic/prod/sql/userpassword')}}@tippic-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/tippicproduser" }
+     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/tippic/prod/sql/userpassword')}}@tippic-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/tippicdb" }
 
 
 
@@ -85,4 +85,4 @@
      - { alias: '_tail', command: 'tail -f /var/log/tippicserver.err.log -n 10' }
      - { alias: '_tailworker-fast', command: 'tail -f /var/log/tippicworker_fast.err.log -n 10' }
      - { alias: '_tailworker-slow', command: 'tail -f /var/log/tippicworker_slow.err.log -n 10' }
-     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@tippic-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/tippicproduser" }
+     - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@tippic-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/tippicdb" }
