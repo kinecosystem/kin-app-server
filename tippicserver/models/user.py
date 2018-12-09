@@ -126,9 +126,6 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
     if is_new_user:
         user_app_data = UserAppData()
         user_app_data.user_id = user_id
-        user_app_data.last_seen_pic_id = -1
-        user_app_data.next_pic_ts = '\'%s\'' % arrow.utcnow().timestamp
-        user_app_data.app_ver = app_ver
         user_app_data.app_ver = app_ver
         db.session.add(user_app_data)
         db.session.commit()
@@ -167,15 +164,11 @@ class UserAppData(db.Model):
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=True, nullable=False)
     app_ver = db.Column(db.String(40), primary_key=False, nullable=False)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
-    completed_tasks = db.Column(db.JSON)
-    completed_tasks_dict = db.Column(db.JSON)
     ip_address = db.Column(INET) # the user's last known ip
-    ip_address = db.Column(INET)  # the user's last known ip
     country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
     captcha_history = db.Column(db.JSON)
     should_solve_captcha_ternary = db.Column(db.Integer, unique=False, default=0, nullable=False)  # -1 = no captcha, 0 = show captcha on next task, 1 = captcha required
-    last_seen_pic_id =db.Column(db.Integer, unique=False, default=-1, nullable=False)
-    next_pic_ts = db.Column(db.String(40), primary_key=False, nullable=True)
+
 
 
 def update_user_app_version(user_id, app_ver):
@@ -334,7 +327,7 @@ def list_all_users_app_data():
     response = {}
     users = UserAppData.query.order_by(UserAppData.user_id).all()
     for user in users:
-        response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at, 'last_seen_pic_id': user.last_seen_pic_id, 'next_pic_ts': user.next_pic_ts}
+        response[user.user_id] = {'user_id': user.user_id,  'app_ver': user.app_ver, 'update': user.update_at}
     return response
 
 
@@ -624,8 +617,6 @@ def nuke_user_data(phone_number, nuke_all=False):
     for user_id in user_ids:
         db.engine.execute("delete from good where tx_hash in (select tx_hash from transaction where user_id='%s')" % user_id)
         db.engine.execute("delete from public.transaction where user_id='%s'" % user_id)
-        db.engine.execute('''update public.user_app_data set last_seen_pic_id=-1 where user_id=\'%s\'''' % user_id)
-        db.engine.execute('''update public.user_app_data set next_pic_ts=\'%s\' where user_id=\'%s\'''' % (arrow.utcnow().timestamp, user_id))
 
     # also erase the backup hints for the phone
     db.engine.execute("delete from phone_backup_hints where enc_phone_number='%s'" % app.encryption.encrypt(phone_number))
@@ -703,8 +694,6 @@ def get_user_report(user_id):
         user_report['captcha_data'] = {}
         user_report['captcha_data']['should_solve_captcha'] = user_app_data.should_solve_captcha_ternary
         user_report['captcha_data']['history'] = user_app_data.captcha_history
-        user_report['last_seen_pic_id'] = user_app_data.last_seen_pic_id
-        user_report['next_pic_ts'] = user_app_data.next_pic_ts
 
         if user.enc_phone_number:
             ubh = get_user_backup_hints_by_enc_phone(user.enc_phone_number)
@@ -794,8 +783,6 @@ def migrate_restored_user_data(temp_user_id, restored_user_id):
         restored_user_app_data.ip_address = temp_user_app_data.ip_address
         restored_user_app_data.app_ver = temp_user_app_data.app_ver
         restored_user_app_data.country_iso_code = temp_user_app_data.country_iso_code
-        restored_user_app_data.last_seen_pic_id = temp_user_app_data.last_seen_pic_id
-        restored_user_app_data.next_pic_ts = temp_user_app_data.next_pic_ts
 
         db.session.add(restored_user)
         db.session.add(restored_user_app_data)
