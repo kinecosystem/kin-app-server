@@ -21,6 +21,7 @@ from kinappserver import config
 from kinappserver.utils import increment_metric, gauge_metric
 import urllib.parse
 import time
+import logging as log
 
 HEADERS = {'Content-Type': 'application/x-www-form-urlencoded'}
 API_BASE_URI = 'https://api.omnicard.com/2.x'

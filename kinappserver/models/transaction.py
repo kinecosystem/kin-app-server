@@ -4,7 +4,6 @@ import logging as log
 
 from sqlalchemy_utils import UUIDType
 from sqlalchemy import desc
-import arrow
 
 from kinappserver import db, stellar
 
@@ -23,15 +22,6 @@ class Transaction(db.Model):
 
     def __repr__(self):
         return '<tx_hash: %s, user_id: %s, amount: %s, remote_address: %s, incoming_tx: %s, tx_info: %s,  update_at: %s>' % (self.tx_hash, self.user_id, self.amount, self.remote_address, self.incoming_tx, self.tx_info, self.update_at)
-
-
-def get_offers_bought_in_days_ago(user_id, days):
-    """return true if user already reclaimed this offer in offers time period"""
-    from datetime import datetime, timedelta
-    date_days_from_now = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-    txs = db.engine.execute("select tx_info from public.transaction where incoming_tx=true and user_id='%s' and update_at > ('%s'::date);" % (user_id, date_days_from_now)).fetchall()
-    jsons = [item[0] for item in txs]
-    return jsons
 
 
 def list_user_transactions(user_id, max_txs=None):

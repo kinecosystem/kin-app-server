@@ -395,7 +395,7 @@ class Tester(unittest.TestCase):
             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # try to book again - should fail - max giftcard riched
+        # try to book again - should fail - max offer reached
         resp = self.app.post('/offer/book',
                     data=json.dumps({
                     'id': offerid}),

@@ -16,13 +16,24 @@
 
 unset AWS_SESSION_TOKEN
 unset AWS_SECURITY_TOKEN
-export AWS_ACCESS_KEY_ID=AKIAJFKNURYVUAHA3ORQ
+export AWS_ACCESS_KEY_ID=
+
 if [[ -z "${AWS_SECRET_ACCESS_KEY}" ]]; then
   echo "did you forget to export AWS_SECRET_ACCESS_KEY? aborting!"
   exit
  fi
 aws --version
-aws s3 cp $1 s3://kinapp-static/brand_img/ --acl public-read
 
 filename=$(basename $1)
-echo "your file is now at: https://s3.amazonaws.com/kinapp-static/brand_img/$filename"
+extension="${filename##*.}"
+filename="${filename%.*}"
+
+
+aws s3 cp $1 s3://kinapp-static/brand_img/ios/ --acl public-read
+aws s3 cp $1 s3://kinapp-static/brand_img/ios/$filename@2x.$extension --acl public-read
+aws s3 cp $1 s3://kinapp-static/brand_img/ios/$filename@3x.$extension --acl public-read
+aws s3 cp $1 s3://kinapp-static/brand_img/android/mdpi/ --acl public-read
+aws s3 cp $1 s3://kinapp-static/brand_img/android/hdpi/ --acl public-read
+aws s3 cp $1 s3://kinapp-static/brand_img/android/xhdpi/ --acl public-read
+aws s3 cp $1 s3://kinapp-static/brand_img/android/xxhdpi/ --acl public-read
+aws s3 cp $1 s3://kinapp-static/brand_img/android/xxxhdpi/ --acl public-read

@@ -130,7 +130,7 @@ def set_user_phone_number_endpoint():
         if None in (user_id, token):
             raise InvalidUsage('bad-request')
 
-        if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
+        if not utils.is_valid_client(user_id, payload.get('validation-token', None)):
             if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
 
@@ -852,8 +852,7 @@ def get_offers_api():
 def book_offer_api():
     """books an offer by a user"""
     from .models.user import get_user_inapp_balance
-    from .models.transaction import get_offers_bought_in_days_ago
-    from .models.offer import get_cost_and_address
+    from .models.offer import get_cost_and_address, get_locked_offers
     from .models.good import goods_avilable
 
     payload = request.get_json(silent=True)
@@ -862,24 +861,20 @@ def book_offer_api():
         offer_id = payload.get('id', None)
         if None in (user_id, offer_id):
             raise InvalidUsage('no user_id or offer_id')
-        if not utils.is_valid_client(user_id, payload.get('validation_token', None)):
+        if not utils.is_valid_client(user_id, payload.get('validation-token', None)):
             if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
 
-        tx_infos = get_offers_bought_in_days_ago(user_id, config.TIME_RANGE_IN_DAYS)
+        locked_offers_ids = get_locked_offers(user_id, config.OFFER_LIMIT_TIME_RANGE)
         user_balance = get_user_inapp_balance(user_id)
         kin_cost, address = get_cost_and_address(offer_id)
 
         if not goods_avilable(offer_id):
-            raise InvalidUsage('goods_unvilable')
+            raise InvalidUsage('goods_unavailable')
         if user_balance < kin_cost:
-            raise InvalidUsage('not_enought_kin')
-        # check if max-giftcards reached
-        counter = len([tx for tx in tx_infos if tx['offer_id'] == offer_id])
-        if counter >= config.GIFTCARDS_PER_TIME_RANGE:
-            raise InvalidUsage('max giftcards reached')
-
-
+            raise InvalidUsage('not_enough_kin')
+        if str(offer_id) in locked_offers_ids:
+            raise InvalidUsage('max offers reached')
     except Exception as e:
         log.error(e)
         raise e

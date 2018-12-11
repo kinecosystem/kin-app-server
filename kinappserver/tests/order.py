@@ -152,7 +152,7 @@ class Tester(unittest.TestCase):
         # create the first order (books item 1) - no funds - should fail
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
+                    'id': offerid, 'validation-token': MOCK_B64_TOKEN}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertEqual(resp.status_code,400)
@@ -168,7 +168,7 @@ class Tester(unittest.TestCase):
         # create the first order (books item 1)
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
+                    'id': offerid, 'validation-token': MOCK_B64_TOKEN}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -186,7 +186,7 @@ class Tester(unittest.TestCase):
         # create another order for the same offer (books item 2)
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
+                    'id': offerid, 'validation-token': MOCK_B64_TOKEN}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertEqual(resp.status_code, 200)
@@ -203,7 +203,7 @@ class Tester(unittest.TestCase):
         # should fail as there are already 2 active orders
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
+                    'id': offerid, 'validation-token': MOCK_B64_TOKEN}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         self.assertNotEqual(resp.status_code, 200)
@@ -213,7 +213,7 @@ class Tester(unittest.TestCase):
         sleep(16) # TODO read from config
         print('done! now trying to book a new order')
         
-        # should fail if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED is True -  no validation token
+        # should fail if config is True -  no validation token
         resp = self.app.post('/offer/book',
                              data=json.dumps({
                                  'id': offerid}),
@@ -232,7 +232,7 @@ class Tester(unittest.TestCase):
         # should succeed now
         resp = self.app.post('/offer/book',
                     data=json.dumps({
-                    'id': offerid, 'validation_token': MOCK_B64_TOKEN}),
+                    'id': offerid, 'validation-token': MOCK_B64_TOKEN}),
                     headers={USER_ID_HEADER: str(userid)},
                     content_type='application/json')
         print(json.loads(resp.data))

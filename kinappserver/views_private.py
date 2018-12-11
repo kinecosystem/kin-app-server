@@ -1,6 +1,7 @@
 """
 The Kin App Server private API is defined here.
 """
+import traceback
 from uuid import UUID
 
 from flask import request, jsonify, abort
@@ -105,11 +106,14 @@ def add_offer_api():
         limit_to_localhost()
 
     payload = request.get_json(silent=True)
+    print(payload)
+    
     try:
         offer = payload.get('offer', None)
         set_active = payload.get('set_active', False)  # optional
     except Exception as e:
         print('exception: %s' % e)
+        traceback.print_exc()
         raise InvalidUsage('bad-request')
     if add_offer(offer, set_active):
         return jsonify(status='ok')
