@@ -68,7 +68,7 @@ class Tester(unittest.TestCase):
             'category_name': 'Travel & Local'
         }
         # add category to db
-        resp = self.app.post('/app_discovery/add_discovery_app_category',
+        resp = self.app.post('/app_discovery/add_category',
                              data=json.dumps({
                                  'discovery_app_category': cat}),
                              headers={},
@@ -194,7 +194,7 @@ class Tester(unittest.TestCase):
             'category_name': 'Travel & Local'
         }
         # add category to db
-        resp = self.app.post('/app_discovery/add_discovery_app_category',
+        resp = self.app.post('/app_discovery/add_category',
                              data=json.dumps({
                                  'discovery_app_category': cat}),
                              headers={},

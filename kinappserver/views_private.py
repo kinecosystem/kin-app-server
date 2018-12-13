@@ -893,7 +893,7 @@ def migrate_tasks_to_task20():
     return jsonify(status='ok')
 
 
-@app.route('/app_discovery/add_discovery_app_category', methods=['POST'])
+@app.route('/app_discovery/add_category', methods=['POST'])
 def add_discovery_app_category_api():
     """ add a discovery app category to the db"""
     if not config.DEBUG:
