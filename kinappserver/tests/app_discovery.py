@@ -75,7 +75,7 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
-        # test if user sees the category
+        # test if user sees the category - should fail, category is empty
         resp = self.app.get('/app_discovery', headers={USER_ID_HEADER: str(android_user)})
         self.assertEqual(resp.status_code, 200)
 
@@ -83,9 +83,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
 
         # test that category data is correct
-        self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['name'], 'Travel & Local')
-        self.assertEqual(data[0]['apps'], [])
+        self.assertEqual(data, [])
 
         # create an android app
         app = {
@@ -123,7 +121,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
 
         self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['name'], 'Travel & Local')
+        self.assertEqual(data[0]['category_name'], 'Travel & Local')
         self.assertEqual(len(data[0]['apps']), 1)
 
         # verify iOS user does not see the app
@@ -133,10 +131,7 @@ class Tester(unittest.TestCase):
         print(json.loads(resp.data))
         data = json.loads(resp.data)
 
-        self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['name'], 'Travel & Local')
-        self.assertEqual(len(data[0]['apps']), 0)
-
+        self.assertEqual(data, [])
         # create an androdi and ios app
         app = {
             'skip_image_test': 'true',
@@ -174,7 +169,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
 
         self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['name'], 'Travel & Local')
+        self.assertEqual(data[0]['category_name'], 'Travel & Local')
         self.assertEqual(len(data[0]['apps']),1)
 
         # verify iOS user sees new app
@@ -185,7 +180,7 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
 
         self.assertEqual(data[0]['category_id'], 0)
-        self.assertEqual(data[0]['name'], 'Travel & Local')
+        self.assertEqual(data[0]['category_name'], 'Travel & Local')
         self.assertEqual(len(data[0]['apps']), 1)
 
         # create a category
@@ -206,7 +201,7 @@ class Tester(unittest.TestCase):
         print(json.loads(resp.data))
         # verify users sees the new category
         data = json.loads(resp.data)
-        self.assertEqual(len(data), 2)
+        self.assertEqual(len(data), 1)
 
 
 if __name__ == '__main__':

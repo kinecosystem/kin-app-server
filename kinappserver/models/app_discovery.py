@@ -147,17 +147,19 @@ def set_discovery_app_active(identifier, is_active):
 def get_discovery_apps(os_type):
     """ get discovery apps from the db, filter by platform """
     apps = AppDiscovery.query.filter_by(os_type=os_type).all() # android, iOS or both
-    categories = AppDiscoveryCategory.query.all()
+    categories = AppDiscoveryCategory.query.order_by(AppDiscoveryCategory.category_id).all()
 
-    json_array = []
+    categories_json_array = []
     # convert to json
     for cat in categories:
-        json_array.append(app_discovery_category_to_json(cat))
-        json_array[cat.category_id]['apps'] = []
+        apps_array = []
         for app in apps:
             if app.category_id == cat.category_id and app.is_active:
                 json_app = app_discovery_to_json(app)
                 json_app['meta_data']['category_name'] = cat.category_name
-                json_array[cat.category_id]['apps'].append(json_app)
-
-    return json_array
+                apps_array.append(json_app)
+        if apps_array:
+            cat = app_discovery_category_to_json(cat)
+            cat['apps'] = apps_array
+            categories_json_array.append(cat)
+    return categories_json_array
