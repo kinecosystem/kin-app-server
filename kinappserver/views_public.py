@@ -1377,11 +1377,16 @@ def get_validation_nonce():
 @app.route('/app_discovery', methods=['GET'])
 def get_discovery_apps():
     """ return the list of discoverable apps for user's platform """
+    import traceback
     from .models.app_discovery import get_discovery_apps
     user_id, auth_token = extract_headers(request)
     if not user_id:
         raise InvalidUsage('missing user_id')
-
-    os_type = get_user_os_type(user_id)
-
-    return jsonify(get_discovery_apps(os_type))
+    if not user_exists(user_id)
+        return jsonify(error="user not found")
+    try:
+        os_type = get_user_os_type(user_id)
+        return jsonify(get_discovery_apps(os_type))
+    except Exception as e:
+        traceback.print_exc()
+        raise InvalidUsage('bad-request')
