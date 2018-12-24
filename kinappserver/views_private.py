@@ -45,7 +45,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     remove_task_from_completed_tasks, switch_task_ids, delete_task, block_user_from_truex_tasks, \
     unblock_user_from_truex_tasks, set_update_available_below, set_force_update_below, \
     update_categories_extra_data, task20_migrate_tasks, add_discovery_app, set_discovery_app_active, \
-    add_discovery_app_category
+    add_discovery_app_category, get_user, blacklist_enc_phone_number, is_enc_phone_number_blacklisted
 
 
 @app.route('/health', methods=['GET'])
@@ -542,6 +542,42 @@ def users_unauthed_endpoint():
     if not config.DEBUG:
         limit_to_localhost()
     return jsonify(user_ids=get_unauthed_users())
+
+
+@app.route('/user/user-id/blacklist', methods=['POST'])
+def user_ids_list_blacklist_endpoint():
+    """ block a list of users by there ids"""
+    if not config.DEBUG:
+        limit_to_localhost()
+    try:
+        payload = request.get_json(silent=True)
+        user_ids = payload.get('user_ids', None)
+
+        if user_ids is None:
+            print('user_ids_list_blacklist_endpoint: ids: %s' % user_ids)
+            raise InvalidUsage('bad-request')
+        
+        blacklisted, unable_to_blacklist, already_blacklisted, no_phone_number = [],[],[],[]
+        for user_id in user_ids:
+            user = get_user(user_id)
+            if not user.enc_phone_number:
+                no_phone_number.append(user_id)
+
+            elif is_enc_phone_number_blacklisted(user.enc_phone_number):
+                already_blacklisted.append(user_id)
+
+            elif not blacklist_enc_phone_number(user.enc_phone_number):
+                unable_to_blacklist.append(user_id)  # for later retry
+        
+            else:
+                blacklisted.append(user_id)
+
+        return jsonify(blacklisted=blacklisted,already_blacklisted=already_blacklisted, unable_to_blacklist=unable_to_blacklist)
+
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+
 
 @app.route('/user/phone-number/blacklist', methods=['POST'])
 def user_phone_number_blacklist_endpoint():
