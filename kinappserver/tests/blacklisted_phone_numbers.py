@@ -69,10 +69,13 @@ class Tester(unittest.TestCase):
             "5bec064c-4fe5-4699-a9ef-f2cacdd8aa10"
         ]
         
-        self.register_user(user_ids[0], "+97212345678")        
-        self.register_user(user_ids[1], "+97222345678")      
-        self.register_user(user_ids[2], "+97132345678")     
-        self.register_user(user_ids[3], "+97132345678")
+        self.register_user(user_ids[0], "1")        
+        self.register_user(user_ids[1], "2")   
+        self.register_user(user_ids[2], "3")     
+        self.register_user(user_ids[3], "3")
+
+        # first 3 sould be blacklisted, 4th should already be blacklisted (same phone number - same user)
+
 
         # blacklist a number
         resp = self.app.post('/user/user-id/blacklist',
@@ -83,6 +86,14 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         print('data: %s' % data)
+        already_blacklisted = data['already_blacklisted']
+        blacklisted = data['blacklisted']
+        unable_to_blacklist = data['unable_to_blacklist']
+
+        self.assertEqual(blacklisted, [user_ids[0],user_ids[1],user_ids[2]])
+        self.assertEqual(already_blacklisted, [user_ids[3]])
+        self.assertEqual(unable_to_blacklist, [])
+        
 
 
         phone_number = '+9720526602765'
