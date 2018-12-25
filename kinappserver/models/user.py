@@ -18,6 +18,7 @@ DEFAULT_TIME_ZONE = -4
 KINIT_IOS_PACKAGE_ID_PROD = 'org.kinecosystem.kinit'  # AKA bundle id
 DEVICE_MODEL_MAX_SIZE = 40
 
+
 class User(db.Model):
     """
     the user model
@@ -530,7 +531,6 @@ def send_engagement_push(user_id, push_type):
     os_type, token, push_env = get_user_push_data(user_id)
 
     if token is None:
-        log.error('cant push to user %s: no push token' % user_id)
         return False
 
     if os_type == OS_IOS:
@@ -591,107 +591,107 @@ def get_next_task_results_ts(user_id, cat_id):
 
 def get_users_for_engagement_push(scheme):
     """get user_ids for an engagement scheme"""
-    #TODO refactor - make it dry
     from datetime import datetime, timedelta
     from .task2 import count_immediate_tasks
+    import time
+    start = time.time()
 
-    now = arrow.utcnow().shift(seconds=60).timestamp  # add a small timeshift to account for calculation time
     user_ids = {OS_IOS: [], OS_ANDROID: []}
 
     if scheme not in ['engage-recent', 'engage-week']:
+        # get all user_ids that have active tasks and
+        # if scheme == 'engage-recent':
+        #     - did not log in today and
+        #     - last login was sometimes in the last 4 days
+        # if scheme == 'engage-week':
+        #     - logged in exactly a week ago
         print('invalid scheme:%s' % scheme)
         raise InvalidUsage('invalid scheme: %s' % scheme)
 
-    if scheme == 'engage-recent':
-        # get all user_ids that:
-        # (1) have active tasks and
-        # (2) did not log in today and
-        # (3) last login was sometimes in the last 4 days
-        today = datetime.date(datetime.today())
-        four_days_ago = datetime.date(datetime.today() + timedelta(days=-4))
+    datetime_today = datetime.today()
+    today = datetime.date(datetime_today)
+    four_days_ago = datetime.date(datetime_today+ timedelta(days=-4))
+    seven_days_ago = datetime.date(datetime_today + timedelta(days=-7))
+    skipped_users = dict(blacklist=[], country=[], active_today=[], active_4_days=[], active_not_one_week=[],
+                         no_active_task=[], old_version=[])
 
-        all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
-        for user in all_pushable_users:
-            try:
-                from .blacklisted_phone_numbers import is_userid_blacklisted
-                if is_userid_blacklisted(user.user_id):
-                    log.info('skipping user %s - blacklisted' % user.user_id)
-                    continue
+    results = db.engine.execute(
+        "select public.user.user_id as user_id, public.user.os_type as os_type, user_app_data.app_ver as app_ver, "
+        "user_app_data.update_at as last_updated, public.user.push_token as push_token from public.user inner "
+        "join user_app_data on public.user.user_id = user_app_data.user_id where public.user.deactivated = \'f\' "
+        "and public.user.push_token != \'\';")
+    all_pushable_users = results.fetchall()
+    end = time.time()
+    log.info("engage-push: query took : %s", end - start)
+    for user in all_pushable_users:
+        try:
+            log.info('engage-push: processing user %s os: %s, app_ver %s' % (user.user_id, user.os_type, user.app_ver))
+            from .blacklisted_phone_numbers import is_userid_blacklisted
 
-                if should_block_user_by_country_code(user.user_id):
-                    log.info('skipping user %s - country not supported' % user.user_id)
-                    continue
-
-                # filter out users with no tasks AND ALSO users with future tasks:
-
-                if sum(item for item in count_immediate_tasks(user.user_id).keys()) == 0:
-                    log.info('skipping user %s - no active task, now: %s' % (user.user_id, now))
-                    continue
-
-                last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
-                last_active_date = datetime.date(last_active)
-
-                if today == last_active_date:
-                    log.info('skipping user %s: was active today. now: %s' % (user.user_id, now))
-                    continue
-                if last_active_date < four_days_ago:
-                    log.info('skipping user %s: last active more than 4 days ago. now: %s' % (user.user_id, now))
-                    continue
-
-                log.info('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
-                if user.os_type == OS_IOS:
-                    user_ids[OS_IOS].append(user.user_id)
-                else:
-                    user_ids[OS_ANDROID].append(user.user_id)
-
-            except Exception as e:
-                log.error('caught exception trying to calculate push for user %s. e:%s' % (user.user_id, e))
+            if user.os_type == OS_ANDROID and LooseVersion(user.app_ver) <= LooseVersion("1.4.0"):
+                skipped_users['old_version'].append(user.user_id)
                 continue
-        return user_ids
-
-    elif scheme == 'engage-week':
-        # get all tokens that:
-        # (1) have active tasks and
-        # (2) logged in exactly a week ago
-        # (3) last login was sometimes in the last 4 days
-        seven_days_ago = datetime.date(datetime.today() + timedelta(days=-7))
-
-        all_pushable_users = User.query.filter(User.push_token != None).filter(User.deactivated == False).all()
-        for user in all_pushable_users:
-            try:
-                from .blacklisted_phone_numbers import is_userid_blacklisted
-                if is_userid_blacklisted(user.user_id):
-                    log.info('skipping user %s - blacklisted' % user.user_id)
-                    continue
-
-                if should_block_user_by_country_code(user.user_id):
-                    log.info('skipping user %s - country not supported' % user.user_id)
-                    continue
-
-                if sum(item for item in count_immediate_tasks(user.user_id).keys()) == 0:
-                    log.info('skipping user %s - no active task, now: %s' % (user.user_id, now))
-                    continue
-
-                last_active = UserAppData.query.filter_by(user_id=user.user_id).first().update_at
-                last_active_date = datetime.date(last_active)
-
-                if seven_days_ago != last_active_date:
-                    log.info('skipping user %s: last active not seven days ago, now: %s' % (user.user_id, now))
-                    continue
-
-                log.info('adding user %s with last_active: %s. now: %s' % (user.user_id, last_active_date, now))
-                if user.os_type == OS_IOS:
-                    user_ids[OS_IOS].append(user.push_token)
-                else:
-                    user_ids[OS_ANDROID].append(user.push_token)
-
-            except Exception as e:
-                log.error('caught exception trying to calculate push for user %s. e:%s' % (user.user_id, e))
+            elif user.os_type == OS_IOS and LooseVersion(user.app_ver) <= LooseVersion("1.2.1"):
+                skipped_users['old_version'].append(user.user_id)
                 continue
-        return user_ids
-    else:
-        log.error('get_users_for_engagement_push - unknown scheme')
-        return None
+            elif is_userid_blacklisted(user.user_id):
+                skipped_users['blacklist'].append(user.user_id)
+                continue
+            elif should_block_user_by_country_code(user.user_id):
+                skipped_users['country'].append(user.user_id)
+                continue
+
+            last_active_date = datetime.date(user.last_updated)
+
+            if today == last_active_date:
+                skipped_users['active_today'].append(user.user_id)
+                continue
+            elif scheme == 'engage-recent' and last_active_date < four_days_ago:
+                skipped_users['active_4_days'].append(user.user_id)
+                continue
+            elif scheme == 'engage-week' and seven_days_ago != last_active_date:
+                skipped_users['active_not_one_week'].append(user.user_id)
+                continue
+
+            immediate_tasks = count_immediate_tasks(user.user_id, None, False)
+
+            if sum(int(item) for item in immediate_tasks.keys()) == 0:
+                skipped_users['no_active_task'].append(user.user_id)
+                continue
+
+            if user.os_type == OS_IOS:
+                user_ids[OS_IOS].append(user.user_id)
+            else:
+                user_ids[OS_ANDROID].append(user.user_id)
+
+        except Exception as e:
+            log.error('engage-push: caught exception trying to calculate push for user %s. e:%s' % (user.user_id, e))
+            continue
+
+    now = arrow.utcnow().shift(seconds=60).timestamp  # add a small time shift to account for calculation time
+
+    log.info("engage-push: schema %s - finished processing users. Here is the summary: -------------------" % now)
+    log.info("engage-push: skipped sending push notifications to\n  %d old versions\n  %d blacklisted users"
+             "\n  %d country blocked users\n  %d active today\n  %d last time active more than 4 days ago"
+             "\n  %d active not exactly a week ago\n  %d no active task"
+             % (len(skipped_users['old_version']), len(skipped_users['blacklist']),
+                len(skipped_users['country']), len(skipped_users['active_today']),
+                len(skipped_users['active_4_days']), len(skipped_users['active_not_one_week']),
+                len(skipped_users['no_active_task'])))
+    log.info("engage-push: skipped user ids\n  %s old versions\n  %s blacklisted users"
+             "\n  %s country blocked users\n  %s active today\n  %s active in the last 4 days"
+             "\n  %s active in the last week\n  %s no active task"
+             % (skipped_users['old_version'], skipped_users['blacklist'],
+                skipped_users['country'], skipped_users['active_today'],
+                skipped_users['active_4_days'], skipped_users['active_not_one_week'],
+                skipped_users['no_active_task']))
+    log.info("engage-push: will send push notifications to %d android users, %d ios users"
+             % (len(user_ids[OS_ANDROID]), len(user_ids[OS_IOS])))
+    log.info("engage-push: will send to the following user_ids: %s" % user_ids)
+    end = time.time()
+    log.info("engage-push: total time it took: %s", end - start)
+    log.info("------------------------------------------------------------------------ ")
+    return user_ids
 
 
 def get_userid_by_address(address):

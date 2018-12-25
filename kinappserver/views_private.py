@@ -3,43 +3,25 @@ The Kin App Server private API is defined here.
 """
 import traceback
 from uuid import UUID
+import logging as log
 
 from flask import request, jsonify, abort
-from flask_api import status
-import redis_lock
-import arrow
-import redis
-from distutils.version import LooseVersion
-from .utils import OS_ANDROID, OS_IOS, random_percent
 
-from kinappserver.views_common import limit_to_acl, limit_to_localhost, limit_to_password, get_source_ip, extract_headers
+
+from kinappserver.views_common import limit_to_acl, limit_to_localhost, limit_to_password
 
 from kinappserver import app, config, stellar, utils, ssm
-from .push import send_please_upgrade_push_2, send_country_not_supported
-from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service
-from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
-    sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
-from kinappserver.models import create_user, update_user_token, update_user_app_version, \
-    add_task, is_onboarded, \
-    store_task_results, add_task, add_category, \
-    set_onboarded, send_push_tx_completed, send_engagement_push, \
-    create_tx, get_reward_for_task, add_offer, \
-    get_offers_for_user, set_offer_active, create_order, process_order, \
-    create_good, list_inventory, release_unclaimed_goods, get_users_for_engagement_push, \
-    list_user_transactions, get_redeemed_items, get_offer_details, get_task_details, set_delay_days, \
-    add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated, \
-    reject_premature_results, get_address_by_userid, send_compensated_push, \
-    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, \
-    is_user_phone_verified, init_bh_creds, create_bh_offer, \
-    get_task_results, get_user_config, get_user_report, get_user_tx_report, get_user_goods_report, get_task_by_id, \
-    get_truex_activity, get_and_replace_next_task_memo, \
-    scan_for_deauthed_users, user_exists, send_push_register, get_user_id_by_truex_user_id, store_next_task_results_ts, \
-    is_in_acl, \
-    get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, \
-    generate_backup_questions_list, store_backup_hints, \
-    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, \
-    should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, \
-    delete_all_user_data, count_registrations_for_phone_number, \
+from .push import send_please_upgrade_push_2
+from kinappserver.stellar import send_kin
+from kinappserver.utils import InvalidUsage, InternalError, increment_metric, gauge_metric,\
+    sqlalchemy_pool_status
+from kinappserver.models import add_task, add_category, send_engagement_push, \
+    create_tx, add_offer, set_offer_active, create_good, list_inventory, release_unclaimed_goods, \
+    get_users_for_engagement_push, list_user_transactions, get_task_details, set_delay_days, \
+    get_address_by_userid, send_compensated_push, nuke_user_data, send_push_auth_token, init_bh_creds, create_bh_offer, \
+    get_task_results, get_user_report, get_user_tx_report, get_user_goods_report, \
+    scan_for_deauthed_users, user_exists, send_push_register, store_next_task_results_ts, \
+    get_unauthed_users, get_all_user_id_by_phone, delete_all_user_data, \
     blacklist_phone_number, blacklist_phone_by_user_id, count_missing_txs, migrate_restored_user_data, \
     re_register_all_users, get_tx_totals, set_should_solve_captcha, add_task_to_completed_tasks, \
     remove_task_from_completed_tasks, switch_task_ids, delete_task, block_user_from_truex_tasks, \
@@ -231,28 +213,29 @@ def send_engagement_api():
     if scheme is None:
         raise InvalidUsage('invalid param')
     dry_run = payload.get('dryrun', 'True') == 'True'
+    log.info('engage-push: will call engage_push on rq_slow with scheme:%s, dry run:%s' % (scheme, dry_run))
     app.rq_slow.enqueue_call(func=send_engagement_messages, args=(scheme, dry_run))
+    #send_engagement_messages(scheme, dry_run)
     return jsonify(status='ok')
 
 
 def send_engagement_messages(scheme, dry_run):
     """does the actual work related to sending engagement messages. should be called in the worker"""
     user_ids = get_users_for_engagement_push(scheme)
-    print('gathered user_ids: %s' % user_ids)
-    print('gathered %d ios user_ids and %d gcm user_ids for scheme: %s, dry-run:%s' % (len(user_ids[utils.OS_IOS]), len(user_ids[utils.OS_ANDROID]), scheme, dry_run))
+    log.info('engage-push: --- in send_engagement_messages')
 
     if dry_run:
-        print('send_engagement_api - dry_run - not sending push')
+        log.info('engage-push: engagement_api - dry_run - not sending push')
     else:
-        print('sending push ios %d tokens' % len(user_ids[utils.OS_IOS]))
         import time
         for user_id in user_ids[utils.OS_IOS]:
             time.sleep(1)  # hack to slow down push-sending as it kills the server
-            send_engagement_push(user_id, scheme)
-        print('sending push android %d tokens' % len(user_ids[utils.OS_ANDROID]))
+            if not send_engagement_push(user_id, scheme):
+                log.error('engage-push: cant push to user %s: no push token' % user_id)
         for user_id in user_ids[utils.OS_ANDROID]:
             time.sleep(1)  # hack to slow down push-sending as it kills the server
-            send_engagement_push(user_id, scheme)
+            if not send_engagement_push(user_id, scheme):
+                log.error('engage-push: cant push to user %s: no push token' % user_id)
 
 
 @app.route('/user/compensate', methods=['POST'])

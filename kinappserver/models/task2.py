@@ -195,7 +195,7 @@ def list_all_task_data():
     return response
 
 
-def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id, user_country_code):
+def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id, user_country_code, send_push=True):
     """returns the next task id that:
      1. belongs to the given cat_id
      2. is yet un-answered by the user
@@ -242,8 +242,10 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
             continue
 
         if not can_client_support_task(os_type, app_ver, task):
-            log.info('next_task_id_for_category no available tasks for user_id %s in cat_id %s because task %s needs higher version' % (user_id, cat_id, task_id))
-            send_please_upgrade_push(user_id)
+            log.info('next_task_id_for_category no available tasks for user_id %s in cat_id %s because task %s needs '
+                     'higher version' % (user_id, cat_id, task_id))
+            if send_push:
+                send_please_upgrade_push(user_id)
             return []
 
         # return the first valid task:
@@ -254,7 +256,7 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
     return []
 
 
-def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
+def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True):
     """this function returns the next task for the given user in each the categories, or just the specified category (if given).
     - the returned tasks will bear this format: {'cat_id': [task1]}
     - this function returns the next task in each category EVEN IF it is in the future
@@ -262,13 +264,14 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
     - if there are no more tasks, an empty array will be returned (per category)
     - if the next task (in each category) requires upgrade, the function will send a push message to inform the user (with a cooldown).
     """
+    log.info('in get_next_tasks_for_user %s, source_ip: %s, cat_ids:%s, send_push:%s' % (user_id, source_ip, cat_ids, send_push))
     tasks_per_category = {}
     user_app_data = get_user_app_data(user_id)
     os_type = get_user_os_type(user_id)
     app_ver = user_app_data.app_ver
     from .category import get_all_cat_ids
     for cat_id in cat_ids or get_all_cat_ids():
-        task_ids = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip))  # returns just one task in a list or empty list
+        task_ids = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip), send_push)  # returns just one task in a list or empty list
         tasks_per_category[cat_id] = [get_task_by_id(task_id) for task_id in task_ids]
         # plant the memo and start date in the first task of the category:
         from .user import get_next_task_memo
@@ -277,7 +280,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[]):
             tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
             tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
 
-        #log.info('tasks_per_category: num of tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category[cat_id])))
+        # log.info('tasks_per_category: num of tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category[cat_id])))
 
     return tasks_per_category
 
@@ -730,7 +733,7 @@ def remove_task_from_completed_tasks(user_id, task_id):
     return True
 
 
-def count_immediate_tasks(user_id, only_cat_id=None):
+def count_immediate_tasks(user_id, only_cat_id=None, send_push=True):
     """given the user's task history, calculate how many tasks are readily available for each category"""
 
     # if give, return results only for select_cat_ids (a list of cat_ids)
@@ -742,16 +745,17 @@ def count_immediate_tasks(user_id, only_cat_id=None):
     # 4. the user's last recorded ip address
     immediate_tasks_count = {}
     now = arrow.utcnow()
-    user_app_data = get_user_app_data(user_id)
     # completed_tasks = user_app_data.completed_tasks_dict
     # os_type = get_user_os_type(user_id)
     # app_ver = user_app_data.app_ver
     # country_code = get_country_code_by_ip(user_app_data.ip_address)
 
-    user_next_tasks = get_next_tasks_for_user(user_id)
+    user_next_tasks = get_next_tasks_for_user(user_id, send_push)
 
     if only_cat_id:
         log.info('getting count_immediate_tasks for cat_id %s' % only_cat_id)
+    else:
+        log.info('getting count_immediate_tasks for all categories ')
 
     # which cat_ids should we get (default = all for user, otherwise, get a subset)?
     if only_cat_id is not None:
