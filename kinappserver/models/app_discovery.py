@@ -1,14 +1,12 @@
-from flask import jsonify
-
 from kinappserver import db
 from kinappserver.utils import test_image, InvalidUsage
 import logging as log
-import json
 
 
 class AppDiscovery(db.Model):
     """ the app discovery class represents a single Discoverable App """
-    identifier = db.Column(db.String(40), nullable=False, primary_key=True)
+    sid = db.Column(db.Integer(), nullable=False, primary_key=True)
+    identifier = db.Column(db.String(40), nullable=False, primary_key=False)
     name = db.Column(db.String(80), nullable=False, primary_key=False)
     category_id = db.Column(db.Integer(), nullable=False, primary_key=False)
     is_active = db.Column(db.Boolean, unique=False, default=False)
@@ -17,8 +15,8 @@ class AppDiscovery(db.Model):
     transfer_data = db.Column(db.JSON, primary_key=False, nullable=True)
 
     def __repr__(self):
-        return '<identifier: %s, name: %s, category_id: %d, meta_data: %s, transfer_data: %s>' % (
-            self.identifier, self.name, self.category_id, self.meta_data, self.transfer_data)
+        return '<sid: %d, identifier: %s, name: %s, category_id: %d, meta_data: %s, transfer_data: %s>' % (
+            self.sid, self.identifier, self.name, self.category_id, self.meta_data, self.transfer_data)
 
 
 class AppDiscoveryCategory(db.Model):
@@ -45,7 +43,7 @@ def app_discovery_to_json(app_discovery):
         return {}
 
     # Build json
-    json_app_discovery = {'identifier': app_discovery.identifier, 'name': app_discovery.name,
+    json_app_discovery = {'sid': app_discovery.sid, 'identifier': app_discovery.identifier, 'name': app_discovery.name,
                           'category_id': app_discovery.category_id, 'is_active': app_discovery.is_active,
                           'os_type': app_discovery.os_type, 'meta_data': app_discovery.meta_data}
     if app_discovery.transfer_data:
@@ -96,6 +94,7 @@ def add_discovery_app(discovery_app_json, set_active=False):
 
     try:
         discovery_app = AppDiscovery()
+        discovery_app.sid = db.engine.execute('''select count(*) from app_discovery;''').scalar() + 1
         discovery_app.identifier = discovery_app_json['identifier']
         discovery_app.name = discovery_app_json['name']
         discovery_app.category_id = int(discovery_app_json['category_id'])
