@@ -155,92 +155,53 @@ def get_offers_for_user(user_id):
     log.info("## GETTING user_balance MID PTIME: %s", end - start)
 
     # filter out offers with no goods
-    redeemable_offers = []
+    available_offers = []
+    unavailable_offers = []
     for offer in all_offers:
-        if not goods_avilable(offer.offer_id):
+        if offer.offer_type == 'p2p':
+            # we no longer support p2p as an offer type
+            # we may want to add it again in the future, in which case we will have
+            # to handle it being on top of the list + appear only for versions that support it.
+            continue
+        elif not goods_avilable(offer.offer_id):
             offer.unavailable_reason = 'Sold out\nCheck back again soon'
+            unavailable_offers.append(offer)
         elif str(offer.offer_id) in locked_offers_ids:
             offer.unavailable_reason = 'You’ve reached the maximum number of this gift card for this month'
+            unavailable_offers.append(offer)
         elif user_balance < offer.kin_cost:
             offer.cannot_buy_reason = 'Sorry, You can only buy goods with Kin earned from Kinit.'
-
-        redeemable_offers.append(offer)
-
-    # filter out p2p for users with client versions that do not support it
-    filter_p2p = False
-
-    if not config.P2P_TRANSFERS_ENABLED:
-        log.info('filter out p2p for all users as per config flag')
-        filter_p2p = True
-    else:
-        # TODO remove this chunk of code when we go live on prod2.
-        try:
-            os_type = get_user_os_type(user_id)
-        except Exception as e:
-            # race condition - the user's OS hasn't been written into the db yet, so
-            # just dont show the p2p offer. yes its an ugly patch
-            log.error('filter p2p - cant get user os_type. e:%s' % e)
-            filter_p2p = True
+            available_offers.append(offer)
         else:
-            # try to get the user's version:
-            client_version = get_user_app_data(user_id).app_ver
-            if os_type == OS_IOS and LooseVersion(client_version) < LooseVersion('0.11.0'):
-                log.info('filter out p2p for old ios client %s' % client_version)
-                filter_p2p = True
-            elif os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion('0.7.4'):
-                log.info('filter out p2p for old android client version %s' % client_version)
-                filter_p2p = True
+            available_offers.append(offer)
 
-    # filter the first p2p item if one exists:
-    if filter_p2p:
-        item_to_remove = None
 
-        # find the first item to remove
-        for offer in redeemable_offers:
-            if offer.offer_type == 'p2p':
-                item_to_remove = offer
-
-        # ...and remove it
-        if item_to_remove is not None:
-            redeemable_offers.remove(item_to_remove)
-
-    # filter offers by the min_client_version fields
-    # 1. get the client's version and os:
+    # customize list according to client_version and os_type
     try:
         client_version = get_user_app_data(user_id).app_ver
         os_type = get_user_os_type(user_id)
-        offers_to_remove = []
     except Exception as e:
+        redeemable_offers = available_offers
         log.error('cant get app_ver or os_type - not filtering offers')
     else:
-        # 2. collect offers that are not allowed for this os/app_ver
+        if os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion(
+                config.OFFER_RATE_LIMIT_MIN_ANDROID_VERSION):
+            # client does not support "unavailable" text on offers
+            redeemable_offers = available_offers
+        elif os_type == OS_IOS and LooseVersion(client_version) < LooseVersion(config.OFFER_RATE_LIMIT_MIN_IOS_VERSION):
+            # client does not support "unavailable" text on offers
+            redeemable_offers = available_offers
+        else:
+            # client supports "unavailable" text on offers
+            redeemable_offers = available_offers + unavailable_offers
+
         for offer in redeemable_offers:
-            if os_type == OS_ANDROID:
-                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(config.OFFER_RATE_LIMIT_MIN_ANDROID_VERSION):
-                    # client does not support text on offers, remove it
-                    offers_to_remove.append(offer)
-                elif not offer.min_client_version_android:
-                    # no minimum set, so dont remove
-                    continue
-                elif LooseVersion(offer.min_client_version_android) > LooseVersion(client_version):
-                    offers_to_remove.append(offer)
-            else:  # ios
-                if offer.unavailable_reason is not None and LooseVersion(client_version) < LooseVersion(config.OFFER_RATE_LIMIT_MIN_IOS_VERSION):
-                    # client does not support text on offers, remove it
-                    offers_to_remove.append(offer)
-                elif not offer.min_client_version_ios:
-                    # no minimum set, so dont remove
-                    continue
-                elif LooseVersion(offer.min_client_version_ios) > LooseVersion(client_version):
-                    offers_to_remove.append(offer)
-        # 3. clean up offers list
-        for offer in offers_to_remove:
-            #print('get_offers_for_user: removing offer_id %s' % offer.offer_id)
-            redeemable_offers.remove(offer)
-
-
-    # the client shows offers by the order they are listed, so make sure p2p (if it exists) is first
-    redeemable_offers = sorted(redeemable_offers, key=lambda k: k.offer_type != 'p2p', reverse=False)
+            if os_type == OS_ANDROID and offer.min_client_version_android:
+                if LooseVersion(offer.min_client_version_android) > LooseVersion(client_version):
+                    redeemable_offers.remove(offer)
+            elif os_type == OS_IOS and offer.min_client_version_ios:
+                if LooseVersion(offer.min_client_version_ios) > LooseVersion(client_version):
+                    redeemable_offers.remove(offer)
 
     # convert to json
     offers_json_array = []
