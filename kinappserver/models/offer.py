@@ -176,8 +176,7 @@ def get_offers_for_user(user_id):
             available_offers.append(offer)
 
 
-    # filter offers by the min_client_version fields
-    # 1. get the client's version and os:
+    # customize list according to client_version and os_type
     try:
         client_version = get_user_app_data(user_id).app_ver
         os_type = get_user_os_type(user_id)
@@ -185,14 +184,15 @@ def get_offers_for_user(user_id):
         redeemable_offers = available_offers
         log.error('cant get app_ver or os_type - not filtering offers')
     else:
-        # 2. collect offers that are not allowed for this os/app_ver
         if os_type == OS_ANDROID and LooseVersion(client_version) < LooseVersion(
                 config.OFFER_RATE_LIMIT_MIN_ANDROID_VERSION):
-            # client does not support text on offers, remove it
+            # client does not support "unavailable" text on offers
             redeemable_offers = available_offers
         elif os_type == OS_IOS and LooseVersion(client_version) < LooseVersion(config.OFFER_RATE_LIMIT_MIN_IOS_VERSION):
+            # client does not support "unavailable" text on offers
             redeemable_offers = available_offers
         else:
+            # client supports "unavailable" text on offers
             redeemable_offers = available_offers + unavailable_offers
 
         for offer in redeemable_offers:
