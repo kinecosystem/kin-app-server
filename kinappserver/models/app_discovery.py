@@ -24,15 +24,6 @@ class AppDiscoveryCategory(db.Model):
     category_id = db.Column(db.Integer(), nullable=False, primary_key=True)
     category_name = db.Column(db.String(80), nullable=False, primary_key=False)
 
-
-def get_address_by_destination_app_sid(destination_app_sid):
-    """ return app's public address """
-    app = AppDiscovery.query.filter_by(sid=destination_app_sid).first()
-    if not app:
-        raise InvalidUsage('no such discovery identifier')
-    
-    return app.meta_data['public_address']
-
 def app_discovery_category_to_json(app_discovery_category):
     """converts app_discovery_category to a json-representation"""
     if not app_discovery_category:

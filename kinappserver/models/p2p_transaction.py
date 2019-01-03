@@ -13,7 +13,8 @@ class P2PTransaction(db.Model):
     p2p transactions: between users
     """
     sender_user_id = db.Column('sender_user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), unique=False, nullable=False)
-    receiver_user_id = db.Column('receiver_user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), unique=False, nullable=False)
+    receiver_user_id = db.Column('receiver_user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), unique=False, nullable=True)
+    receiver_app_sid = db.Column('receiver_app_sid', db.Integer, db.ForeignKey("app_discovery.sid"), unique=False, nullable=True)
     tx_hash = db.Column(db.String(100), nullable=False, primary_key=True)
     amount = db.Column(db.Integer(), nullable=False, primary_key=False)
     sender_address = db.Column(db.String(60), db.ForeignKey("user.public_address"), nullable=False, unique=False)
@@ -36,13 +37,14 @@ def list_p2p_transactions_for_user_id(user_id, max_txs=None):
     return txs
 
 
-def create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, receiver_address, amount):
+def create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, receiver_address, amount, receiver_app_sid):
     """create a p2p transaction object and store in the db."""
     try:
         tx = P2PTransaction()
         tx.tx_hash = tx_hash
         tx.sender_user_id = sender_user_id
         tx.receiver_user_id = receiver_user_id
+        tx.receiver_app_sid = receiver_app_sid
         tx.amount = int(amount)
         tx.sender_address = sender_address
         tx.receiver_address = receiver_address
@@ -67,6 +69,24 @@ def format_p2p_tx_dict(tx_hash, amount, format_for_receiver):
     return tx_dict
 
 
+def add_app2app_tx(tx_hash, sender_id, destination_app_sid, amount, destination_address):
+    """create a new app2app tx based on reports from the client
+    return True/False and (if successful, a dict with the tx data
+    """
+    try:
+        from kinappserver.models import get_userid_by_address, get_address_by_userid
+        sender_address = get_address_by_userid(sender_id)
+        if None in (sender_id, sender_address):
+            log.error('cant create p2p tx - cant get one of the following: destination_app_sid: %s, sender_address: %s' % (destination_app_sid, sender_address))
+            return False
+        create_p2p_tx(tx_hash, sender_id, None, sender_address, destination_address, amount, destination_app_sid)
+        
+    except Exception as e:
+        log.error('failed to create a new p2p tx. exception: %s' % e)
+        return False, None
+    else:
+        return True, format_p2p_tx_dict(tx_hash, amount, False)
+
 def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
     """create a new p2p tx based on reports from the client
     return True/False and (if successful, a dict with the tx data
@@ -78,7 +98,7 @@ def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
         if None in (receiver_user_id, sender_address):
             log.error('cant create p2p tx - cant get one of the following: receiver_user_id: %s, sender_address: %s' % (receiver_user_id, sender_address))
             return False
-        create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, receiver_address, amount)
+        create_p2p_tx(tx_hash, sender_user_id, receiver_user_id, sender_address, receiver_address, amount, None)
         # create a json object that mimics the one in the /transactions api
 
         log.info('sending p2p-tx push message to user_id %s' % receiver_user_id)
@@ -90,26 +110,3 @@ def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
     else:
         return True, format_p2p_tx_dict(tx_hash, amount, False)
 
-
-def add_app2app_tx(tx_hash, sender_user_id, destination_app_sid, amount):
-    """create a new app2app tx based on reports from the client
-    return True/False and (if successful, a dict with the tx data
-    """
-    try:
-        from kinappserver.models import get_address_by_destination_app_sid, get_address_by_userid
-        sender_address = get_address_by_userid(sender_user_id)
-        receiver_address = get_address_by_destination_app_sid(destination_app_sid)
-        if None in (sender_address, receiver_address):
-            log.error('cant create p2p tx - cant get one of the following: receiver_address: %s, sender_address: %s' % (receiver_address, sender_address))
-            return False
-        create_p2p_tx(tx_hash, sender_user_id, destination_app_sid, sender_address, receiver_address, amount)
-        # create a json object that mimics the one in the /transactions api
-
-        log.info('sending app2app-tx push message to user_id %s' % sender_user_id)
-        from ..push import send_p2p_push
-        send_p2p_push(sender_user_id, amount, format_p2p_tx_dict(tx_hash, amount, True))
-    except Exception as e:
-        log.error('failed to create a new app2app tx. exception: %s' % e)
-        return False, None
-    else:
-        return True, format_p2p_tx_dict(tx_hash, amount, False)
