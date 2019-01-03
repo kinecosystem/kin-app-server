@@ -89,3 +89,27 @@ def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
         return False, None
     else:
         return True, format_p2p_tx_dict(tx_hash, amount, False)
+
+
+def add_app2app_tx(tx_hash, sender_user_id, destination_app_sid, amount):
+    """create a new app2app tx based on reports from the client
+    return True/False and (if successful, a dict with the tx data
+    """
+    try:
+        from kinappserver.models import get_address_by_destination_app_sid, get_address_by_userid
+        sender_address = get_address_by_userid(sender_user_id)
+        receiver_address = get_address_by_destination_app_sid(destination_app_sid)
+        if None in (sender_address, receiver_address):
+            log.error('cant create p2p tx - cant get one of the following: receiver_address: %s, sender_address: %s' % (receiver_address, sender_address))
+            return False
+        create_p2p_tx(tx_hash, sender_user_id, destination_app_sid, sender_address, receiver_address, amount)
+        # create a json object that mimics the one in the /transactions api
+
+        log.info('sending app2app-tx push message to user_id %s' % sender_user_id)
+        from ..push import send_p2p_push
+        send_p2p_push(sender_user_id, amount, format_p2p_tx_dict(tx_hash, amount, True))
+    except Exception as e:
+        log.error('failed to create a new app2app tx. exception: %s' % e)
+        return False, None
+    else:
+        return True, format_p2p_tx_dict(tx_hash, amount, False)

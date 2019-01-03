@@ -946,9 +946,40 @@ def purchase_api():
             lock.release()
 
 
+@app.route('/user/transaction/app2app', methods=['POST'])
+def report_app2app_tx_api():
+    """endpoint used by the client to report successful p2p txs"""
+
+    payload = request.get_json(silent=True)
+    try:
+        # TODO Should we verify the tx against the blockchain?
+        # TODO this api needs to be secured with auth token
+        sender_id, auth_token = extract_headers(request)
+        tx_hash = payload.get('tx_hash', None)
+        destination_app_sid = payload.get('destination_app_sid', None)
+        amount = payload.get('amount', None)
+        if None in (tx_hash, sender_id, destination_app_sid, amount):
+            raise InvalidUsage('invalid params')
+
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    res, tx_dict = add_app2app_tx(tx_hash, sender_id, destination_app_sid, amount)
+    if res:
+        # send back the dict with the tx details
+        increment_metric('p2p-tx-added')
+        return jsonify(status='ok', tx=tx_dict)
+    else:
+        raise InvalidUsage('failed to add p2ptx')
+
 @app.route('/user/transaction/p2p', methods=['POST'])
 def report_p2p_tx_api():
     """endpoint used by the client to report successful p2p txs"""
+
+    if not config.P2P_TRANSFERS_ENABLED:
+        # this api is disabled, clients should not have asked for it
+        print('/user/transaction/p2p/add api is disabled by server config')
+        raise InvalidUsage('api-disabled')
 
     payload = request.get_json(silent=True)
     try:
