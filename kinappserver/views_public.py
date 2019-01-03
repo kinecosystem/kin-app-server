@@ -25,7 +25,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details,\
-    add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,\
+    add_p2p_tx,add_app2app_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,\
     handle_task_results_resubmission, reject_premature_results, get_address_by_userid,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
