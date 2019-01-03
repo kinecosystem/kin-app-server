@@ -950,11 +950,6 @@ def purchase_api():
 def report_p2p_tx_api():
     """endpoint used by the client to report successful p2p txs"""
 
-    if not config.P2P_TRANSFERS_ENABLED:
-        # this api is disabled, clients should not have asked for it
-        print('/user/transaction/p2p/add api is disabled by server config')
-        raise InvalidUsage('api-disabled')
-
     payload = request.get_json(silent=True)
     try:
         # TODO Should we verify the tx against the blockchain?
