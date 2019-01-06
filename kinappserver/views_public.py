@@ -559,13 +559,22 @@ def get_transactions_api():
         kin_from_a_friend_text=emoji.emojize(':party_popper: Kin from a friend')
         p2p_txs = []
         for tx in list_p2p_transactions_for_user_id(user_id, MAX_TXS_PER_USER):
-            if tx.receiver_app_sid is not None:
-                app_name = list(filter(lambda d_app: d_app.receiver_app_sid == tx.receiver_app_sid, apps))
-                title = 'Sent Kin to %s' % app_name[0]
+            is_app2app = tx.receiver_app_sid is not None
+            if is_app2app:
+                d_app = list(filter(lambda item: item.sid == tx.receiver_app_sid, apps))
+                title = 'Sent Kin to %s' % d_app[0].name
+                p2p_txs.append({'title': title,
+                    'description': 'You sent %sKIN to %s' % (tx.amount, d_app[0].name),
+                    'provider': {'image_url': d_app[0].meta_data['icon_url'], 'name': d_app[0].name},
+                    'type': 'p2p',
+                    'tx_hash': tx.tx_hash,
+                    'amount': tx.amount,
+                    'client_received': str(tx.receiver_user_id).lower() == str(user_id).lower(),
+                    'tx_info': {'memo': 'na', 'task_id': '-1'},
+                    'date': arrow.get(tx.update_at).timestamp})
             else:
                 title = kin_from_a_friend_text if str(tx.receiver_user_id).lower() == str(user_id).lower() else 'Kin to a friend'
-            
-            p2p_txs.append({'title': title,
+                p2p_txs.append({'title': kin_from_a_friend_text if str(tx.receiver_user_id).lower() == str(user_id).lower() else 'Kin to a friend',
                     'description': 'a friend sent you %sKIN' % tx.amount,
                     'provider': {'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/poll_logo_kin.png', 'name': 'friend'},
                     'type': 'p2p',
@@ -982,10 +991,10 @@ def report_app2app_tx_api():
     res, tx_dict = add_app2app_tx(tx_hash, sender_id, destination_app_sid, amount, destination_address)
     if res:
         # send back the dict with the tx details
-        increment_metric('p2p-tx-added')
+        increment_metric('app2app-tx-added')
         return jsonify(status='ok', tx=tx_dict)
     else:
-        raise InvalidUsage('failed to add p2ptx')
+        raise InvalidUsage('failed to add app2app_tx')
 
 @app.route('/user/transaction/p2p', methods=['POST'])
 def report_p2p_tx_api():
@@ -1014,7 +1023,7 @@ def report_p2p_tx_api():
     if res:
         # send back the dict with the tx details
         increment_metric('p2p-tx-added')
-        return jsonify(status='ok', tx=tx_dict)
+        return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add p2ptx')
 

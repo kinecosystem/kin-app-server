@@ -18,7 +18,7 @@ class P2PTransaction(db.Model):
     tx_hash = db.Column(db.String(100), nullable=False, primary_key=True)
     amount = db.Column(db.Integer(), nullable=False, primary_key=False)
     sender_address = db.Column(db.String(60), db.ForeignKey("user.public_address"), nullable=False, unique=False)
-    receiver_address = db.Column(db.String(60), db.ForeignKey("user.public_address"), nullable=False, unique=False)
+    receiver_address = db.Column('receiver_address', db.String(60), nullable=False, unique=False)
     update_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now())
 
     def __repr__(self):
