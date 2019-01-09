@@ -25,7 +25,7 @@ from kinappserver.models import create_user, update_user_token, update_user_app_
     get_offers_for_user, set_offer_active, create_order, process_order, \
     create_good, list_inventory, release_unclaimed_goods, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details,\
-    add_p2p_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,\
+    add_p2p_tx,add_app2app_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,\
     handle_task_results_resubmission, reject_premature_results, get_address_by_userid,\
     list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
     get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
@@ -545,6 +545,7 @@ def get_transactions_api():
         user_id, auth_token = extract_headers(request)
         server_txs = [{'type': 'server', 'tx_hash': tx.tx_hash, 'amount': tx.amount, 'client_received': not tx.incoming_tx, 'tx_info': tx.tx_info, 'date': arrow.get(tx.update_at).timestamp} for tx in list_user_transactions(user_id, MAX_TXS_PER_USER)]
 
+
         # get the offer, task details
         for tx in server_txs:
             details = get_offer_details(tx['tx_info']['offer_id']) if not tx['client_received'] else get_task_details(tx['tx_info']['task_id'])
@@ -552,8 +553,28 @@ def get_transactions_api():
 
         # get p2p details
         import emoji
+        from .models import AppDiscovery
+        apps = AppDiscovery.query.all()
+        
         kin_from_a_friend_text=emoji.emojize(':party_popper: Kin from a friend')
-        p2p_txs = [{'title': kin_from_a_friend_text if str(tx.receiver_user_id).lower() == str(user_id).lower() else 'Kin to a friend',
+        p2p_txs = []
+        for tx in list_p2p_transactions_for_user_id(user_id, MAX_TXS_PER_USER):
+            is_app2app = tx.receiver_app_sid is not None
+            if is_app2app:
+                d_app = list(filter(lambda item: item.sid == tx.receiver_app_sid, apps))
+                title = 'Sent Kin to %s' % d_app[0].name
+                p2p_txs.append({'title': title,
+                    'description': 'You sent %sKIN to %s' % (tx.amount, d_app[0].name),
+                    'provider': {'image_url': d_app[0].meta_data['icon_url'], 'name': d_app[0].name},
+                    'type': 'p2p',
+                    'tx_hash': tx.tx_hash,
+                    'amount': tx.amount,
+                    'client_received': str(tx.receiver_user_id).lower() == str(user_id).lower(),
+                    'tx_info': {'memo': 'na', 'task_id': '-1'},
+                    'date': arrow.get(tx.update_at).timestamp})
+            else:
+                title = kin_from_a_friend_text if str(tx.receiver_user_id).lower() == str(user_id).lower() else 'Kin to a friend'
+                p2p_txs.append({'title': kin_from_a_friend_text if str(tx.receiver_user_id).lower() == str(user_id).lower() else 'Kin to a friend',
                     'description': 'a friend sent you %sKIN' % tx.amount,
                     'provider': {'image_url': 'https://s3.amazonaws.com/kinapp-static/brand_img/poll_logo_kin.png', 'name': 'friend'},
                     'type': 'p2p',
@@ -561,7 +582,7 @@ def get_transactions_api():
                     'amount': tx.amount,
                     'client_received': str(tx.receiver_user_id).lower() == str(user_id).lower(),
                     'tx_info': {'memo': 'na', 'task_id': '-1'},
-                    'date': arrow.get(tx.update_at).timestamp} for tx in list_p2p_transactions_for_user_id(user_id, MAX_TXS_PER_USER)]
+                    'date': arrow.get(tx.update_at).timestamp})
 
         # merge txs:
         detailed_txs = detailed_txs + p2p_txs
@@ -946,6 +967,35 @@ def purchase_api():
             lock.release()
 
 
+@app.route('/user/transaction/app2app', methods=['POST'])
+def report_app2app_tx_api():
+    """endpoint used by the client to report successful p2p txs"""
+
+    payload = request.get_json(silent=True)
+    try:
+        # TODO Should we verify the tx against the blockchain?
+        # TODO this api needs to be secured with auth token
+        sender_id, auth_token = extract_headers(request)
+        
+        tx_hash = payload.get('tx_hash', None)
+        destination_app_sid = payload.get('destination_app_sid', None)
+        destination_address = payload.get('destination_address', None)
+        amount = payload.get('amount', None)
+        
+        if None in (tx_hash, sender_id, destination_app_sid, amount,destination_address):
+            raise InvalidUsage('invalid params')
+
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    res, tx_dict = add_app2app_tx(tx_hash, sender_id, destination_app_sid, amount, destination_address)
+    if res:
+        # send back the dict with the tx details
+        increment_metric('app2app-tx-added')
+        return jsonify(status='ok', tx=tx_dict)
+    else:
+        raise InvalidUsage('failed to add app2app_tx')
+
 @app.route('/user/transaction/p2p', methods=['POST'])
 def report_p2p_tx_api():
     """endpoint used by the client to report successful p2p txs"""
@@ -973,7 +1023,7 @@ def report_p2p_tx_api():
     if res:
         # send back the dict with the tx details
         increment_metric('p2p-tx-added')
-        return jsonify(status='ok', tx=tx_dict)
+        return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add p2ptx')
 

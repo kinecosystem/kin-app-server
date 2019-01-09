@@ -24,7 +24,6 @@ class AppDiscoveryCategory(db.Model):
     category_id = db.Column(db.Integer(), nullable=False, primary_key=True)
     category_name = db.Column(db.String(80), nullable=False, primary_key=False)
 
-
 def app_discovery_category_to_json(app_discovery_category):
     """converts app_discovery_category to a json-representation"""
     if not app_discovery_category:
