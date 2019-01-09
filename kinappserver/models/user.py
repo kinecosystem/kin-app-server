@@ -605,9 +605,10 @@ def get_users_for_engagement_push(scheme):
         #     - last login was sometimes in the last 4 days
         # if scheme == 'engage-week':
         #     - logged in exactly a week ago
-        print('invalid scheme:%s' % scheme)
+        log.info('engage-push: invalid scheme:%s' % scheme)
         raise InvalidUsage('invalid scheme: %s' % scheme)
 
+    log.info('engage-push: in get_users_for_engagement_push with scheme %s' % scheme)
     datetime_today = datetime.today()
     today = datetime.date(datetime_today)
     four_days_ago = datetime.date(datetime_today+ timedelta(days=-4))
@@ -622,10 +623,10 @@ def get_users_for_engagement_push(scheme):
         "and public.user.push_token != \'\';")
     all_pushable_users = results.fetchall()
     end = time.time()
-    log.info("engage-push: query took : %s", end - start)
+    diff = end - start
+    log.info("engage-push: num of users to process %d, query took : %s" % (len(all_pushable_users), diff))
     for user in all_pushable_users:
         try:
-            log.info('engage-push: processing user %s os: %s, app_ver %s' % (user.user_id, user.os_type, user.app_ver))
             from .blacklisted_phone_numbers import is_userid_blacklisted
 
             if user.os_type == OS_ANDROID and LooseVersion(user.app_ver) <= LooseVersion("1.4.0"):
