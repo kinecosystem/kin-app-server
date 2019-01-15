@@ -598,22 +598,24 @@ def get_users_for_engagement_push(scheme):
 
     user_ids = {OS_IOS: [], OS_ANDROID: []}
 
-    if scheme not in ['engage-recent', 'engage-week']:
+    if scheme not in ['engage-recent', 'engage-old']:
         # get all user_ids that have active tasks and
         # if scheme == 'engage-recent':
         #     - did not log in today and
         #     - last login was sometimes in the last 4 days
-        # if scheme == 'engage-week':
-        #     - logged in exactly a week ago
+        #     - or they logged in exactly a week ago
+        # if scheme = 'engage-old':
+        #     - have not logged in, in the last 2 weeks
         log.info('engage-push: invalid scheme:%s' % scheme)
         raise InvalidUsage('invalid scheme: %s' % scheme)
 
-    log.info('engage-push: in get_users_for_engagement_push with scheme %s' % scheme)
     datetime_today = datetime.today()
     today = datetime.date(datetime_today)
+    log.info('engage-push: in get_users_for_engagement_push with scheme %s, current date: %s' % (scheme, datetime_today))
     four_days_ago = datetime.date(datetime_today+ timedelta(days=-4))
     seven_days_ago = datetime.date(datetime_today + timedelta(days=-7))
-    skipped_users = dict(blacklist=[], country=[], active_today=[], active_4_days=[], active_not_one_week=[],
+    fourteen_days_ago = datetime.date(datetime_today) + timedelta(days=-14)
+    skipped_users = dict(blacklist=[], country=[], active_today=[], not_active_recently=[], active_in_last_two_weeks=[],
                          no_active_task=[], old_version=[])
 
     results = db.engine.execute(
@@ -647,11 +649,11 @@ def get_users_for_engagement_push(scheme):
             if today == last_active_date:
                 skipped_users['active_today'].append(user.user_id)
                 continue
-            elif scheme == 'engage-recent' and last_active_date < four_days_ago:
-                skipped_users['active_4_days'].append(user.user_id)
+            elif scheme == 'engage-recent' and four_days_ago > last_active_date != seven_days_ago:
+                skipped_users['not_active_recently'].append(user.user_id)
                 continue
-            elif scheme == 'engage-week' and seven_days_ago != last_active_date:
-                skipped_users['active_not_one_week'].append(user.user_id)
+            elif scheme == 'engage-old' and fourteen_days_ago >= last_active_date:
+                skipped_users['active_in_last_two_weeks'].append(user.user_id)
                 continue
 
             immediate_tasks = count_immediate_tasks(user.user_id, None, False)
@@ -671,26 +673,28 @@ def get_users_for_engagement_push(scheme):
 
     now = arrow.utcnow().shift(seconds=60).timestamp  # add a small time shift to account for calculation time
 
-    log.info("engage-push: schema %s - finished processing users. Here is the summary: -------------------" % now)
-    log.info("engage-push: skipped sending push notifications to\n  %d old versions\n  %d blacklisted users"
-             "\n  %d country blocked users\n  %d active today\n  %d last time active more than 4 days ago"
-             "\n  %d active not exactly a week ago\n  %d no active task"
-             % (len(skipped_users['old_version']), len(skipped_users['blacklist']),
-                len(skipped_users['country']), len(skipped_users['active_today']),
-                len(skipped_users['active_4_days']), len(skipped_users['active_not_one_week']),
+    log.info("engage-push: schema %s, time: %s - %s. Finished processing users. Here is the summary: ----------------"
+             % (scheme, now, datetime_today))
+    log.info("engage-push: skipped sending push notifications to"
+             "\nengage-push:   %d old versions"
+             "\nengage-push:   %d blacklisted users"
+             "\nengage-push:   %d country blocked users"
+             "\nengage-push:   %d active today"
+             "\nengage-push:   %d last time active more than 4 days ago and not exactly week ago"
+             "\nengage-push:   %d last time active was in the last 2 weeks"
+             "\nengage-push:   %d no active task"
+             % (len(skipped_users['old_version']),
+                len(skipped_users['blacklist']),
+                len(skipped_users['country']),
+                len(skipped_users['active_today']),
+                len(skipped_users['not_active_recently']),
+                len(skipped_users['active_in_last_two_weeks']),
                 len(skipped_users['no_active_task'])))
-    log.info("engage-push: skipped user ids\n  %s old versions\n  %s blacklisted users"
-             "\n  %s country blocked users\n  %s active today\n  %s active in the last 4 days"
-             "\n  %s active in the last week\n  %s no active task"
-             % (skipped_users['old_version'], skipped_users['blacklist'],
-                skipped_users['country'], skipped_users['active_today'],
-                skipped_users['active_4_days'], skipped_users['active_not_one_week'],
-                skipped_users['no_active_task']))
     log.info("engage-push: will send push notifications to %d android users, %d ios users"
              % (len(user_ids[OS_ANDROID]), len(user_ids[OS_IOS])))
     log.info("engage-push: will send to the following user_ids: %s" % user_ids)
     end = time.time()
-    log.info("engage-push: total time it took: %s", end - start)
+    log.info("engage-push: %s total time it took: %s", now, end - start)
     log.info("------------------------------------------------------------------------ ")
     return user_ids
 
