@@ -68,7 +68,7 @@ def format_app2app_tx_dict(tx_hash, amount, destination_app_sid):
                     'type': 'p2p',
                     'tx_hash': tx_hash,
                     'amount': amount,
-                    'client_received': 'false',
+                    'client_received': false,
                     'tx_info': {'memo': 'na', 'task_id': '-1'},
                     'date': arrow.utcnow().timestamp}
 
