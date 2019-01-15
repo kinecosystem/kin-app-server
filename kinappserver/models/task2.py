@@ -750,7 +750,7 @@ def count_immediate_tasks(user_id, only_cat_id=None, send_push=True):
     # app_ver = user_app_data.app_ver
     # country_code = get_country_code_by_ip(user_app_data.ip_address)
 
-    user_next_tasks = get_next_tasks_for_user(user_id, send_push)
+    user_next_tasks = get_next_tasks_for_user(user_id, None, [], send_push)
 
     if only_cat_id:
         log.info('getting count_immediate_tasks for cat_id %s' % only_cat_id)
