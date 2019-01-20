@@ -95,3 +95,5 @@
      - { alias: '_tailworker-fast', command: 'tail -f /var/log/kinappworker_fast.err.log -n 10' }
      - { alias: '_tailworker-slow', command: 'tail -f /var/log/kinappworker_slow.err.log -n 10' }
      - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/stage/sql/userpassword')}}@kinappstage.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinappstage" }
+
+   zendesk_api_token: "{{lookup('aws_ssm', '/config/stage/zendesk/apikey')}}"
