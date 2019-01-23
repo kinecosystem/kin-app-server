@@ -1435,3 +1435,20 @@ def get_discovery_apps():
     os_type = get_user_os_type(user_id)
 
     return jsonify(get_discovery_apps(os_type))
+
+
+
+@app.route('/contact-us', methods=['POST'])
+def contact_support_endpoint():
+    """store the user's backup hints"""
+    user_id, auth_token = extract_headers(request)
+    try:
+        payload = request.get_json(silent=True)
+        form = payload.get('form', None)
+        if None in (user_id, form):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    else:
+        
