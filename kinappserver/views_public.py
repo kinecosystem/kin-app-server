@@ -1440,15 +1440,36 @@ def get_discovery_apps():
 
 @app.route('/contact-us', methods=['POST'])
 def contact_support_endpoint():
-    """store the user's backup hints"""
-    user_id, auth_token = extract_headers(request)
+    """create a new ticket in zendesk"""
+    import requests
+
+    payload = request.get_json(silent=True)
+    print(payload)
     try:
-        payload = request.get_json(silent=True)
-        form = payload.get('form', None)
-        if None in (user_id, form):
+        category = payload.get('category', None).replace(" ", "_")
+        sub_category = payload.get('sub_category', None).replace(" ", "_")
+        name = payload.get('name', None)
+        email = payload.get('email', None)
+        description = payload.get('description', None)
+        user_id = payload.get('user_id', None)
+        platform = payload.get('platform', None)
+        version = payload.get('version', None)
+        debug = payload.get('debug', None)
+        if None in (category, sub_category, name, email, description, user_id, platform, version):
             raise InvalidUsage('bad-request')
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
     else:
-        
+        import requests, json
+        user,pwd = config.ZENDESK_API_TOKEN.split(':')
+        headers = { 'Content-Type': 'application/json'}
+        subject = "DEBUG HELP" if debug else "I need help!"
+        data = '{ "request": { "requester": { "name": "%s", "email": "%s" }, "tags": [ "%s", "%s" ], "subject": "%s", "comment": { "body": "%s ### user_id: %s ### platform: %s ### version: %s" } } }' % (name, email, category, sub_category,subject, description,user_id, platform,version)
+        print(data)
+        response = requests.post('https://kinitsupport.zendesk.com/api/v2/requests.json', headers=headers, data=data, auth=(user, pwd))
+        print(response)
+        if response.ok:
+            return jsonify(status='ok')
+    
+    return jsonify(status='failed')
