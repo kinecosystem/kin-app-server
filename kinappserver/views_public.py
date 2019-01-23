@@ -1441,9 +1441,8 @@ def get_discovery_apps():
 @app.route('/contact-us', methods=['POST'])
 def contact_support_endpoint():
     """create a new ticket in zendesk"""
-    import requests
-
-    payload = request.get_json(silent=True)
+    import requests, json
+    payload = request.get_json()
     print(payload)
     try:
         category = payload.get('category', None).replace(" ", "_")
@@ -1461,7 +1460,6 @@ def contact_support_endpoint():
         print(e)
         raise InvalidUsage('bad-request')
     else:
-        import requests, json
         user,pwd = config.ZENDESK_API_TOKEN.split(':')
         headers = { 'Content-Type': 'application/json'}
         subject = "DEBUG HELP" if debug else "I need help!"
