@@ -117,6 +117,12 @@
     dest: /etc/supervisor/conf.d/kinappworker-slow.conf
     mode:
 
+- name: template the supervisord config file
+  template:
+    src: "{{ role_path }}/templates/etc/supervisor/conf.d/kinappworker-push.conf.jinja2"
+    dest: /etc/supervisor/conf.d/kinappworker-push.conf
+    mode:
+
 - name: update supervisor:kinappworker
   supervisorctl:
     name: kinappserver
@@ -130,6 +136,11 @@
 - name: update supervisor:kinappworker-slow
   supervisorctl:
     name: kinappworker-slow
+    state: restarted
+
+- name: update supervisor:kinappworker-push
+  supervisorctl:
+    name: kinappworker-push
     state: restarted
 
 - name: template the nginx kinappserver config file

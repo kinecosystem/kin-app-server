@@ -213,9 +213,8 @@ def send_engagement_api():
     if scheme is None:
         raise InvalidUsage('invalid param')
     dry_run = payload.get('dryrun', 'True') == 'True'
-    log.info('engage-push: will call engage_push on rq_slow with scheme:%s, dry run:%s' % (scheme, dry_run))
-    app.rq_slow.enqueue_call(func=send_engagement_messages, args=(scheme, dry_run))
-    #send_engagement_messages(scheme, dry_run)
+    log.info('engage-push: will call engage_push on rq_push with scheme:%s, dry run:%s' % (scheme, dry_run))
+    app.rq_push.enqueue_call(func=send_engagement_messages, args=(scheme, dry_run))
     return jsonify(status='ok')
 
 
