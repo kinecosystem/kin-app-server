@@ -1460,14 +1460,35 @@ def contact_support_endpoint():
         print(e)
         raise InvalidUsage('bad-request')
     else:
-        user,pwd = config.ZENDESK_API_TOKEN.split(':')
-        headers = { 'Content-Type': 'application/json'}
-        subject = "DEBUG HELP" if debug else "I need help!"
-        data = '{ "request": { "requester": { "name": "%s", "email": "%s" }, "tags": [ "%s", "%s" ], "subject": "%s", "comment": { "body": "%s ### user_id: %s ### platform: %s ### version: %s" } } }' % (name, email, category, sub_category,subject, description,user_id, platform,version)
-        print(data)
-        response = requests.post('https://kinitsupport.zendesk.com/api/v2/requests.json', headers=headers, data=data, auth=(user, pwd))
-        print(response)
-        if response.ok:
+        from .models.user import create_ticket
+        if create_ticket(name,email,category,sub_category,description,user_id,platform,version,debug):
+            return jsonify(status='ok')
+    
+    return jsonify(status='failed')
+
+@app.route('/feedback', methods=['POST'])
+def feedback_endpoint():
+    """create a new ticket in zendesk"""
+    import requests, json
+    payload = request.get_json()
+    print(payload)
+    try:
+        category = "Feedback"
+        name = payload.get('name', None)
+        email = payload.get('email', None)
+        description = payload.get('description', None)
+        user_id = payload.get('user_id', None)
+        platform = payload.get('platform', None)
+        version = payload.get('version', None)
+        debug = payload.get('debug', None)
+        if None in (category, name, email, description, user_id, platform, version):
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    else:
+        from .models.user import create_ticket
+        if create_ticket(name,email,category,None,description,user_id,platform,version,debug):
             return jsonify(status='ok')
     
     return jsonify(status='failed')

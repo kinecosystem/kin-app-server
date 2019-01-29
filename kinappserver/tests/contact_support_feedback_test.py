@@ -51,5 +51,19 @@ class Tester(unittest.TestCase):
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
+        resp = self.app.post('/feedback',
+                             data=json.dumps({
+                                 'category': "Feedback",
+                                 'name': "Aryeh Katz",
+                                 'email': "somemail@dom.com",
+                                 'description': "Lurm ipsumLurm ipsumLurm ipsumLurm ipsumLurm ipsumLurm ipsumLurm ipsumpsumLurm ipsumLurm ipsumLurm ipsumLurm ipsumLurm ipsumpsumLurm ipsumLurm ipsumLurm ipsumLurm ipsumLurm ipsum",
+                                 'user_id': str(uuid4()),
+                                 'platform': 'android',
+                                 'version': '1.1.1',
+                                 'debug': 'true'
+                             }),
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
 if __name__ == '__main__':
     unittest.main()
