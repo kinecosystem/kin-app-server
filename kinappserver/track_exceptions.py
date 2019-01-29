@@ -10,7 +10,7 @@ def report_exceptions():
     import subprocess
     import socket
     redis_key = 'track-exceptions-%s-%s' % (os.environ['ENV'], socket.gethostname())
-    REDIS_URL = 'kinit-app-prod-001.qugi0x.0001.use1.cache.amazonaws.com'
+    REDIS_URL = 'kinit-app-prod.qugi0x.ng.0001.use1.cache.amazonaws.com'
     completed_process = subprocess.run("cat /var/log/kinappserver.err.log|grep Traceback|wc -l", shell=True, stdout=subprocess.PIPE)
     try:
         num_exceptions = int(completed_process.stdout)
