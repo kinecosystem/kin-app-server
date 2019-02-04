@@ -1,8 +1,7 @@
 import uuid
 
 from kinappserver import app, config
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, increment_metric
-import redis
+from kinappserver.utils import InvalidUsage, OS_ANDROID, increment_metric
 
 PLEASE_UPGRADE_COOLDOWN_SECONDS = 60
 COUNTRY_NOT_SUPPORTED_PUSH_COOLDOWN_SECONDS = 60 * 60 * 8
@@ -15,14 +14,14 @@ def generate_push_id():
 def engagement_payload_apns(push_type):
     push_id = generate_push_id()
     # TODO report push_id
-    if push_type in ('engage-recent', 'engage-week'):
+    if push_type in ('engage-recent', 'engage-old'):
         return apns_payload("", "Let's earn some Kin!", push_type, push_id)
 
 
 def engagement_payload_gcm(push_type):
     push_id = generate_push_id()
     # TODO report push_id
-    if push_type in ('engage-recent', 'engage-week'):
+    if push_type in ('engage-recent', 'engage-old'):
         return gcm_payload(push_type, push_id, {'title': '', 'body': "Let's earn some Kin!"})
     else:
         raise InvalidUsage('no such push type: %s' % push_type)
