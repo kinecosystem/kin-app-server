@@ -1443,7 +1443,6 @@ def contact_support_endpoint():
     """create a new ticket in zendesk"""
     import requests, json
     payload = request.get_json()
-    print(payload)
     try:
         category = payload.get('category', None).replace(" ", "_")
         sub_category = payload.get('sub_category', None).replace(" ", "_")
@@ -1456,6 +1455,8 @@ def contact_support_endpoint():
         debug = payload.get('debug', None)
         if None in (category, sub_category, name, email, description, user_id, platform, version):
             raise InvalidUsage('bad-request')
+
+        Log.d("user_id: %s - submitted a ticket" % user_id)
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
@@ -1471,7 +1472,6 @@ def feedback_endpoint():
     """create a new ticket in zendesk"""
     import requests, json
     payload = request.get_json()
-    print(payload)
     try:
         category = "Feedback"
         name = payload.get('name', None)
@@ -1483,6 +1483,7 @@ def feedback_endpoint():
         debug = payload.get('debug', None)
         if None in (category, name, email, description, user_id, platform, version):
             raise InvalidUsage('bad-request')
+        Log.d("user_id: %s - submitted a feedback" % user_id)
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
