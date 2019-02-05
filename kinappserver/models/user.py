@@ -225,7 +225,7 @@ def create_ticket(name,email, category, sub_category, description,user_id, platf
     user,pwd = config.ZENDESK_API_TOKEN.split(':')
     headers = { 'Content-Type': 'application/json'}
     subject = "DEBUG_" + category if debug else category if category == "Feedback" else "I need help!"
-    data = json.loads('{ "request": { "requester": { "name": "%s", "email": "%s" }, "tags": [ "%s" ], "subject": "%s", "comment": { "body": "%s ### user_id: %s ### platform: %s ### version: %s" } } }' % (name, email, category, subject, description,user_id, platform,version))
+    data = json.loads(r'{ "request": { "requester": { "name": "%s", "email": "%s" }, "tags": [ "%s" ], "subject": "%s", "comment": { "body": "%s\nuser_id: %s\nplatform: %s\nversion: %s"}}}' % (name, email, category, subject, description,user_id, platform,version))
     
     if sub_category is not None:
         data['request']['tags'].append(sub_category)
