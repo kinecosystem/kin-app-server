@@ -221,22 +221,16 @@ class UserAppData(db.Model):
 
 def create_ticket(name,email, category, sub_category, description,user_id, platform,version, debug):
     from kinappserver import config
-    import requests, json
+    import requests,json
+
     user,pwd = config.ZENDESK_API_TOKEN.split(':')
     headers = { 'Content-Type': 'application/json'}
     subject = "DEBUG_" + category if debug else category if category == "Feedback" else "I need help!"
-    data = json.loads(r'{ "request": { "requester": { "name": "%s", "email": "%s" }, "tags": [ "%s" ], "subject": "%s", "comment": { "body": "%s\nuser_id: %s\nplatform: %s\nversion: %s"}}}' % (name, email, category, subject, description,user_id, platform,version))
-    
-    if sub_category is not None:
-        data['request']['tags'].append(sub_category)
-
-
-    print(data)
-    response = requests.post('https://kinitsupport.zendesk.com/api/v2/requests.json', headers=headers, data=json.dumps(data), auth=(user, pwd))
-    print(response)
-    if response.ok:
+    data = '{ "request": { "requester": { "name": "%s", "email": "%s" }, "tags": [ "%s", "%s" ], "subject": "%s", "comment": { "body": "%s\\n user_id: %s\\n  platform: %s\\n version: %s"}}}' % (name, email, category,sub_category, subject, repr(description),user_id, platform,version)
+    response = requests.post('https://kinitsupport.zendesk.com/api/v2/requests.json', headers=headers, data=data, auth=(user, pwd))
+    log.debug(response.status_code)
+    if response.status_code == 201:
         return True
-    
     return False
 
 

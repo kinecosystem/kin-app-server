@@ -1456,7 +1456,7 @@ def contact_support_endpoint():
         if None in (category, sub_category, name, email, description, user_id, platform, version):
             raise InvalidUsage('bad-request')
 
-        Log.d("user_id: %s - submitted a ticket" % user_id)
+        log.debug("user_id: %s - submitted a ticket" % user_id)
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
@@ -1465,7 +1465,7 @@ def contact_support_endpoint():
         if create_ticket(name,email,category,sub_category,description,user_id,platform,version,debug):
             return jsonify(status='ok')
     
-    return jsonify(status='failed')
+    raise InvalidUsage('bad-request')
 
 @app.route('/feedback', methods=['POST'])
 def feedback_endpoint():
@@ -1483,7 +1483,7 @@ def feedback_endpoint():
         debug = payload.get('debug', None)
         if None in (category, name, email, description, user_id, platform, version):
             raise InvalidUsage('bad-request')
-        Log.d("user_id: %s - submitted a feedback" % user_id)
+        log.debug("user_id: %s - submitted a feedback" % user_id)
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
