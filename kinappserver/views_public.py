@@ -1492,4 +1492,4 @@ def feedback_endpoint():
         if create_ticket(name,email,category,None,description,user_id,platform,version,debug):
             return jsonify(status='ok')
     
-    return jsonify(status='failed')
+    raise InvalidUsage('bad-request')
