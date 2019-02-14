@@ -3,7 +3,7 @@ import unittest
 import uuid
 import simplejson as json
 import testing.postgresql
-
+import warnings
 import kinappserver
 from kinappserver import db
 
@@ -34,6 +34,7 @@ class Tester(unittest.TestCase):
 
     def test_topics_task_logic(self):
         """test topics/task logic"""
+        warnings.simplefilter("ignore")
 
         topic_sports = {
             "name": "Sports",
@@ -270,12 +271,12 @@ class Tester(unittest.TestCase):
         print('resp: %s' % resp.data)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['tasks']['1'].id, '1')
-        self.assertEqual(data['tasks']['2'].id, '3')
+        self.assertEqual(data['tasks']['1'][0]['id'], '1')
+        self.assertEqual(data['tasks']['2'][0]['id'], '3')
 
         # user selects topics
         resp = self.app.post(
-            '/user/topics', data=json.dumps({'ids': ["2"]}), headers=headers, content_type='application/json')
+            '/user/topics', data=json.dumps({'ids': [2]}), headers=headers, content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         # get user topics
@@ -283,7 +284,7 @@ class Tester(unittest.TestCase):
         print('resp: %s' % resp.data)
         topics = json.loads(resp.data)['topics']
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(set(topics), {'2'})
+        self.assertEqual(set(topics), {2})
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
@@ -291,8 +292,8 @@ class Tester(unittest.TestCase):
         print('resp: %s' % resp.data)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['tasks']['1'].id, '2')
-        self.assertEqual(data['tasks']['2'].id, '4')
+        self.assertEqual(data['tasks']['1'][0]['id'], '2')
+        self.assertEqual(data['tasks']['2'][0]['id'], '4')
 
 
 if __name__ == '__main__':
