@@ -968,3 +968,20 @@ def add_discovery_app_api():
         return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add discovery app')
+
+
+@app.route('/topic/add', methods=['POST'])
+def add_topic_api():
+    """ internal endpoint used to add new topic """
+    from kinappserver.models.topic import add_topic
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    try:
+        payload = request.get_json(silent=True)
+        topic = payload.get('topic')
+        if add_topic(topic):
+            return jsonify(status='ok')
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')

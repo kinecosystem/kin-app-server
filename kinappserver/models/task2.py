@@ -195,7 +195,7 @@ def list_all_task_data():
     return response
 
 
-def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id, user_country_code, send_push=True):
+def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id, user_country_code, user_topics, send_push=True):
     """returns the next task id that:
      1. belongs to the given cat_id
      2. is yet un-answered by the user
@@ -223,6 +223,14 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
     # go over all the yet-unsolved tasks and get the first valid one
     for task_id in unsolved_task_ids:
         task = get_task_by_id(task_id)
+        user_app_data = get_user_app_data(user_id)
+
+        # skip task that are not under user's topics
+        if user_app_data.topics is not None:
+            matching_topics = [t for t in user_app_data.topics if t in task.tags]
+            if not len(matching_topics):
+                log.info('skipping task_id %s - no topic matching' % task_id)
+                continue
 
         # skip inactive ad-hoc tasks
         if not is_task_active(task_id):
@@ -230,7 +238,7 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
             continue
 
         # skip truex and truex-related tasks
-        if should_skip_task(user_id, task_id, None, user_country_code):
+        if should_skip_task(user_id, task_id, None,user_topics, user_country_code):
             # we're skipping this task
             # log.info('skipping truex-related task_id %s for user %s' % (task_id, user_id))
             continue
@@ -271,7 +279,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
     app_ver = user_app_data.app_ver
     from .category import get_all_cat_ids
     for cat_id in cat_ids or get_all_cat_ids():
-        task_ids = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip), send_push)  # returns just one task in a list or empty list
+        task_ids = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip), user_app_data.topics, send_push)  # returns just one task in a list or empty list
         tasks_per_category[cat_id] = [get_task_by_id(task_id) for task_id in task_ids]
         # plant the memo and start date in the first task of the category:
         from .user import get_next_task_memo
@@ -320,7 +328,7 @@ def should_skip_truex_task(user_id, task_id, source_ip=None, country_code=None):
         return True
 
 
-def should_skip_task(user_id, task_id, source_ip, country_code=None):
+def should_skip_task(user_id, task_id, source_ip, user_topics, country_code=None):
     """determines whether to skip the given task_id for the given user_id"""
     try:
         # skip truex for iOS devices, non-american android
@@ -784,7 +792,7 @@ def count_immediate_tasks(user_id, only_cat_id=None, send_push=True):
     return immediate_tasks_count
 
 
-def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_for_category, os_type, client_version, user_country_code, user_id):
+def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_for_category, os_type, client_version, user_country_code, user_id, user_topics):
     """for the given category_id returns list of tasks, in order, with their delay days excluding previously completed tasks"""
     from distutils.version import LooseVersion
 
@@ -815,7 +823,7 @@ def get_all_unsolved_tasks_delay_days_for_category(cat_id, completed_task_ids_fo
             skip_task = True
 
         # filter out truex tasks if the user is in the truex blacklist
-        if should_skip_task(user_id, task_id, None, user_country_code):
+        if should_skip_task(user_id, task_id, None,user_topics, user_country_code):
             # log.info('skipping task %s - its either truex or truex-related' % task_id)
             skip_task = True
 

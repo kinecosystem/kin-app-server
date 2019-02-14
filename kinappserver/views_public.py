@@ -11,10 +11,10 @@ import redis_lock
 import arrow
 import logging as log
 from distutils.version import LooseVersion
-from .utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
+from kinappserver.utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
 
 from kinappserver import app, config, stellar, utils, ssm
-from .push import send_please_upgrade_push_2, send_country_not_supported
+from kinappserver.push import send_please_upgrade_push_2, send_country_not_supported
 from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
     sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
@@ -1435,3 +1435,44 @@ def get_discovery_apps():
     os_type = get_user_os_type(user_id)
 
     return jsonify(get_discovery_apps(os_type))
+
+
+@app.route('/topic/list_all', methods=['GET'])
+def list_all_topics_api():
+    """ returns the list off all topics """
+    from kinappserver.models.topic import list_all_topics
+    try:
+        return jsonify(topics=list_all_topics())
+    except Exception as e:
+        log.error('failed to updated user topics. e:%s' % e)
+        raise InvalidUsage('bad-request')
+
+
+@app.route('/user/topics', methods=['GET'])
+def list_user_topics_api():
+    """ returns the list off user's topics """
+    from kinappserver.models.topic import get_user_topics
+    user_id, auth_token = extract_headers(request)
+    if user_id is None:
+        log.error('missing value in header')
+        raise InvalidUsage('bad-request')
+    try:
+        return jsonify(topics=get_user_topics(user_id))
+    except Exception as e:
+        log.error('failed to get user topics. e:%s' % e)
+        raise InvalidUsage('bad-request')
+
+
+@app.route('/user/topics', methods=['POST'])
+def set_user_topics_api():
+    """ sets users topics """
+    from kinappserver.models.topic import set_user_topics
+    user_id, auth_token = extract_headers(request)
+    try:
+        payload = request.get_json(silent=True)
+        ids = payload.get('ids', None)
+        if set_user_topics(user_id, ids):
+            return jsonify(status="ok")
+    except Exception as e:
+        log.error('failed to updated user topics. e:%s' % e)
+        raise InvalidUsage('bad-request')

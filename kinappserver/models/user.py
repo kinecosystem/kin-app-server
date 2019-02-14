@@ -218,8 +218,8 @@ class UserAppData(db.Model):
     country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
     captcha_history = db.Column(db.JSON)
     should_solve_captcha_ternary = db.Column(db.Integer, unique=False, default=0, nullable=False)  # -1 = no captcha, 0 = show captcha on next task, 1 = captcha required
-
-
+    country_iso_code = db.Column(db.String(10))  # country iso code based on last ip
+    topics = db.Column(db.JSON) 
 
 def update_user_app_version(user_id, app_ver):
     """update the user app version"""
