@@ -2,7 +2,7 @@
 
 ![](https://travis-ci.org/kinecosystem/kin-app-server.svg?branch=master)
 
-An backend service for the Kinit App aimed at:
+A backend service for the Kinit App aimed at:
 
     - storing user data (userid, push-token, device-id etc)
     
@@ -12,9 +12,9 @@ An backend service for the Kinit App aimed at:
     
     - push messages are sent via rabbit queues to a dedicated Eshu cluster which forwards them to GCM/APNS
     
-all hosts are private in AWS. only the web-server ia accessible via a loadbalancer at port 443. Some internal services reside behind a loadbalancer (eshu, the payment service). There's even a load-balancer for the rabbit cluster (for health-checks.
+All hosts are private in AWS. only the web-server ia accessible via a loadbalancer at port 443. Some internal services reside behind a loadbalancer (eshu, the payment service). There's even a load-balancer for the rabbit cluster (for health-checks).
 
-there's also an additional machine (kinit-app-cron) which runs some cron'd scripts.
+There's also an additional machine (kinit-app-cron) which runs some cron'd scripts.
 
 There's a simplified environment called stage with a single instace of every service.
 
@@ -71,21 +71,11 @@ go into python console and:
      if you add/remove/modify the sqlalchemy defs in the code, you'll want to modify any existing 
      prod/stage DB's as well. this needs to happen manually, unless you want to completely re-create the databases.
 
-## External API
-just read the code.
-
-
-## Contributions
-we welcome contributions in the form of pull requests. 
-
 ## StyleSheet
 We intend to loosly follow pep8 and suggest you do too. We do not intend to obey the limit on line length.
 
-## A bunch of debugging tools:
-
-1. the psql client:
-a. install with:
+## Plsql client:
+### install with:
     sudo apt-get install postgresql-client
-
-b. run with:
+### run with:
     export PGPASSWORD=<the password>; psql <db url as given by amazon>
