@@ -328,6 +328,26 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['tasks'], {"no_tasks_reason": "filtered"})
 
+        # user selects more topics
+        resp = self.app.post(
+            '/user/topics', data=json.dumps({'ids': [1,2]}), headers=headers, content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # get user topics
+        resp = self.app.get('/user/topics', headers=headers)
+        print('resp: %s' % resp.data)
+        topics = json.loads(resp.data)['topics']
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(set(topics), {1,2})
+
+        # get the user's current tasks
+        resp = self.app.get('/user/tasks', headers=headers)
+        print('resp: %s' % resp.data)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['tasks']['1'][0]['id'], '1')
+        self.assertEqual(data['tasks']['2'][0]['id'], '3')
+
 
 if __name__ == '__main__':
     unittest.main()
