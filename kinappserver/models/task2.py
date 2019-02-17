@@ -289,7 +289,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
         task_id = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip), user_app_data.topics, send_push)  # returns just one task in a list or empty list
         if task_id == -1:
             # filtered flag on
-            tasks_per_category[cat_id] = None
+            tasks_per_category[cat_id] = "filtered"
         else:
             tasks_per_category[cat_id] = get_task_by_id(task_id)
         # plant the memo and start date in the first task of the category:
@@ -302,7 +302,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
         # log.info('tasks_per_category: num of tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category[cat_id])))
 
     # loop all categories and check if at least one task available
-    if all(t is None for t in tasks_per_category.values()):
+    if all(t is "filtered" for t in tasks_per_category.values()):
         return None
 
     # there is at least 1 task, the client expects an array
@@ -791,11 +791,18 @@ def count_immediate_tasks(user_id, only_cat_id=None, send_push=True):
     if only_cat_id is not None:
         cat_ids = [only_cat_id]
     else:
-        cat_ids = [x for x in user_next_tasks.keys()]  # get all the category ids for this user
+        if user_next_tasks is not None:
+            cat_ids = [x for x in user_next_tasks.keys()]  # get all the category ids for this user
+        else:
+            from kinappserver.models.category import list_categories
+            os_type = get_user_os_type(user_id)
+            for cat_id in list_categories(os_type):
+                immediate_tasks_count[cat_id] = 0
+            return immediate_tasks_count
 
     for cat_id in cat_ids:
         # for each category, determine the number of next available tasks if they exist
-        if user_next_tasks[cat_id] == []:
+        if not user_next_tasks[cat_id]:
             #  no tasks available. skip.
             #  log.info('skipping cat_id %s - no tasks' % cat_id)
             immediate_tasks_count[cat_id] = 0
