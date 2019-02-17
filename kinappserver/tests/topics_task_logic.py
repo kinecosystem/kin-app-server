@@ -262,7 +262,7 @@ class Tester(unittest.TestCase):
         print('resp: %s' % resp.data)
         topics = json.loads(resp.data)['topics']
         self.assertEqual(resp.status_code, 200)
-        self.assertSetEqual(set(topics.keys()), {'1', '2'})
+        self.assertListEqual([x['id'] for x in topics], [1, 2])
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}

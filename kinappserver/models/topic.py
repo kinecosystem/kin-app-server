@@ -31,10 +31,11 @@ def add_topic(new_topic):
 
 def list_all_topics():
     """returns a dict of all the topics"""
-    response = {}
+    response = []
     topics = Topic.query.all()
+
     for topic in topics:
-        response[topic.sid] = {'name': topic.name, 'icon_url': topic.icon_url}
+        response.append({'id': topic.sid, 'name': topic.name, 'icon_url': topic.icon_url})
 
     return response
 

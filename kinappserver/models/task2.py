@@ -916,6 +916,10 @@ def get_next_task_delay_days(user_id, task_id):
     """returns the delay-days property of the task after the given task_id for the given user_id, if one exists"""
     cat_id = get_cat_id_for_task_id(task_id)
     next_tasks = get_next_tasks_for_user(user_id, None, [cat_id])
+
+    if not next_tasks:  # if all tasks were filtered
+        return None
+
     # now that we have the task_id, go back to the original task definition and get the delay days
     next_task_id = next_tasks[cat_id][0]['id'] if len(next_tasks[cat_id]) > 0 else None
     return get_task_delay(next_task_id) if next_task_id else None
