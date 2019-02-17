@@ -9,7 +9,6 @@ from kinappserver import db
 
 log.getLogger().setLevel(log.INFO)
 
-
 USER_ID_HEADER = "X-USERID"
 
 
@@ -77,7 +76,7 @@ class Tester(unittest.TestCase):
             'tags': [1],
             'provider':
                 {'name': 'om-nom-nom-food',
-                    'image_url': 'http://inter.webs/horsie.jpg'},
+                 'image_url': 'http://inter.webs/horsie.jpg'},
             'items': [
                 {
                     'id': '435',
@@ -107,7 +106,7 @@ class Tester(unittest.TestCase):
             'tags': [2],
             'provider':
                 {'name': 'om-nom-nom-food',
-                    'image_url': 'http://inter.webs/horsie.jpg'},
+                 'image_url': 'http://inter.webs/horsie.jpg'},
             'items': [
                 {
                     'id': '435',
@@ -137,7 +136,7 @@ class Tester(unittest.TestCase):
             'tags': [1],
             'provider':
                 {'name': 'om-nom-nom-food',
-                    'image_url': 'http://inter.webs/horsie.jpg'},
+                 'image_url': 'http://inter.webs/horsie.jpg'},
             'items': [
                 {
                     'id': '435',
@@ -167,7 +166,7 @@ class Tester(unittest.TestCase):
             'tags': [2],
             'provider':
                 {'name': 'om-nom-nom-food',
-                    'image_url': 'http://inter.webs/horsie.jpg'},
+                 'image_url': 'http://inter.webs/horsie.jpg'},
             'items': [
                 {
                     'id': '435',
@@ -294,6 +293,40 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['tasks']['1'][0]['id'], '2')
         self.assertEqual(data['tasks']['2'][0]['id'], '4')
+
+        # complete a single tasks
+        resp = self.app.post('/user/completed_tasks/add',
+                             data=json.dumps({
+                                 'user_id': str(userid),
+                                 'task_id': '2'}),
+                             headers={USER_ID_HEADER: str(userid)},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        print('resp: %s' % resp.data)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['tasks']['2'][0]['id'], '4')
+
+        # complete all tasks
+        resp = self.app.post('/user/completed_tasks/add',
+                             data=json.dumps({
+                                 'user_id': str(userid),
+                                 'task_id': '4'}),
+                             headers={USER_ID_HEADER: str(userid)},
+                             content_type='application/json')
+        self.assertEqual(resp.status_code, 200)
+
+        # get the user's current tasks
+        headers = {USER_ID_HEADER: userid}
+        resp = self.app.get('/user/tasks', headers=headers)
+        print('resp: %s' % resp.data)
+        data = json.loads(resp.data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['tasks'], {"no_tasks_reason": "filtered"})
 
 
 if __name__ == '__main__':

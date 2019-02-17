@@ -499,6 +499,9 @@ def get_next_task_internal(cat_ids=[]):
     tasks_by_categories = get_next_tasks_for_user(user_id, get_source_ip(request), cat_ids)
     # log.info('Next tasks for user %s = %s (by category) ' % (user_id, tasks_by_categories))
 
+    if tasks_by_categories is None:
+        return jsonify(tasks={"no_tasks_reason": "filtered"})
+
     try:
         # handle unprintable chars...
         all_task_ids = []

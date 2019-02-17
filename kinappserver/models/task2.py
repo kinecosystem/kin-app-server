@@ -30,7 +30,7 @@ def reject_premature_results(user_id, task_id):
     next_task_ts = get_next_task_results_ts(user_id, get_task_by_id(task_id)['cat_id'])
     if next_task_ts is None:
         return False
-    
+
     now = arrow.utcnow()
     results_valid_at = arrow.get(next_task_ts)
 
@@ -221,6 +221,7 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
     log.info('unsolved tasks for cat_id %s: %s' % (cat_id, unsolved_task_ids))
 
     # go over all the yet-unsolved tasks and get the first valid one
+    task_filtered = False
     for task_id in unsolved_task_ids:
         task = get_task_by_id(task_id)
         user_app_data = get_user_app_data(user_id)
@@ -230,6 +231,7 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
             matching_topics = [t for t in user_app_data.topics if t in task['tags']]
             if not len(matching_topics):
                 log.info('skipping task_id %s - no topic matching' % task_id)
+                task_filtered = True
                 continue
 
         # skip inactive ad-hoc tasks
@@ -238,7 +240,7 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
             continue
 
         # skip truex and truex-related tasks
-        if should_skip_task(user_id, task_id, None,user_topics, user_country_code):
+        if should_skip_task(user_id, task_id, None, user_topics, user_country_code):
             # we're skipping this task
             # log.info('skipping truex-related task_id %s for user %s' % (task_id, user_id))
             continue
@@ -254,14 +256,19 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
                      'higher version' % (user_id, cat_id, task_id))
             if send_push:
                 send_please_upgrade_push(user_id)
-            return []
+            return None
 
         # return the first valid task:
         log.info('next_task_id_for_category: returning task_id %s for cat_id %s and user_id %s' % (task_id, cat_id, user_id))
-        return [task_id]
+        return task_id
     # ...no tasks available
+    # if tasks were filtered and we have no task to show, flag it
+    if task_filtered:
+        log.info('next_task_id_for_category: all available tasks were filtered for user_id %s in cat_id %s' % (user_id, cat_id))
+        return -1
+
     log.info('next_task_id_for_category: no available tasks for user_id %s in cat_id %s' % (user_id, cat_id))
-    return []
+    return None
 
 
 def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True):
@@ -279,16 +286,31 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
     app_ver = user_app_data.app_ver
     from .category import get_all_cat_ids
     for cat_id in cat_ids or get_all_cat_ids():
-        task_ids = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip), user_app_data.topics, send_push)  # returns just one task in a list or empty list
-        tasks_per_category[cat_id] = [get_task_by_id(task_id) for task_id in task_ids]
+        task_id = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip), user_app_data.topics, send_push)  # returns just one task in a list or empty list
+        if task_id == -1:
+            # filtered flag on
+            tasks_per_category[cat_id] = None
+        else:
+            tasks_per_category[cat_id] = get_task_by_id(task_id)
         # plant the memo and start date in the first task of the category:
         from .user import get_next_task_memo
         from .user import get_next_task_results_ts
-        if len(tasks_per_category[cat_id]) > 0:
-            tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
-            tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
+        if tasks_per_category[cat_id] is not None:
+            tasks_per_category[cat_id]['memo'] = get_next_task_memo(user_id, cat_id)
+            tasks_per_category[cat_id]['start_date'] = get_next_task_results_ts(user_id, cat_id)
 
         # log.info('tasks_per_category: num of tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category[cat_id])))
+
+    # loop all categories and check if at least one task available
+    if all(t is None for t in tasks_per_category.values()):
+        return None
+
+    # there is at least 1 task, the client expects an array
+    for cat_index in tasks_per_category.keys():
+        if tasks_per_category[cat_index] is None:
+            tasks_per_category[cat_index] = []
+        else:
+            tasks_per_category[cat_index] = [tasks_per_category[cat_index]]
 
     return tasks_per_category
 
