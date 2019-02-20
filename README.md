@@ -32,7 +32,7 @@ you'll need to get the ansible-galaxy deps with
      ansible-galaxy install -r playbooks/requirements.yml
 
 ## Installation
-this server is intended to be deployed on an ubuntu machine with python3. You'll need to tell Ansible to use the python3 interpreter.
+This server is intended to be deployed on an ubuntu machine with python3. You'll need to tell Ansible to use the python3 interpreter.
 
 run ansible (2.4.2.0) with this command:
 
@@ -50,7 +50,7 @@ To test the service, run the unittests.
 note that the tester uses a local, temporary postgress db - it does not mess with prod/stage.
 
 ## CI
-we use travis to run our tests: https://travis-ci.org/kinecosystem/kin-app-server
+We use travis to run our tests: https://travis-ci.org/kinecosystem/kin-app-server
 
 ## Running
 At the moment, you can run this service with
@@ -62,7 +62,7 @@ You'll probably also need to export the service name, as following:
     export FLASK_APP=kinappserver
 
 ## Creating the db for the fisrt time:
-go into python console and:
+Go into python console and:
 
      from kinappserver import db
 
@@ -72,7 +72,7 @@ go into python console and:
      prod/stage DB's as well. this needs to happen manually, unless you want to completely re-create the databases.
 
 ## StyleSheet
-We intend to loosly follow pep8 and suggest you do too. We do not intend to obey the limit on line length.
+We intend to loosely follow pep8 and suggest you do too. We do not intend to obey the limit on line length.
 
 ## Plsql client:
 ### install with:
