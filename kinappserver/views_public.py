@@ -3,7 +3,7 @@ The Kin App Server public API is defined here.
 """
 from threading import Thread
 from uuid import UUID
-
+from flask_cors import CORS, cross_origin
 from flask import request, jsonify, abort
 from kinappserver.views_common import get_source_ip, extract_headers, limit_to_acl
 from flask_api import status
@@ -1438,7 +1438,8 @@ def get_discovery_apps():
 
 
 
-@app.route('/contact-us', methods=['POST'])
+@app.route('/support/contact-us', methods=['POST', 'OPTION'])
+@cross_origin()
 def contact_support_endpoint():
     """create a new ticket in zendesk"""
     import requests, json
@@ -1467,7 +1468,9 @@ def contact_support_endpoint():
     
     raise InvalidUsage('bad-request')
 
-@app.route('/feedback', methods=['POST'])
+
+@app.route('/support/feedback', methods=['POST', 'OPTION'])
+@cross_origin()
 def feedback_endpoint():
     """create a new ticket in zendesk"""
     import requests, json
