@@ -296,7 +296,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
         # plant the memo and start date in the first task of the category:
         from .user import get_next_task_memo
         from .user import get_next_task_results_ts
-        if tasks_per_category[cat_id] is not "filtered":
+        if tasks_per_category[cat_id] is not "filtered" and tasks_per_category[cat_id] is not None:
             tasks_per_category[cat_id]['memo'] = get_next_task_memo(user_id, cat_id)
             tasks_per_category[cat_id]['start_date'] = get_next_task_results_ts(user_id, cat_id)
         
@@ -568,8 +568,8 @@ def add_task(task_json):
         task.video_url = task_json.get('video_url', None)
         task.min_to_complete = float(task_json['min_to_complete'])
         task.provider_data = task_json['provider']
-        task.tags = task_json['tags']
-        task.topics = task_json['topics']
+        task.tags = task_json.get('tags',None)
+        task.topics = task_json.get('topics',None)
         task.items = task_json['items']
         task.excluded_country_codes = task_json.get('excluded_country_codes', [])
         task.task_start_date = task_start_date  # required for ad-hoc
