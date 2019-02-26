@@ -225,14 +225,22 @@ def get_offer_details(offer_id):
 
 def set_locked_offers(user_id, days):
     """ scan the db for offers bought in the last {days} and update USER_LOCKED_OFFERS_REDIS_KEY"""
+    from kinappserver.config import OFFER_PER_TIME_RANGE
     log.info("user_id: %s - not cache - set_locked_offers! " % user_id)
     date_days_from_now = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     offers_bought_in_time_range = db.engine.execute("select tx_info, update_at from public.transaction "
                                                     "where user_id='%s' and incoming_tx=true "
                                                     "and update_at > ('%s'::date);" % (user_id, date_days_from_now)).fetchall()
     # extract data from result
-    offers_bought_in_time_range_ids = [item[0]['offer_id'] for item in offers_bought_in_time_range]
-    offers_bought_in_time_range_timestamp = [item[1].strftime('%m/%d/%Y') for item in offers_bought_in_time_range]
+    # get only offers that needed to be locked
+    offers_ids = [item[0]['offer_id'] for item in offers_bought_in_time_range]
+    locked_offers = [item for item in offers_bought_in_time_range if offers_ids.count(
+        item[0]['offer_id']) >= OFFER_PER_TIME_RANGE]
+    
+    # split into arrays
+    offers_bought_in_time_range_ids = [item[0]['offer_id'] for item in locked_offers]
+    offers_bought_in_time_range_timestamp = set(
+        [item[1].strftime('%m/%d/%Y') for item in locked_offers])
     # build locked_offers_ids array
     locked_offers_ids = dict(zip(offers_bought_in_time_range_ids, offers_bought_in_time_range_timestamp))
     # write to cache
