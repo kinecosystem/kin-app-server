@@ -500,7 +500,7 @@ def get_next_task_internal(cat_ids=[]):
     # log.info('Next tasks for user %s = %s (by category) ' % (user_id, tasks_by_categories))
 
     if tasks_by_categories is None:
-        return jsonify(tasks={"no_tasks_reason": "filtered"})
+        return jsonify(tasks=[], no_tasks_reason="filtered")
 
     try:
         # handle unprintable chars...
@@ -1473,8 +1473,8 @@ def set_user_topics_api():
     user_id, auth_token = extract_headers(request)
     try:
         payload = request.get_json(silent=True)
-        ids = payload.get('ids', None)
-        if set_user_topics(user_id, ids):
+        topics = payload.get('topics', None)
+        if set_user_topics(user_id, topics):
             return jsonify(status="ok")
     except Exception as e:
         log.error('failed to updated user topics. e:%s' % e)

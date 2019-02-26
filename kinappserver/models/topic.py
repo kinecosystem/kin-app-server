@@ -6,14 +6,12 @@ from .user import UserAppData
 
 class Topic(db.Model):
     """the Task class represent a single task"""
-    sid = db.Column(db.Integer(), db.Sequence(
-        'topic_sid', start=1, increment=1), primary_key=True)
     name = db.Column(db.String(80), nullable=False,
-                     primary_key=False, unique=True)
+                     primary_key=True)
     icon_url = db.Column(db.String(200), nullable=False, primary_key=False)
 
     def __repr__(self):
-        return '<sid: %s, name:%s, icon_url:%s>' % (str(self.sid), self.name, self.icon_url)
+        return '<sid: %s, name:%s, icon_url:%s, tags:%s>' % (str(self.sid), self.name, self.icon_url, self.tags)
 
 
 def add_topic(new_topic):
@@ -35,15 +33,14 @@ def list_all_topics():
     topics = Topic.query.all()
 
     for topic in topics:
-        response.append({'id': topic.sid, 'name': topic.name, 'icon_url': topic.icon_url})
+        response.append({'name': topic.name, 'icon_url': topic.icon_url})
 
     return response
 
 
 def get_user_topics(user_id):
     """returns topics ids of the user"""
-    user_app_data = UserAppData.query.filter_by(user_id=user_id).one()
-    return user_app_data.topics
+    return UserAppData.query.filter_by(user_id=user_id).first().topics or []
 
 
 def set_user_topics(user_id, topics):

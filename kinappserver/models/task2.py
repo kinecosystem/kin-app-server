@@ -173,6 +173,7 @@ class Task2(db.Model):
     provider_data = db.Column(db.JSON)
     excluded_country_codes = db.Column(db.JSON, default=[])
     tags = db.Column(db.JSON)
+    topics = db.Column(db.JSON)
     items = db.Column(db.JSON)
     task_start_date = db.Column(ArrowType, nullable=True)  # governs when the task is available (only used in ad-hoc tasks)
     task_expiration_date = db.Column(ArrowType, nullable=True)  # a task with expiration is an ad-hoc task
@@ -222,15 +223,15 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
 
     # go over all the yet-unsolved tasks and get the first valid one
     task_filtered = False
+    topics = get_user_app_data(user_id).topics or []
     for task_id in unsolved_task_ids:
         task = get_task_by_id(task_id)
-        user_app_data = get_user_app_data(user_id)
 
         # skip task that are not under user's topics
-        if user_app_data.topics is not None:
-            matching_topics = [t for t in user_app_data.topics if t in task['tags']]
-            if not len(matching_topics):
-                log.info('skipping task_id %s - no topic matching' % task_id)
+        if len(topics) > 0:
+            matching_tags_count = len([t for t in topics if t in task['topics']])
+            if matching_tags_count == 0:
+                log.info('skipping task_id %s - no tags matching' % task_id)
                 task_filtered = True
                 continue
 
@@ -295,10 +296,10 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
         # plant the memo and start date in the first task of the category:
         from .user import get_next_task_memo
         from .user import get_next_task_results_ts
-        if tasks_per_category[cat_id] is not None:
+        if tasks_per_category[cat_id] is not "filtered":
             tasks_per_category[cat_id]['memo'] = get_next_task_memo(user_id, cat_id)
             tasks_per_category[cat_id]['start_date'] = get_next_task_results_ts(user_id, cat_id)
-
+        
         # log.info('tasks_per_category: num of tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category[cat_id])))
 
     # loop all categories and check if at least one task available
@@ -406,6 +407,7 @@ def get_task_by_id(task_id, shifted_ts=None):
     task_json['min_to_complete'] = task.min_to_complete
     task_json['provider'] = task.provider_data
     task_json['tags'] = task.tags
+    task_json['topics'] = task.topics
     task_json['items'] = task.items
     task_json['updated_at'] = arrow.get(task.update_at).timestamp
     task_json['start_date'] = int(shifted_ts if shifted_ts is not None else arrow.get(0).timestamp)  # return 0 if no shift was requested
@@ -567,6 +569,7 @@ def add_task(task_json):
         task.min_to_complete = float(task_json['min_to_complete'])
         task.provider_data = task_json['provider']
         task.tags = task_json['tags']
+        task.topics = task_json['topics']
         task.items = task_json['items']
         task.excluded_country_codes = task_json.get('excluded_country_codes', [])
         task.task_start_date = task_start_date  # required for ad-hoc

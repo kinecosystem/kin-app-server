@@ -19,6 +19,7 @@ class Tester(unittest.TestCase):
         pass
 
     def setUp(self):
+
         # overwrite the db name, dont interfere with stage db data
         self.postgresql = testing.postgresql.Postgresql()
         kinappserver.app.config['SQLALCHEMY_DATABASE_URI'] = self.postgresql.url(
@@ -73,7 +74,8 @@ class Tester(unittest.TestCase):
             'price': 1,
             'skip_image_test': True,
             'min_to_complete': 2,
-            'tags': [1],
+            'tags': ["Sports"],
+            'topics': ["Sports"],
             'provider':
                 {'name': 'om-nom-nom-food',
                  'image_url': 'http://inter.webs/horsie.jpg'},
@@ -103,7 +105,7 @@ class Tester(unittest.TestCase):
             'price': 1,
             'skip_image_test': True,
             'min_to_complete': 2,
-            'tags': [2],
+            'topics': ["Games"], 'tags': ["Games"],
             'provider':
                 {'name': 'om-nom-nom-food',
                  'image_url': 'http://inter.webs/horsie.jpg'},
@@ -133,7 +135,7 @@ class Tester(unittest.TestCase):
             'price': 1,
             'skip_image_test': True,
             'min_to_complete': 2,
-            'tags': [1],
+            'topics': ['Sports'], 'tags': ['Sports'],
             'provider':
                 {'name': 'om-nom-nom-food',
                  'image_url': 'http://inter.webs/horsie.jpg'},
@@ -163,7 +165,7 @@ class Tester(unittest.TestCase):
             'price': 1,
             'skip_image_test': True,
             'min_to_complete': 2,
-            'tags': [2],
+            'tags': ['Games'], 'topics': ['Games'],
             'provider':
                 {'name': 'om-nom-nom-food',
                  'image_url': 'http://inter.webs/horsie.jpg'},
@@ -260,9 +262,10 @@ class Tester(unittest.TestCase):
 
         resp = self.app.get('/topic/list_all')
         print('resp: %s' % resp.data)
-        topics = json.loads(resp.data)['topics']
+        data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
-        self.assertListEqual([x['id'] for x in topics], [1, 2])
+        self.assertEqual([t['name']
+                          for t in data['topics']], ["Sports", "Games"])
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
@@ -275,15 +278,15 @@ class Tester(unittest.TestCase):
 
         # user selects topics
         resp = self.app.post(
-            '/user/topics', data=json.dumps({'ids': [2]}), headers=headers, content_type='application/json')
+            '/user/topics', data=json.dumps({'topics': ["Games"]}), headers=headers, content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         # get user topics
         resp = self.app.get('/user/topics', headers=headers)
         print('resp: %s' % resp.data)
-        topics = json.loads(resp.data)['topics']
+        topics = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(set(topics), {2})
+        self.assertEqual(topics, {'topics': ["Games"]})
 
         # get the user's current tasks
         headers = {USER_ID_HEADER: userid}
@@ -326,19 +329,19 @@ class Tester(unittest.TestCase):
         print('resp: %s' % resp.data)
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(data['tasks'], {"no_tasks_reason": "filtered"})
+        self.assertEqual(data['no_tasks_reason'], "filtered")
 
         # user selects more topics
         resp = self.app.post(
-            '/user/topics', data=json.dumps({'ids': [1,2]}), headers=headers, content_type='application/json')
+            '/user/topics', data=json.dumps({'topics': ["Games", "Sports"]}), headers=headers, content_type='application/json')
         self.assertEqual(resp.status_code, 200)
 
         # get user topics
         resp = self.app.get('/user/topics', headers=headers)
         print('resp: %s' % resp.data)
-        topics = json.loads(resp.data)['topics']
+        topics = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(set(topics), {1,2})
+        self.assertEqual(topics, {"topics": ["Games", "Sports"]})
 
         # get the user's current tasks
         resp = self.app.get('/user/tasks', headers=headers)
