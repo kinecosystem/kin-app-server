@@ -228,9 +228,9 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
         task = get_task_by_id(task_id)
 
         # skip task that are not under user's topics
-        if len(topics) > 0:
+        if task['topics'] is not None and len(topics) > 0:
             log.info('checking if needing to skip task %s' % task_id)
-            matching_tags_count = len([t for t in topics if t in task['topics'] or []])
+            matching_tags_count = len([t for t in topics if t in task['topics']])
             if matching_tags_count == 0:
                 log.info('skipping task_id %s - no tags matching' % task_id)
                 task_filtered = True
