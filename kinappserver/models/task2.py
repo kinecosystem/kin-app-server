@@ -306,7 +306,7 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
     # loop all categories and check if at least one task available
     log.info("checking if all tasks were filtered\n%s" %
              tasks_per_category)
-    if all(t is "filtered" for t in tasks_per_category.values()):
+    if all(t is "filtered" or t is None for t in tasks_per_category.values()):
         return None
 
     # there is at least 1 task, the client expects an array
