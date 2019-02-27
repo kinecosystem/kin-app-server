@@ -810,7 +810,7 @@ def count_immediate_tasks(user_id, only_cat_id=None, send_push=True):
             #  no tasks available. skip.
             #  log.info('skipping cat_id %s - no tasks' % cat_id)
             immediate_tasks_count[cat_id] = 0
-        elif user_next_tasks[cat_id][0]['start_date'] > now.timestamp:
+        elif user_next_tasks[cat_id]['start_date'] > now.timestamp:
             #  the first task isn't available now, so skip.
             immediate_tasks_count[cat_id] = 0
         else:
