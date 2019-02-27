@@ -785,7 +785,6 @@ def count_immediate_tasks(user_id, only_cat_id=None, send_push=True):
     # country_code = get_country_code_by_ip(user_app_data.ip_address)
 
     user_next_tasks = get_next_tasks_for_user(user_id, None, [], send_push)
-
     if only_cat_id:
         log.info('getting count_immediate_tasks for cat_id %s' % only_cat_id)
     else:
@@ -806,11 +805,13 @@ def count_immediate_tasks(user_id, only_cat_id=None, send_push=True):
 
     for cat_id in cat_ids:
         # for each category, determine the number of next available tasks if they exist
+        log.info("calculating immediate_tasks_count for cat_id %s" % cat_id)
+        log.info(user_next_tasks[cat_id])
         if not user_next_tasks[cat_id]:
             #  no tasks available. skip.
             #  log.info('skipping cat_id %s - no tasks' % cat_id)
             immediate_tasks_count[cat_id] = 0
-        elif user_next_tasks[cat_id]['start_date'] > now.timestamp:
+        elif user_next_tasks[cat_id][0]['start_date'] > now.timestamp:
             #  the first task isn't available now, so skip.
             immediate_tasks_count[cat_id] = 0
         else:
