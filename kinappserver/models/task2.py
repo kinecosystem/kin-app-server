@@ -807,7 +807,7 @@ def count_immediate_tasks(user_id, only_cat_id=None, send_push=True):
         # for each category, determine the number of next available tasks if they exist
         log.info("calculating immediate_tasks_count for cat_id %s" % cat_id)
         log.info(user_next_tasks[cat_id])
-        if user_next_tasks[cat_id] == ["filtered"]:
+        if user_next_tasks[cat_id] == ["filtered"] or user_next_tasks[cat_id] == []:
             #  no tasks available. skip.
             #  log.info('skipping cat_id %s - no tasks' % cat_id)
             immediate_tasks_count[cat_id] = 0
