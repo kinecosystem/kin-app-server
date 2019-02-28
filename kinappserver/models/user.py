@@ -225,7 +225,7 @@ def create_ticket(name,email, category, sub_category, description,user_id, platf
 
     user,pwd = config.ZENDESK_API_TOKEN.split(':')
     headers = { 'Content-Type': 'application/json'}
-    subject = "DEBUG_" + category if debug else category if category == "Feedback" else "I need help!"
+    subject = "DEBUG_" + category if debug.lower() == 'true' else category
     data = '{ "request": { "requester": { "name": "%s", "email": "%s" }, "tags": [ "%s", "%s" ], "subject": "%s", "comment": { "body": "%s\\n user_id: %s\\n  platform: %s\\n version: %s"}}}' % (name, email, category,sub_category, subject, repr(description),user_id, platform,version)
     response = requests.post('https://kinitsupport.zendesk.com/api/v2/requests.json', headers=headers, data=data, auth=(user, pwd))
     log.debug(response.status_code)
