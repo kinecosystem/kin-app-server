@@ -219,6 +219,19 @@ class UserAppData(db.Model):
     captcha_history = db.Column(db.JSON)
     should_solve_captcha_ternary = db.Column(db.Integer, unique=False, default=0, nullable=False)  # -1 = no captcha, 0 = show captcha on next task, 1 = captcha required
 
+def create_ticket(name,email, category, sub_category, description,user_id, platform,version, debug):
+    from kinappserver import config
+    import requests,json
+
+    user,pwd = config.ZENDESK_API_TOKEN.split(':')
+    headers = { 'Content-Type': 'application/json'}
+    subject = "DEBUG_" + category if debug else category if category == "Feedback" else "I need help!"
+    data = '{ "request": { "requester": { "name": "%s", "email": "%s" }, "tags": [ "%s", "%s" ], "subject": "%s", "comment": { "body": "%s\\n user_id: %s\\n  platform: %s\\n version: %s"}}}' % (name, email, category,sub_category, subject, repr(description),user_id, platform,version)
+    response = requests.post('https://kinitsupport.zendesk.com/api/v2/requests.json', headers=headers, data=data, auth=(user, pwd))
+    log.debug(response.status_code)
+    if response.status_code == 201:
+        return True
+    return False
 
 
 def update_user_app_version(user_id, app_ver):

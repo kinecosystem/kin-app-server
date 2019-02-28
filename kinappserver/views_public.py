@@ -3,7 +3,7 @@ The Kin App Server public API is defined here.
 """
 from threading import Thread
 from uuid import UUID
-
+from flask_cors import CORS, cross_origin
 from flask import request, jsonify, abort
 from kinappserver.views_common import get_source_ip, extract_headers, limit_to_acl
 from flask_api import status
@@ -1435,3 +1435,64 @@ def get_discovery_apps():
     os_type = get_user_os_type(user_id)
 
     return jsonify(get_discovery_apps(os_type))
+
+
+
+@app.route('/support/contact-us', methods=['POST', 'OPTION'])
+@cross_origin()
+def contact_support_endpoint():
+    """create a new ticket in zendesk"""
+    import requests, json
+    payload = request.get_json()
+    try:
+        category = payload.get('category', None).replace(" ", "_")
+        sub_category = payload.get('sub_category', None).replace(" ", "_")
+        name = payload.get('name', None)
+        email = payload.get('email', None)
+        description = payload.get('description', None)
+        user_id = payload.get('user_id', None)
+        platform = payload.get('platform', None)
+        version = payload.get('version', None)
+        debug = payload.get('debug', None)
+        if None in (category, sub_category, name, email, description, user_id, platform, version):
+            raise InvalidUsage('bad-request')
+
+        log.debug("user_id: %s - submitted a ticket" % user_id)
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    else:
+        from .models.user import create_ticket
+        if create_ticket(name,email,category,sub_category,description,user_id,platform,version,debug):
+            return jsonify(status='ok')
+    
+    raise InvalidUsage('bad-request')
+
+
+@app.route('/support/feedback', methods=['POST', 'OPTION'])
+@cross_origin()
+def feedback_endpoint():
+    """create a new ticket in zendesk"""
+    import requests, json
+    payload = request.get_json()
+    try:
+        category = "Feedback"
+        name = payload.get('name', None)
+        email = payload.get('email', None)
+        description = payload.get('description', None)
+        user_id = payload.get('user_id', None)
+        platform = payload.get('platform', None)
+        version = payload.get('version', None)
+        debug = payload.get('debug', None)
+        if None in (category, name, email, description, user_id, platform, version):
+            raise InvalidUsage('bad-request')
+        log.debug("user_id: %s - submitted a feedback" % user_id)
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('bad-request')
+    else:
+        from .models.user import create_ticket
+        if create_ticket(name,email,category,None,description,user_id,platform,version,debug):
+            return jsonify(status='ok')
+    
+    raise InvalidUsage('bad-request')
