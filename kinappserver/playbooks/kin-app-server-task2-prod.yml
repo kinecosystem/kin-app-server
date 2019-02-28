@@ -20,6 +20,8 @@
      ENV: prod
      STELLAR_ACCOUNT_SID: "{{ play_hosts.index(inventory_hostname) }}" # sets the host's index within the play
    datadog_api_key: "{{ lookup('aws_ssm', '/config/prod/datadog/apikey' )}}"
+   zendesk_api_token: "{{ lookup('aws_ssm', '/config/prod/zendesk/apikey') }}"
+   
    datadog_config:
      log_level: INFO
      tags: "service:kin-app-server-prod"
