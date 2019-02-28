@@ -37,7 +37,7 @@ P2P_MIN_KIN_AMOUNT = 300
 P2P_MAX_KIN_AMOUNT = 12500
 
 TOS_URL = 'http://www.kinitapp.com/terms-and-privacy-policy'
-FAQ_URL = 'https://cdn.kinitapp.com/faq/v2/index.html'
+FAQ_URL = 'https://cdn.kinitapp.com/faq2/index.html'
 FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/kin-app-server/service-account.json'
 
 
@@ -83,3 +83,4 @@ OFFER_RATE_LIMIT_MIN_IOS_VERSION = '1.2.1'
 OFFER_RATE_LIMIT_MIN_ANDROID_VERSION = '1.4.1'
 
 USER_LOCKED_OFFERS_REDIS_KEY = 'REDIS_USER_BLOCKED_OFFERS_LIST_%s'
+ZENDESK_API_TOKEN = "this gets overwritten by the tester code. it acutally uses a temp postgress db on the local disc"

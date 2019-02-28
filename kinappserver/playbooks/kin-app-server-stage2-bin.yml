@@ -55,3 +55,4 @@
    force_update_below_version_ios: '1.0'
    is_update_available_below_version_android: '1.0'
    is_update_available_below_version_ios: '1.0'
+   zendesk_api_token: "{{lookup('aws_ssm', '/config/stage/zendesk/apikey')}}"
