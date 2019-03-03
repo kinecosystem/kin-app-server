@@ -53,3 +53,5 @@ test:
 all:
 	install test
 
+local:
+	uwsgi --plugin /usr/lib/uwsgi/python3_plugin.so --socket 0.0.0.0:8000 --protocol=http --wsgi-file kinappserver/wsgi.py --enable-threads
