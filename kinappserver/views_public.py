@@ -315,6 +315,13 @@ def post_user_task_results_endpoint():
             print('captcha succeeded: user %s' % user_id), status.HTTP_403_FORBIDDEN
             captcha_solved(user_id)
 
+    # task was submitted successfuly.
+    # clear tasks cache
+    from kinappserver.utils import delete_pattern, delete_from_cache
+
+    delete_from_cache(config.USER_CATEGOIES_CACHE_REDIS_KEY % user_id)
+    delete_pattern(config.USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY_PREFIX % user_id)
+
     if reject_premature_results(user_id, task_id):
         # should never happen: the client sent the results too soon
         print('rejecting user %s task %s results' % (user_id, task_id))
@@ -430,6 +437,7 @@ def post_user_task_results_endpoint():
         log.error('failed to reward task %s at address %s' % (task_id, address))
 
     increment_metric('task_completed')
+
     return jsonify(status='ok', memo=str(memo))
 
 
