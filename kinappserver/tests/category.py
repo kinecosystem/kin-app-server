@@ -132,6 +132,11 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
 
+        # verify keys in redis
+        cached_results = kinappserver.utils.read_json_from_cache(
+            kinappserver.config.USER_CATEGOIES_CACHE_REDIS_KEY % userid)
+        self.assertListEqual(data['categories'], [cat for cat in cached_results.values()])
+
         category_extra_data_dict = {'default': {'title': 'a title', 'subtitle': 'a subtitle'},
                                     'no_tasks': {'title': 'title2', 'subtitle': 'subtitle2'}}
         db.engine.execute("""insert into system_config values (1,'1','1','1','1')""");
