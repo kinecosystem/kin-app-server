@@ -132,10 +132,18 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
 
+        # verify keys in redis
+        cached_results = kinappserver.utils.read_json_from_cache(
+            kinappserver.config.USER_CATEGORIES_CACHE_REDIS_KEY % userid)
+        self.assertListEqual(data['categories'], [cat for cat in cached_results.values()])
+
         category_extra_data_dict = {'default': {'title': 'a title', 'subtitle': 'a subtitle'},
                                     'no_tasks': {'title': 'title2', 'subtitle': 'subtitle2'}}
         db.engine.execute("""insert into system_config values (1,'1','1','1','1')""");
         db.engine.execute("update system_config set categories_extra_data=%s;", (json.dumps(category_extra_data_dict),))
+
+        # categories were manipulated - clear redis
+        kinappserver.app.redis.flushdb()
 
         # get the user's current categories
         headers = {USER_ID_HEADER: userid}
@@ -144,9 +152,12 @@ class Tester(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['header_message'], category_extra_data_dict['no_tasks'])
-
+        
         print('user categories: %s ' % resp.data)
         # add a task and ensure the message is correct:
+
+        # categories were manipulated - clear redis
+        kinappserver.app.redis.flushdb()
 
         task = {'title': 'do you know horses?',
                 'desc': 'horses_4_dummies',
@@ -191,6 +202,9 @@ class Tester(unittest.TestCase):
                              headers={},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
+
+        # categories were manipulated - clear redis
+        kinappserver.app.redis.flushdb()
 
         # get the user's current categories
         headers = {USER_ID_HEADER: userid}

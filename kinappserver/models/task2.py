@@ -264,25 +264,37 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
     - if there are no more tasks, an empty array will be returned (per category)
     - if the next task (in each category) requires upgrade, the function will send a push message to inform the user (with a cooldown).
     """
+
+    from kinappserver.utils import write_json_to_cache, read_json_from_cache
+    
     log.info('in get_next_tasks_for_user %s, source_ip: %s, cat_ids:%s, send_push:%s' % (user_id, source_ip, cat_ids, send_push))
-    tasks_per_category = {}
-    user_app_data = get_user_app_data(user_id)
-    os_type = get_user_os_type(user_id)
-    app_ver = user_app_data.app_ver
-    from .category import get_all_cat_ids
-    for cat_id in cat_ids or get_all_cat_ids():
-        task_ids = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip), send_push)  # returns just one task in a list or empty list
-        tasks_per_category[cat_id] = [get_task_by_id(task_id) for task_id in task_ids]
-        # plant the memo and start date in the first task of the category:
-        from .user import get_next_task_memo
-        from .user import get_next_task_results_ts
-        if len(tasks_per_category[cat_id]) > 0:
-            tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
-            tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
+    
+    # return cached result if we have it
+    cached_results = read_json_from_cache(config.USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY % (user_id, str(cat_ids)))
+    if cached_results is not None:
+        log.info("user_id: %s - get_next_tasks_for_user - cache found!" % user_id)
+        return cached_results
+    else:
+        tasks_per_category = {}
+        user_app_data = get_user_app_data(user_id)
+        os_type = get_user_os_type(user_id)
+        app_ver = user_app_data.app_ver
+        from .category import get_all_cat_ids
+        for cat_id in cat_ids or get_all_cat_ids():
+            task_ids = next_task_id_for_category(os_type, app_ver, user_app_data.completed_tasks_dict, cat_id, user_id, get_country_code_by_ip(source_ip), send_push)  # returns just one task in a list or empty list
+            tasks_per_category[cat_id] = [get_task_by_id(task_id) for task_id in task_ids]
+            # plant the memo and start date in the first task of the category:
+            from .user import get_next_task_memo
+            from .user import get_next_task_results_ts
+            if len(tasks_per_category[cat_id]) > 0:
+                tasks_per_category[cat_id][0]['memo'] = get_next_task_memo(user_id, cat_id)
+                tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
 
-        # log.info('tasks_per_category: num of tasks for user %s for cat_id %s: %s' % (user_id, cat_id, len(tasks_per_category[cat_id])))
+        # store result in cache
+        write_json_to_cache(config.USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY % (
+            user_id, str(cat_ids)), tasks_per_category)
 
-    return tasks_per_category
+        return tasks_per_category
 
 
 def should_skip_truex_task(user_id, task_id, source_ip=None, country_code=None):
