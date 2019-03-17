@@ -319,7 +319,7 @@ def post_user_task_results_endpoint():
     # clear tasks cache
     from kinappserver.utils import delete_pattern, delete_from_cache
 
-    delete_from_cache(config.USER_CATEGOIES_CACHE_REDIS_KEY % user_id)
+    delete_from_cache(config.USER_CATEGORIES_CACHE_REDIS_KEY % user_id)
     delete_pattern(config.USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY_PREFIX % user_id)
 
     if reject_premature_results(user_id, task_id):

@@ -140,7 +140,7 @@ def get_categories_for_user(user_id):
         raise InvalidUsage('no such user_id %s' % user_id)
 
     cached_results = utils.read_json_from_cache(
-        config.USER_CATEGOIES_CACHE_REDIS_KEY % user_id)
+        config.USER_CATEGORIES_CACHE_REDIS_KEY % user_id)
 
     if cached_results is not None:
         log.info("user_id: %s - get_categories_for_user - cache found!" % user_id)
@@ -154,6 +154,6 @@ def get_categories_for_user(user_id):
 
         # write to cache
         utils.write_json_to_cache(
-            config.USER_CATEGOIES_CACHE_REDIS_KEY % user_id, dict(all_cats))
+            config.USER_CATEGORIES_CACHE_REDIS_KEY % user_id, dict(all_cats))
 
         return [cat for cat in all_cats.values()]

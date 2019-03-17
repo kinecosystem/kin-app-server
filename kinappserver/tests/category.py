@@ -134,7 +134,7 @@ class Tester(unittest.TestCase):
 
         # verify keys in redis
         cached_results = kinappserver.utils.read_json_from_cache(
-            kinappserver.config.USER_CATEGOIES_CACHE_REDIS_KEY % userid)
+            kinappserver.config.USER_CATEGORIES_CACHE_REDIS_KEY % userid)
         self.assertListEqual(data['categories'], [cat for cat in cached_results.values()])
 
         category_extra_data_dict = {'default': {'title': 'a title', 'subtitle': 'a subtitle'},
