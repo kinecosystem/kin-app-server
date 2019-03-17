@@ -271,32 +271,6 @@ def random_percent():
     return random.randint(0, 100)
 
 
-def delete_pattern(pt):
-    if pt is None:
-        log.error('delete_from_cache: refusing to delete None key')
-        return False
-    try:
-        keys = app.redis.keys(pt)
-        for key in keys:
-            app.redis.delete(key)
-        return True
-    except Exception as e:
-        log.error('failed to write json data to cache with key %s and value %s. exception: %s' % (pt,  e))
-        return False
-
-
-def delete_from_cache(key):
-    if key is None:
-        log.error('delete_from_cache: refusing to delete None key')
-        return False
-    try:
-        app.redis.delete(key)
-        return True
-    except Exception as e:
-        log.error('failed to write json data to cache with key %s and value %s. exception: %s' % (
-            key,  e))
-        return False
-
 def read_json_from_cache(key):
     try:
         data = app.redis.get(key)

@@ -143,10 +143,6 @@ class Tester(unittest.TestCase):
                              headers={},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        # tasks were manipulated - clear redis
-        kinappserver.app.redis.flushdb()
-
         assert_user_tasks(userid, {'0': '0', '1': None})
 
         # expecting ad hoc task with id 1 in cat '1'
@@ -161,10 +157,6 @@ class Tester(unittest.TestCase):
                              headers={},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        # tasks were manipulated - clear redis
-        kinappserver.app.redis.flushdb()
-
         assert_user_tasks(userid, {'0': '0', '1': '1'})
 
         # expecting ad hoc task with id 2 in cat '1' - it starts before task_id '1'
@@ -179,10 +171,6 @@ class Tester(unittest.TestCase):
                              headers={},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        # tasks were manipulated - clear redis
-        kinappserver.app.redis.flushdb()
-
         assert_user_tasks(userid, {'0': '0', '1': '2'})
 
         # expecting ad hoc task with id 3 in cat '0' - it takes precedence over task_id '0'
@@ -197,10 +185,6 @@ class Tester(unittest.TestCase):
                              headers={},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        # tasks were manipulated - clear redis
-        kinappserver.app.redis.flushdb()
-
         assert_user_tasks(userid, {'0': '3', '1': '2'})
 
         # should not change - task_id '4' comes after task_id 3
@@ -215,10 +199,6 @@ class Tester(unittest.TestCase):
                              headers={},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        # tasks were manipulated - clear redis
-        kinappserver.app.redis.flushdb()
-
         assert_user_tasks(userid, {'0': '3', '1': '2'})
 
         # should not change - task_id '5' is inactive - starts later
@@ -233,10 +213,6 @@ class Tester(unittest.TestCase):
                              headers={},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        # tasks were manipulated - clear redis
-        kinappserver.app.redis.flushdb()
-
         assert_user_tasks(userid, {'0': '3', '1': '2'})
 
         # should not change - task_id '6' is inactive - already over
@@ -251,10 +227,6 @@ class Tester(unittest.TestCase):
                              headers={},
                              content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-
-        # tasks were manipulated - clear redis
-        kinappserver.app.redis.flushdb()
-
         assert_user_tasks(userid, {'0': '3', '1': '2'})
 
         # send task results for task_id 3
@@ -270,7 +242,6 @@ class Tester(unittest.TestCase):
         print('post task results response: %s' % json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
-        # task was submitted - cache should be clearn by inner code
         # having solved task 3, task 4 should now be active
         assert_user_tasks(userid, {'0': '4', '1': '2'})
 
