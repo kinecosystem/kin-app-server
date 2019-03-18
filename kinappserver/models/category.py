@@ -123,25 +123,37 @@ def list_all_categories():
 
 
 def get_categories_for_user(user_id):
-    """returns an array of categories tailored to this specific user"""
+    """
+    returns an array of categories tailored to this specific user
+
+    if there is a cached result - return it 
+    else, calculate a result and return it
+    cache will be invalidated after 10 min and on task submission
+    """
+
     import time
+    from kinappserver import utils, config
     from .user import user_exists, get_user_os_type
+    from .task2 import count_immediate_tasks
+
     if not user_exists(user_id):
         raise InvalidUsage('no such user_id %s' % user_id)
 
-    os_type = get_user_os_type(user_id)
+    cached_results = utils.read_json_from_cache(
+        config.USER_CATEGORIES_CACHE_REDIS_KEY % user_id)
 
-    s_time = int(round(time.time() * 1000))
-    all_cats = list_categories(os_type)
-    e_time = int(round(time.time() * 1000))
-    log.info('all_cats for user %s with os_type %s: %s -- ptime: %s', user_id, os_type, all_cats, str(e_time-s_time))
-    from .task2 import count_immediate_tasks
+    if cached_results is not None:
+        log.info("user_id: %s - get_categories_for_user - cache found!" % user_id)
+        return [cat for cat in cached_results.values()]
+    else:
+        os_type = get_user_os_type(user_id)
+        all_cats = list_categories(os_type)
+        immediate_tasks = count_immediate_tasks(user_id)
+        for cat_id in all_cats.keys():
+            all_cats[cat_id]['available_tasks_count'] = immediate_tasks[cat_id]
 
-    s_time = int(round(time.time() * 1000))
-    immediate_tasks = count_immediate_tasks(user_id)
-    e_time = int(round(time.time() * 1000))
-    log.info('count_immediate_tasks ptime for user_id %s is: %s', user_id, str(e_time-s_time))
-    for cat_id in all_cats.keys():
-        all_cats[cat_id]['available_tasks_count'] = immediate_tasks[cat_id]
+        # write to cache
+        utils.write_json_to_cache(
+            config.USER_CATEGORIES_CACHE_REDIS_KEY % user_id, all_cats)
 
-    return [cat for cat in all_cats.values()]
+        return [cat for cat in all_cats.values()]
