@@ -144,7 +144,7 @@ def get_categories_for_user(user_id):
 
     if cached_results is not None:
         log.info("user_id: %s - get_categories_for_user - cache found!" % user_id)
-        return [cat for cat in cached_results.values()]
+        return sorted([cat for cat in cached_results.values()], key=lambda p: p['id'])
     else:
         os_type = get_user_os_type(user_id)
         all_cats = list_categories(os_type)
@@ -156,4 +156,4 @@ def get_categories_for_user(user_id):
         utils.write_json_to_cache(
             config.USER_CATEGORIES_CACHE_REDIS_KEY % user_id, all_cats)
 
-        return [cat for cat in all_cats.values()]
+        return sorted([cat for cat in all_cats.values()], key=lambda p: p['id'])
