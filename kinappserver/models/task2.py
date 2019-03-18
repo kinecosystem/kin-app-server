@@ -256,7 +256,7 @@ def next_task_id_for_category(os_type, app_ver, completed_tasks, cat_id, user_id
     return []
 
 
-def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True):
+def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True, use_cache=True):
     """this function returns the next task for the given user in each the categories, or just the specified category (if given).
     - the returned tasks will bear this format: {'cat_id': [task1]}
     - this function returns the next task in each category EVEN IF it is in the future
@@ -269,8 +269,11 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
     
     log.info('in get_next_tasks_for_user %s, source_ip: %s, cat_ids:%s, send_push:%s' % (user_id, source_ip, cat_ids, send_push))
     
-    # return cached result if we have it
-    cached_results = read_json_from_cache(config.USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY % (user_id, str(cat_ids)))
+    cached_results = None
+    if use_cache:
+        # return cached result if we have it
+        cached_results = read_json_from_cache(config.USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY % (user_id, str(cat_ids)))
+    
     if cached_results is not None:
         log.info("user_id: %s - get_next_tasks_for_user - cache found!" % user_id)
         return cached_results
@@ -291,8 +294,9 @@ def get_next_tasks_for_user(user_id, source_ip=None, cat_ids=[], send_push=True)
                 tasks_per_category[cat_id][0]['start_date'] = get_next_task_results_ts(user_id, cat_id)
 
         # store result in cache
-        write_json_to_cache(config.USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY % (
-            user_id, str(cat_ids)), tasks_per_category)
+        if use_cache:
+            write_json_to_cache(config.USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY % (
+                user_id, str(cat_ids)), tasks_per_category)
 
         return tasks_per_category
 
@@ -897,7 +901,7 @@ def should_reject_out_of_order_tasks(user_id, task_id, request_source_ip):
 def get_next_task_delay_days(user_id, task_id):
     """returns the delay-days property of the task after the given task_id for the given user_id, if one exists"""
     cat_id = get_cat_id_for_task_id(task_id)
-    next_tasks = get_next_tasks_for_user(user_id, None, [cat_id])
+    next_tasks = get_next_tasks_for_user(user_id, None, [cat_id], False, False)
     # now that we have the task_id, go back to the original task definition and get the delay days
     next_task_id = next_tasks[cat_id][0]['id'] if len(next_tasks[cat_id]) > 0 else None
     return get_task_delay(next_task_id) if next_task_id else None

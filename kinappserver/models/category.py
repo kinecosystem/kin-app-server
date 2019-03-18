@@ -154,6 +154,6 @@ def get_categories_for_user(user_id):
 
         # write to cache
         utils.write_json_to_cache(
-            config.USER_CATEGORIES_CACHE_REDIS_KEY % user_id, dict(all_cats))
+            config.USER_CATEGORIES_CACHE_REDIS_KEY % user_id, all_cats)
 
         return [cat for cat in all_cats.values()]
