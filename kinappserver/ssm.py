@@ -54,8 +54,8 @@ def get_stellar_credentials():
     
     if env.upper()== 'TEST':
         account_sid = '0'  # for tests, always use 0
-    base_seed = get_ssm_parameter('/config/' + env + '/stellar/account_sid_%s/base-seed' % account_sid, config.KMS_KEY_AWS_REGION)
-    channel_seeds = get_ssm_parameter('/config/' + env + '/stellar/account_sid_%s/channel-seeds' % account_sid, config.KMS_KEY_AWS_REGION)
+    base_seed = get_ssm_parameter('/config/' + env + '/kin/account_sid_%s/base-seed' % account_sid, config.KMS_KEY_AWS_REGION)
+    channel_seeds = get_ssm_parameter('/config/' + env + '/kin/account_sid_%s/channel-seeds' % account_sid, config.KMS_KEY_AWS_REGION)
 
     if base_seed is None:
         log.error('cant get base_seed, aborting')

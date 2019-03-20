@@ -7,7 +7,7 @@ REDIS_ENDPOINT = 'localhost'
 REDIS_PORT = 6379
 
 STELLAR_TIMEOUT_SEC = 10  # waitloop for tx data to be available
-STELLAR_INITIAL_ACCOUNT_BALANCE = 2
+STELLAR_INITIAL_ACCOUNT_BALANCE = 0
 
 ESHU_USERNAME = ''
 ESHU_PASSWORD = ''
@@ -19,8 +19,8 @@ ESHU_QUEUE = ''
 ESHU_RABBIT_ADDRESS = ''
 PUSH_TTL_SECS = 60 * 60 * 24
 
-STELLAR_HORIZON_URL = 'https://horizon-playground.kininfrastructure.com'
-STELLAR_NETWORK = 'Kin Playground Network ; June 2018'
+STELLAR_HORIZON_URL = 'https://horizon-testnet.kininfrastructure.com'
+STELLAR_NETWORK = 'Kin Testnet ; December 2018'
 STELLAR_KIN_ISSUER_ADDRESS = 'GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7'
 
 MAX_SIMULTANEOUS_ORDERS_PER_USER = 2
@@ -54,7 +54,8 @@ TRUEX_APP_ID = ''
 TRUEX_PARTNER_HASH = ''
 TRUEX_CALLBACK_SECRET = ''
 
-PAYMENT_SERVICE_URL = 'https://stage.payments.kinitapp.com:5000'
+PAYMENT_SERVICE_URL = 'https://kin3stage.payments.kinitapp.com:4998'
+API_SERVER_URL = 'https://stage.kinitapp.com'
 
 BLOCK_ONBOARDING_IOS_VERSION = '0.1'
 BLOCK_ONBOARDING_ANDROID_VERSION = '0.1'

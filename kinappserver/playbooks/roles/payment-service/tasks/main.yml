@@ -16,7 +16,7 @@
   git:
     repo: 'https://github.com/kinecosystem/payment-service.git'
     dest: /opt/payment-service
-    version: master
+    version: "{{payment_service_branch_name}}"
 
 - name: Template payment-service config
   template:

@@ -15,7 +15,7 @@ from .utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
 
 from kinappserver import app, config, stellar, utils, ssm
 from .push import send_please_upgrade_push_2, send_country_not_supported
-from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service
+from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service, whitelist
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
     sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
@@ -249,6 +249,35 @@ def update_token_api():
     return jsonify(status='ok')
 
 
+@app.route('/user/whitelist', methods=['POST'])
+def whitelist_transaction():
+    """ submit transaction for whitelisting  """
+    payload = request.get_json(silent=True)
+    try:
+        user_id, auth_token = extract_headers(request)
+        print('calling /user/whitelist for user_id %s ' % user_id)
+        id = payload.get('id', None)
+        sender_address = payload.get('sender_address', None)
+        recipient_address = payload.get('recipient_address', None)
+        amount = payload.get('amount', None)
+        transaction = payload.get('transaction', None)
+        captcha_token = payload.get('captcha_token', None)  # optional
+
+        if None in (user_id, id, sender_address, recipient_address, amount, transaction):
+            log.error('failed input checks on /user/submit_transaction')
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print('exception in /user/submit_transaction e=%s' % e)
+        raise InvalidUsage('bad-request')
+
+    auth_status = authorize(user_id, captcha_token)
+    if auth_status != 'authorized':
+        return jsonify(status='denied', reason=auth_status)
+
+    result = whitelist(id, sender_address, recipient_address, int(amount), transaction)
+    return jsonify(status='ok', result=result)
+
+
 @app.route('/user/task/results', methods=['POST'])
 def post_user_task_results_endpoint():
     """receive the results for a tasks and pay the user for them"""
@@ -271,49 +300,9 @@ def post_user_task_results_endpoint():
     print('processing submitted tasks results for task %s from user %s and source_ip:%s' % (task_id, user_id, get_source_ip(request)))
     update_ip_address(user_id, get_source_ip(request))
 
-    if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
-        print('user %s is not authenticated. rejecting results submission request' % user_id)
-        increment_metric('rejected-on-auth')
-        return jsonify(status='error', reason='auth-failed'), status.HTTP_403_FORBIDDEN
-
-    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
-        print('blocking user (%s) results - didnt pass phone_verification' % user_id)
-        return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_403_FORBIDDEN
-
-    if user_deactivated(user_id):
-        print('user %s deactivated. rejecting submission' % user_id)
-        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-
-    if should_block_user_by_phone_prefix(user_id):
-        # send push with 8 hour cooldown and dont return tasks
-        send_country_not_supported(user_id)
-        print('blocked user_id %s from submitting tasks - country not supported' % user_id)
-        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-
-    # user has a verified phone number, but is it from a blocked country?
-    if should_block_user_by_country_code(user_id):
-        # send push with 8 hour cooldown and dont return tasks
-        send_country_not_supported(user_id)
-        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
-        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-
-    if is_userid_blacklisted(user_id):
-        print('blocked user_id %s from booking goods - user_id blacklisted' % user_id)
-        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-
-    if should_pass_captcha(user_id):
-        if not captcha_token:
-            increment_metric('captcha-missing')
-            print('captcha failed: user %s did not_provide_token' % user_id)
-            return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-        elif not passed_captcha(captcha_token):
-            increment_metric('captcha-failed')
-            print('captcha failed: user %s bad_token' % user_id)
-            return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-        else:
-            increment_metric('captcha-passed')
-            print('captcha succeeded: user %s' % user_id), status.HTTP_403_FORBIDDEN
-            captcha_solved(user_id)
+    auth_status = authorize(user_id, captcha_token)
+    if auth_status != 'authorized':
+        return jsonify(status='denied', reason=auth_status)
 
     # task was submitted successfuly.
     # clear tasks cache
@@ -430,7 +419,7 @@ def post_user_task_results_endpoint():
 
         memo = get_and_replace_next_task_memo(user_id, task_id)
         do_captcha_stuff(user_id) # raise captcha flag if needed
-        split_payment(address, task_id, send_push, user_id, memo, delta)
+        reward_address_for_task_internal_payment_service(address, task_id, send_push, user_id, memo, delta)
 
     except Exception as e:
         print('exception: %s' % e)
@@ -441,28 +430,52 @@ def post_user_task_results_endpoint():
     return jsonify(status='ok', memo=str(memo))
 
 
-def split_payment(address, task_id, send_push, user_id, memo, delta):
-    """this function calls either the payment service or the internal sdk to pay the user
+def authorize(user_id, captcha_token):
+    if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
+        print('user %s is not authenticated. rejecting results submission request' % user_id)
+        increment_metric('rejected-on-auth')
+        return 'auth-failed'
 
-    this function will eventually be replaced, once we're sure the payment service is working
-    as intended.
-    """
-    use_payment_service = False
-    try:
-        phone_number = get_unenc_phone_number_by_user_id(user_id)
-        if phone_number and phone_number.find(config.USE_PAYMENT_SERVICE_PHONE_NUMBER_PREFIX) >= 0:  # like '+' or '+972' or '++' for (all, israeli numbers, nothing)
-            user_rolled = random_percent()
-            #print('split_payment: user rolled: %s, config: %s' % (user_rolled, config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS))
-            if int(user_rolled) <= int(config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS):
-                print('using payment service for user_id %s' % user_id)
-                use_payment_service = True
-    except Exception as e:
-        log.error('cant determine whether to use the payment service for user_id %s. defaulting to no' % user_id)
+    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        print('blocking user (%s) results - didnt pass phone_verification' % user_id)
+        return 'user_phone_not_verified'
 
-    if use_payment_service:
-        reward_address_for_task_internal_payment_service(address, task_id, send_push, user_id, memo, delta)
-    else:
-        reward_and_push(address, task_id, send_push, user_id, memo, delta)
+    if user_deactivated(user_id):
+        print('user %s deactivated. rejecting submission' % user_id)
+        return 'denied'
+
+    if should_block_user_by_phone_prefix(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from submitting tasks - country not supported' % user_id)
+        return 'denied'
+
+    # user has a verified phone number, but is it from a blocked country?
+    if should_block_user_by_country_code(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
+        return 'denied'
+
+    if is_userid_blacklisted(user_id):
+        print('blocked user_id %s from booking goods - user_id blacklisted' % user_id)
+        return 'denied'
+
+    if should_pass_captcha(user_id):
+        if not captcha_token:
+            increment_metric('captcha-missing')
+            print('captcha failed: user %s did not_provide_token' % user_id)
+            return 'denied'
+        elif not passed_captcha(captcha_token):
+            increment_metric('captcha-failed')
+            print('captcha failed: user %s bad_token' % user_id)
+            return 'denied'
+        else:
+            increment_metric('captcha-passed')
+            print('captcha succeeded: user %s' % user_id), status.HTTP_403_FORBIDDEN
+            captcha_solved(user_id)
+
+    return 'authorized'
 
 
 @app.route('/user/category/<cat_id>/tasks', methods=['GET'])
@@ -1176,9 +1189,11 @@ def compensate_truex_activity(user_id):
         print('user %s deactivated. rejecting submission' % user_id)
         return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
-    if reject_premature_results(user_id, task_id):
-        print('compensate_truex_activity: should never happen - premature task submission')
-        return False
+    # the below was removed because it does not compile
+    # probably need to remove truex code completely
+    # if reject_premature_results(user_id, task_id):
+    #     print('compensate_truex_activity: should never happen - premature task submission')
+    #     return False
 
     # get the user's current task_id
     tasks = get_next_tasks_for_user(user_id, cat_ids=[TRUEX_CAT_ID])
