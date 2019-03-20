@@ -8,12 +8,12 @@ import logging as log
 ASSET_NAME = 'KIN'
 
 
-def create_account(public_address, initial_xlm_amount):
+def create_account(public_address, initial_kin_amount):
     """create an account for the given public address"""
     #TODO all repeating logic?
-    print('creating account with balance:%s' % initial_xlm_amount)
+    print('creating account with balance:%s' % initial_kin_amount)
     try:
-        return app.kin_sdk.create_account(public_address, starting_balance=initial_xlm_amount)
+        return app.kin_account.create_account(public_address, starting_balance=initial_kin_amount, fee=10)
     except Exception as e:
         increment_metric('create_account_error')
         print('caught exception creating account for address %s' % (public_address))
@@ -32,11 +32,9 @@ def send_kin(public_address, amount, memo=None):
         log.error('cant send kin amount: %s' % amount)
         return False, None
 
-    print('sending kin to address: %s' % public_address) #TODO REMOVE
-    from stellar_base.asset import Asset
+    print('sending kin to address: %s' % public_address)
     try:
-        kin_asset = Asset(ASSET_NAME, config.STELLAR_KIN_ISSUER_ADDRESS)
-        return app.kin_sdk._send_asset(kin_asset, public_address, amount, memo)
+        return app.kin_account.send_kin(public_address, amount, fee=0, memo_text=memo)
     except Exception as e:
         increment_metric('send_kin_error')
         print('caught exception sending %s kin to address %s' % (amount, public_address))
@@ -66,11 +64,40 @@ def send_kin_with_payment_service(public_address, amount, memo=None):
     }
 
     try:
+        print('posting %s/payments, payment_payload %s' % (config.PAYMENT_SERVICE_URL, payment_payload))
         res = requests.post('%s/payments' % config.PAYMENT_SERVICE_URL, headers=headers, json=payment_payload)
         res.raise_for_status()
     except Exception as e:
         increment_metric('send_kin_error')
-        print('caught exception sending %s kin to address %s using the payment service' % (amount, public_address))
+        print('caught exception sending kin to address %s using the payment service' % public_address)
+        print(e)
+
+
+def whitelist(id, sender_address, recipient_address, amount, transaction):
+    """whitelist transaction"""
+
+    print('adding whitelisted signature for transaction from %s to: %s' %(sender_address, recipient_address))
+    headers = {'X-REQUEST-ID': str(random.randint(1, 1000000))}  # doesn't actually matter
+    payment_payload = {
+        'id': id,
+        'sender_address': sender_address,
+        'recipient_address': recipient_address,
+        'amount': amount,
+        'transaction': transaction,
+        'app_id': 'kit',
+        'network_id': config.STELLAR_NETWORK
+    }
+
+    try:
+        print('posting %s/tx/whitelist payload: %s' % (config.PAYMENT_SERVICE_URL, payment_payload))
+        result = requests.post('%s/tx/whitelist' % config.PAYMENT_SERVICE_URL, headers=headers, json=payment_payload)
+        result.raise_for_status()
+        print('result %s ' % result.text)
+        print('result %s ' % result.content)
+        return result.content
+    except Exception as e:
+        increment_metric('whitelist_error')
+        print('caught exception while whitelisting transaction from %s to %s' % (sender_address, recipient_address))
         print(e)
 
 
@@ -134,20 +161,9 @@ def extract_tx_payment_data(tx_hash):
 def get_kin_balance(public_address):
     """returns the current kin balance for this account"""
     try:
-        from stellar_base.asset import Asset
-        kin_asset = Asset(ASSET_NAME, config.STELLAR_KIN_ISSUER_ADDRESS)
-        return app.kin_sdk._get_account_asset_balance(public_address, kin_asset)
+        return app.kin_sdk.get_account_balance(public_address)
     except Exception as e:
         print(e)
         print('could not get kin balance for address: %s' % public_address)
         return None
 
-
-def get_xlm_balance(public_address):
-    """returns the current xl, balance for this account"""
-    try:
-        return app.kin_sdk.get_account_native_balance(public_address)
-    except Exception as e:
-        print(e)
-        print('could not get xlm balance for address: %s' % public_address)
-        return None

@@ -17,7 +17,7 @@ RUN apk add --no-cache \
     uwsgi-python3 && \
     pip3 install --upgrade pip setuptools && \
     pip3 install -r /tmp/requirements.txt && \
-    pip3 install git+https://github.com/kinecosystem/kin-core-python.git && \
+    pip3 install git+https://github.com/kinecosystem/kin-sdk-python.git@v2-master && \
     rm -r /root/.cache
 
 

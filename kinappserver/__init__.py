@@ -1,13 +1,12 @@
 import sys
 
 from flask import Flask
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 import kin
 
 import logging as log
 
 from kinappserver.amqp_publisher import AmqpPublisher
-from stellar_base.network import NETWORKS
 from .encrypt import AESCipher
 
 
@@ -34,35 +33,13 @@ if channel_seeds is None:
     sys.exit(-1)
 
 # init sdk:
-print('using kin-stellar sdk version: %s' % kin.version.__version__)
-print("stellar horizon: %s" % config.STELLAR_HORIZON_URL)
-# define an asset to forward to the SDK because sometimes we're using a custom issuer
-from stellar_base.asset import Asset
-kin_asset = Asset('KIN', config.STELLAR_KIN_ISSUER_ADDRESS)
+print('using kin sdk version: %s' % kin.version.__version__)
+print("kin horizon: %s" % config.STELLAR_HORIZON_URL)
+myenv = kin.Environment('CUSTOM', config.STELLAR_HORIZON_URL, config.STELLAR_NETWORK)
+app.kin_sdk = kin.KinClient(myenv)
+app.kin_account = app.kin_sdk.kin_account(base_seed, channel_seeds, "kit")
+log.info('Kin account status: %s' % app.kin_account.get_status())
 
-if config.STELLAR_NETWORK != 'TESTNET':
-    log.info('starting the sdk in a private network')
-    network = 'CUSTOM'
-    NETWORKS[network] = config.STELLAR_NETWORK
-else:
-    print('starting the sdk on the public testnet')
-    network = config.STELLAR_NETWORK
-
-app.kin_sdk = kin.SDK(secret_key=base_seed,
-                      horizon_endpoint_uri=config.STELLAR_HORIZON_URL,
-                      network=network,
-                      channel_secret_keys=channel_seeds,
-                      kin_asset=kin_asset)
-
-# get (and print) the current balance for the account:
-from stellar_base.keypair import Keypair
-log.info('the current KIN balance on the base-seed: %s' % stellar.get_kin_balance(Keypair.from_seed(base_seed).address().decode()))
-# get (and print) the current balance for the account:
-log.info('the current XLM balance on the base-seed: %s' % stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode()))
-
-for channel in channel_seeds:
-    address = Keypair.from_seed(channel).address().decode()
-    print('the current XLM balance on channel (%s): %s' % (address, stellar.get_xlm_balance(address)))
 
 # init encryption util
 key, iv = ssm.get_encrpytion_creds()

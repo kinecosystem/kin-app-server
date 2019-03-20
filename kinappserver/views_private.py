@@ -12,7 +12,7 @@ from kinappserver.views_common import limit_to_acl, limit_to_localhost, limit_to
 
 from kinappserver import app, config, stellar, utils, ssm
 from .push import send_please_upgrade_push_2
-from kinappserver.stellar import send_kin
+from kinappserver.stellar import send_kin, send_kin_with_payment_service, get_kin_balance
 from kinappserver.utils import InvalidUsage, InternalError, increment_metric, gauge_metric,\
     sqlalchemy_pool_status
 from kinappserver.models import add_task, add_category, send_engagement_push, \
@@ -28,6 +28,7 @@ from kinappserver.models import add_task, add_category, send_engagement_push, \
     unblock_user_from_truex_tasks, set_update_available_below, set_force_update_below, \
     update_categories_extra_data, task20_migrate_tasks, add_discovery_app, set_discovery_app_active, \
     add_discovery_app_category, get_user, blacklist_enc_phone_number, is_enc_phone_number_blacklisted
+
 
 
 @app.route('/health', methods=['GET'])
@@ -179,14 +180,14 @@ def balance_api():
     base_seed, channel_seeds = ssm.get_stellar_credentials()
     balance = {'base_seed': {}, 'channel_seeds': {}}
 
-    from stellar_base.keypair import Keypair
-    balance['base_seed']['kin'] = stellar.get_kin_balance(Keypair.from_seed(base_seed).address().decode())
-    balance['base_seed']['xlm'] = stellar.get_xlm_balance(Keypair.from_seed(base_seed).address().decode())
+    from kin import Keypair
+    keypair = Keypair()
+    balance['base_seed']['kin'] = get_kin_balance(keypair.address_from_seed(base_seed))
     index = 0
     for channel in channel_seeds:
         # seeds only need to carry XLMs
-        balance['channel_seeds'][index] = {'xlm': 0}
-        balance['channel_seeds'][index]['xlm'] = stellar.get_xlm_balance(Keypair.from_seed(channel).address().decode())
+        balance['channel_seeds'][index] = {'kin': 0}
+        balance['channel_seeds'][index]['kin'] = get_kin_balance(keypair.address_from_seed(channel))
         index = index + 1
 
     return jsonify(status='ok', balance=balance)
@@ -968,3 +969,42 @@ def add_discovery_app_api():
         return jsonify(status='ok')
     else:
         raise InvalidUsage('failed to add discovery app')
+
+
+@app.route('/send-kin', methods=['POST'])
+def send_kin_api():
+    """ internal endpoint used to send kin to a public address"""
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    payload = request.get_json(silent=True)
+    try:
+        public_address = payload.get('public_address', None)
+        amount = payload.get('amount', False)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if send_kin(public_address, amount):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to send %d kin to %s', amount, public_address)
+
+
+@app.route('/send-kin-payment-service', methods=['POST'])
+def send_kin_with_payment_service_api():
+    """ internal endpoint used to send kin to a public address"""
+    if not config.DEBUG:
+        limit_to_localhost()
+
+    payload = request.get_json(silent=True)
+    try:
+        public_address = payload.get('public_address', None)
+        amount = payload.get('amount', False)
+    except Exception as e:
+        print('exception: %s' % e)
+        raise InvalidUsage('bad-request')
+    if send_kin_with_payment_service(public_address, amount):
+        return jsonify(status='ok')
+    else:
+        raise InvalidUsage('failed to send %d kin to %s', amount, public_address)
+

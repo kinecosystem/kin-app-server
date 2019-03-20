@@ -3,8 +3,6 @@ import unittest
 import uuid
 
 import testing.postgresql
-from stellar_base.keypair import Keypair
-from stellar_base.address import Address
 
 import kinappserver
 from kinappserver import db
@@ -38,8 +36,6 @@ class Tester(unittest.TestCase):
     def test_onboard(self):
         """test onboarding scenarios"""
 
-        #TODO ensure there's enough money in the test account to begin with
-
         userid = str(uuid.uuid4())
         resp = self.app.post('/user/register',
             data=json.dumps({
@@ -55,43 +51,45 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # try to onboard user, should succeed
-
-        kp = Keypair.random()
+        from kin import Keypair
+        kp = Keypair()
+        address = kp.address_from_seed(kp.generate_seed())
         resp = self.app.post('/user/onboard',
             data=json.dumps({
-                            'public_address': kp.address().decode()}),
+                            'public_address': address}),
             headers={USER_ID_HEADER: str(userid)},
             content_type='application/json')
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
 
-        # ensure that the account was created
-        address = Address(address=kp.address().decode())
-        address.get() # get the updated information
-        assert(address.balances[0]['asset_type'] == 'native' and 
-            int(float(address.balances[0]['balance'])) == 2) #TODO read 2 from config
 
         # try onboarding again with the same user - should fail
         resp = self.app.post('/user/onboard',
             data=json.dumps({
-                            'public_address': kp.address().decode()}),
+                            'public_address': address}),
             headers={USER_ID_HEADER: str(userid)},
             content_type='application/json')
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 400)
 
         # try sending kin to that public address
-        """ NEED TO ESTABLISH TRUST FIRST
         resp = self.app.post('/send-kin',
             data=json.dumps({
-                            'public_address': kp.address().decode(),
+                            'public_address': address,
                             'amount': 1}),
             headers={USER_ID_HEADER: str(userid)},
             content_type='application/json')
         print(json.loads(resp.data))
         self.assertEqual(resp.status_code, 200)
-        """
 
+        resp = self.app.post('/send-kin-payment-service',
+            data=json.dumps({
+                            'public_address': address,
+                            'amount': 1}),
+            headers={USER_ID_HEADER: str(userid)},
+            content_type='application/json')
+        print(json.loads(resp.data))
+        self.assertEqual(resp.status_code, 200)
 
 
 if __name__ == '__main__':

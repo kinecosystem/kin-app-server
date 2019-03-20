@@ -10,6 +10,7 @@
 
 
   vars:
+    payment_service_branch_name: lior/ECO-1091_kin_federation_support
     redis_endpoint: 'kin-app-server-stage.qugi0x.0001.use1.cache.amazonaws.com'
     datadog_api_key: "{{ lookup('aws_ssm', '/config/stage/datadog/apikey' )}}"
     datadog_config:

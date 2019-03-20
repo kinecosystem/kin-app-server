@@ -17,7 +17,7 @@ ERROR_ORDERS_COOLDOWN = -1
 ERROR_NO_GOODS = -2
 
 KINIT_MEMO_PREFIX = '1-kit-'
-ORDER_ID_LENGTH = 21
+ORDER_ID_LENGTH = 18
 
 OS_ANDROID = 'android'
 OS_IOS = 'iOS'
@@ -35,7 +35,7 @@ def generate_memo(is_manual=False):
     if is_manual:
         # indicates that the memo was generate for a manual transaction
         env = 'm'
-    return KINIT_MEMO_PREFIX + env + str(uuid4().hex[:ORDER_ID_LENGTH])  # generate a memo string and send it to the client
+    return env + str(uuid4().hex[:ORDER_ID_LENGTH])  # generate a memo string and send it to the client
 
 
 def increment_metric(metric_name, count=1):

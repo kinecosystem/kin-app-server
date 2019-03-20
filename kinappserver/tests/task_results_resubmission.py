@@ -238,6 +238,5 @@ class Tester(unittest.TestCase):
         self.assertEqual(json.loads(resp.data)['info'], 'already_compensated')
 
 
-
 if __name__ == '__main__':
     unittest.main()

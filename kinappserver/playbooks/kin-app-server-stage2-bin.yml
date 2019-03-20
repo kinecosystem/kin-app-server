@@ -24,9 +24,9 @@
    eshu_rabbit_address: 10.0.1.20
    stellar_timeout_sec: 30
    stellar_initial_account_balance: 2
-   stellar_network: 'Kin Playground Network ; June 2018'
+   stellar_network: 'Kin Testnet ; December 2018'
    stellar_kin_issuer_address: GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7
-   stellar_horizon_url: https://horizon-playground.kininfrastructure.com
+   stellar_horizon_url: https://horizon-testnet.kininfrastructure.com
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: True
