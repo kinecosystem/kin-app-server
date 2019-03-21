@@ -248,7 +248,7 @@ def compensate_user_api():
     user_id = payload.get('user_id', None)
     kin_amount = int(payload.get('kin_amount', None))
     task_id = payload.get('task_id', None)
-    memo = utils.generate_memo(is_manual=True)
+    memo = utils.generate_order_id(is_manual=True)
     if None in (user_id, kin_amount, task_id):
         raise InvalidUsage('invalid param')
     public_address = get_address_by_userid(user_id)

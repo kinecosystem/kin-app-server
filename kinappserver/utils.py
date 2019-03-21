@@ -15,8 +15,6 @@ from kinappserver import config, app
 
 ERROR_ORDERS_COOLDOWN = -1
 ERROR_NO_GOODS = -2
-
-KINIT_MEMO_PREFIX = '1-kit-'
 ORDER_ID_LENGTH = 18
 
 OS_ANDROID = 'android'
@@ -29,7 +27,7 @@ MAX_TXS_PER_USER = 100
 REDIS_USERID_PREFIX = 'userid'
 
 
-def generate_memo(is_manual=False):
+def generate_order_id(is_manual=False):
     # generate a unique-ish id for txs, this goes into the memo field of txs
     env = config.DEPLOYMENT_ENV[0:1]  # either 's(tage)', 't(est)' or 'p(rod)'
     if is_manual:
