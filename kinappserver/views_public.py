@@ -821,14 +821,13 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
 
 
 
-def reward_address_for_task_internal_payment_service(public_address, task_id, send_push, user_id, memo, delta=0):
+def reward_address_for_task_internal_payment_service(public_address, task_id, send_push, user_id, order_id, delta=0):
     """transfer the correct amount of kins for the task to the given address using the payment service.
        the payment service is async and calls a callback when its done. the tx is written into the db
        in the callback function.
 
        typically, tips are negative delta and quiz-results are positive delta
     """
-    memo = memo[6:]  # trim down the memo because the payment service adds the '1-kit-' bit.
     # get reward amount from db
     amount = get_reward_for_task(task_id)
     if not amount:
@@ -1379,14 +1378,11 @@ def payment_service_callback_endpoint():
                 except Exception as e:
                     log.error('failed to calculate payment request duration. e=%s' % e)
 
-                # slap the '1-kit' on the memo
-                memo = '1-kit-%s' % memo
-
                 create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
                 increment_metric('payment-callback-success')
 
                 if tx_hash and send_push:
-                        send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
+                    send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
 
                 try:
                     redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()

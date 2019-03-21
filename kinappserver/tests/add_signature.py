@@ -72,7 +72,7 @@ class Tester(unittest.TestCase):
         # request to
         resp = self.app.post('/user/add_signature',
                     data=json.dumps({
-                    'id': '1-kit-s411ebc83d07e4c55b9d13',
+                    'id': 's411ebc83d07e4c55b9d',
                     'sender_address': 'GD6UWGMWGW5VLM4ZLIC3OXPV772W55IVFAH5RZK36CUYQDK7FSMJLDMJ',
                     'recipient_address':'GCSD5FPNKSTAOPDZ2OWMFPJEBRD3HWPTDICTS4PTOKESOJHNLQUDVSGA',
                     'amount':3,

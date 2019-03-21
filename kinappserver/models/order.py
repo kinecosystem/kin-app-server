@@ -2,7 +2,7 @@ import arrow
 import logging as log
 
 from kinappserver import db, config, stellar, utils
-from kinappserver.utils import InternalError, increment_metric, generate_memo
+from kinappserver.utils import InternalError, generate_order_id
 from sqlalchemy_utils import UUIDType, ArrowType
 
 from .offer import get_cost_and_address
@@ -15,7 +15,7 @@ class Order(db.Model):
        orders are generated when a client wishes to buy an offer.
        orders are time-limited and expire after a while.
     """
-    order_id = db.Column(db.String(len(generate_memo())), primary_key=True, nullable=False)
+    order_id = db.Column(db.String(len(generate_order_id())), primary_key=True, nullable=False)
     offer_id = db.Column('offer_id', db.String(40), db.ForeignKey("offer.offer_id"), primary_key=False, nullable=False)
     user_id = db.Column('user_id', UUIDType(binary=False), db.ForeignKey("user.user_id"), primary_key=False, nullable=False)
     kin_amount = db.Column(db.Integer(), nullable=False, primary_key=False)
@@ -50,7 +50,7 @@ def create_order(user_id, offer_id):
         raise InternalError('failed to get offer details')
 
     # make up an order_id
-    order_id = utils.generate_memo()
+    order_id = utils.generate_order_id()
 
     # attempt to allocate a good for this order
     if not allocate_good(offer_id, order_id):
@@ -113,11 +113,12 @@ def get_orders_for_user(user_id):
     #TODO cleanup old, un-used orders
 
 
-def get_order_by_order_id(order_id):
+def get_order_by_memo(memo):
     """returns the order object from the db, if it exists and is active"""
-    if order_id is None:
+    if memo is None:
         return None
 
+    order_id = memo[6:] # remove the 1-kit- prefix from the memo
     order = Order.query.filter_by(order_id=order_id).first()
     if not order:
         log.warning('no order with id: %s' % order_id)
@@ -140,7 +141,7 @@ def process_order(user_id, tx_hash):
         return False, None
 
     # get the order from the db using the memo in the tx
-    order = get_order_by_order_id(tx_data['memo'])
+    order = get_order_by_memo(tx_data['memo'])
     if not order:
         log.error('cant match tx order_id to any active orders')
         return False, None
