@@ -31,8 +31,8 @@ class Tester(unittest.TestCase):
     def tearDown(self):
         self.postgresql.stop()
 
-    def test_whitelist(self):
-        """test whitelisting """
+    def test_add_signature(self):
+        """test adding signature  """
 
         # register a user
         userid1 = uuid4()
@@ -70,7 +70,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # request to
-        resp = self.app.post('/user/whitelist',
+        resp = self.app.post('/user/add_signature',
                     data=json.dumps({
                     'id': '1-kit-s411ebc83d07e4c55b9d13',
                     'sender_address': 'GD6UWGMWGW5VLM4ZLIC3OXPV772W55IVFAH5RZK36CUYQDK7FSMJLDMJ',

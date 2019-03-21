@@ -4,6 +4,7 @@ from time import sleep
 import kin
 import requests
 import random
+import json
 import logging as log
 ASSET_NAME = 'KIN'
 
@@ -73,8 +74,8 @@ def send_kin_with_payment_service(public_address, amount, memo=None):
         print(e)
 
 
-def whitelist(id, sender_address, recipient_address, amount, transaction):
-    """whitelist transaction"""
+def add_signature(id, sender_address, recipient_address, amount, transaction):
+    """add backend signature to transaction"""
 
     print('adding whitelisted signature for transaction from %s to: %s' %(sender_address, recipient_address))
     headers = {'X-REQUEST-ID': str(random.randint(1, 1000000))}  # doesn't actually matter
@@ -94,7 +95,10 @@ def whitelist(id, sender_address, recipient_address, amount, transaction):
         result.raise_for_status()
         print('result %s ' % result.text)
         print('result %s ' % result.content)
-        return result.content
+        tx_json = json.loads(result.content.decode("utf-8"))
+        print('tx_json %s ' % tx_json)
+        print('returning tx= %s ' % tx_json['tx'])
+        return tx_json['tx']
     except Exception as e:
         increment_metric('whitelist_error')
         print('caught exception while whitelisting transaction from %s to %s' % (sender_address, recipient_address))
@@ -105,56 +109,38 @@ def extract_tx_payment_data(tx_hash):
     """ensures that the given tx_hash is a valid payment tx,
        and return a dict with the memo, amount and to_address"""
     if tx_hash is None:
-        raise InvalidUsage('invlid params')
+        raise InvalidUsage('invalid params')
 
     # get the tx_hash data. this might take a second,
     # so retry while 'Resource Missing' is recevied
     count = 0
     tx_data = None
-    while (count < config.STELLAR_TIMEOUT_SEC):
+    while count < config.STELLAR_TIMEOUT_SEC:
         try:
             tx_data = app.kin_sdk.get_transaction_data(tx_hash)
 
-        except kin.ResourceNotFoundError as e:
+        except kin.KinErrors.ResourceNotFoundError:
             count = count + 1
             sleep(1)
         else:
             break
-
 
     if tx_data is None:
         print('could not get tx_data for tx_hash: %s. waited %s seconds' % (tx_hash, count))
         increment_metric('tx_data_timeout')
         return False, {}
 
-    if len(tx_data.operations) != 1:
-        print('too many ops')
-        return False, {}
-
-    # get the first (and only) op:
-    op = tx_data.operations[0]
+    # get the simple op:
+    op = tx_data.operation
 
     # verify op type
-    if op['type'] != 'payment':
-        print('unexpected type: %s' % op['type'])
-        return False, {}
-
-    # verify asset params
-    if op['asset_code'] != ASSET_NAME and op['asset_issuer'] != \
-            config.STELLAR_KIN_ISSUER_ADDRESS and op['asset_type'] != 'credit_alphanum4':
-        print('unexpected asset-code/issuer/asset_type')
-        return False, {}
-
-    # verify memo type
-    if tx_data['memo_type'] != 'text':
-        print('unexpected memo type')
+    from kin.transactions import OperationTypes
+    if op.type != OperationTypes.PAYMENT:
+        print('unexpected type: %s' % op.type)
         return False, {}
 
     # assemble the result dict
-    data = {}
-    data['memo'] = tx_data.get('memo', None)
-    data['amount'] = op.get('amount', None)
-    data['to_address'] = op.get('to_address', None)
+    data = {'memo': tx_data.memo, 'amount': op.amount, 'to_address': op.destination}
     return True, data
 
 
