@@ -3,7 +3,7 @@ The Kin App Server public API is defined here.
 """
 from threading import Thread
 from uuid import UUID
-from flask_cors import CORS, cross_origin
+from flask_cors import cross_origin
 from flask import request, jsonify, abort
 from kinappserver.views_common import get_source_ip, extract_headers, limit_to_acl
 from flask_api import status
@@ -11,31 +11,30 @@ import redis_lock
 import arrow
 import logging as log
 from distutils.version import LooseVersion
-from .utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
+from .utils import OS_ANDROID, OS_IOS, passed_captcha
 
-from kinappserver import app, config, stellar, utils, ssm
+from kinappserver import app, config, utils
 from .push import send_please_upgrade_push_2, send_country_not_supported
-from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service, whitelist
+from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service, add_signature
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
-    sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
+     get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
-    store_task_results, add_task, is_onboarded, \
+    store_task_results, is_onboarded, \
     set_onboarded, send_push_tx_completed, \
-    create_tx, get_reward_for_task, add_offer, \
-    get_offers_for_user, set_offer_active, create_order, process_order, \
-    create_good, list_inventory, release_unclaimed_goods, \
+    create_tx, get_reward_for_task, \
+    get_offers_for_user, create_order, process_order, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details,\
     add_p2p_tx,add_app2app_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,\
     handle_task_results_resubmission, reject_premature_results, get_address_by_userid,\
-    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    scan_for_deauthed_users, user_exists, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
-    get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
-    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, get_next_tasks_for_user, \
+    list_p2p_transactions_for_user_id, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified,\
+    get_user_config, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
+    user_exists, get_user_id_by_truex_user_id,\
+    get_email_template_by_type, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
+    validate_auth_token, restore_user_by_address, get_next_tasks_for_user, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
     update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, \
     captcha_solved, get_user_tz, do_captcha_stuff, get_personalized_categories_header_message, get_categories_for_user, \
-    task20_migrate_user_to_tasks2, should_force_update, is_update_available, should_reject_out_of_order_tasks, count_immediate_tasks
+    task20_migrate_user_to_tasks2, should_force_update, is_update_available, count_immediate_tasks
 
 def get_payment_lock_name(user_id, task_id):
     """generate a user and task specific lock for payments."""
@@ -249,13 +248,13 @@ def update_token_api():
     return jsonify(status='ok')
 
 
-@app.route('/user/whitelist', methods=['POST'])
-def whitelist_transaction():
-    """ submit transaction for whitelisting  """
+@app.route('/user/add-signature', methods=['POST'])
+def add_signature_api():
+    """add backend signature to transaction"""
     payload = request.get_json(silent=True)
     try:
         user_id, auth_token = extract_headers(request)
-        print('calling /user/whitelist for user_id %s ' % user_id)
+        print('calling /user/add-signature for user_id %s ' % user_id)
         id = payload.get('id', None)
         sender_address = payload.get('sender_address', None)
         recipient_address = payload.get('recipient_address', None)
@@ -274,8 +273,9 @@ def whitelist_transaction():
     if auth_status != 'authorized':
         return jsonify(status='denied', reason=auth_status)
 
-    result = whitelist(id, sender_address, recipient_address, int(amount), transaction)
-    return jsonify(status='ok', result=result)
+    tx = add_signature(id, sender_address, recipient_address, int(amount), transaction)
+
+    return jsonify(status='ok', tx=tx)
 
 
 @app.route('/user/task/results', methods=['POST'])
