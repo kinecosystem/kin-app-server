@@ -1531,7 +1531,7 @@ def migrate_api():
     if user is None:
         raise InvalidUsage('user with address {client_address} not found')
 
-    return Response(post(config.MIGRATION_SERVICE_URL + '?address={client_address}').content, content_type='application/json; charset=utf-8')
+    return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address={client_address}').content, content_type='application/json; charset=utf-8')
 
 
 @app.route('/migrate/status', methods=['GET'])
@@ -1540,4 +1540,4 @@ def migrate_api_status():
     from flask import Response
     from requests import get
 
-    return Response(get(config.MIGRATION_STATUS_URL).content, content_type='application/json; charset=utf-8')
+    return Response(get(config.MIGRATION_SERVICE_URL + '/status').content, content_type='application/json; charset=utf-8')
