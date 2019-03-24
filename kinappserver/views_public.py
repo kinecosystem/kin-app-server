@@ -1535,12 +1535,3 @@ def migrate_api():
         raise InvalidUsage('user_id missmach. aborted.')
 
     return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address={client_address}').content, content_type='application/json; charset=utf-8')
-
-
-@app.route('/migrate/status', methods=['GET'])
-def migrate_api_status():
-    import flask
-    from flask import Response
-    from requests import get
-
-    return Response(get(config.MIGRATION_SERVICE_URL + '/status').content, content_type='application/json; charset=utf-8')
