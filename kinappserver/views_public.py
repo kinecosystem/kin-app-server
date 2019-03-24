@@ -1509,7 +1509,7 @@ def feedback_endpoint():
     raise InvalidUsage('bad-request')
 
 
-@app.route('/migrate', methods=['POST'])
+@app.route('/user/migrate', methods=['POST'])
 def migrate_api():
     import flask
     from flask import Response
@@ -1521,7 +1521,7 @@ def migrate_api():
         raise InvalidUsage('missing user_id')
 
     client_address = flask.request.args.get('address', '')
-    log.info(f'Received migration request for address: {client_address}')
+    log.info(f'Received migration request from user id: {user_id} address: {client_address}')
 
     if client_address is None:
         raise InvalidUsage('bad-request')
@@ -1530,6 +1530,9 @@ def migrate_api():
 
     if user is None:
         raise InvalidUsage('user with address {client_address} not found')
+
+    if user.user_id != user_id:
+        raise InvalidUsage('user_id missmach. aborted.')
 
     return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address={client_address}').content, content_type='application/json; charset=utf-8')
 
