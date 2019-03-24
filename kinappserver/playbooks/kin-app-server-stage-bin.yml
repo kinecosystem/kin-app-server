@@ -52,4 +52,5 @@
    truex_blacklisted_taskids: "[]"
    max_num_registrations_per_number: 9999
    zendesk_api_token: "{{lookup('aws_ssm', '/config/stage/zendesk/apikey')}}"
-   
+   offer_per_time_range: 100
+   offer_limit_time_range: 0
