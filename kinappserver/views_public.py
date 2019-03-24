@@ -828,7 +828,6 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
             log.error('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
 
 
-
 def reward_address_for_task_internal_payment_service(public_address, task_id, send_push, user_id, order_id, delta=0):
     """transfer the correct amount of kins for the task to the given address using the payment service.
        the payment service is async and calls a callback when its done. the tx is written into the db
@@ -844,10 +843,10 @@ def reward_address_for_task_internal_payment_service(public_address, task_id, se
 
     # take into account the delta: add or reduce kins from the amount
     amount = amount + delta
-    write_payment_data_to_cache(memo, user_id, task_id, arrow.utcnow().timestamp,send_push)  # store this info in cache for when the callback is called
+    write_payment_data_to_cache(order_id, user_id, task_id, arrow.utcnow().timestamp, send_push)  # store this info in cache for when the callback is called
     print('calling send_kin with the payment service: %s, %s' % (public_address, amount))
     # sends a request to the payment service. result comes back via a callback
-    send_kin_with_payment_service(public_address, amount, memo)
+    send_kin_with_payment_service(public_address, amount, order_id)
 
 
 @app.route('/user/offers', methods=['GET'])
