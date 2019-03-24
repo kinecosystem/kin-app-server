@@ -260,14 +260,19 @@ def add_signature_api():
         recipient_address = payload.get('recipient_address', None)
         amount = payload.get('amount', None)
         transaction = payload.get('transaction', None)
+        validation_token = payload.get('validation-token', None)
         captcha_token = payload.get('captcha_token', None)  # optional
-
-        if None in (user_id, id, sender_address, recipient_address, amount, transaction):
+        print('### adding signature with validation token =  %s' % validation_token)
+        if None in (user_id, id, sender_address, recipient_address, amount, transaction, validation_token):
             log.error('failed input checks on /user/submit_transaction')
             raise InvalidUsage('bad-request')
     except Exception as e:
         print('exception in /user/submit_transaction e=%s' % e)
         raise InvalidUsage('bad-request')
+
+    if not utils.is_valid_client(user_id, validation_token):
+        increment_metric('add-signature-invalid-token')
+        raise jsonify(status='denied', reason='invalid token')
 
     auth_status = authorize(user_id, captcha_token)
     if auth_status != 'authorized':
@@ -899,9 +904,11 @@ def book_offer_api():
     try:
         user_id, auth_token = extract_headers(request)
         offer_id = payload.get('id', None)
+        validation_token =  payload.get('validation-token', None)
+        print('### booking offer with validation token =  %s' % validation_token)
         if None in (user_id, offer_id):
             raise InvalidUsage('no user_id or offer_id')
-        if not utils.is_valid_client(user_id, payload.get('validation-token', None)):
+        if not utils.is_valid_client(user_id, validation_token):
             if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
 
