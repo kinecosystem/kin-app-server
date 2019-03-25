@@ -66,6 +66,7 @@
    truex_blacklisted_taskids: "[]"
    max_num_registrations_per_number: 9999
    zendesk_api_token: "{{lookup('aws_ssm', '/config/stage/zendesk/apikey')}}"
+   migration_service_url: 'http://kin3stage.payments.kinitapp.com:8000'
 
    bash_aliases:
      - { alias: '_env', command: 'echo "kinappserver"' }
