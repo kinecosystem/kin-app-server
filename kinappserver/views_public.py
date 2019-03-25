@@ -1513,25 +1513,19 @@ def feedback_endpoint():
 def migrate_api():
     import flask
     from flask import Response
-    from kinappserver.models import user
+    from kinappserver.models.user import get_user
     from requests import post
 
     user_id, auth_token = extract_headers(request)
     if not user_id:
         raise InvalidUsage('missing user_id')
 
-    client_address = flask.request.args.get('address', '')
-    log.info(f'Received migration request from user id: {user_id} address: {client_address}')
+    log.info(f'Received migration request from user id: {user_id}')
 
-    if client_address is None:
-        raise InvalidUsage('bad-request')
-
-    user = user.get_userid_by_address(client_address)
+    user = get_user(user_id)
+    public_address = user.public_address
 
     if user is None:
-        raise InvalidUsage('user with address {client_address} not found')
+        raise InvalidUsage('user with address {public_address} not found')
 
-    if user.user_id != user_id:
-        raise InvalidUsage('user_id missmach. aborted.')
-
-    return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address={client_address}').content, content_type='application/json; charset=utf-8')
+    return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address={public_address}').content, content_type='application/json; charset=utf-8')
