@@ -1520,12 +1520,12 @@ def migrate_api():
     if not user_id:
         raise InvalidUsage('missing user_id')
 
-    log.info(f'Received migration request from user id: {user_id}')
+    log.info('Received migration request from user id: %s' % user_id)
 
     user = get_user(user_id)
     public_address = user.public_address
 
     if user is None:
-        raise InvalidUsage('user with address {public_address} not found')
+        raise InvalidUsage('user with address %s not found' % public_address)
 
-    return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address={public_address}').content, content_type='application/json; charset=utf-8')
+    return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address=%s' % public_address ).content, content_type='application/json; charset=utf-8')
