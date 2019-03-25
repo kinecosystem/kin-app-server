@@ -5,7 +5,7 @@
     - kin-app-server-bin
 
   vars:
-   kin_app_server_branch_name: migration-stage
+   kin_app_server_branch_name: migration-service
    deployment_env: stage
    environment_config: # only sets the console env, not the app context. to set the context, edit supervisor's config
      ENV: stage
