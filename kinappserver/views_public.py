@@ -1523,7 +1523,7 @@ def feedback_endpoint():
     raise InvalidUsage('bad-request')
 
 
-@app.route('/user/migrate', methods=['GET'])
+@app.route('/user/migrate', methods=['POST'])
 def migrate_api():
     import flask
     from flask import Response
