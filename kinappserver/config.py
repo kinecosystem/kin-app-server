@@ -90,3 +90,5 @@ USER_CATEGORIES_CACHE_REDIS_KEY = 'USER_CATEGORIES_CACHE_REDIS_KEY_%s'
 
 USER_LOCKED_OFFERS_REDIS_KEY = 'REDIS_USER_BLOCKED_OFFERS_LIST_%s'
 ZENDESK_API_TOKEN = "this gets overwritten by the tester code. it acutally uses a temp postgress db on the local disc"
+
+MIGRATION_SERVICE_URL = "http://localhost:8000" # tunnle

@@ -1521,3 +1521,25 @@ def feedback_endpoint():
             return jsonify(status='ok')
     
     raise InvalidUsage('bad-request')
+
+
+@app.route('/user/migrate', methods=['POST'])
+def migrate_api():
+    import flask
+    from flask import Response
+    from kinappserver.models.user import get_user
+    from requests import post
+
+    user_id, auth_token = extract_headers(request)
+    if not user_id:
+        raise InvalidUsage('missing user_id')
+
+    log.info('Received migration request from user id: %s' % user_id)
+
+    user = get_user(user_id)
+    public_address = user.public_address
+
+    if user is None:
+        raise InvalidUsage('user with address %s not found' % public_address)
+
+    return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address=%s' % public_address ).content, content_type='application/json; charset=utf-8')

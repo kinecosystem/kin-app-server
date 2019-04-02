@@ -1,6 +1,6 @@
 install-sdk:
 	#sudo pip3 install kin --upgrade
-	pip3 install git+https://github.com/kinecosystem/kin-sdk-python.git@v2-master
+	pip3 install kin-sdk
 
 install:
 	sudo pip3 install . --upgrade
@@ -54,4 +54,4 @@ all:
 	install test
 
 local:
-	uwsgi --plugin /usr/lib/uwsgi/python3_plugin.so --socket 0.0.0.0:8000 --protocol=http --wsgi-file kinappserver/wsgi.py --enable-threads
+	pipenv run uwsgi --plugin /usr/lib/uwsgi/python3_plugin.so --socket 0.0.0.0:8000 --protocol=http --wsgi-file kinappserver/wsgi.py --enable-threads
