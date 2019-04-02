@@ -1523,23 +1523,28 @@ def feedback_endpoint():
     raise InvalidUsage('bad-request')
 
 
-@app.route('/user/migrate', methods=['POST'])
+@app.route('/user/migrate', methods=['GET'])
 def migrate_api():
     import flask
     from flask import Response
     from kinappserver.models.user import get_user
     from requests import post
 
-    user_id, auth_token = extract_headers(request)
-    if not user_id:
-        raise InvalidUsage('missing user_id')
+    args = request.args
+    user_id = args.get('user_id')
+    public_address = args.get('public_address', None)
 
     log.info('Received migration request from user id: %s' % user_id)
 
     user = get_user(user_id)
-    public_address = user.public_address
-
     if user is None:
-        raise InvalidUsage('user with address %s not found' % public_address)
+        raise InvalidUsage('user %s was not found' % user_id)
+
+    if public_address is None:
+        raise InvalidUsage("can't migrate None public address")
+
+
+    if public_address != user.public_address:
+        raise InvalidUsage('public address missmach')
 
     return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address=%s' % public_address ).content, content_type='application/json; charset=utf-8')
