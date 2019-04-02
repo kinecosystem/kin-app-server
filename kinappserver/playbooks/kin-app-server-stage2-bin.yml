@@ -26,7 +26,7 @@
    stellar_initial_account_balance: 2
    stellar_network: 'Kin Testnet ; December 2018'
    stellar_kin_issuer_address: GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7
-   stellar_horizon_url: https://horizon-playground.kininfrastructure.com
+   stellar_horizon_url: https://horizon-testnet.kininfrastructure.com
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: True
@@ -40,8 +40,7 @@
    auth_token_enabled: True
    blackhawk_purchases_enabled: False
    blackhawk_critical_balance_threshold: 50
-   payment_service_url: 'http://stage.payments.kinitapp.com:4999' #kin 2
-   migration_service_url: 'http://kin3stage.payments.kinitapp.com:8000' # migration service to kin 3
+   payment_service_url: 'http://stage.payments.kinitapp.com:4999'
    api_server_url: 'https://stage2.kinitapp.com'
    use_payment_service_phone_number_prefix: '+'
    use_payment_service_percent_of_users: 100
@@ -57,4 +56,5 @@
    is_update_available_below_version_android: '1.0'
    is_update_available_below_version_ios: '1.0'
    zendesk_api_token: "{{lookup('aws_ssm', '/config/stage/zendesk/apikey')}}"
-  
+   offer_per_time_range: 100
+   offer_limit_time_range: 0
