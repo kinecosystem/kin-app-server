@@ -397,6 +397,19 @@ def get_next_task_memo(user_id, cat_id):
     else:
         return next_memo
 
+def migrate_next_task_memo(user_id):
+    """return the memo for this user and replace it with another"""
+    try:
+        memo = None
+        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
+        user_app_data.next_task_memo_dict = {}
+        db.session.add(user_app_data)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('cant reset next memo for %s' % user_id)
+
+    return memo
 
 def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
     """return the memo for this user and replace it with another"""
