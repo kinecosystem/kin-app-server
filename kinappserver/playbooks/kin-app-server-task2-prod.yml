@@ -38,7 +38,7 @@
    eshu_appid: kinapp
    eshu_rabbit_address: eshu-rabbit-prod.kinitapp.com
    stellar_timeout_sec: 30
-   stellar_initial_account_balance: 2 # = 20K txs, but 1.5 xlms are required for establishing trustline
+   stellar_initial_account_balance: 0
    stellar_network: 'Public Global Kin Ecosystem Network ; June 2018'
    stellar_kin_issuer_address: GDF42M3IPERQCBLWFEZKQRK77JQ65SCKTU3CW36HZVCX7XX5A5QXZIVK
    stellar_horizon_url: https://horizon-ecosystem.kininfrastructure.com

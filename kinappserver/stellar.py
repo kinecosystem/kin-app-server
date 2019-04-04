@@ -11,10 +11,9 @@ ASSET_NAME = 'KIN'
 
 def create_account(public_address, initial_kin_amount):
     """create an account for the given public address"""
-    #TODO all repeating logic?
     print('creating account with balance:%s' % initial_kin_amount)
     try:
-        return app.kin_account.create_account(public_address, starting_balance=initial_kin_amount, fee=10)
+        return app.kin_account.create_account(public_address, starting_balance=initial_kin_amount, fee=0)
     except Exception as e:
         increment_metric('create_account_error')
         print('caught exception creating account for address %s' % (public_address))
