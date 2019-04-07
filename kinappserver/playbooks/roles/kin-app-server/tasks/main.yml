@@ -47,23 +47,6 @@
     state: present
     reload: yes
 
-- name: Clone the kin-sdk-python repo
-  git:
-    repo=https://github.com/kinecosystem/kin-sdk-python.git
-    dest=/opt/kin-sdk-python
-    accept_hostkey=true
-    force=yes
-    version=v2-master
-
-- name: pip install reqs for the kin-sdk-python
-  pip:
-    requirements: /opt/kin-sdk-python/requirements.txt
-
-- name: install the kin-sdk-python from the local copy. force upgrade to take any changes.
-  pip:
-    name: /opt/kin-sdk-python
-    state: latest
-
 - name: Clone the kin-app-server repo
   git:
     repo=https://github.com/kinfoundation/kin-app-server.git

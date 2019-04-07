@@ -25,3 +25,4 @@ AMQPStorm==2.4.0
 pycrypto==2.6.1
 firebase-admin==2.10.0
 phonenumbers==8.9.6
+kin-sdk==2.3.1
