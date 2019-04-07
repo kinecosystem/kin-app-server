@@ -22,7 +22,7 @@
     dest=/opt/kinit-client-validation-server-module
     accept_hostkey=true
     force=yes
-    version=master
+    version=kin3
     key_file=/home/ubuntu/.ssh/id_rsa.validation_module
 
 - name: install the kinit-client-validation-server-module  from the local copy. force upgrade to take any changes.

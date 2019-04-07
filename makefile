@@ -9,7 +9,7 @@ install-travis:
 	sudo pip install . --upgrade
 
 install-cv-module:
-	ssh-agent bash -c 'ssh-add ~/.ssh/secret; pip install git+ssh://git@github.com/kinecosystem/kinit-client-validation-server-module.git#egg=kinit-client-validation-module  --upgrade'
+	ssh-agent bash -c 'ssh-add ~/.ssh/secret; pip install git+ssh://git@github.com/kinecosystem/kinit-client-validation-server-module.git@kin3#egg=kinit-client-validation-module  --upgrade'
 	
 	
 test:

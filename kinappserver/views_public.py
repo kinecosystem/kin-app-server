@@ -1446,7 +1446,7 @@ def get_validation_nonce():
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
-    return jsonify(nonce=validation_module.get_validation_nonce(user_id))
+    return jsonify(nonce=validation_module.get_validation_nonce(app.redis, user_id))
 
 
 @app.route('/app_discovery', methods=['GET'])
