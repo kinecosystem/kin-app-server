@@ -53,6 +53,9 @@ def send_kin_with_payment_service(public_address, amount, memo=None):
         log.error('cant send kin amount: %s' % amount)
         return False, None
 
+    if config.DEPLOYMENT_ENV == 'test':
+        return
+
     print('sending kin to address: %s' % public_address)
     headers = {'X-REQUEST-ID': str(random.randint(1, 1000000))}  # doesn't actually matter
     payment_payload = {

@@ -307,7 +307,7 @@ def post_user_task_results_endpoint():
 
     auth_status = authorize(user_id, captcha_token)
     if auth_status != 'authorized':
-        return jsonify(status='denied', reason=auth_status)
+        return jsonify(status='denied', reason=auth_status), status.HTTP_403_FORBIDDEN
 
     # task was submitted successfuly.
     # clear tasks cache
