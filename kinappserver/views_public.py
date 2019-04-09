@@ -851,7 +851,12 @@ def reward_address_for_task_internal_payment_service(public_address, task_id, se
     write_payment_data_to_cache(order_id, user_id, task_id, arrow.utcnow().timestamp, send_push)  # store this info in cache for when the callback is called
     print('calling send_kin with the payment service: %s, %s' % (public_address, amount))
     # sends a request to the payment service. result comes back via a callback
-    send_kin_with_payment_service(public_address, amount, order_id)
+    if config.DEPLOYMENT_ENV == 'test':
+        tx_hash = send_kin(public_address, amount, order_id)
+        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': order_id})
+        return
+    else:
+        send_kin_with_payment_service(public_address, amount, order_id)
 
 
 @app.route('/user/offers', methods=['GET'])
