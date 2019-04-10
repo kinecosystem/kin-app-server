@@ -16,20 +16,6 @@
     name: /opt/kin-app-server
     state: latest
 
-- name: Clone the kinit-client-validation-server-module
-  git:
-    repo=git@github.com:kinecosystem/kinit-client-validation-server-module.git
-    dest=/opt/kinit-client-validation-server-module
-    accept_hostkey=true
-    force=yes
-    version=kin3
-    key_file=/home/ubuntu/.ssh/id_rsa.validation_module
-
-- name: install the kinit-client-validation-server-module  from the local copy. force upgrade to take any changes.
-  pip: 
-    name: /opt/kinit-client-validation-server-module 
-    state: latest
-
 
 - name: restart supervisor
   supervisorctl:
