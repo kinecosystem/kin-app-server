@@ -263,11 +263,11 @@ def add_signature_api():
         validation_token = payload.get('validation-token', None)
         captcha_token = payload.get('captcha_token', None)  # optional
         print('### adding signature with validation token =  %s' % validation_token)
-        if None in (user_id, id, sender_address, recipient_address, amount, transaction, validation_token):
-            log.error('failed input checks on /user/submit_transaction')
+        if None in (user_id, id, sender_address, recipient_address, amount, transaction):
+            log.error('failed input checks on /user/add-signature')
             raise InvalidUsage('bad-request')
     except Exception as e:
-        print('exception in /user/submit_transaction e=%s' % e)
+        print('exception in /user/add-signature e=%s' % e)
         raise InvalidUsage('bad-request')
 
     if not utils.is_valid_client(user_id, validation_token):
@@ -1467,7 +1467,6 @@ def get_discovery_apps():
     return jsonify(get_discovery_apps(os_type))
 
 
-
 @app.route('/support/contact-us', methods=['POST', 'OPTION'])
 @cross_origin()
 def contact_support_endpoint():
@@ -1548,10 +1547,9 @@ def migrate_api():
     if public_address is None:
         raise InvalidUsage("can't migrate None public address")
 
-
     if public_address != user.public_address:
         raise InvalidUsage('public address missmach')
 
     migrate_next_task_memo(user_id)
 
-    return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address=%s' % public_address ).content, content_type='application/json; charset=utf-8')
+    return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address=%s' % public_address).content, content_type='application/json; charset=utf-8')
