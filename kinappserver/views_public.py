@@ -261,7 +261,6 @@ def add_signature_api():
         amount = payload.get('amount', None)
         transaction = payload.get('transaction', None)
         validation_token = payload.get('validation-token', None)
-        captcha_token = payload.get('captcha_token', None)  # optional
         print('### adding signature with validation token =  %s' % validation_token)
         if None in (user_id, id, sender_address, recipient_address, amount, transaction):
             log.error('failed input checks on /user/add-signature')
@@ -274,7 +273,7 @@ def add_signature_api():
         increment_metric('add-signature-invalid-token')
         raise jsonify(status='denied', reason='invalid token')
 
-    auth_status = authorize(user_id, captcha_token)
+    auth_status = authorize(user_id)
     if auth_status != 'authorized':
         return jsonify(status='denied', reason=auth_status)
 
@@ -305,9 +304,13 @@ def post_user_task_results_endpoint():
     print('processing submitted tasks results for task %s from user %s and source_ip:%s' % (task_id, user_id, get_source_ip(request)))
     update_ip_address(user_id, get_source_ip(request))
 
-    auth_status = authorize(user_id, captcha_token)
+    auth_status = authorize(user_id)
     if auth_status != 'authorized':
         return jsonify(status='denied', reason=auth_status), status.HTTP_403_FORBIDDEN
+    else:
+        captcha_status = check_captcha(user_id, captcha_token)
+        if captcha_status != 'ok':
+            return jsonify(status='denied', reason=captcha_status), status.HTTP_403_FORBIDDEN
 
     # task was submitted successfuly.
     # clear tasks cache
@@ -435,7 +438,24 @@ def post_user_task_results_endpoint():
     return jsonify(status='ok', memo=str(memo))
 
 
-def authorize(user_id, captcha_token):
+def check_captcha(user_id, captcha_token):
+    if should_pass_captcha(user_id):
+        if not captcha_token:
+            increment_metric('captcha-missing')
+            print('captcha failed: user %s did not_provide_token' % user_id)
+            return 'captcha-missing'
+        elif not passed_captcha(captcha_token):
+            increment_metric('captcha-failed')
+            print('captcha failed: user %s bad_token' % user_id)
+            return 'captcha-failed'
+        else:
+            increment_metric('captcha-passed')
+            print('captcha succeeded: user %s' % user_id)
+            captcha_solved(user_id)
+    return 'ok'
+
+
+def authorize(user_id):
     if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
         print('user %s is not authenticated. rejecting results submission request' % user_id)
         increment_metric('rejected-on-auth')
@@ -465,20 +485,6 @@ def authorize(user_id, captcha_token):
     if is_userid_blacklisted(user_id):
         print('blocked user_id %s from booking goods - user_id blacklisted' % user_id)
         return 'denied'
-
-    if should_pass_captcha(user_id):
-        if not captcha_token:
-            increment_metric('captcha-missing')
-            print('captcha failed: user %s did not_provide_token' % user_id)
-            return 'denied'
-        elif not passed_captcha(captcha_token):
-            increment_metric('captcha-failed')
-            print('captcha failed: user %s bad_token' % user_id)
-            return 'denied'
-        else:
-            increment_metric('captcha-passed')
-            print('captcha succeeded: user %s' % user_id), status.HTTP_403_FORBIDDEN
-            captcha_solved(user_id)
 
     return 'authorized'
 
