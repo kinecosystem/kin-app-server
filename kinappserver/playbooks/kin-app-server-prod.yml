@@ -11,20 +11,22 @@
     - weareinteractive.environment
     - Datadog.datadog
     - kin-app-server
-    #- ansible-roles.bash_aliases
+    - igor_mukhin.bash_aliases
 
   vars:
-   kin_app_server_branch_name: master
+   kin_app_server_branch_name: kin3
    deployment_env: prod
    environment_config:
      ENV: prod
      STELLAR_ACCOUNT_SID: "{{ play_hosts.index(inventory_hostname) }}" # sets the host's index within the play
    datadog_api_key: "{{ lookup('aws_ssm', '/config/prod/datadog/apikey' )}}"
+   zendesk_api_token: "{{ lookup('aws_ssm', '/config/prod/zendesk/apikey') }}"
+
    datadog_config:
      log_level: INFO
      tags: "service:kin-app-server-prod"
    debug: False
-   nginx_domain: api.kinitapp.com
+   nginx_domain: api3.kinitapp.com
    db_connstr: "postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod"
    redis_endpoint: 'kinit-app-prod.qugi0x.ng.0001.use1.cache.amazonaws.com'
    redis_port: 6379
@@ -37,9 +39,9 @@
    eshu_rabbit_address: eshu-rabbit-prod.kinitapp.com
    stellar_timeout_sec: 30
    stellar_initial_account_balance: 0
-   stellar_network: 'Public Global Kin Ecosystem Network ; June 2018'
+   stellar_network: 'Kin Mainnet ; December 2018'
    stellar_kin_issuer_address: GDF42M3IPERQCBLWFEZKQRK77JQ65SCKTU3CW36HZVCX7XX5A5QXZIVK
-   stellar_horizon_url: http://horizon-ecosystem-c5dc-298387387.us-east-1.elb.amazonaws.com
+   stellar_horizon_url: https://horizon.kinfederation.com
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: True
@@ -53,8 +55,9 @@
    auth_token_enabled: True
    blackhawk_purchases_enabled: True
    blackhawk_critical_balance_threshold: 30 # no cards will be ordered when we reach this threshold
-   payment_service_url: 'http://prod.payments.kinitapp.com:4999'
-   api_server_url: 'https://api.kinitapp.com'
+   payment_service_url: 'http://prod3.payments.kinitapp.com:4998'
+   api_server_url: 'https://api3.kinitapp.com'
+   migration_service_url: 'http://migration.kinitapp.com:8000'
    use_payment_service_phone_number_prefix: '+'
    use_payment_service_percent_of_users: 100
    block_onboarding_android_version: 1.2.5
@@ -77,6 +80,7 @@
      - { alias: '_tailworker-fast', command: 'tail -f /var/log/kinappworker_fast.err.log -n 10' }
      - { alias: '_tailworker-slow', command: 'tail -f /var/log/kinappworker_slow.err.log -n 10' }
      - { alias: '_sql', command: "psql postgresql://{{lookup('aws_ssm', '/config/prod/sql/userpassword')}}@kinitapp-prod.cudbl0spntq9.us-east-1.rds.amazonaws.com/kinitappprod" }
+
 
 
 
