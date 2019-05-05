@@ -1548,14 +1548,15 @@ def migrate_api():
 
     user = get_user(user_id)
     if user is None:
-        raise InvalidUsage('user %s was not found' % user_id)
+        raise InvalidUsage('cant migrate, user %s was not found' % user_id)
 
     if public_address is None:
-        raise InvalidUsage("can't migrate None public address")
+        raise InvalidUsage("cant migrate, None public address")
 
     if public_address != user.public_address:
-        raise InvalidUsage('public address missmach')
+        raise InvalidUsage("cant migrate, public address mismatch")
 
+    log.info('Migrating next task memo for user id: %s ' % user_id)
     migrate_next_task_memo(user_id)
 
     return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address=%s' % public_address).content, content_type='application/json; charset=utf-8')
