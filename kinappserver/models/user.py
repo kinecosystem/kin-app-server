@@ -397,6 +397,7 @@ def get_next_task_memo(user_id, cat_id):
     else:
         return next_memo
 
+
 def migrate_next_task_memo(user_id):
     """return the memo for this user and replace it with another"""
     try:
@@ -407,9 +408,10 @@ def migrate_next_task_memo(user_id):
         db.session.commit()
     except Exception as e:
         print(e)
-        raise InvalidUsage('cant reset next memo for %s' % user_id)
+        raise InvalidUsage('migration: cant reset next memo for %s' % user_id)
 
     return memo
+
 
 def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
     """return the memo for this user and replace it with another"""
@@ -420,6 +422,12 @@ def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
         cat_id = cat_id if cat_id else get_cat_id_for_task_id(task_id)
         if user_app_data.next_task_memo_dict[cat_id]:
             memo = user_app_data.next_task_memo_dict[cat_id]
+            # if for some reason we still have a memo that includes the app id
+            # we should remove it because the sdk adds the app id
+            if memo.startswith('1-kit-'):
+                log.debug("removing 1-kit- from memo:%s for user:%s, task:%s, cat_id:%s " % (memo, user_id, task_id, cat_id))
+                memo = memo[6:]
+                log.debug("will use memo: " % memo)
 
         generate_and_save_next_task_memo(user_app_data, cat_id)
 
