@@ -1391,6 +1391,7 @@ def payment_service_callback_endpoint():
                     return jsonify(status='error', reason='internal_error')
 
                 # retrieve the user_id and task_id from the cache
+                log.info("reading payment data from cache for %s" % memo)
                 user_id, task_id, request_timestamp, send_push = read_payment_data_from_cache(memo)
 
                 # compare the timestamp from the callback with the one from the original request, and

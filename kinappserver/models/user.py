@@ -425,9 +425,8 @@ def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
             # if for some reason we still have a memo that includes the app id
             # we should remove it because the sdk adds the app id
             if memo.startswith('1-kit-'):
-                log.debug("removing 1-kit- from memo:%s for user:%s, task:%s, cat_id:%s " % (memo, user_id, task_id, cat_id))
+                log.info("removing 1-kit- from memo:%s for user:%s, task:%s, cat_id:%s " % (memo, user_id, task_id, cat_id))
                 memo = memo[6:]
-                log.debug("will use memo: " % memo)
 
         generate_and_save_next_task_memo(user_app_data, cat_id)
 
