@@ -3,7 +3,7 @@ version: "3"
 services:
 
   payment-service-v3:
-    image: kinecosystem/payment-service-v3
+    image:  ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     ports:
@@ -23,7 +23,7 @@ services:
       STELLAR_INITIAL_XLM_AMOUNT: ${STELLAR_INITIAL_XLM_AMOUNT}
 
   payment-worker-1:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -31,10 +31,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-2:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -42,10 +42,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-3:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -53,10 +53,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-4:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -64,10 +64,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-5:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -75,10 +75,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-6:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -86,10 +86,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-7:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -97,10 +97,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-8:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -108,10 +108,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-9:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -119,10 +119,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-10:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -130,10 +130,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-11:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -141,10 +141,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-12:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -152,10 +152,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-13:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -163,10 +163,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-14:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -174,10 +174,10 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
 
   payment-worker-15:
-    image: kinecosystem/payment-service-v3
+    image: ${PAYMENT_SERVICE_IMAGE}
     volumes:
       - .:/opt/app
     command: pipenv run python worker.py
@@ -185,4 +185,4 @@ services:
     environment:
       <<: *app_env_vars
       CHANNEL_SALT: some_salt
-      MAX_CHANNELS: 20
+      MAX_CHANNELS: ${MAX_CHANNELS}
