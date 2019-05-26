@@ -780,7 +780,7 @@ def register_api():
                     disable_phone_verification = True
                     disable_backup_nag = True
 
-            global_config = get_global_config()
+            global_config = get_global_config(os)
             if disable_phone_verification:
                 print('disabling phone verification for registering userid %s' % user_id)
                 global_config['phone_verification_enabled'] = False
