@@ -75,7 +75,7 @@ def seconds_to_local_nth_midnight(tz_shift, delay_days):
     return int((tomorrow_dt - local_time_dt).total_seconds())
 
 
-def get_global_config():
+def get_global_config(os_type):
     """return a dict with global flags for the clients"""
     d = {}
     d['phone_verification_enabled'] = config.PHONE_VERIFICATION_ENABLED
@@ -87,10 +87,12 @@ def get_global_config():
     d['backup_nag'] = True
     if config.TOS_URL is not '':
         d['tos'] = config.TOS_URL
-    if config.FAQ_URL is not '':
-        d['faq_url'] = config.FAQ_URL
     d['is_update_available'] = False
     d['force_update'] = False
+    if os_type == OS_ANDROID:
+      d['faq_url'] = config.FAQ_URL_V2
+    else:
+      d['faq_url'] = config.FAQ_URL_V1
     return d
 
 

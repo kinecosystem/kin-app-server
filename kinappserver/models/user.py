@@ -967,9 +967,9 @@ def nuke_user_data(phone_number, nuke_all=False):
 
 def get_user_config(user_id):
     """return the user-specific config based on the global config"""
-    global_config = get_global_config()
-    user_app_data = get_user_app_data(user_id)
     os_type = get_user_os_type(user_id)
+    global_config = get_global_config(os_type)
+    user_app_data = get_user_app_data(user_id)
 
     # customize the p2p tx flag
     if config.P2P_TRANSFERS_ENABLED:
