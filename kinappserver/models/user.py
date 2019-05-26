@@ -950,6 +950,11 @@ def get_user_config(user_id):
     global_config = get_global_config()
     user_app_data = get_user_app_data(user_id)
     os_type = get_user_os_type(user_id)
+    
+    if os_type == OS_ANDROID:
+      global_config['faq_url'] = config.FAQ_URL_V2
+    else:
+      global_config['faq_url'] = config.FAQ_URL_V1
 
     # customize the p2p tx flag
     if config.P2P_TRANSFERS_ENABLED:

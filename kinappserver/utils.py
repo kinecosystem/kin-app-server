@@ -89,8 +89,6 @@ def get_global_config():
     d['backup_nag'] = True
     if config.TOS_URL is not '':
         d['tos'] = config.TOS_URL
-    if config.FAQ_URL is not '':
-        d['faq_url'] = config.FAQ_URL
     d['is_update_available'] = False
     d['force_update'] = False
     return d
