@@ -5,7 +5,7 @@
     - kin-app-server-bin
 
   vars:
-   kin_app_server_branch_name: master
+   kin_app_server_branch_name: kin3
    deployment_env: stage
    environment_config: # only sets the console env, not the app context. to set the context, edit supervisor's config
      ENV: stage
@@ -31,6 +31,7 @@
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: True
    phone_verification_required: False
+   migration_service_url: 'http://kin3stage.payments.kinitapp.com:8000/' # migration service to kin 3
    p2p_transfers_enabled: False
    p2p_min_tasks: 0
    p2p_min_kin_amount: 0
