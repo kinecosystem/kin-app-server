@@ -614,7 +614,7 @@ def get_next_task_results_ts(user_id, cat_id):
     """return the task_result_ts field for the given user and task category"""
     try:
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
-        if user_app_data is None:
+        if user_app_data is None or user_app_data.next_task_ts_dict is None:
             return None
         return user_app_data.next_task_ts_dict.get(cat_id, 0)  # can be None
     except Exception as e:
