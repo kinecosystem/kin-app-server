@@ -26,7 +26,7 @@
    stellar_initial_account_balance: 0
    stellar_network: 'Kin Testnet ; December 2018'
    stellar_kin_issuer_address: GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7
-   stellar_horizon_url: https://horizon-testnet.kininfrastructure.com
+   stellar_horizon_url: https://horizon-testnet.kin.org
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: True
