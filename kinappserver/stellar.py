@@ -77,8 +77,6 @@ def link_wallets_whitelist(sender_address, recipient_address, transaction):
     print('whitelisting wallets linking -> from %s to: %s' %(sender_address, recipient_address))
     headers = {'X-REQUEST-ID': str(random.randint(1, 1000000))}  # doesn't actually matter
     payment_payload = {
-        'sender_address': sender_address,
-        'recipient_address': recipient_address,
         'transaction': transaction,
         'network_id': config.STELLAR_NETWORK
     }
