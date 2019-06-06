@@ -73,6 +73,31 @@ def send_kin_with_payment_service(public_address, amount, memo=None):
         print(e)
 
 
+def link_wallets_whitelist(sender_address, recipient_address, transaction):
+    print('whitelisting wallets linking -> from %s to: %s' %(sender_address, recipient_address))
+    headers = {'X-REQUEST-ID': str(random.randint(1, 1000000))}  # doesn't actually matter
+    payment_payload = {
+        'sender_address': sender_address,
+        'recipient_address': recipient_address,
+        'transaction': transaction,
+        'network_id': config.STELLAR_NETWORK
+    }
+
+    try:
+        print('posting %s/linking/whitelist payload: %s' % (config.PAYMENT_SERVICE_URL, payment_payload))
+        result = requests.post('%s/linking/whitelist' % config.PAYMENT_SERVICE_URL, headers=headers, json=payment_payload)
+        result.raise_for_status()
+        print('result %s ' % result.text)
+        print('result %s ' % result.content)
+        tx_json = json.loads(result.content.decode("utf-8"))
+        print('tx_json %s ' % tx_json)
+        print('returning tx= %s ' % tx_json['tx'])
+        return tx_json['tx']
+    except Exception as e:
+        increment_metric('whitelist_error')
+        print('caught exception while whitelisting wallets linking from %s to %s' % (sender_address, recipient_address))
+        print(e)
+
 def add_signature(id, sender_address, recipient_address, amount, transaction):
     """add backend signature to transaction"""
 

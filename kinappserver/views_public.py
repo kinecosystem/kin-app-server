@@ -15,7 +15,7 @@ from .utils import OS_ANDROID, OS_IOS, passed_captcha
 
 from kinappserver import app, config, utils
 from .push import send_please_upgrade_push_2, send_country_not_supported
-from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service, add_signature
+from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service, add_signature, link_wallets_whitelist
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
      get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
@@ -558,6 +558,31 @@ def get_next_task_internal(cat_ids=[]):
         tasks_by_categories = {key: tasks_by_categories[key] for key in sorted(tasks_by_categories.keys(), key=float)}
         return jsonify(tasks=tasks_by_categories, tz=str(get_user_tz(user_id)), show_captcha=should_pass_captcha(user_id))
 
+
+
+@app.route('/user/link_wallet/whitelist', methods=['POST'])
+def link_wallets_whitelist_api():
+    payload = request.get_json(silent=True)
+    try:
+        user_id, auth_token = extract_headers(request)
+        print('calling /user/link_wallet/whitelist for user_id %s ' % user_id)
+        sender_address = payload.get('sender_address', None)
+        recipient_address = payload.get('recipient_address', None)
+        transaction = payload.get('transaction', None)
+        if None in (user_id, sender_address, recipient_address, transaction):
+            log.error('failed input checks on /user/add-signature')
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print('exception in /user/add-signature e=%s' % e)
+        raise InvalidUsage('bad-request')
+
+    auth_status = authorize(user_id)
+    if auth_status != 'authorized':
+        return jsonify(status='denied', reason=auth_status)
+
+    tx = link_wallets_whitelist(sender_address, recipient_address, transaction)
+
+    return jsonify(status='ok', tx=tx)
 
 
 
