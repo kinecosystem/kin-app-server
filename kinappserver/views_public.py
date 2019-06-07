@@ -1,6 +1,7 @@
 """
 The Kin App Server public API is defined here.
 """
+import traceback
 from threading import Thread
 from uuid import UUID
 from flask_cors import cross_origin
@@ -562,6 +563,7 @@ def get_next_task_internal(cat_ids=[]):
 
 @app.route('/user/link_wallet/whitelist', methods=['POST'])
 def link_wallets_whitelist_api():
+    from kinappserver.models.user import get_user
     payload = request.get_json(silent=True)
     try:
         user_id, auth_token = extract_headers(request)
@@ -569,16 +571,34 @@ def link_wallets_whitelist_api():
         sender_address = payload.get('sender_address', None)
         recipient_address = payload.get('recipient_address', None)
         transaction = payload.get('transaction', None)
+        validation_token = payload.get('validation_token', None)
+        
         if None in (user_id, sender_address, recipient_address, transaction):
-            log.error('failed input checks on /user/add-signature')
+            log.error('failed input checks on /user/link_wallet/whitelist')
             raise InvalidUsage('bad-request')
+
+        user = get_user(user_id) # will raise exc if no user        
     except Exception as e:
-        print('exception in /user/add-signature e=%s' % e)
+        print('exception in /user/link_wallet/whitelist e=%s' % e)
+        traceback.print_exc()
         raise InvalidUsage('bad-request')
+
+    if not utils.is_valid_client(user_id, validation_token):
+            if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
+                raise InvalidUsage('bad-request')
+
+    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        print('blocking user (%s) - didnt pass phone_verification' % user_id)
+        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
     auth_status = authorize(user_id)
     if auth_status != 'authorized':
         return jsonify(status='denied', reason=auth_status)
+
+    if user.public_address != sender_address:
+            log.error('sender_address and user.public_address are not equal!')
+            return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
+            
 
     tx = link_wallets_whitelist(sender_address, recipient_address, transaction)
 
