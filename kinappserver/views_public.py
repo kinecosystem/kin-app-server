@@ -301,6 +301,11 @@ def post_user_task_results_endpoint():
         print('exception in /user/task/results. e=%s' % e)
         raise InvalidUsage('bad-request')
 
+    from kin.blockchain.utils import is_valid_address
+    if not is_valid_address(address):
+        log.error('failed to submit task results for user:%s, task:%s, cap:%s. Invalid public address %s' % (user_id, task_id, captcha_token, address))
+        raise InvalidUsage('bad-request')
+
     print('processing submitted tasks results for task %s from user %s and source_ip:%s' % (task_id, user_id, get_source_ip(request)))
     update_ip_address(user_id, get_source_ip(request))
 
