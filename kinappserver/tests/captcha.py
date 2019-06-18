@@ -374,8 +374,5 @@ class Tester(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)  # captcha needed but not provided
 
 
-
-
-
 if __name__ == '__main__':
     unittest.main()

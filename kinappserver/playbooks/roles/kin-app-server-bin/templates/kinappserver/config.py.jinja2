@@ -41,7 +41,9 @@ P2P_MIN_KIN_AMOUNT = {{ p2p_min_kin_amount }}
 P2P_MAX_KIN_AMOUNT = {{ p2p_max_kin_amount }}
 
 TOS_URL = 'http://www.kinitapp.com/terms-and-privacy-policy'
-FAQ_URL = 'https://cdn.kinitapp.com/faq2/index.html'
+
+FAQ_URL_V1 = 'https://cdn.kinitapp.com/faq/index.html'
+FAQ_URL_V2 = 'https://cdn.kinitapp.com/faq2/index.html'
 FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/kin-app-server/service-account.json'
 
 AUTH_TOKEN_SEND_INTERVAL_DAYS = {{ auth_token_send_interval_days }}
@@ -83,16 +85,15 @@ SERVERSIDE_CLIENT_VALIDATION_ENABLED = False
 
 USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY = "USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY_%s_%s"
 USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY_PREFIX = "USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY_%s*"
+USER_CATEGORIES_CACHE_REDIS_KEY = 'USER_CATEGORIES_CACHE_REDIS_KEY_%s'
 
-OFFER_PER_TIME_RANGE = 1
-OFFER_LIMIT_TIME_RANGE = 30  #days
+OFFER_PER_TIME_RANGE = {{ offer_per_time_range }}
+OFFER_LIMIT_TIME_RANGE = {{ offer_limit_time_range }}  #days
+
 OFFER_RATE_LIMIT_MIN_IOS_VERSION = '1.2.1'
 OFFER_RATE_LIMIT_MIN_ANDROID_VERSION = '1.4.1'
 
 USER_LOCKED_OFFERS_REDIS_KEY = 'REDIS_USER_BLOCKED_OFFERS_LIST_%s'
 ZENDESK_API_TOKEN = "{{zendesk_api_token}}"
 
-USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY = "USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY_%s_%s"
-USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY_PREFIX = "USER_TASK_IN_CATEGORY_CACHE_REDIS_KEY_%s*"
-
-USER_CATEGORIES_CACHE_REDIS_KEY = 'USER_CATEGORIES_CACHE_REDIS_KEY_%s'
+MIGRATION_SERVICE_URL = "{{ migration_service_url }}"

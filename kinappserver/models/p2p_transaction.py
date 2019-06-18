@@ -59,7 +59,7 @@ def format_app2app_tx_dict(tx_hash, amount, destination_app_sid):
     
     from kinappserver.models import AppDiscovery
     apps = AppDiscovery.query.all()
-    d_app = list(filter(lambda item: item.sid == destination_app_sid, apps))
+    d_app = list(filter(lambda item: item.sid == int(destination_app_sid), apps))
     title = 'Sent Kin to %s' % d_app[0].name
     
     tx_dict = {'title': title,
@@ -73,6 +73,7 @@ def format_app2app_tx_dict(tx_hash, amount, destination_app_sid):
                     'date': arrow.utcnow().timestamp}
 
     return tx_dict
+
 
 def format_p2p_tx_dict(tx_hash, amount, format_for_receiver):
     """create a dict with the tx data as it would be sent/returned to the client"""
@@ -106,6 +107,7 @@ def add_app2app_tx(tx_hash, sender_id, destination_app_sid, amount, destination_
         return False, None
     else:
         return True, format_app2app_tx_dict(tx_hash, amount, destination_app_sid)
+
 
 def add_p2p_tx(tx_hash, sender_user_id, receiver_address, amount):
     """create a new p2p tx based on reports from the client

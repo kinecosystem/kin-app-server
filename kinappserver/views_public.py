@@ -3,7 +3,7 @@ The Kin App Server public API is defined here.
 """
 from threading import Thread
 from uuid import UUID
-from flask_cors import CORS, cross_origin
+from flask_cors import cross_origin
 from flask import request, jsonify, abort
 from kinappserver.views_common import get_source_ip, extract_headers, limit_to_acl
 from flask_api import status
@@ -11,31 +11,30 @@ import redis_lock
 import arrow
 import logging as log
 from distutils.version import LooseVersion
-from .utils import OS_ANDROID, OS_IOS, random_percent, passed_captcha
+from .utils import OS_ANDROID, OS_IOS, passed_captcha
 
-from kinappserver import app, config, stellar, utils, ssm
+from kinappserver import app, config, utils
 from .push import send_please_upgrade_push_2, send_country_not_supported
-from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service
+from kinappserver.stellar import create_account, send_kin, send_kin_with_payment_service, add_signature
 from kinappserver.utils import InvalidUsage, InternalError, errors_to_string, increment_metric, gauge_metric, MAX_TXS_PER_USER, extract_phone_number_from_firebase_id_token,\
-    sqlalchemy_pool_status, get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
+     get_global_config, write_payment_data_to_cache, read_payment_data_from_cache
 from kinappserver.models import create_user, update_user_token, update_user_app_version, \
-    store_task_results, add_task, is_onboarded, \
+    store_task_results, is_onboarded, \
     set_onboarded, send_push_tx_completed, \
-    create_tx, get_reward_for_task, add_offer, \
-    get_offers_for_user, set_offer_active, create_order, process_order, \
-    create_good, list_inventory, release_unclaimed_goods, \
+    create_tx, get_reward_for_task, \
+    get_offers_for_user, create_order, process_order, \
     list_user_transactions, get_redeemed_items, get_offer_details, get_task_details,\
     add_p2p_tx,add_app2app_tx, set_user_phone_number, match_phone_number_to_address, user_deactivated,\
     handle_task_results_resubmission, reject_premature_results, get_address_by_userid,\
-    list_p2p_transactions_for_user_id, nuke_user_data, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified, init_bh_creds, create_bh_offer,\
-    get_task_results, get_user_config, get_user_report, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
-    scan_for_deauthed_users, user_exists, get_user_id_by_truex_user_id, store_next_task_results_ts, is_in_acl,\
-    get_email_template_by_type, get_unauthed_users, get_all_user_id_by_phone, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
-    validate_auth_token, restore_user_by_address, get_unenc_phone_number_by_user_id, update_tx_ts, get_next_tasks_for_user, \
+    list_p2p_transactions_for_user_id, send_push_auth_token, ack_auth_token, is_user_authenticated, is_user_phone_verified,\
+    get_user_config, get_task_by_id, get_truex_activity, get_and_replace_next_task_memo,\
+    user_exists, get_user_id_by_truex_user_id,\
+    get_email_template_by_type, get_backup_hints, generate_backup_questions_list, store_backup_hints, \
+    validate_auth_token, restore_user_by_address, get_next_tasks_for_user, \
     should_block_user_by_client_version, deactivate_user, get_user_os_type, should_block_user_by_phone_prefix, count_registrations_for_phone_number, \
     update_ip_address, should_block_user_by_country_code, is_userid_blacklisted, should_allow_user_by_phone_prefix, should_pass_captcha, \
     captcha_solved, get_user_tz, do_captcha_stuff, get_personalized_categories_header_message, get_categories_for_user, \
-    task20_migrate_user_to_tasks2, should_force_update, is_update_available, should_reject_out_of_order_tasks, count_immediate_tasks
+    task20_migrate_user_to_tasks2, should_force_update, is_update_available, count_immediate_tasks
 
 def get_payment_lock_name(user_id, task_id):
     """generate a user and task specific lock for payments."""
@@ -249,6 +248,40 @@ def update_token_api():
     return jsonify(status='ok')
 
 
+@app.route('/user/add-signature', methods=['POST'])
+def add_signature_api():
+    """add backend signature to transaction"""
+    payload = request.get_json(silent=True)
+    try:
+        user_id, auth_token = extract_headers(request)
+        print('calling /user/add-signature for user_id %s ' % user_id)
+        id = payload.get('id', None)
+        sender_address = payload.get('sender_address', None)
+        recipient_address = payload.get('recipient_address', None)
+        amount = payload.get('amount', None)
+        transaction = payload.get('transaction', None)
+        validation_token = payload.get('validation-token', None)
+        print('### adding signature with validation token =  %s' % validation_token)
+        if None in (user_id, id, sender_address, recipient_address, amount, transaction):
+            log.error('failed input checks on /user/add-signature')
+            raise InvalidUsage('bad-request')
+    except Exception as e:
+        print('exception in /user/add-signature e=%s' % e)
+        raise InvalidUsage('bad-request')
+
+    if not utils.is_valid_client(user_id, validation_token):
+        increment_metric('add-signature-invalid-token')
+        raise jsonify(status='denied', reason='invalid token')
+
+    auth_status = authorize(user_id)
+    if auth_status != 'authorized':
+        return jsonify(status='denied', reason=auth_status)
+
+    tx = add_signature(id, sender_address, recipient_address, int(amount), transaction)
+
+    return jsonify(status='ok', tx=tx)
+
+
 @app.route('/user/task/results', methods=['POST'])
 def post_user_task_results_endpoint():
     """receive the results for a tasks and pay the user for them"""
@@ -268,52 +301,21 @@ def post_user_task_results_endpoint():
         print('exception in /user/task/results. e=%s' % e)
         raise InvalidUsage('bad-request')
 
+    from kin.blockchain.utils import is_valid_address
+    if not is_valid_address(address):
+        log.error('failed to submit task results for user:%s, task:%s, cap:%s. Invalid public address %s' % (user_id, task_id, captcha_token, address))
+        raise InvalidUsage('bad-request')
+
     print('processing submitted tasks results for task %s from user %s and source_ip:%s' % (task_id, user_id, get_source_ip(request)))
     update_ip_address(user_id, get_source_ip(request))
 
-    if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
-        print('user %s is not authenticated. rejecting results submission request' % user_id)
-        increment_metric('rejected-on-auth')
-        return jsonify(status='error', reason='auth-failed'), status.HTTP_403_FORBIDDEN
-
-    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
-        print('blocking user (%s) results - didnt pass phone_verification' % user_id)
-        return jsonify(status='error', reason='user_phone_not_verified'), status.HTTP_403_FORBIDDEN
-
-    if user_deactivated(user_id):
-        print('user %s deactivated. rejecting submission' % user_id)
-        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-
-    if should_block_user_by_phone_prefix(user_id):
-        # send push with 8 hour cooldown and dont return tasks
-        send_country_not_supported(user_id)
-        print('blocked user_id %s from submitting tasks - country not supported' % user_id)
-        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-
-    # user has a verified phone number, but is it from a blocked country?
-    if should_block_user_by_country_code(user_id):
-        # send push with 8 hour cooldown and dont return tasks
-        send_country_not_supported(user_id)
-        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
-        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-
-    if is_userid_blacklisted(user_id):
-        print('blocked user_id %s from booking goods - user_id blacklisted' % user_id)
-        return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-
-    if should_pass_captcha(user_id):
-        if not captcha_token:
-            increment_metric('captcha-missing')
-            print('captcha failed: user %s did not_provide_token' % user_id)
-            return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-        elif not passed_captcha(captcha_token):
-            increment_metric('captcha-failed')
-            print('captcha failed: user %s bad_token' % user_id)
-            return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
-        else:
-            increment_metric('captcha-passed')
-            print('captcha succeeded: user %s' % user_id), status.HTTP_403_FORBIDDEN
-            captcha_solved(user_id)
+    auth_status = authorize(user_id)
+    if auth_status != 'authorized':
+        return jsonify(status='denied', reason=auth_status), status.HTTP_403_FORBIDDEN
+    else:
+        captcha_status = check_captcha(user_id, captcha_token)
+        if captcha_status != 'ok':
+            return jsonify(status='denied', reason=captcha_status), status.HTTP_403_FORBIDDEN
 
     # task was submitted successfuly.
     # clear tasks cache
@@ -430,7 +432,7 @@ def post_user_task_results_endpoint():
 
         memo = get_and_replace_next_task_memo(user_id, task_id)
         do_captcha_stuff(user_id) # raise captcha flag if needed
-        split_payment(address, task_id, send_push, user_id, memo, delta)
+        reward_address_for_task_internal_payment_service(address, task_id, send_push, user_id, memo, delta)
 
     except Exception as e:
         print('exception: %s' % e)
@@ -441,28 +443,55 @@ def post_user_task_results_endpoint():
     return jsonify(status='ok', memo=str(memo))
 
 
-def split_payment(address, task_id, send_push, user_id, memo, delta):
-    """this function calls either the payment service or the internal sdk to pay the user
+def check_captcha(user_id, captcha_token):
+    if should_pass_captcha(user_id):
+        if not captcha_token:
+            increment_metric('captcha-missing')
+            print('captcha failed: user %s did not_provide_token' % user_id)
+            return 'captcha-missing'
+        elif not passed_captcha(captcha_token):
+            increment_metric('captcha-failed')
+            print('captcha failed: user %s bad_token' % user_id)
+            return 'captcha-failed'
+        else:
+            increment_metric('captcha-passed')
+            print('captcha succeeded: user %s' % user_id)
+            captcha_solved(user_id)
+    return 'ok'
 
-    this function will eventually be replaced, once we're sure the payment service is working
-    as intended.
-    """
-    use_payment_service = False
-    try:
-        phone_number = get_unenc_phone_number_by_user_id(user_id)
-        if phone_number and phone_number.find(config.USE_PAYMENT_SERVICE_PHONE_NUMBER_PREFIX) >= 0:  # like '+' or '+972' or '++' for (all, israeli numbers, nothing)
-            user_rolled = random_percent()
-            #print('split_payment: user rolled: %s, config: %s' % (user_rolled, config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS))
-            if int(user_rolled) <= int(config.USE_PAYMENT_SERVICE_PERCENT_OF_USERS):
-                print('using payment service for user_id %s' % user_id)
-                use_payment_service = True
-    except Exception as e:
-        log.error('cant determine whether to use the payment service for user_id %s. defaulting to no' % user_id)
 
-    if use_payment_service:
-        reward_address_for_task_internal_payment_service(address, task_id, send_push, user_id, memo, delta)
-    else:
-        reward_and_push(address, task_id, send_push, user_id, memo, delta)
+def authorize(user_id):
+    if config.AUTH_TOKEN_ENFORCED and not is_user_authenticated(user_id):
+        print('user %s is not authenticated. rejecting results submission request' % user_id)
+        increment_metric('rejected-on-auth')
+        return 'auth-failed'
+
+    if config.PHONE_VERIFICATION_REQUIRED and not is_user_phone_verified(user_id):
+        print('blocking user (%s) results - didnt pass phone_verification' % user_id)
+        return 'user_phone_not_verified'
+
+    if user_deactivated(user_id):
+        print('user %s deactivated. rejecting submission' % user_id)
+        return 'denied'
+
+    if should_block_user_by_phone_prefix(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from submitting tasks - country not supported' % user_id)
+        return 'denied'
+
+    # user has a verified phone number, but is it from a blocked country?
+    if should_block_user_by_country_code(user_id):
+        # send push with 8 hour cooldown and dont return tasks
+        send_country_not_supported(user_id)
+        print('blocked user_id %s from getting tasks - blocked country code' % user_id)
+        return 'denied'
+
+    if is_userid_blacklisted(user_id):
+        print('blocked user_id %s from booking goods - user_id blacklisted' % user_id)
+        return 'denied'
+
+    return 'authorized'
 
 
 @app.route('/user/category/<cat_id>/tasks', methods=['GET'])
@@ -756,7 +785,7 @@ def register_api():
                     disable_phone_verification = True
                     disable_backup_nag = True
 
-            global_config = get_global_config()
+            global_config = get_global_config(os)
             if disable_phone_verification:
                 print('disabling phone verification for registering userid %s' % user_id)
                 global_config['phone_verification_enabled'] = False
@@ -815,15 +844,13 @@ def reward_address_for_task_internal(public_address, task_id, send_push, user_id
             log.error('failed to release payment lock for user_id %s and task_id %s' % (user_id, task_id))
 
 
-
-def reward_address_for_task_internal_payment_service(public_address, task_id, send_push, user_id, memo, delta=0):
+def reward_address_for_task_internal_payment_service(public_address, task_id, send_push, user_id, order_id, delta=0):
     """transfer the correct amount of kins for the task to the given address using the payment service.
        the payment service is async and calls a callback when its done. the tx is written into the db
        in the callback function.
 
        typically, tips are negative delta and quiz-results are positive delta
     """
-    memo = memo[6:]  # trim down the memo because the payment service adds the '1-kit-' bit.
     # get reward amount from db
     amount = get_reward_for_task(task_id)
     if not amount:
@@ -832,10 +859,15 @@ def reward_address_for_task_internal_payment_service(public_address, task_id, se
 
     # take into account the delta: add or reduce kins from the amount
     amount = amount + delta
-    write_payment_data_to_cache(memo, user_id, task_id, arrow.utcnow().timestamp,send_push)  # store this info in cache for when the callback is called
+    write_payment_data_to_cache(order_id, user_id, task_id, arrow.utcnow().timestamp, send_push)  # store this info in cache for when the callback is called
     print('calling send_kin with the payment service: %s, %s' % (public_address, amount))
     # sends a request to the payment service. result comes back via a callback
-    send_kin_with_payment_service(public_address, amount, memo)
+    if config.DEPLOYMENT_ENV == 'test':
+        tx_hash = send_kin(public_address, amount, order_id)
+        create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': order_id})
+        return
+    else:
+        send_kin_with_payment_service(public_address, amount, order_id)
 
 
 @app.route('/user/offers', methods=['GET'])
@@ -888,9 +920,11 @@ def book_offer_api():
     try:
         user_id, auth_token = extract_headers(request)
         offer_id = payload.get('id', None)
+        validation_token =  payload.get('validation-token', None)
+        print('### booking offer with validation token =  %s' % validation_token)
         if None in (user_id, offer_id):
             raise InvalidUsage('no user_id or offer_id')
-        if not utils.is_valid_client(user_id, payload.get('validation-token', None)):
+        if not utils.is_valid_client(user_id, validation_token):
             if config.SERVERSIDE_CLIENT_VALIDATION_ENABLED:
                 raise InvalidUsage('bad-request')
 
@@ -1176,9 +1210,11 @@ def compensate_truex_activity(user_id):
         print('user %s deactivated. rejecting submission' % user_id)
         return jsonify(status='error', reason='denied'), status.HTTP_403_FORBIDDEN
 
-    if reject_premature_results(user_id, task_id):
-        print('compensate_truex_activity: should never happen - premature task submission')
-        return False
+    # the below was removed because it does not compile
+    # probably need to remove truex code completely
+    # if reject_premature_results(user_id, task_id):
+    #     print('compensate_truex_activity: should never happen - premature task submission')
+    #     return False
 
     # get the user's current task_id
     tasks = get_next_tasks_for_user(user_id, cat_ids=[TRUEX_CAT_ID])
@@ -1360,6 +1396,7 @@ def payment_service_callback_endpoint():
                     return jsonify(status='error', reason='internal_error')
 
                 # retrieve the user_id and task_id from the cache
+                log.info("reading payment data from cache for %s" % memo)
                 user_id, task_id, request_timestamp, send_push = read_payment_data_from_cache(memo)
 
                 # compare the timestamp from the callback with the one from the original request, and
@@ -1372,14 +1409,11 @@ def payment_service_callback_endpoint():
                 except Exception as e:
                     log.error('failed to calculate payment request duration. e=%s' % e)
 
-                # slap the '1-kit' on the memo
-                memo = '1-kit-%s' % memo
-
                 create_tx(tx_hash, user_id, public_address, False, amount, {'task_id': task_id, 'memo': memo})
                 increment_metric('payment-callback-success')
 
                 if tx_hash and send_push:
-                        send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
+                    send_push_tx_completed(user_id, tx_hash, amount, task_id, memo)
 
                 try:
                     redis_lock.Lock(app.redis, get_payment_lock_name(user_id, task_id)).release()
@@ -1429,7 +1463,7 @@ def get_validation_nonce():
     except Exception as e:
         print(e)
         raise InvalidUsage('bad-request')
-    return jsonify(nonce=validation_module.get_validation_nonce(user_id))
+    return jsonify(nonce=validation_module.get_validation_nonce(app.redis, user_id))
 
 
 @app.route('/app_discovery', methods=['GET'])
@@ -1443,7 +1477,6 @@ def get_discovery_apps():
     os_type = get_user_os_type(user_id)
 
     return jsonify(get_discovery_apps(os_type))
-
 
 
 @app.route('/support/contact-us', methods=['POST', 'OPTION'])
@@ -1504,3 +1537,32 @@ def feedback_endpoint():
             return jsonify(status='ok')
     
     raise InvalidUsage('bad-request')
+
+
+@app.route('/user/migrate', methods=['POST'])
+def migrate_api():
+    import flask
+    from flask import Response
+    from kinappserver.models.user import get_user, migrate_next_task_memo
+    from requests import post
+
+    args = request.args
+    user_id = args.get('user_id')
+    public_address = args.get('public_address', None)
+
+    log.info('Received migration request from user id: %s' % user_id)
+
+    user = get_user(user_id)
+    if user is None:
+        raise InvalidUsage('cant migrate, user %s was not found' % user_id)
+
+    if public_address is None:
+        raise InvalidUsage("cant migrate, None public address")
+
+    if public_address != user.public_address:
+        raise InvalidUsage("cant migrate, public address mismatch")
+
+    log.info('Migrating next task memo for user id: %s ' % user_id)
+    migrate_next_task_memo(user_id)
+
+    return Response(post(config.MIGRATION_SERVICE_URL + '/migrate?address=%s' % public_address).content, content_type='application/json; charset=utf-8')

@@ -1,6 +1,5 @@
 import simplejson as json
 from uuid import uuid4
-from time import sleep
 import testing.postgresql
 
 import unittest

@@ -243,6 +243,19 @@ class Tester(unittest.TestCase):
         print('next task start date: %s' % data['tasks'][0]['start_date'])
         self.assertEqual(data['tasks'][0]['id'], '3')
 
+        # try to send task results using bad public address
+        resp = self.app.post('/user/task/results',
+                            data=json.dumps({
+                            'id': '0',
+                            'address': 'ABCD',
+                            'results': {'2234': 'werw', '5345': '345345'},
+                            'send_push': False
+                            }),
+                            headers={USER_ID_HEADER: str(userid)},
+                            content_type='application/json')
+        data = json.loads(resp.data)
+        print('post task results response: %s' % data)
+        self.assertEqual(resp.status_code, 400)
 
         # send task results
         resp = self.app.post('/user/task/results',

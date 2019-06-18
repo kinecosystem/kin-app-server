@@ -1,6 +1,6 @@
 install-sdk:
 	#sudo pip3 install kin --upgrade
-	pip3 install git+https://github.com/kinecosystem/kin-core-python.git@master
+	pip3 install kin-sdk
 
 install:
 	sudo pip3 install . --upgrade
@@ -9,7 +9,7 @@ install-travis:
 	sudo pip install . --upgrade
 
 install-cv-module:
-	ssh-agent bash -c 'ssh-add ~/.ssh/secret; pip install git+ssh://git@github.com/kinecosystem/kinit-client-validation-server-module.git#egg=kinit-client-validation-module  --upgrade'
+	ssh-agent bash -c 'ssh-add ~/.ssh/secret; pip install git+ssh://git@github.com/kinecosystem/kinit-client-validation-server-module.git@kin3#egg=kinit-client-validation-module  --upgrade'
 	
 	
 test:
@@ -46,7 +46,7 @@ test:
 	python3 -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/phone_verification_blacklisted_phone.py
 	python3 -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/blacklisted_phone_numbers.py
 	python3 -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/task_results_resubmission_other_user.py
-	# python3 -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/book_and_redeem_multiple.py 
+	# python3 -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/book_and_redeem_multiple.py
 	# python3 -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/three_redeems_in_a_row.py
 	# python3 -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/task_results_out_of_order.py 
 	# python3 -m pytest -v -rs -s -x  --disable-pytest-warnings kinappserver/tests/onboarding.py
@@ -54,4 +54,4 @@ all:
 	install test
 
 local:
-	uwsgi --plugin /usr/lib/uwsgi/python3_plugin.so --socket 0.0.0.0:8000 --protocol=http --wsgi-file kinappserver/wsgi.py --enable-threads
+	pipenv run uwsgi --plugin /usr/lib/uwsgi/python3_plugin.so --socket 0.0.0.0:8000 --protocol=http --wsgi-file kinappserver/wsgi.py --enable-threads

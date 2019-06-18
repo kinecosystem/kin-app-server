@@ -42,7 +42,7 @@ class Tester(unittest.TestCase):
         """test various util functions"""
 
         # requires a redis instance
-        memo = '1-kit-sec7ed0797cf340cb979ac'
+        memo = 'sec7ed0797cf340cb979ac'
         user_id = 'f8acc02c-0818-40f7-9938-7f1d1007c43f'
         task_id = '9'
         send_push = False
@@ -53,10 +53,6 @@ class Tester(unittest.TestCase):
         self.assertEqual(task_id, task_id_r)
         self.assertEqual(send_push, send_push_r)
         self.assertEqual(timestamp_r, timestamp)
-
-
-
-
 
 
 if __name__ == '__main__':

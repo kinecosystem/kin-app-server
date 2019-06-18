@@ -5,7 +5,7 @@
     - kin-app-server-bin
 
   vars:
-   kin_app_server_branch_name: master
+   kin_app_server_branch_name: kin3
    deployment_env: stage
    environment_config: # only sets the console env, not the app context. to set the context, edit supervisor's config
      ENV: stage
@@ -23,14 +23,15 @@
    eshu_appid: kinapp
    eshu_rabbit_address: 10.0.1.20
    stellar_timeout_sec: 30
-   stellar_initial_account_balance: 2
-   stellar_network: 'Kin Playground Network ; June 2018'
+   stellar_initial_account_balance: 0
+   stellar_network: 'Kin Testnet ; December 2018'
    stellar_kin_issuer_address: GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7
-   stellar_horizon_url: https://horizon-playground.kininfrastructure.com
+   stellar_horizon_url: https://horizon-testnet.kin.org
    max_simultaneous_orders_per_user: 2
    kms_key_aws_region: 'us-east-1'
    phone_verification_enabled: True
    phone_verification_required: False
+   migration_service_url: 'http://kin3stage.payments.kinitapp.com:8000/' # migration service to kin 3
    p2p_transfers_enabled: False
    p2p_min_tasks: 0
    p2p_min_kin_amount: 0
@@ -56,3 +57,5 @@
    is_update_available_below_version_android: '1.0'
    is_update_available_below_version_ios: '1.0'
    zendesk_api_token: "{{lookup('aws_ssm', '/config/stage/zendesk/apikey')}}"
+   offer_per_time_range: 100
+   offer_limit_time_range: 0

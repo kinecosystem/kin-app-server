@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import INET
 import logging as log
 
 from kinappserver import db, config, app
-from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_memo, OS_ANDROID, OS_IOS, commit_json_changed_to_orm
+from kinappserver.utils import InvalidUsage, OS_IOS, OS_ANDROID, parse_phone_number, increment_metric, gauge_metric, get_global_config, generate_order_id, OS_ANDROID, OS_IOS, commit_json_changed_to_orm
 from kinappserver.push import push_send_gcm, push_send_apns, engagement_payload_apns, engagement_payload_gcm, compensated_payload_apns, compensated_payload_gcm, send_country_IS_supported
 from uuid import uuid4, UUID
 from .push_auth_token import get_token_obj_by_user_id, should_send_auth_token, set_send_date
@@ -142,7 +142,7 @@ def create_user(user_id, os_type, device_model, push_token, time_zone, device_id
         user_app_data.app_ver = app_ver
         user_app_data.next_task_ts = arrow.utcnow().timestamp
         user_app_data.next_task_ts_dict = {}
-        user_app_data.next_task_memo = generate_memo()
+        user_app_data.next_task_memo = generate_order_id()
         user_app_data.next_task_memo_dict = {}
         user_app_data.app_ver = app_ver
         db.session.add(user_app_data)
@@ -211,7 +211,7 @@ class UserAppData(db.Model):
     completed_tasks_dict = db.Column(db.JSON)
     next_task_ts = db.Column(db.String(40), primary_key=False, nullable=True)  # the ts for th next task, can be None
     next_task_ts_dict = db.Column(db.JSON)
-    next_task_memo = db.Column(db.String(len(generate_memo())), primary_key=False, nullable=True)  # the memo for the user's next task.
+    next_task_memo = db.Column(db.String(len(generate_order_id())), primary_key=False, nullable=True)  # the memo for the user's next task.
     next_task_memo_dict = db.Column(db.JSON)
     ip_address = db.Column(INET) # the user's last known ip
     ip_address = db.Column(INET)  # the user's last known ip
@@ -398,6 +398,21 @@ def get_next_task_memo(user_id, cat_id):
         return next_memo
 
 
+def migrate_next_task_memo(user_id):
+    """return the memo for this user and replace it with another"""
+    try:
+        memo = None
+        user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
+        user_app_data.next_task_memo_dict = {}
+        db.session.add(user_app_data)
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        raise InvalidUsage('migration: cant reset next memo for %s' % user_id)
+
+    return memo
+
+
 def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
     """return the memo for this user and replace it with another"""
     try:
@@ -407,6 +422,11 @@ def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
         cat_id = cat_id if cat_id else get_cat_id_for_task_id(task_id)
         if user_app_data.next_task_memo_dict[cat_id]:
             memo = user_app_data.next_task_memo_dict[cat_id]
+            # if for some reason we still have a memo that includes the app id
+            # we should remove it because the sdk adds the app id
+            if memo.startswith('1-kit-'):
+                log.info("removing 1-kit- from memo:%s for user:%s, task:%s, cat_id:%s " % (memo, user_id, task_id, cat_id))
+                memo = memo[6:]
 
         generate_and_save_next_task_memo(user_app_data, cat_id)
 
@@ -419,7 +439,7 @@ def get_and_replace_next_task_memo(user_id, task_id, cat_id=None):
 
 def generate_and_save_next_task_memo(user_app_data, cat_id):
     """generate a new memo and save it"""
-    next_memo = generate_memo()
+    next_memo = generate_order_id()
     user_app_data.next_task_memo_dict[cat_id] = next_memo
     commit_json_changed_to_orm(user_app_data, ['next_task_memo_dict'])
     return next_memo
@@ -594,8 +614,8 @@ def get_next_task_results_ts(user_id, cat_id):
     """return the task_result_ts field for the given user and task category"""
     try:
         user_app_data = UserAppData.query.filter_by(user_id=user_id).first()
-        if user_app_data is None:
-            return None
+        if user_app_data is None or user_app_data.next_task_ts_dict is None:
+            return 0
         return user_app_data.next_task_ts_dict.get(cat_id, 0)  # can be None
     except Exception as e:
         log.error('cant get task result ts. e: %s' % e)
@@ -947,9 +967,9 @@ def nuke_user_data(phone_number, nuke_all=False):
 
 def get_user_config(user_id):
     """return the user-specific config based on the global config"""
-    global_config = get_global_config()
-    user_app_data = get_user_app_data(user_id)
     os_type = get_user_os_type(user_id)
+    global_config = get_global_config(os_type)
+    user_app_data = get_user_app_data(user_id)
 
     # customize the p2p tx flag
     if config.P2P_TRANSFERS_ENABLED:
@@ -1337,7 +1357,7 @@ def task20_migrate_user_to_tasks2(user_id):
     next_task_memo_dict = {}
     for cat_id in all_cat_ids:
         next_task_ts_dict[cat_id] = epoch_start
-        next_task_memo_dict[cat_id] = generate_memo()
+        next_task_memo_dict[cat_id] = generate_order_id()
     uad.next_task_ts_dict = next_task_ts_dict
     uad.next_task_memo_dict = next_task_memo_dict
 

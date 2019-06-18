@@ -15,9 +15,7 @@ from kinappserver import config, app
 
 ERROR_ORDERS_COOLDOWN = -1
 ERROR_NO_GOODS = -2
-
-KINIT_MEMO_PREFIX = '1-kit-'
-ORDER_ID_LENGTH = 21
+ORDER_ID_LENGTH = 18
 
 OS_ANDROID = 'android'
 OS_IOS = 'iOS'
@@ -29,13 +27,13 @@ MAX_TXS_PER_USER = 100
 REDIS_USERID_PREFIX = 'userid'
 
 
-def generate_memo(is_manual=False):
+def generate_order_id(is_manual=False):
     # generate a unique-ish id for txs, this goes into the memo field of txs
     env = config.DEPLOYMENT_ENV[0:1]  # either 's(tage)', 't(est)' or 'p(rod)'
     if is_manual:
         # indicates that the memo was generate for a manual transaction
         env = 'm'
-    return KINIT_MEMO_PREFIX + env + str(uuid4().hex[:ORDER_ID_LENGTH])  # generate a memo string and send it to the client
+    return env + str(uuid4().hex[:ORDER_ID_LENGTH])  # generate a memo string and send it to the client
 
 
 def increment_metric(metric_name, count=1):
@@ -77,7 +75,7 @@ def seconds_to_local_nth_midnight(tz_shift, delay_days):
     return int((tomorrow_dt - local_time_dt).total_seconds())
 
 
-def get_global_config():
+def get_global_config(os_type):
     """return a dict with global flags for the clients"""
     d = {}
     d['phone_verification_enabled'] = config.PHONE_VERIFICATION_ENABLED
@@ -89,10 +87,12 @@ def get_global_config():
     d['backup_nag'] = True
     if config.TOS_URL is not '':
         d['tos'] = config.TOS_URL
-    if config.FAQ_URL is not '':
-        d['faq_url'] = config.FAQ_URL
     d['is_update_available'] = False
     d['force_update'] = False
+    if os_type == OS_ANDROID:
+      d['faq_url'] = config.FAQ_URL_V2
+    else:
+      d['faq_url'] = config.FAQ_URL_V1
     return d
 
 
@@ -408,14 +408,12 @@ def is_valid_client(user_id, validation_token):
     apk_version = get_user_app_data(user_id).app_ver
     
     log.info('user_id: %s  - os_type: %s - client apk_version: %s - VALIDATION_MIN_APK_VERSION: %s' % (user_id, os_type, apk_version, validation_module.VALIDATION_MIN_APK_VERSION))
-
-    if os_type == OS_ANDROID and apk_version >= validation_module.VALIDATION_MIN_APK_VERSION:
+    if os_type == OS_ANDROID:
         log.info('user_id: %s  - REQUIRES VALIDATION' % user_id)
         if validation_token is None:
             log.info("user_id: %s  - validation_token is None!" % user_id)
             return False
-
-        if not validation_module.validate_token(user_id,validation_token):
+        if not validation_module.validate_token(app.redis, user_id, validation_token, config.APK_PACKAGE_NAME, config.DEPLOYMENT_ENV):
             log.info("user_id: %s  - validation_token is invalid!" % user_id)
             return False
     return True

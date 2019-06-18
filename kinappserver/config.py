@@ -7,7 +7,7 @@ REDIS_ENDPOINT = 'localhost'
 REDIS_PORT = 6379
 
 STELLAR_TIMEOUT_SEC = 10  # waitloop for tx data to be available
-STELLAR_INITIAL_ACCOUNT_BALANCE = 2
+STELLAR_INITIAL_ACCOUNT_BALANCE = 0
 
 ESHU_USERNAME = ''
 ESHU_PASSWORD = ''
@@ -19,8 +19,8 @@ ESHU_QUEUE = ''
 ESHU_RABBIT_ADDRESS = ''
 PUSH_TTL_SECS = 60 * 60 * 24
 
-STELLAR_HORIZON_URL = 'https://horizon-playground.kininfrastructure.com'
-STELLAR_NETWORK = 'Kin Playground Network ; June 2018'
+STELLAR_HORIZON_URL = 'https://horizon-testnet.kin.org'
+STELLAR_NETWORK = 'Kin Testnet ; December 2018'
 STELLAR_KIN_ISSUER_ADDRESS = 'GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7'
 
 MAX_SIMULTANEOUS_ORDERS_PER_USER = 2
@@ -37,7 +37,8 @@ P2P_MIN_KIN_AMOUNT = 300
 P2P_MAX_KIN_AMOUNT = 12500
 
 TOS_URL = 'http://www.kinitapp.com/terms-and-privacy-policy'
-FAQ_URL = 'https://cdn.kinitapp.com/faq2/index.html'
+FAQ_URL_V1 = 'https://cdn.kinitapp.com/faq/index.html'
+FAQ_URL_V2 = 'https://cdn.kinitapp.com/faq2/index.html'
 FIREBASE_SERVICE_ACCOUNT_FILE = '/opt/kin-app-server/service-account.json'
 
 
@@ -54,7 +55,8 @@ TRUEX_APP_ID = ''
 TRUEX_PARTNER_HASH = ''
 TRUEX_CALLBACK_SECRET = ''
 
-PAYMENT_SERVICE_URL = 'https://stage.payments.kinitapp.com:5000'
+PAYMENT_SERVICE_URL = 'https://kin3stage.payments.kinitapp.com:4998'
+API_SERVER_URL = 'https://stage.kinitapp.com'
 
 BLOCK_ONBOARDING_IOS_VERSION = '0.1'
 BLOCK_ONBOARDING_ANDROID_VERSION = '0.1'
@@ -89,3 +91,5 @@ USER_CATEGORIES_CACHE_REDIS_KEY = 'USER_CATEGORIES_CACHE_REDIS_KEY_%s'
 
 USER_LOCKED_OFFERS_REDIS_KEY = 'REDIS_USER_BLOCKED_OFFERS_LIST_%s'
 ZENDESK_API_TOKEN = "this gets overwritten by the tester code. it acutally uses a temp postgress db on the local disc"
+
+MIGRATION_SERVICE_URL = "http://localhost:8000" # tunnle

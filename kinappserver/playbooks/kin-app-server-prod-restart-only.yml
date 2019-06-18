@@ -3,9 +3,6 @@
   become: false
   serial: '50%'
 
- # vars:
- #   kinit_prod_tg_arn: 'arn:aws:elasticloadbalancing:us-east-1:935522987944:targetgroup/kinitapp-prod/4311f4679bb3c46b'
-
   pre_tasks:
   - action: ec2_metadata_facts
   - name: de-registering server from elb
